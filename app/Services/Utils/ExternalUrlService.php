@@ -12,8 +12,7 @@
  * limitations under the License.
  **/
 use Jenssegers\Agent\Agent;
-use Illuminate\Config;
-
+use Illuminate\Support\Facades\Config;
 /**
  * Class ExternalUrlService
  * @package Services\Utils
