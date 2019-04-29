@@ -12,7 +12,7 @@
  * limitations under the License.
  **/
 use Jenssegers\Agent\Agent;
-use Services\Facades\ServerConfigurationService as ConfigFacade;
+use Illuminate\Config;
 
 /**
  * Class ExternalUrlService
@@ -25,23 +25,21 @@ final class ExternalUrlService
      */
     public function getCreateAccountUrl(){
         $agent = new Agent();
-        $path  = $agent->isMobile() ? 'join/register/mobile/community' : 'join/register';
-        return sprintf("%s%s", ConfigFacade::getConfigValue("Assets.Url"),$path);
+        return $agent->isMobile() ? Config::get("app.registration_mobile_url", "#") : Config::get("app.registration_url", "#") ;
+
     }
 
     /**
      * @return string
      */
     public function getVerifyAccountUrl(){
-        $path  = 'members/verification/resend';
-        return sprintf("%s%s", ConfigFacade::getConfigValue("Assets.Url"),$path);
+       return Config::get("app.resend_verification_url","#");
     }
 
     /**
      * @return string
      */
     public function getForgotPasswordUrl(){
-        $path  = 'Security/lostpassword';
-        return sprintf("%s%s", ConfigFacade::getConfigValue("Assets.Url"),$path);
+        return Config::get("app.lost_password_url","#");
     }
 }

@@ -205,5 +205,10 @@ return [
         'ServerConfigurationService' => \Services\Facades\ServerConfigurationService::class,
         'ExternalUrlService'=> \Services\Facades\ExternalUrlService::class,
     ],
+
     'version' => env('APP_VERSION', 'XX.XX.XX'),
+    'registration_url'         => env('REGISTRATION_URL', '#'),
+    'registration_mobile_url' => env('REGISTRATION_MOBILE_URL', '#'),
+    'lost_password_url'        => env('LOST_PASSWORD_URL', '#'),
+    'resend_verification_url'  => env('RESEND_VERIFICATION_URL', '#'),
 ];
