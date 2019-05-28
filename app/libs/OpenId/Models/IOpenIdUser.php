@@ -5,12 +5,12 @@
  */
 interface IOpenIdUser
 {
-    const OpenStackIdServerAdminGroup = 'openstackid-server-admin';
+    const OpenIdServerAdminGroup = 'openid-server-admins';
 
     /**
      * @return bool
      */
-    public function isOpenstackIdAdmin();
+    public function isOpenIdServerAdmin();
 
     /**
      * @return int
@@ -20,7 +20,7 @@ interface IOpenIdUser
     /**
      * @return string
      */
-    public function getIdentifier();
+    public function getIdentifier():?string;
 
     /**
      * @return string
@@ -84,8 +84,6 @@ interface IOpenIdUser
 
     public function getLanguage();
 
-    public function getTimeZone();
-
     public function getDateOfBirth();
 
     /**
@@ -112,7 +110,11 @@ interface IOpenIdUser
 
     public function getPic();
 
-    public function getActions();
+    /**
+     * @param int $n
+     * @return mixed
+     */
+    public function getLatestNActions(int $n = 10);
 
     public function getTrustedSites();
 

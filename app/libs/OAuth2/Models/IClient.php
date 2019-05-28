@@ -11,7 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\IEntity;
+
+use Auth\User;
+use Models\OAuth2\ApiScope;
+use Models\OAuth2\ClientPublicKey;
+use models\utils\IEntity;
 /**
  * Interface IClient
  * @package OAuth2\Models
@@ -67,7 +71,7 @@ interface IClient extends IEntity
      * @param $scope
      * @return bool
      */
-    public function isScopeAllowed($scope);
+    public function isScopeAllowed(string $scope):bool;
 
     /**
      * @return string[]
@@ -249,10 +253,10 @@ interface IClient extends IEntity
     public function getPublicKeyByIdentifier($kid);
 
     /**
-     * @param IClientPublicKey $public_key
+     * @param ClientPublicKey $public_key
      * @return $this
      */
-    public function addPublicKey(IClientPublicKey $public_key);
+    public function addPublicKey(ClientPublicKey $public_key);
 
     /**
      * @return string
@@ -267,22 +271,22 @@ interface IClient extends IEntity
     public function isPostLogoutUriAllowed($post_logout_uri);
 
     /**
-     * @param $user
-     */
-    public function candEdit($user);
-
-    /**
-     * @param $user
+     * @param User $user
      * @return bool
      */
-    public function canDelete($user);
+    public function canEdit(User $user):bool;
 
     /**
-     * @param $user
+     * @param User $user
+     * @return bool
+     */
+    public function canDelete(User $user):bool;
+
+    /**
+     * @param User $user
      * @return $this
      */
-    public function setOwner($user);
-
+    public function setOwner(User $user);
 
     /**
      * @return $this
@@ -293,23 +297,23 @@ interface IClient extends IEntity
      * @param IApiScope $scope
      * @return $this
      */
-    public function addScope(IApiScope $scope);
+    public function addScope(ApiScope $scope);
 
     /**
-     * @param $editing_user
+     * @param User $editing_user
      * @return $this
      */
-    public function setEditedBy($editing_user);
+    public function setEditedBy(User $editing_user);
 
     /**
      * @return bool
      */
-    public function useRefreshToken();
+    public function useRefreshToken():bool ;
 
     /**
      * @return bool
      */
-    public function useRotateRefreshTokenPolicy();
+    public function useRotateRefreshTokenPolicy():bool;
 
     /**
      * @return array

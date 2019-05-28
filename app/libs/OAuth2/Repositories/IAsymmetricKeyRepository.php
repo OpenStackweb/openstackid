@@ -11,8 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\Models\IAsymmetricKey;
-use Utils\Db\IBaseRepository;
+use Models\OAuth2\AsymmetricKey;
+use models\utils\IBaseRepository;
 /**
  * Interface IAsymmetricKeyRepository
  * @package OAuth2\Repositories
@@ -21,9 +21,9 @@ interface IAsymmetricKeyRepository extends IBaseRepository
 {
     /**
      * @param string $pem
-     * @return IAsymmetricKey
+     * @return AsymmetricKey|null
      */
-    public function getByPEM($pem);
+    public function getByPEM(string $pem):?AsymmetricKey;
 
     /**
      * @param string $type
@@ -32,28 +32,22 @@ interface IAsymmetricKeyRepository extends IBaseRepository
      * @param \DateTime $valid_from
      * @param \DateTime $valid_to
      * @param int|null $owner_id
-     * @return IAsymmetricKey[]
+     * @return AsymmetricKey[]
      */
-    public function getByValidityRange($type, $usage, $alg, \DateTime $valid_from, \DateTime $valid_to, $owner_id = null);
+    public function getByValidityRange($type, $usage, $alg, \DateTime $valid_from, \DateTime $valid_to, $owner_id = null):array;
 
     /**
-     * @param int $id
-     * @return IAsymmetricKey
+     * @return AsymmetricKey[]
      */
-    public function getById($id);
-
-    /**
-     * @return IAsymmetricKey[]
-     */
-    public function getActives();
+    public function getActives():array;
 
     /**
      * @param string $type
      * @param string $usage
      * @param string $alg
      * @param int|null $owner_id
-     * @return IAsymmetricKey
+     * @return AsymmetricKey
      */
-    public function getActiveByCriteria($type, $usage, $alg, $owner_id = null);
+    public function getActiveByCriteria(string $type, string $usage, string $alg, int $owner_id = null):AsymmetricKey;
 
 }

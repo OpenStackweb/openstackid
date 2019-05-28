@@ -58,7 +58,7 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
         if($raw) return $prompt;
         if(!empty($prompt))
             return explode(' ', $prompt);
-        return array();
+        return [];
     }
 
     /**

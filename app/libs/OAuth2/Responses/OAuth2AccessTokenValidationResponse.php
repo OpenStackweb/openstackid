@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Responses;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +12,11 @@
  * limitations under the License.
  **/
 
+use App\ModelSerializers\SerializerRegistry;
+use Auth\User;
 use OAuth2\Models\IClient;
 use OAuth2\OAuth2Protocol;
-use OpenId\Models\IOpenIdUser;
 use Utils\Http\HttpContentType;
-
 /**
  * Class OAuth2AccessTokenValidationResponse
  * @package OAuth2\Responses
@@ -30,7 +29,7 @@ class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse {
      * @param $audience
      * @param IClient $client
      * @param $expires_in
-     * @param IOpenIdUser|null $user
+     * @param User|null $user
      * @param array $allowed_urls
      * @param array $allowed_origins
      */
@@ -41,9 +40,9 @@ class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse {
         $audience,
         IClient $client,
         $expires_in,
-        IOpenIdUser $user = null,
-        $allowed_urls = array(),
-        $allowed_origins = array()
+        User $user = null,
+        $allowed_urls = [],
+        $allowed_origins = []
     )
     {
         // Successful Responses: A server receiving a valid request MUST send a
@@ -59,8 +58,21 @@ class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse {
 
         if(!is_null($user))
         {
+            // user info if present
             $this[OAuth2Protocol::OAuth2Protocol_UserId] = $user->getId();
-            $this['user_external_id']                    = $user->getExternalIdentifier();
+            $this['user_identifier']                     = $user->getIdentifier();
+            $this['user_email']                          = $user->getEmail();
+            $this['user_first_name']                     = $user->getFirstName();
+            $this['user_last_name']                      = $user->getLastName();
+            $this['user_language']                       = $user->getLanguage();
+            $this['user_country']                        = $user->getCountry();
+
+            $user_groups = [];
+            foreach ($user->getGroups() as $group){
+                $user_groups[] = SerializerRegistry::getInstance()->getSerializer($group)->serialize();
+            }
+            if(count($user_groups) > 0)
+                $this['user_groups'] = $user_groups;
         }
 
         if(count($allowed_urls)){

@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\libs\Auth\Repositories\IBannedIPRepository;
+use App\libs\Auth\Repositories\IGroupRepository;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Response;
@@ -24,7 +26,6 @@ use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Repositories\IRefreshTokenRepository;
 use OAuth2\Repositories\IResourceServerRepository;
-use OAuth2\Services\ITokenService;
 use OAuth2\Repositories\IApiScopeGroupRepository;
 use OAuth2\Repositories\IServerPrivateKeyRepository;
 use OAuth2\Services\IApiEndpointService;
@@ -33,11 +34,14 @@ use OAuth2\Services\IApiService;
 use OAuth2\Services\IClientService;
 use OAuth2\Services\IResourceServerService;
 use OpenId\Services\IUserService;
+use Sokil\IsoCodes\IsoCodesFactory;
+use utils\Filter;
+use utils\FilterElement;
+use utils\PagingInfo;
 use Utils\Services\IAuthService;
 use Utils\Services\IBannedIPService;
 use Utils\Services\IServerConfigurationService;
 use Illuminate\Support\Facades\Log;
-
 /**
  * Class AdminController
  * @package App\Http\Controllers
@@ -100,7 +104,7 @@ class AdminController extends Controller {
     /**
      * @var IApiScopeGroupRepository
      */
-    private $group_repository;
+    private $api_group_repository;
 
     /**
      * @var IClientRepository
@@ -132,8 +136,42 @@ class AdminController extends Controller {
      */
     private $resource_server_repository;
 
+    /**
+     * @var IGroupRepository
+     */
+    private $group_repository;
+
+    /**
+     * @var IBannedIPRepository
+     */
+    private $banned_ips_repository;
+
     const TokenPageSize = 25;
 
+    /**
+     * AdminController constructor.
+     * @param IClientService $client_service
+     * @param IApiScopeService $scope_service
+     * @param IAccessTokenRepository $access_token_repository
+     * @param IRefreshTokenRepository $refresh_token_repository
+     * @param IResourceServerService $resource_server_service
+     * @param IApiService $api_service
+     * @param IApiEndpointService $endpoint_service
+     * @param IAuthService $auth_service
+     * @param IUserService $user_service
+     * @param IServerConfigurationService $configuration_service
+     * @param IBannedIPService $banned_ips_service
+     * @param IServerPrivateKeyRepository $private_keys_repository
+     * @param IApiScopeGroupRepository $api_group_repository
+     * @param IClientRepository $client_repository
+     * @param IUserRepository $user_repository
+     * @param IApiEndpointRepository $endpoint_repository
+     * @param IApiScopeRepository $scope_repository
+     * @param IApiRepository $api_repository
+     * @param IResourceServerRepository $resource_server_repository
+     * @param IBannedIPRepository $banned_ips_repository
+     * @param IGroupRepository $group_repository
+     */
     public function __construct(
         IClientService $client_service,
         IApiScopeService $scope_service,
@@ -147,13 +185,15 @@ class AdminController extends Controller {
         IServerConfigurationService $configuration_service,
         IBannedIPService $banned_ips_service,
         IServerPrivateKeyRepository $private_keys_repository,
-        IApiScopeGroupRepository $group_repository,
+        IApiScopeGroupRepository $api_group_repository,
         IClientRepository $client_repository,
         IUserRepository $user_repository,
         IApiEndpointRepository $endpoint_repository,
         IApiScopeRepository $scope_repository,
         IApiRepository $api_repository,
-        IResourceServerRepository $resource_server_repository
+        IResourceServerRepository $resource_server_repository,
+        IBannedIPRepository $banned_ips_repository,
+        IGroupRepository $group_repository
     )
     {
 
@@ -169,15 +209,21 @@ class AdminController extends Controller {
         $this->configuration_service      = $configuration_service;
         $this->banned_ips_service         = $banned_ips_service;
         $this->private_keys_repository    = $private_keys_repository;
-        $this->group_repository           = $group_repository;
+        $this->api_group_repository       = $api_group_repository;
         $this->client_repository          = $client_repository;
         $this->user_repository            = $user_repository;
         $this->endpoint_repository        = $endpoint_repository;
         $this->scope_repository           = $scope_repository;
         $this->api_repository             = $api_repository;
         $this->resource_server_repository = $resource_server_repository;
+        $this->banned_ips_repository      = $banned_ips_repository;
+        $this->group_repository           = $group_repository;
     }
 
+    /**
+     * @param $id
+     * @return \Illuminate\Contracts\View\View
+     */
     public function editRegisteredClient($id)
     {
         $user    = $this->auth_service->getCurrentUser();
@@ -189,41 +235,41 @@ class AdminController extends Controller {
         }
 
         $selected_scopes = $client->getClientScopes();
-        $aux_scopes      = array();
+        $aux_scopes      = [];
 
         foreach ($selected_scopes as $scope) {
-            array_push($aux_scopes, $scope->id);
+            array_push($aux_scopes, $scope->getId());
         }
 
         // scope pre processing
-        $scopes           = $this->scope_service->getAvailableScopes();
+        $scopes           = $this->scope_repository->getAvailableScopes();
         $group_scopes     = $user->getGroupScopes();
         $merged_scopes    = array_merge($scopes, $group_scopes);
         $final_scopes     = [];
         $processed_scopes = [];
         foreach($merged_scopes as  $test_scope){
-            if(isset($processed_scopes[$test_scope->id])) continue;
+            if(isset($processed_scopes[$test_scope->getId()])) continue;
 
-            $processed_scopes[$test_scope->id] = $test_scope->id;
+            $processed_scopes[$test_scope->getId()] = $test_scope->getId();
             $final_scopes[] = $test_scope;
         }
 
         usort($final_scopes, function($elem1, $elem2){
-            return $elem1->api_id > $elem2->api_id;
+            return $elem1->getApiId() > $elem2->getApiId() ;
         });
         // scope pre processing
 
-        $access_tokens = $this->access_token_repository->getAllValidByClientIdentifier($client->getId(), 1 , self::TokenPageSize);
+        $access_tokens = $this->access_token_repository->getAllValidByClientIdentifier($client->getId(), new PagingInfo(1 , self::TokenPageSize));
 
-        foreach ($access_tokens->items() as $token) {
-            $friendly_scopes = $this->scope_service->getFriendlyScopesByName(explode(' ', $token->scope));
+        foreach ($access_tokens->getItems() as $token) {
+            $friendly_scopes = $this->scope_repository->getFriendlyScopesByName(explode(' ', $token->scope));
             $token->setFriendlyScopes(implode(',', $friendly_scopes));
         }
 
-        $refresh_tokens = $this->refresh_token_repository->getAllValidByClientIdentifier($client->getId(), 1 , self::TokenPageSize);
+        $refresh_tokens = $this->refresh_token_repository->getAllValidByClientIdentifier($client->getId(), new PagingInfo(1 , self::TokenPageSize));
 
-        foreach ($refresh_tokens->items() as $token) {
-            $friendly_scopes = $this->scope_service->getFriendlyScopesByName(explode(' ', $token->scope));
+        foreach ($refresh_tokens->getItems() as $token) {
+            $friendly_scopes = $this->scope_repository->getFriendlyScopesByName(explode(' ', $token->scope));
             $token->setFriendlyScopes(implode(',', $friendly_scopes));
         }
 
@@ -232,13 +278,11 @@ class AdminController extends Controller {
                 'client'               => $client,
                 'selected_scopes'      => $aux_scopes,
                 'scopes'               => $final_scopes,
-                'access_tokens'        => $access_tokens->items(),
-                'access_tokens_pages'  => $access_tokens->total() > 0 ? intval(ceil($access_tokens->total() / self::TokenPageSize)) : 0,
-                "is_oauth2_admin"      => $user->isOAuth2ServerAdmin(),
-                "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
+                'access_tokens'        => $access_tokens->getItems(),
+                'access_tokens_pages'  => $access_tokens->getTotal() > 0 ? intval(ceil($access_tokens->getTotal() / self::TokenPageSize)) : 0,
                 "use_system_scopes"    => $user->canUseSystemScopes(),
-                'refresh_tokens'       => $refresh_tokens->items(),
-                'refresh_tokens_pages' => $refresh_tokens->total() > 0 ? intval(ceil($refresh_tokens->total() / self::TokenPageSize)) : 0,
+                'refresh_tokens'       => $refresh_tokens->getItems(),
+                'refresh_tokens_pages' => $refresh_tokens->getTotal() > 0 ? intval(ceil($refresh_tokens->getTotal() / self::TokenPageSize)) : 0,
             ]);
     }
 
@@ -247,29 +291,29 @@ class AdminController extends Controller {
     public function listApiScopeGroups()
     {
         $user                = $this->auth_service->getCurrentUser();
-        $groups              = $this->group_repository->getAll(1, PHP_INT_MAX);
-        $non_selected_scopes = $this->scope_service->getAssignedByGroups();
-        return View::make("oauth2.profile.admin.api-scope-groups",array
-        (
-            "is_oauth2_admin"      => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
+        $groups              = $this->api_group_repository->getAllByPage(new PagingInfo(1, PHP_INT_MAX));
+        $non_selected_scopes = $this->scope_repository->getAssignableByGroups();
+        return View::make("oauth2.profile.admin.api-scope-groups", [
             'groups'               => $groups,
             'non_selected_scopes'  => $non_selected_scopes,
-        ));
+        ]);
     }
 
+    /**
+     * @param $id
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\Response
+     */
     public function editApiScopeGroup($id){
-        $group = $this->group_repository->get($id);
+        $group = $this->api_group_repository->getById($id);
 
         if(is_null($group))
-            return Response::view('errors.404', array(), 404);
+            return Response::view('errors.404', [], 404);
+
         $user   = $this->auth_service->getCurrentUser();
-        $non_selected_scopes = $this->scope_service->getAssignedByGroups();
+        $non_selected_scopes = $this->scope_repository->getAssignableByGroups();
         return View::make("oauth2.profile.admin.edit-api-scope-group",
             array
             (
-                'is_oauth2_admin'      => $user->isOAuth2ServerAdmin(),
-                'is_openstackid_admin' => $user->isOpenstackIdAdmin(),
                 'group'                => $group,
                 'non_selected_scopes'  => $non_selected_scopes,
             )
@@ -277,78 +321,93 @@ class AdminController extends Controller {
     }
 
     // Resource servers
+
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function listResourceServers() {
         $user             = $this->auth_service->getCurrentUser();
-        $resource_servers = $this->resource_server_repository->getAll(1, PHP_INT_MAX);
-        return View::make("oauth2.profile.admin.resource-servers",array(
-            "is_oauth2_admin"      => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
-            'resource_servers'     => $resource_servers));
+        $resource_servers = $this->resource_server_repository->getAllByPage(new PagingInfo(1, PHP_INT_MAX));
+        return View::make("oauth2.profile.admin.resource-servers",
+            [
+            'resource_servers'     => $resource_servers
+            ]
+        );
     }
 
+    /**
+     * @param $id
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\Response
+     */
     public function editResourceServer($id){
-        $resource_server = $this->resource_server_repository->get($id);
+        $resource_server = $this->resource_server_repository->getById($id);
         if(is_null($resource_server))
-            return Response::view('errors.404', array(), 404);
+            return Response::view('errors.404', [], 404);
         $user   = $this->auth_service->getCurrentUser();
         return View::make("oauth2.profile.admin.edit-resource-server",array(
-            "is_oauth2_admin" => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
             'resource_server'=>$resource_server
         ));
     }
 
+    /**
+     * @param $id
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\Response
+     */
     public function editApi($id){
-        $api = $this->api_repository->get($id);
+        $api = $this->api_repository->getById($id);
         if(is_null($api))
-            return Response::view('errors.404', array(), 404);
-        $user   = $this->auth_service->getCurrentUser();
-        return View::make("oauth2.profile.admin.edit-api",array(
-            "is_oauth2_admin" => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
-            'api'=>$api));
+            return Response::view('errors.404', [], 404);
+        $user = $this->auth_service->getCurrentUser();
+        return View::make("oauth2.profile.admin.edit-api",['api'=>$api]);
     }
 
+    /**
+     * @param $id
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\Response
+     */
     public function editScope($id){
-        $scope = $this->scope_repository->get($id);
+        $scope = $this->scope_repository->getById($id);
         if(is_null($scope))
-            return Response::view('errors.404', array(), 404);
+            return Response::view('errors.404', [], 404);
         $user   = $this->auth_service->getCurrentUser();
         return View::make("oauth2.profile.admin.edit-scope",array(
-            "is_oauth2_admin" => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
             'scope'=>$scope));
     }
 
+    /**
+     * @param $id
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\Response
+     */
     public function editEndpoint($id){
-        $endpoint = $this->endpoint_repository->get($id);
-        if(is_null($endpoint)) return Response::view('errors.404', array(), 404);
+        $endpoint = $this->endpoint_repository->getById($id);
+        if(is_null($endpoint)) return Response::view('errors.404', [], 404);
         $user   = $this->auth_service->getCurrentUser();
-        $selected_scopes = array();
-        $list = $endpoint->scopes()->get(array('id'));
+        $selected_scopes = [];
+        $list = $endpoint->getScopes();
         foreach($list as $selected_scope){
-            array_push($selected_scopes,$selected_scope->id);
+            $selected_scopes[] = $selected_scope->getId();
         }
         return View::make('oauth2.profile.admin.edit-endpoint',array(
-            'is_oauth2_admin' => $user->isOAuth2ServerAdmin(),
-            'is_openstackid_admin' => $user->isOpenstackIdAdmin(),
             'endpoint' => $endpoint ,
             'selected_scopes' => $selected_scopes));
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function editIssuedGrants(){
 
         $user           = $this->auth_service->getCurrentUser();
-        $access_tokens  = $this->access_token_repository->getAllValidByUserId($user->getId(), 1, self::TokenPageSize);
-        $refresh_tokens = $this->refresh_token_repository->getAllValidByUserId($user->getId(), 1, self::TokenPageSize);
+        $access_tokens  = $this->access_token_repository->getAllValidByUserId($user->getId(), new PagingInfo(1, self::TokenPageSize));
+        $refresh_tokens = $this->refresh_token_repository->getAllValidByUserId($user->getId(), new PagingInfo(1, self::TokenPageSize));
 
-        foreach($access_tokens->items() as $access_token){
-            $friendly_scopes = $this->scope_service->getFriendlyScopesByName(explode(' ',$access_token->scope));
+        foreach($access_tokens->getItems() as $access_token){
+            $friendly_scopes = $this->scope_repository->getFriendlyScopesByName(explode(' ',$access_token->getScope()));
             $access_token->setFriendlyScopes(implode(', ',$friendly_scopes));
         }
 
-        foreach($refresh_tokens->items() as $refresh_token){
-            $friendly_scopes = $this->scope_service->getFriendlyScopesByName(explode(' ',$refresh_token->scope));
+        foreach($refresh_tokens->getItems() as $refresh_token){
+            $friendly_scopes = $this->scope_repository->getFriendlyScopesByName(explode(' ',$refresh_token->getScope()));
             $refresh_token->setFriendlyScopes(implode(', ',$friendly_scopes));
         }
 
@@ -356,72 +415,46 @@ class AdminController extends Controller {
             array
             (
                 'user_id'              => $user->getId(),
-                'access_tokens'        => $access_tokens->items() ,
-                'access_tokens_pages'  => $access_tokens->total() > 0 ? intval(ceil($access_tokens->total() / self::TokenPageSize)) : 0,
-                'refresh_tokens'       => $refresh_tokens->items(),
-                'refresh_tokens_pages' => $refresh_tokens->total() > 0 ? intval(ceil($refresh_tokens->total() / self::TokenPageSize)) : 0,
-                'is_oauth2_admin'      => $user->isOAuth2ServerAdmin(),
-                'is_openstackid_admin' => $user->isOpenstackIdAdmin(),
+                'access_tokens'        => $access_tokens->getItems() ,
+                'access_tokens_pages'  => $access_tokens->getTotal() > 0 ? intval(ceil($access_tokens->getTotal() / self::TokenPageSize)) : 0,
+                'refresh_tokens'       => $refresh_tokens->getItems(),
+                'refresh_tokens_pages' => $refresh_tokens->getTotal() > 0 ? intval(ceil($refresh_tokens->getTotal() / self::TokenPageSize)) : 0,
             )
         );
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function listOAuth2Clients(){
         $user    = $this->auth_service->getCurrentUser();
-        $clients = $user->getClients();
+        $clients = $user->getAvailableClients();
 
-        return View::make("oauth2.profile.clients", array(
+        return View::make("oauth2.profile.clients", [
             "username"             => $user->getFullName(),
             "user_id"              => $user->getId(),
-            "is_oauth2_admin"      => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
             "use_system_scopes"    => $user->canUseSystemScopes(),
             'clients'              => $clients,
-        ));
+        ]);
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function listLockedClients(){
-        $user    = $this->auth_service->getCurrentUser();
-        $clients = $this->client_repository->getAll(1, PHP_INT_MAX,[
-            [
-                'name'=>'locked',
-                'op' => '=',
-                'value'=> true
-            ]
-        ]);
+        $filter  = new Filter();
+        $filter->addFilterCondition(FilterElement::makeEqual('locked', true));
+        $clients = $this->client_repository->getAllByPage(new PagingInfo(1, PHP_INT_MAX), $filter);
 
-        return View::make("oauth2.profile.admin.clients", array(
-            "username" => $user->getFullName(),
-            "user_id" => $user->getId(),
-            "is_oauth2_admin" => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
-            'clients' => $clients,
-        ));
-    }
-
-    public function listLockedUsers(){
-        $user    = $this->auth_service->getCurrentUser();
-        $users   = $this->user_repository->getAll(1, PHP_INT_MAX,[
-            [
-                'name'  => 'lock',
-                'op'    => '=',
-                'value' => true
-            ]
-        ]);
-
-        return View::make('admin.users', [
-                'username'             => $user->getFullName(),
-                'user_id'              => $user->getId(),
-                'is_oauth2_admin'      => $user->isOAuth2ServerAdmin(),
-                'is_openstackid_admin' => $user->isOpenstackIdAdmin(),
-                'users'                => $users,
+        return View::make("oauth2.profile.admin.clients",[
+            'clients' => $clients
         ]);
     }
 
     public function listServerConfig(){
 
         $user          = $this->auth_service->getCurrentUser();
-        $config_values = array();
+        $config_values = [];
         $dictionary    = array
         (
             'MaxFailed.Login.Attempts',
@@ -451,8 +484,6 @@ class AdminController extends Controller {
             (
                 "username"             => $user->getFullName(),
                 "user_id"              => $user->getId(),
-                "is_oauth2_admin"      => $user->isOAuth2ServerAdmin(),
-                "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
                 'config_values'        => $config_values,
             )
         );
@@ -522,28 +553,104 @@ class AdminController extends Controller {
     }
 
     public function listBannedIPs(){
-        $user    = $this->auth_service->getCurrentUser();
-        $ips     = $this->banned_ips_service->getByPage(1, PHP_INT_MAX);
-        return View::make("admin.banned-ips",
-            array
-            (
-                "username"             => $user->getFullName(),
-                "user_id"              => $user->getId(),
-                "is_oauth2_admin"      => $user->isOAuth2ServerAdmin(),
-                "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
-                "ips"                  => $ips
-            )
+        $page     = $this->banned_ips_repository->getAllByPage(new PagingInfo(1, PHP_INT_MAX));
+            return View::make("admin.banned-ips",[
+                "page" => $page
+            ]
         );
     }
 
     public function listServerPrivateKeys(){
+        return View::make("oauth2.profile.admin.server-private-keys",
+            [
+                'private_keys' => $this->private_keys_repository->getAllByPage(new PagingInfo(1, PHP_INT_MAX)),
+            ]
+        );
+    }
 
-        $user = $this->auth_service->getCurrentUser();
+    public function listUsers(){
+        // init database
+        $isoCodes = new IsoCodesFactory();
 
-        return View::make("oauth2.profile.admin.server-private-keys", array(
-            'private_keys'         => $this->private_keys_repository->getAll(1, PHP_INT_MAX),
-            "is_oauth2_admin"      => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
-        ));
+        // get languages database
+        $languages = $isoCodes->getLanguages()->toArray();
+        $lang2Code = [];
+        foreach ($languages as $lang){
+            if(!empty($lang->getAlpha2()))
+                $lang2Code[] = $lang;
+        }
+
+        // get countries database
+        $countries = $isoCodes->getCountries()->toArray();
+        return View::make("admin.users",
+            [
+                'page'      => $this->user_repository->getAllByPage(new PagingInfo(1, 10)),
+                'countries' => $countries,
+            ]
+        );
+    }
+
+    public function listGroups(){
+        return View::make("admin.groups",
+            [
+                'groups' => $this->group_repository->getAllByPage(new PagingInfo(1, 10)),
+
+            ]
+        );
+    }
+
+    /**
+     * @param $user_id
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function editUser($user_id){
+
+        $user = $this->user_repository->getById($user_id);
+        if (is_null($user)) {
+            Log::warning(sprintf("invalid user id %s", $user_id));
+            return View::make("errors.404");
+        }
+
+        // init database
+        $isoCodes = new IsoCodesFactory();
+
+        // get languages database
+        $languages = $isoCodes->getLanguages()->toArray();
+        $lang2Code = [];
+        foreach ($languages as $lang){
+            if(!empty($lang->getAlpha2()))
+                $lang2Code[] = $lang;
+        }
+
+        // get countries database
+        $countries = $isoCodes->getCountries()->toArray();
+
+        return View::make("admin.edit-user",
+            [
+                'user'      => $user,
+                'countries' => $countries,
+                'languages' => $lang2Code,
+            ]
+        );
+    }
+
+    /**
+     * @param $group_id
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function editGroup($group_id){
+
+        $group = $this->group_repository->getById($group_id);
+
+        if (is_null($group)) {
+            Log::warning(sprintf("invalid group id %s", $group_id));
+            return View::make("errors.404");
+        }
+
+        return View::make("admin.edit-group",
+            [
+                'group' => $group,
+            ]
+        );
     }
 }

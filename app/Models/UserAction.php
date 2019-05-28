@@ -11,18 +11,110 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\BaseModelEloquent;
+use App\Models\Utils\BaseEntity;
+use Auth\User;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity
+ * @ORM\Table(name="user_actions")
  * Class UserAction
  * @package Models
  */
-class UserAction extends BaseModelEloquent
+class UserAction extends BaseEntity
 {
+    /**
+     * @ORM\Column(name="realm", type="string")
+     * @var string
+     */
+    private $realm;
 
-    protected $table = 'user_actions';
+    /**
+     * @ORM\Column(name="from_ip", type="string")
+     * @var string
+     */
+    private $from_ip;
 
-    public function user()
+    /**
+     * @ORM\Column(name="user_action", type="string")
+     * @var string
+     */
+    private $user_action;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="actions")
+     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
+     * @var User
+     */
+    private $owner;
+
+    /**
+     * @return string
+     */
+    public function getRealm(): string
     {
-        return $this->belongsTo('Auth\User');
+        return $this->realm;
     }
+
+    public function hasRealm():bool
+    {
+        return !is_null($this->realm);
+    }
+
+    /**
+     * @param string $realm
+     */
+    public function setRealm(string $realm): void
+    {
+        $this->realm = $realm;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFromIp(): string
+    {
+        return $this->from_ip;
+    }
+
+    /**
+     * @param string $from_ip
+     */
+    public function setFromIp(string $from_ip): void
+    {
+        $this->from_ip = $from_ip;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUserAction(): string
+    {
+        return $this->user_action;
+    }
+
+    /**
+     * @param string $user_action
+     */
+    public function setUserAction(string $user_action): void
+    {
+        $this->user_action = $user_action;
+    }
+
+    /**
+     * @return User
+     */
+    public function getOwner(): User
+    {
+        return $this->owner;
+    }
+
+    /**
+     * @param User $owner
+     */
+    public function setOwner(User $owner): void
+    {
+        $this->owner = $owner;
+    }
+
 }

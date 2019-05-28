@@ -31,7 +31,7 @@ final class CORSMiddleware
 
     const CORS_IP_BLACKLIST_PREFIX = 'CORS_IP_BLACKLIST_PREFIX:';
 
-    private $headers = array();
+    private $headers = [];
 
     /**
      * A header is said to be a simple header if the header field name is an ASCII case-insensitive match for Accept,
@@ -439,7 +439,7 @@ final class CORSMiddleware
 
     private static function getCustomHeaders(Request $request)
     {
-        $custom_headers = array();
+        $custom_headers = [];
         foreach ($request->headers->all() as $k => $h) {
             if (starts_with('X-', strtoupper(trim($k)))) {
                 array_push($custom_headers, strtoupper(trim($k)));

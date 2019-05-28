@@ -1,4 +1,6 @@
 <?php namespace OpenId\Models;
+use Auth\User;
+
 /**
  * Interface ITrustedSite
  * @package openid\model
@@ -7,13 +9,13 @@ interface ITrustedSite {
     /**
      * @return string
      */
-    public function getRealm();
+    public function getRealm():string;
 
     public function getData();
 
-    public function getUser();
+    public function getUser():User;
 
-    public function getAuthorizationPolicy();
+    public function getAuthorizationPolicy():string;
 
     public function getUITrustedData();
 }

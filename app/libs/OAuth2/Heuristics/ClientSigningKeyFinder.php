@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use jwa\cryptographic_algorithms\ICryptoAlgorithm;
 use jwa\cryptographic_algorithms\macs\MAC_Algorithm;
 use jwk\exceptions\InvalidJWKAlgorithm;
@@ -24,7 +23,6 @@ use OAuth2\Exceptions\InvalidClientType;
 use OAuth2\Exceptions\RecipientKeyNotFoundException;
 use OAuth2\Models\IClient;
 use OAuth2\Services\IClientJWKSetReader;
-
 /**
  * Class ClientSigningKeyFinder
  * @package OAuth2\Heuristics
@@ -47,14 +45,14 @@ final class ClientSigningKeyFinder implements IKeyFinder
     /**
      * @param IClient $client
      * @param ICryptoAlgorithm $alg
-     * @param null $kid_hint
+     * @param string|null $kid_hint
      * @return IJWK
      * @throws InvalidClientType
      * @throws RecipientKeyNotFoundException
      * @throws InvalidJWKAlgorithm
      * @throws JWKInvalidSpecException
      */
-    public function find(IClient $client, ICryptoAlgorithm $alg, $kid_hint = null)
+    public function find(IClient $client, ICryptoAlgorithm $alg, ?string $kid_hint = null)
     {
         if($alg instanceof MAC_Algorithm )
         {

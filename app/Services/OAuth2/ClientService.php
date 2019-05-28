@@ -12,17 +12,20 @@
  * limitations under the License.
  **/
 
+use App\Events\OAuth2ClientLocked;
+use App\Models\OAuth2\Factories\ClientFactory;
+use App\Services\AbstractService;
 use Auth\Repositories\IUserRepository;
+use Auth\User;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Request;
+use Models\OAuth2\ApiScope;
 use Models\OAuth2\Client;
-use OAuth2\Exceptions\AbsentClientException;
+use models\utils\IEntity;
 use OAuth2\Exceptions\InvalidApiScope;
 use OAuth2\Exceptions\InvalidClientAuthMethodException;
-use OAuth2\Exceptions\InvalidClientType;
 use OAuth2\Exceptions\MissingClientAuthorizationInfo;
-use OAuth2\Factories\IOAuth2ClientFactory;
 use OAuth2\Models\ClientAssertionAuthenticationContext;
 use OAuth2\Models\ClientAuthenticationContext;
 use OAuth2\Models\ClientCredentialsAuthenticationContext;
@@ -33,18 +36,16 @@ use OAuth2\Repositories\IClientRepository;
 use OAuth2\Services\IApiScopeService;
 use OAuth2\Services\IClientCredentialGenerator;
 use OAuth2\Services\IClientService;
-use Services\Exceptions\ValidationException;
-use URL\Normalizer;
+use models\exceptions\ValidationException;
 use Utils\Db\ITransactionService;
-use Utils\Exceptions\EntityNotFoundException;
+use models\exceptions\EntityNotFoundException;
 use Utils\Http\HttpUtils;
 use Utils\Services\IAuthService;
-
 /**
  * Class ClientService
  * @package Services\OAuth2
  */
-class ClientService implements IClientService
+final class ClientService extends AbstractService implements IClientService
 {
     /**
      * @var IAuthService
@@ -69,11 +70,6 @@ class ClientService implements IClientService
     private $client_repository;
 
     /**
-     * @var IOAuth2ClientFactory
-     */
-    private $client_factory;
-
-    /**
      * @var IApiScopeRepository
      */
     private $scope_repository;
@@ -85,7 +81,6 @@ class ClientService implements IClientService
      * @param IAuthService $auth_service
      * @param IApiScopeService $scope_service
      * @param IClientCredentialGenerator $client_credential_generator
-     * @param IOAuth2ClientFactory $client_factory
      * @param IApiScopeRepository $scope_repository
      * @param ITransactionService $tx_service
      */
@@ -96,19 +91,17 @@ class ClientService implements IClientService
         IAuthService                $auth_service,
         IApiScopeService            $scope_service,
         IClientCredentialGenerator  $client_credential_generator,
-        IOAuth2ClientFactory        $client_factory,
         IApiScopeRepository         $scope_repository,
         ITransactionService         $tx_service
     )
     {
+        parent::__construct($tx_service);
         $this->auth_service                = $auth_service;
         $this->user_repository             = $user_repository;
         $this->scope_service               = $scope_service;
         $this->client_credential_generator = $client_credential_generator;
         $this->client_repository           = $client_repository;
         $this->scope_repository            = $scope_repository;
-        $this->client_factory              = $client_factory;
-        $this->tx_service                  = $tx_service;
     }
 
 
@@ -185,82 +178,40 @@ class ClientService implements IClientService
     }
 
     /**
-     * @param string $application_type
-     * @param string $app_name
-     * @param string $app_description
-     * @param null|string  $app_url
-     * @param array $admin_users
-     * @param string $app_logo
-     * @return IClient
-     * @throws ValidationException
+     * @param array $payload
+     * @return IEntity
+     * @throws \Exception
      */
-    public function register
-    (
-        $application_type,
-        $app_name,
-        $app_description,
-        $app_url           = null,
-        array $admin_users = [],
-        $app_logo          = ''
-    )
+    public function create(array $payload):IEntity
     {
-        $scope_service               = $this->scope_service;
-        $client_credential_generator = $this->client_credential_generator;
-        $user_repository             = $this->user_repository;
-        $client_repository           = $this->client_repository;
-        $client_factory              = $this->client_factory;
-        $current_user                = $this->auth_service->getCurrentUser();
 
-        return $this->tx_service->transaction(function () use (
-            $application_type,
-            $current_user,
-            $app_name,
-            $app_url,
-            $app_description,
-            $app_logo,
-            $admin_users,
-            $scope_service,
-            $user_repository,
-            $client_repository,
-            $client_factory,
-            $client_credential_generator
-        ) {
+        return $this->tx_service->transaction(function () use ($payload) {
+
+            $current_user  = $this->auth_service->getCurrentUser();
+
+            $app_name =  trim($payload['app_name']);
 
             if($this->client_repository->getByApplicationName($app_name) != null){
                 throw new ValidationException('there is already another application with that name, please choose another one.');
             }
 
-            $client = $client_factory->build($app_name, $current_user, $application_type);
-            $client = $client_credential_generator->generate($client);
+            $client = ClientFactory::build($payload);
+            $client = $this->client_credential_generator->generate($client);
 
-            $client->app_logo         = $app_logo;
-            $client->app_description  = $app_description;
-            $client->website          = $app_url;
-
-            $client_repository->add($client);
-            //add default scopes
-
-            foreach ($this->scope_repository->getDefaults() as $default_scope) {
-                if
-                (
-                    $default_scope->name === OAuth2Protocol::OfflineAccess_Scope &&
-                    !(
-                        $client->application_type == IClient::ApplicationType_Native ||
-                        $client->application_type == IClient::ApplicationType_Web_App
-                    )
-                ) {
-                    continue;
+            if(isset($payload['admin_users']) && is_array($payload['admin_users'])) {
+                $admin_users = $payload['admin_users'];
+                //add admin users
+                foreach ($admin_users as $user_id) {
+                    $user = $this->user_repository->getById(intval($user_id));
+                    if (is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.', $user_id));
+                    if(!$user instanceof User) continue;
+                    $client->addAdminUser($user);
                 }
-                $client->addScope($default_scope);
             }
 
-            //add admin users
-            foreach($admin_users as $user_id)
-            {
-                $user = $user_repository->get(intval($user_id));
-                if(is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.',$user_id));
-                $client->addAdminUser($user);
-            }
+            $client->setOwner($current_user);
+
+            $this->client_repository->add($client);
 
             return $client;
         });
@@ -269,53 +220,52 @@ class ClientService implements IClientService
 
     /**
      * @param int $id
-     * @param array $params
+     * @param array $payload
+     * @return IEntity
      * @throws ValidationException
      * @throws EntityNotFoundException
-     * @return IClient
      */
-    public function update($id, array $params)
+    public function update(int $id, array $payload):IEntity
     {
-        $client_repository = $this->client_repository;
-        $user_repository   = $this->user_repository;
-        $editing_user      = $this->auth_service->getCurrentUser();
 
-        return $this->tx_service->transaction(function () use ($id, $editing_user, $params, $client_repository, $user_repository) {
+        return $this->tx_service->transaction(function () use ($id, $payload) {
 
-            $client = $client_repository->get($id);
+            $editing_user      = $this->auth_service->getCurrentUser();
 
-            if (is_null($client)) {
+            $client = $this->client_repository->getById($id);
+
+            if (is_null($client) || !$client instanceof Client) {
                 throw new EntityNotFoundException(sprintf('client id %s does not exists.', $id));
             }
-            $app_name   = isset($params['app_name']) ? trim($params['app_name']) : null;
+            $app_name   = isset($payload['app_name']) ? trim($payload['app_name']) : null;
             if(!empty($app_name)) {
-                $old_client = $client_repository->getByApplicationName($app_name);
-                if(!is_null($old_client) && $old_client->id !== $client->id)
+                $old_client = $this->client_repository->getByApplicationName($app_name);
+                if(!is_null($old_client) && $old_client->getId() !== $client->getId())
                     throw new ValidationException('there is already another application with that name, please choose another one.');
             }
             $current_app_type = $client->getApplicationType();
-            if($current_app_type !== $params['application_type'])
+            if($current_app_type !== $payload['application_type'])
             {
                 throw new ValidationException('application type does not match.');
             }
 
+            ClientFactory::populate($client, $payload);
+
             // validate uris
-            switch($current_app_type) {
+            switch($client->getApplicationType()) {
                 case IClient::ApplicationType_Native: {
 
-                    if (isset($params['redirect_uris'])) {
-                        $redirect_uris = explode(',', $params['redirect_uris']);
+                    if (isset($payload['redirect_uris'])) {
+                        $redirect_uris = explode(',', $payload['redirect_uris']);
                         //check that custom schema does not already exists for another registerd app
-                        if (!empty($params['redirect_uris'])) {
+                        if (!empty($payload['redirect_uris'])) {
                             foreach ($redirect_uris as $uri) {
                                 $uri = @parse_url($uri);
                                 if (!isset($uri['scheme'])) {
                                     throw new ValidationException('invalid scheme on redirect uri.');
                                 }
                                 if (HttpUtils::isCustomSchema($uri['scheme'])) {
-                                    $already_has_schema_registered = Client::where('redirect_uris', 'like',
-                                        '%' . $uri['scheme'] . '://%')->where('id', '<>', $id)->count();
-                                    if ($already_has_schema_registered > 0) {
+                                    if ($this->client_repository->hasCustomSchemeRegisteredForRedirectUrisOnAnotherClientThan($id, $uri['scheme'])) {
                                         throw new ValidationException(sprintf('schema %s:// already registered for another client.',
                                             $uri['scheme']));
                                     }
@@ -329,12 +279,12 @@ class ClientService implements IClientService
                         }
                     }
                 }
-                    break;
+                break;
                 case IClient::ApplicationType_Web_App:
                 case IClient::ApplicationType_JS_Client: {
-                    if (isset($params['redirect_uris'])){
-                        if (!empty($params['redirect_uris'])) {
-                            $redirect_uris = explode(',', $params['redirect_uris']);
+                    if (isset($payload['redirect_uris'])){
+                        if (!empty($payload['redirect_uris'])) {
+                            $redirect_uris = explode(',', $payload['redirect_uris']);
                             foreach ($redirect_uris as $uri) {
                                 $uri = @parse_url($uri);
                                 if (!isset($uri['scheme'])) {
@@ -346,8 +296,8 @@ class ClientService implements IClientService
                             }
                         }
                     }
-                    if($current_app_type === IClient::ApplicationType_JS_Client && isset($params['allowed_origins']) &&!empty($params['allowed_origins'])){
-                        $allowed_origins = explode(',', $params['allowed_origins']);
+                    if($client->getApplicationType() === IClient::ApplicationType_JS_Client && isset($payload['allowed_origins']) &&!empty($payload['allowed_origins'])){
+                        $allowed_origins = explode(',', $payload['allowed_origins']);
                         foreach ($allowed_origins as $uri) {
                             $uri = @parse_url($uri);
                             if (!isset($uri['scheme'])) {
@@ -359,95 +309,22 @@ class ClientService implements IClientService
                         }
                     }
                 }
-                break;
+                    break;
             }
 
-            $allowed_update_params = array(
-                'app_name',
-                'website',
-                'app_description',
-                'app_logo',
-                'active',
-                'locked',
-                'use_refresh_token',
-                'rotate_refresh_token',
-                'contacts',
-                'logo_uri',
-                'tos_uri',
-                'post_logout_redirect_uris',
-                'logout_uri',
-                'logout_session_required',
-                'logout_use_iframe',
-                'policy_uri',
-                'jwks_uri',
-                'default_max_age',
-                'logout_use_iframe',
-                'require_auth_time',
-                'token_endpoint_auth_method',
-                'token_endpoint_auth_signing_alg',
-                'subject_type',
-                'userinfo_signed_response_alg',
-                'userinfo_encrypted_response_alg',
-                'userinfo_encrypted_response_enc',
-                'id_token_signed_response_alg',
-                'id_token_encrypted_response_alg',
-                'id_token_encrypted_response_enc',
-                'redirect_uris',
-                'allowed_origins',
-                'admin_users',
-            );
-
-            $fields_to_uri_normalize = array
-            (
-                'post_logout_redirect_uris',
-                'logout_uri',
-                'policy_uri',
-                'jwks_uri',
-                'tos_uri',
-                'logo_uri',
-                'redirect_uris',
-                'allowed_origins'
-            );
-
-            foreach ($allowed_update_params as $param)
-            {
-
-                if (array_key_exists($param, $params))
-                {
-                    if($param === 'admin_users'){
-                        $admin_users = trim($params['admin_users']);
-                        $admin_users = empty($admin_users) ? array():explode(',',$admin_users);
-                        $client->removeAllAdminUsers();
-                        foreach($admin_users as $user_id)
-                        {
-                            $user = $user_repository->get(intval($user_id));
-                            if(is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.',$user_id));
-                            $client->addAdminUser($user);
-                        }
-                    }
-                    else {
-                        if (in_array($param, $fields_to_uri_normalize)) {
-                            $urls = $params[$param];
-                            if (!empty($urls)) {
-                                $urls = explode(',', $urls);
-                                $normalized_uris = '';
-                                foreach ($urls as $url) {
-                                    $un = new Normalizer($url);
-                                    $url = $un->normalize();
-                                    if (!empty($normalized_uris)) {
-                                        $normalized_uris .= ',';
-                                    }
-                                    $normalized_uris .= $url;
-                                }
-                                $params[$param] = $normalized_uris;
-                            }
-                        }
-                        $client->{$param} = trim($params[$param]);
-                    }
+            if(isset($payload['admin_users']) && is_array($payload['admin_users'])) {
+                $admin_users = $payload['admin_users'];
+                //add admin users
+                $client->removeAllAdminUsers();
+                foreach ($admin_users as $user_id) {
+                    $user = $this->user_repository->getById(intval($user_id));
+                    if (is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.', $user_id));
+                    if(!$user instanceof User) continue;
+                    $client->addAdminUser($user);
                 }
-
             }
-            $client_repository->add($client->setEditedBy($editing_user));
+
+            $client->setEditedBy($editing_user);
             return $client;
         });
    }
@@ -455,38 +332,32 @@ class ClientService implements IClientService
     /**
      * @param int $id
      * @param int $scope_id
-     * @return IClient
-     * @throws EntityNotFoundException
+     * @return Client|null
+     * @throws \Exception
      */
-    public function addClientScope($id, $scope_id)
+    public function addClientScope(int $id, int $scope_id):?Client
     {
         return $this->tx_service->transaction(function() use ($id, $scope_id){
-            $client = $this->client_repository->get($id);
-            if (is_null($client)) {
-                throw new EntityNotFoundException(sprintf("client id %s not found!.", $id));
+            $client = $this->client_repository->getById($id);
+            if (is_null($client) || !$client instanceof Client) {
+                throw new EntityNotFoundException(sprintf("client id %s does not exists!", $id));
             }
-            $scope = $this->scope_repository->get(intval($scope_id));
-            if(is_null($scope)) throw new EntityNotFoundException(sprintf("scope %s not found!.", $scope_id));
-            $user         = $client->user()->first();
-
-            if($scope->isAssignableByGroups()) {
-
-                $allowed      = false;
-                foreach($user->getGroupScopes() as $group_scope)
-                {
-                    if(intval($group_scope->id) === intval($scope_id))
-                    {
-                        $allowed = true; break;
-                    }
-                }
-                if(!$allowed) throw new InvalidApiScope(sprintf('you cant assign to this client api scope %s', $scope_id));
+            $owner = $client->getOwner();
+            $scope = $this->scope_repository->getById($scope_id);
+            if (is_null($scope) || !$scope instanceof ApiScope) {
+                throw new EntityNotFoundException(sprintf("scope id %s does not exists!", $scope_id));
             }
-            if($scope->isSystem() && !$user->canUseSystemScopes())
+
+            if($scope->isAssignedByGroups()) {
+                if(!$owner->isGroupScopeAllowed($scope))
+                    throw new InvalidApiScope(sprintf('you cant assign to this client api scope %s', $scope_id));
+            }
+
+            if($scope->isSystem() && !$owner->canUseSystemScopes())
                 throw new InvalidApiScope(sprintf('you cant assign to this client api scope %s', $scope_id));
-            $client->scopes()->attach($scope_id);
-            $client->setEditedBy($this->auth_service->getCurrentUser());
 
-            $this->client_repository->add($client);
+            $client->addScope($scope);
+            $client->setEditedBy($this->auth_service->getCurrentUser());
             return $client;
         });
     }
@@ -497,16 +368,19 @@ class ClientService implements IClientService
      * @return IClient
      * @throws EntityNotFoundException
      */
-    public function deleteClientScope($id, $scope_id)
+    public function deleteClientScope(int $id, int $scope_id):?Client
     {
         return $this->tx_service->transaction(function() use ($id, $scope_id){
-            $client = $this->client_repository->get($id);
-            if (is_null($client)) {
+            $client = $this->client_repository->getById($id);
+            if (is_null($client) || !$client instanceof Client) {
                 throw new EntityNotFoundException(sprintf("client id %s does not exists!", $id));
             }
-            $client->scopes()->detach($scope_id);
+            $scope = $this->scope_repository->getById($scope_id);
+            if (is_null($scope) || !$scope instanceof ApiScope) {
+                throw new EntityNotFoundException(sprintf("scope id %s does not exists!", $scope_id));
+            }
+            $client->removeScope($scope);
             $client->setEditedBy($this->auth_service->getCurrentUser());
-            $this->client_repository->add($client);
             return $client;
         });
 
@@ -514,47 +388,42 @@ class ClientService implements IClientService
 
     /**
      * @param int $id
-     * @return bool
-     * @throws EntityNotFoundException
+     * @throws \Exception
      */
-    public function deleteClientByIdentifier($id)
+    public function delete(int $id):void
     {
-        return $this->tx_service->transaction(function () use ($id) {
-            $client = $this->client_repository->get($id);
-            if (is_null($client)) {
+         $this->tx_service->transaction(function () use ($id) {
+            $client = $this->client_repository->getById($id);
+            if (is_null($client) || !$client instanceof Client) {
                 throw new EntityNotFoundException(sprintf("client id %s does not exists!", $id));
             }
-            $client->scopes()->detach();
-            Event::fire('oauth2.client.delete', array($client->client_id));
+            Event::fire('oauth2.client.delete', [$client->getClientId()]);
             $this->client_repository->delete($client);
-            true;
         });
     }
 
     /**
-     * Regenerates Client Secret
-     * @param $id client id
-     * @return IClient
-     * @throws EntityNotFoundException
+     * @param int $id
+     * @return Client|null
+     * @throws \Exception
      */
-    public function regenerateClientSecret($id)
+    public function regenerateClientSecret(int $id):?Client
     {
-        $client_credential_generator = $this->client_credential_generator;
-        $current_user                = $this->auth_service->getCurrentUser();
 
-        return $this->tx_service->transaction(function () use ($id, $current_user, $client_credential_generator)
+        return $this->tx_service->transaction(function () use ($id)
         {
+            $current_user = $this->auth_service->getCurrentUser();
 
-            $client = $this->client_repository->get($id);
+            $client = $this->client_repository->getById($id);
 
-            if (is_null($client))
+            if (is_null($client) || !$client instanceof Client)
             {
                 throw new EntityNotFoundException(sprintf("client id %d does not exists!.", $id));
             }
 
-            if ($client->client_type != IClient::ClientType_Confidential)
+            if ($client->getClientType() != IClient::ClientType_Confidential)
             {
-                throw new InvalidClientType
+                throw new ValidationException
                 (
                     sprintf
                     (
@@ -564,31 +433,32 @@ class ClientService implements IClientService
                 );
             }
 
-            $client = $client_credential_generator->generate($client, true);
+            $client = $this->client_credential_generator->generate($client, true);
             $client->setEditedBy($current_user);
-            $this->client_repository->add($client);
 
-            Event::fire('oauth2.client.regenerate.secret', array($client->client_id));
+            Event::fire('oauth2.client.regenerate.secret', array($client->getClientId()));
+
             return $client;
         });
     }
 
     /**
-     * @param client $client_id
-     * @return mixed
-     * @throws EntityNotFoundException
+     * @param int $id
+     * @return Client|null
+     * @throws \Exception
      */
-    public function lockClient($client_id)
+    public function lockClient(int $id):?Client
     {
-        return $this->tx_service->transaction(function () use ($client_id) {
+        return $this->tx_service->transaction(function () use ($id) {
 
-            $client = $this->client_repository($client_id);
-            if (is_null($client)) {
-                throw new EntityNotFoundException($client_id, sprintf("client id %s does not exists!", $client_id));
+            $client = $this->client_repository->getById($id);
+            if (is_null($client) || !$client instanceof Client) {
+                throw new EntityNotFoundException($id, sprintf("client id %s does not exists!", $id));
             }
-            $client->locked = true;
-            $this->client_repository->update($client);
-            return true;
+            $client->setLocked(true);
+            $client->setEditedBy($this->auth_service->getCurrentUser());
+            Event::fire(new OAuth2ClientLocked($client->getClientId()));
+            return $client;
         });
 
     }
@@ -598,17 +468,17 @@ class ClientService implements IClientService
      * @return bool
      * @throws EntityNotFoundException
      */
-    public function unlockClient($id)
+    public function unlockClient(int $id):?Client
     {
         return $this->tx_service->transaction(function () use ($id) {
 
             $client = $this->client_repository->getClientByIdentifier($id);
-            if (is_null($client)) {
+            if (is_null($client) || !$client instanceof Client) {
                 throw new EntityNotFoundException($id, sprintf("client id %s does not exists!", $id));
             }
-            $client->locked = false;
-            $this->client_repository->update($client);
-            return true;
+            $client->setLocked(false);
+            $client->setEditedBy($this->auth_service->getCurrentUser());
+            return $client;
         });
 
     }
@@ -616,64 +486,62 @@ class ClientService implements IClientService
     /**
      * @param int $id
      * @param bool $active
-     * @return bool
-     * @throws EntityNotFoundException
+     * @return Client|null
+     * @throws \Exception
      */
-    public function activateClient($id, $active)
+    public function activateClient(int $id, bool $active):?Client
     {
 
         return $this->tx_service->transaction(function () use ($id, $active) {
 
             $client = $this->client_repository->getClientByIdentifier($id);
-            if (is_null($client)) {
+            if (is_null($client) || !$client instanceof Client) {
                 throw new EntityNotFoundException($id, sprintf("client id %s does not exists!", $id));
             }
-            $client->active = $active;
-            $this->client_repository->update($client);
-            return true;
+            $client->setActive($active);
+            $client->setEditedBy($this->auth_service->getCurrentUser());
+            return $client;
         });
     }
 
     /**
      * @param int $id
      * @param bool $use_refresh_token
-     * @return bool
-     * @throws EntityNotFoundException
+     * @return Client|null
+     * @throws \Exception
      */
-    public function setRefreshTokenUsage($id, $use_refresh_token)
+    public function setRefreshTokenUsage(int $id, bool $use_refresh_token):?Client
     {
         return $this->tx_service->transaction(function () use ($id, $use_refresh_token) {
 
             $client = $this->client_repository->getClientByIdentifier($id);
-            if (is_null($client)) {
+            if (is_null($client) || !$client instanceof Client) {
                 throw new EntityNotFoundException($id, sprintf("client id %s does not exists!", $id));
             }
-            $client->use_refresh_token = $use_refresh_token;
+            $client->setUseRefreshToken($use_refresh_token);
             $client->setEditedBy($this->auth_service->getCurrentUser());
-            $this->client_repository->update($client);
-            return true;
+            return $client;
         });
     }
 
     /**
      * @param int $id
      * @param bool $rotate_refresh_token
-     * @return bool
-     * @throws EntityNotFoundException
+     * @return Client|null
+     * @throws \Exception
      */
-    public function setRotateRefreshTokenPolicy($id, $rotate_refresh_token)
+    public function setRotateRefreshTokenPolicy(int $id, bool $rotate_refresh_token):?Client
     {
         return $this->tx_service->transaction(function () use ($id, $rotate_refresh_token) {
 
             $client = $this->client_repository->getClientByIdentifier($id);
-            if (is_null($client)) {
+            if (is_null($client) || !$client instanceof Client) {
                 throw new EntityNotFoundException($id, sprintf("client id %s does not exists!", $id));
             }
 
-            $client->rotate_refresh_token = $rotate_refresh_token;
+            $client->setRotateRefreshToken($rotate_refresh_token);
             $client->setEditedBy($this->auth_service->getCurrentUser());
-            $this->client_repository->update($client);
-            return true;
+            return $client;
         });
     }
 }

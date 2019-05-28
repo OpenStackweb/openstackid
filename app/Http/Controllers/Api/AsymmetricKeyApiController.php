@@ -11,15 +11,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Controllers\APICRUDController;
 use OAuth2\Services\IAsymmetricKeyService;
-use Utils\Exceptions\EntityNotFoundException;
+use models\exceptions\EntityNotFoundException;
 use Utils\Services\ILogService;
 use OAuth2\Repositories\IAsymmetricKeyRepository;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Input;
 use Exception;
-
-class AsymmetricKeyApiController extends AbstractRESTController
+/**
+ * Class AsymmetricKeyApiController
+ * @package App\Http\Controllers\Api
+ */
+abstract class AsymmetricKeyApiController extends APICRUDController
 {
     /**
      * @var IAsymmetricKeyService
@@ -41,98 +46,20 @@ class AsymmetricKeyApiController extends AbstractRESTController
         IAsymmetricKeyService $service,
         ILogService $log_service
     ) {
-        parent::__construct($log_service);
-        $this->repository = $repository;
-        $this->service = $service;
-        //set filters allowed values
-        $this->allowed_filter_fields = array('*');
-        $this->allowed_projection_fields = array('*');
+        parent::__construct($repository, $service, $log_service);
     }
 
     /**
-     * @param $id
-     * @return mixed
+     * @return array
      */
-    protected function _delete($id)
+    protected function getUpdatePayloadValidationRules(): array
     {
-        try {
-            $res = $this->service->delete($id);
-
-            return $res ? $this->deleted() : $this->error404(array('error' => 'operation failed'));
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
+        return [
+            'id'     => 'required|integer',
+            'active' => 'required|boolean',
+        ];
     }
 
 
-    protected function _update($id)
-    {
-        try {
-
-            $values = Input::all();
-
-            $rules = array(
-                'id'     => 'required|integer',
-                'active' => 'required|boolean',
-            );
-
-            // Creates a Validator instance and validates the data.
-            $validation = Validator::make($values, $rules);
-
-            if ($validation->fails()) {
-                $messages = $validation->messages()->toArray();
-
-                return $this->error400(array('error' => 'validation', 'messages' => $messages));
-            }
-
-            $this->service->update(intval($id), $values);
-
-            return $this->ok();
-
-        } catch (EntityNotFoundException $ex1) {
-            $this->log_service->error($ex1);
-
-            return $this->error404(array('error' => $ex1->getMessage()));
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
-    }
-
-    /**
-     * @return mixed
-     */
-    protected function _getByPage()
-    {
-        try {
-            //check for optional filters param on querystring
-            $fields    = $this->getProjection(Input::get('fields', null));
-            $filters   = $this->getFilters(Input::except('fields', 'limit', 'offset'));
-            $page_nbr  = intval(Input::get('offset', 1));
-            $page_size = intval(Input::get('limit', 10));
-
-            $list = $this->repository->getAll($page_nbr, $page_size, $filters, $fields);
-            $items = array();
-            foreach ($list->items() as $private_key) {
-                $data = $private_key->toArray();
-                $data['sha_256'] = $private_key->getSHA_256_Thumbprint();
-                array_push($items, $data);
-            }
-
-            return $this->ok
-            (
-                array
-                (
-                    'page'        => $items,
-                    'total_items' => $list->total()
-                )
-            );
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
-
-            return $this->error500($ex);
-        }
-    }
 
 }

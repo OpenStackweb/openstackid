@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Auth\User;
 use OAuth2\Models\IClient;
 use OpenId\Models\IOpenIdUser;
 /**
@@ -37,9 +39,9 @@ interface IAuthService
     public function isUserLogged();
 
     /**
-     * @return IOpenIdUser
+     * @return User|null
      */
-    public function getCurrentUser();
+    public function getCurrentUser():?User;
 
     /**
      * @param string $username
@@ -51,16 +53,19 @@ interface IAuthService
 
     /**
      * @param string $username
-     * @return IOpenIdUser
+     * @return User|null
      */
-    public function getUserByUsername($username);
+    public function getUserByUsername(string $username):?User;
 
     /**
      * @param int $id
-     * @return IOpenIdUser
+     * @return User|null
      */
-    public function getUserById($id);
+    public function getUserById(int $id):?User;
 
+    /**
+     * @return string
+     */
     public function getUserAuthorizationResponse();
 
     public function setUserAuthorizationResponse($auth_response);
@@ -80,50 +85,45 @@ interface IAuthService
 
     /**
      * @param string $openid
-     * @return IOpenIdUser
+     * @return User|null
      */
-    public function getUserByOpenId($openid);
+    public function getUserByOpenId(string $openid):?User;
 
     /**
-     * @param int $user_id
+     * @param string $user_id
      * @return string
      */
-    public function unwrapUserId($user_id);
+    public function unwrapUserId(string $user_id):string;
 
     /**
      * @param int $user_id
      * @param IClient $client
      * @return string
      */
-    public function wrapUserId($user_id, IClient $client);
+    public function wrapUserId(int $user_id, IClient $client):string;
 
-    /**
-     * @param int $external_id
-     * @return IOpenIdUser
-     */
-    public function getUserByExternalId($external_id);
 
     /**
      * @return string
      */
-    public function getSessionId();
+    public function getSessionId():string;
 
     /**
      * @param $client_id
      * @return void
      */
-    public function registerRPLogin($client_id);
+    public function registerRPLogin(string $client_id);
 
     /**
      * @return string[]
      */
-    public function getLoggedRPs();
+    public function getLoggedRPs():array;
 
     /**
      * @param string $jti
      * @return void
      */
-    public function reloadSession($jti);
+    public function reloadSession(string $jti):void;
 
     const LOGGED_RELAYING_PARTIES_COOKIE_NAME = 'rps';
 
@@ -132,7 +132,7 @@ interface IAuthService
      * @param int $id_token_lifetime
      * @return string
      */
-    public function generateJTI($client_id, $id_token_lifetime);
+    public function generateJTI(string $client_id, int $id_token_lifetime):string;
 
     public function invalidateSession();
 

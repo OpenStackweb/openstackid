@@ -135,7 +135,11 @@ class ClientCredentialsGrantType extends AbstractGrantType
 
         //check requested scope
         $scope = $request->getScope();
-        if (is_null($scope) || empty($scope) || !$this->current_client->isScopeAllowed($scope)) {
+        if (is_null($scope) || empty($scope)) {
+            throw new ScopeNotAllowedException("scope param is empty");
+        }
+
+        if(!$this->current_client->isScopeAllowed($scope)) {
             throw new ScopeNotAllowedException(sprintf("scope %s", $scope));
         }
 

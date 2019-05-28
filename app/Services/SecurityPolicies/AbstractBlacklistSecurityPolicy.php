@@ -11,13 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Http\Utils\IUserIPHelperProvider;
+use App\libs\Auth\Repositories\IBannedIPRepository;
 use Illuminate\Support\Facades\Auth;
 use Models\BannedIP;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Utils\Db\ITransactionService;
-use Utils\IPHelper;
 use Utils\Services\ICacheService;
 use Utils\Services\ILockManagerService;
 use Utils\Services\ISecurityPolicy;
@@ -53,21 +52,39 @@ abstract class AbstractBlacklistSecurityPolicy implements ISecurityPolicy
     protected $tx_service;
 
     /**
+     * @var IBannedIPRepository
+     */
+    protected $banned_ip_repository;
+
+    /**
+     * @var IUserIPHelperProvider
+     */
+    protected $ip_helper;
+
+    /**
+     * AbstractBlacklistSecurityPolicy constructor.
+     * @param IBannedIPRepository $banned_ip_repository
      * @param IServerConfigurationService $server_configuration_service
      * @param ILockManagerService $lock_manager_service
      * @param ICacheService $cache_service
+     * @param IUserIPHelperProvider $ip_helper
      * @param ITransactionService $tx_service
      */
     public function __construct(
+        IBannedIPRepository $banned_ip_repository,
         IServerConfigurationService $server_configuration_service,
         ILockManagerService $lock_manager_service,
         ICacheService $cache_service,
+        IUserIPHelperProvider $ip_helper,
         ITransactionService $tx_service
-    ) {
+    )
+    {
+        $this->banned_ip_repository = $banned_ip_repository;
         $this->server_configuration_service = $server_configuration_service;
         $this->lock_manager_service = $lock_manager_service;
         $this->cache_service = $cache_service;
         $this->tx_service = $tx_service;
+        $this->ip_helper = $ip_helper;
     }
 
     /**
@@ -81,43 +98,42 @@ abstract class AbstractBlacklistSecurityPolicy implements ISecurityPolicy
     }
 
     /**
-     * internal function to create a new banned ip
-     * @param $initial_hits
-     * @param $exception_type
+     * @param int $initial_hits
+     * @param string $exception_type
+     * @throws Exception
      */
-    protected function createBannedIP($initial_hits, $exception_type)
+    protected function createBannedIP(int $initial_hits, string $exception_type): void
     {
-        try {
-            $remote_address = IPHelper::getUserIp();
-            //try to create on cache
-            $this->cache_service->addSingleValue($remote_address, $initial_hits,
-                intval($this->server_configuration_service->getConfigValue("BlacklistSecurityPolicy.BannedIpLifeTimeSeconds")));
+        $this->tx_service->transaction(function () use ($initial_hits, $exception_type) {
+            try {
+                $remote_address = $this->ip_helper->getCurrentUserIpAddress();
+                //try to create on cache
+                $this->cache_service->addSingleValue($remote_address, $initial_hits,
+                    intval($this->server_configuration_service->getConfigValue("BlacklistSecurityPolicy.BannedIpLifeTimeSeconds")));
 
-            Log::warning(sprintf("AbstractBlacklistSecurityPolicy: Banning ip %s by Exception %s", $remote_address,
-                $exception_type));
-            //try to create on db
+                Log::warning(sprintf("AbstractBlacklistSecurityPolicy: Banning ip %s by Exception %s", $remote_address,
+                    $exception_type));
+                $banned_ip = $this->banned_ip_repository->getByIp($remote_address);
 
-            $this->tx_service->transaction(function () use ($remote_address, $exception_type, $initial_hits) {
-
-                $banned_ip = BannedIP::where("ip", "=", $remote_address)->first();
-
-                if (!$banned_ip) {
+                if (is_null($banned_ip)) {
                     $banned_ip = new BannedIP();
-                    $banned_ip->ip = $remote_address;
+                    $banned_ip->setIp($remote_address);
                 }
-                $banned_ip->exception_type = $exception_type;
-                $banned_ip->hits = $initial_hits;
+                $banned_ip->setExceptionType($exception_type);
+                $banned_ip->setHits($initial_hits);
 
                 if (Auth::check()) {
-                    $banned_ip->user_id = Auth::user()->getId();
+                    $banned_ip->setUser(Auth::user());
                 }
 
-                $banned_ip->Save();
-            });
+                if($banned_ip->isNew())
+                    $this->banned_ip_repository->add($banned_ip);
 
-        } catch (Exception $ex) {
-            Log::error($ex);
-        }
+            } catch (Exception $ex) {
+                Log::error($ex);
+            }
+        });
+
     }
 
 } 

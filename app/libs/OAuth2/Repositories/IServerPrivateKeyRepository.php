@@ -11,12 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use Models\OAuth2\ServerPrivateKey;
 /**
  * Interface IServerPrivateKeyRepository
  * @package OAuth2\Repositories
  */
 interface IServerPrivateKeyRepository extends IAsymmetricKeyRepository
 {
-
+    /**
+     * @param string $kid
+     * @return ServerPrivateKey|null
+     */
+    public function getByKeyIdentifier(string $kid):?ServerPrivateKey;
 }

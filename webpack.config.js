@@ -39,6 +39,8 @@ var plugins = [
             {from: './node_modules/pwstrength-bootstrap/dist', to: 'pwstrength-bootstrap'},
             {from: './node_modules/sweetalert2/dist', to: 'sweetalert2'},
             {from: './node_modules/urijs/src', to: 'urijs'},
+            {from: './node_modules/chosen-js', to: 'chosen-js'},
+            {from: './node_modules/moment', to: 'moment'},
         ],
         {copyUnmodified: false}
     ),

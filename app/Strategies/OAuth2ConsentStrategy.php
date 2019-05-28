@@ -76,9 +76,9 @@ class OAuth2ConsentStrategy implements IConsentStrategy
         $client_id                = $auth_request->getClientId();
         $client                   = $this->client_repository->getClientById($client_id);
         $scopes                   = explode(' ',$auth_request->getScope());
-        $requested_scopes         = $this->scope_repository->getByName($scopes);
+        $requested_scopes         = $this->scope_repository->getByNames($scopes);
 
-        $data                     = array();
+        $data                     = [];
         $data['requested_scopes'] = $requested_scopes;
         $data['app_name']         = $client->getApplicationName();
         $data['redirect_to']      = $auth_request->getRedirectUri();

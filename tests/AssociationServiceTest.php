@@ -45,12 +45,12 @@ final class AssociationServiceTest extends BrowserKitTestCase
         $this->app->instance(UtilsServiceCatalog::LockManagerService, $lock_manager_service_mock);
 
         $service = $this->app[OpenIdServiceCatalog::AssociationService];
-        $assoc = AssociationFactory::getInstance()->buildPrivateAssociation('https://www.test.com/', 3600);
+        $assoc = AssociationFactory::getInstance()->buildPrivateAssociation(
+            'https://www.test.com/', 3600);
         $res = $service->addAssociation($assoc);
 
         $this->assertTrue(!is_null($res));
     }
-
 
     public function testAddSessionAssociation()
     {

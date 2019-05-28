@@ -11,12 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Models\OAuth2\AccessToken;
-use Models\OAuth2\RefreshToken;
-use Utils\Db\IBaseRepository;
-
+use models\utils\IBaseRepository;
+use utils\PagingInfo;
+use utils\PagingResponse;
 /**
  * Interface IAccessTokenRepository
  * @package OAuth2\Repositories
@@ -25,52 +23,49 @@ interface IAccessTokenRepository extends IBaseRepository
 {
     /**
      * @param int $client_identifier
-     * @param int $page_nbr
-     * @param int $page_size
-     * @return LengthAwarePaginator
+     * @param PagingInfo $paging_info
+     * @return PagingResponse
      */
-    function getAllByClientIdentifier($client_identifier, $page_nbr = 1, $page_size = 10);
+    function getAllByClientIdentifier(int $client_identifier, PagingInfo $paging_info):PagingResponse;
 
     /**
      * @param int $client_identifier
-     * @param int $page_nbr
-     * @param int $page_size
-     * @return LengthAwarePaginator
+     * @param PagingInfo $paging_info
+     * @return PagingResponse
      */
-    function getAllValidByClientIdentifier($client_identifier, $page_nbr = 1, $page_size = 10);
+    function getAllValidByClientIdentifier(int $client_identifier, PagingInfo $paging_info):PagingResponse;
 
     /**
      * @param int $user_id
-     * @param int $page_nbr
-     * @param int $page_size
-     * @return LengthAwarePaginator
+     * @param PagingInfo $paging_info
+     * @return PagingResponse
      */
-    function getAllByUserId($user_id, $page_nbr = 1, $page_size = 10);
+    function getAllByUserId(int $user_id, PagingInfo $paging_info):PagingResponse;
+
 
     /**
      * @param int $user_id
-     * @param int $page_nbr
-     * @param int $page_size
-     * @return LengthAwarePaginator
+     * @param PagingInfo $paging_info
+     * @return PagingResponse
      */
-    function getAllValidByUserId($user_id, $page_nbr = 1, $page_size = 10);
+    function getAllValidByUserId(int $user_id,PagingInfo $paging_info):PagingResponse;
 
     /**
      * @param string $hashed_value
      * @return AccessToken
      */
-    function getByValue($hashed_value);
+    function getByValue(string $hashed_value):?AccessToken;
 
     /**
      * @param string $hashed_value
      * @return AccessToken
      */
-    function getByAuthCode($hashed_value);
+    function getByAuthCode(string $hashed_value):?AccessToken;
 
     /**
      * @param int $refresh_token_id
      * @return AccessToken[]
      */
-    function getByRefreshToken($refresh_token_id);
+    function getByRefreshToken(int $refresh_token_id):array;
 
 }

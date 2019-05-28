@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use jwe\IJWE;
 use jwe\impl\JWEFactory;
 use jwe\impl\specs\JWE_ParamsSpecification;
@@ -35,8 +34,8 @@ use OAuth2\Models\IClient;
 use OAuth2\Models\JWTResponseInfo;
 use OAuth2\Repositories\IServerPrivateKeyRepository;
 use OAuth2\Services\IClientJWKSetReader;
+use Utils\Db\ITransactionService;
 use utils\json_types\StringOrURI;
-
 /**
  * Class IdTokenBuilderImpl
  * @package Services\OAuth2
@@ -55,17 +54,26 @@ final class IdTokenBuilderImpl implements IdTokenBuilder
     private $jwk_set_reader_service;
 
     /**
+     * @var ITransactionService
+     */
+    private $tx_service;
+
+    /**
+     * IdTokenBuilderImpl constructor.
      * @param IServerPrivateKeyRepository $server_private_key_repository
      * @param IClientJWKSetReader $jwk_set_reader_service
+     * @param ITransactionService $tx_service
      */
     public function __construct
     (
         IServerPrivateKeyRepository $server_private_key_repository,
-        IClientJWKSetReader $jwk_set_reader_service
+        IClientJWKSetReader $jwk_set_reader_service,
+        ITransactionService $tx_service
     )
     {
         $this->server_private_key_repository = $server_private_key_repository;
         $this->jwk_set_reader_service        = $jwk_set_reader_service;
+        $this->tx_service                    = $tx_service;
     }
 
     /**
@@ -114,7 +122,7 @@ final class IdTokenBuilderImpl implements IdTokenBuilder
 
             //encrypt jwt as payload
 
-            $heuristic = new ClientEncryptionKeyFinder($this->jwk_set_reader_service);
+            $heuristic = new ClientEncryptionKeyFinder($this->jwk_set_reader_service, $this->tx_service);
 
             $jwt = self::buildJWE
             (

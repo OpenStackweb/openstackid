@@ -21,7 +21,7 @@ class XRDSDocumentTest extends BrowserKitTestCase
 {
     public function testBuildDocument()
     {
-        $services = array();
+        $services = [];
         array_push($services,
             new XRDSService(0, "http://specs.openid.net/auth/2.0/server", "https://dev.openstackid.com",
                 array("http://openid.net/srv/ax/1.0", "http://specs.openid.net/extensions/pape/1.0")));

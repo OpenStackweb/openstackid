@@ -19,7 +19,7 @@ use Tests\TestCase;
 /**
  * Class DiffieHellmanTest
  */
-class DiffieHellmanTest extends TestCase
+final class DiffieHellmanTest extends TestCase
 {
 
     public function testDefaultDHParams()

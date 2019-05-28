@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use App;
-
 /**
  * Class ServiceLocator
  * @package Utils\Services

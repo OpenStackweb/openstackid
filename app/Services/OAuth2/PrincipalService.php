@@ -11,9 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Illuminate\Support\Facades\Config;
-use phpseclib\Crypt\Random;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
@@ -36,12 +34,16 @@ final class PrincipalService implements IPrincipalService
      */
     public function get()
     {
-        $principal = new Principal;
-
+        $principal        = new Principal;
         $user_id          = Session::get(self::UserIdParam);
         $auth_time        = Session::get(self::AuthTimeParam);
         $op_browser_state = Session::get(self::OPBrowserState);
 
+        Log::debug(sprintf("PrincipalService::get - user_id %s auth_time %s op_browser_state %s", $user_id, $auth_time, $op_browser_state));
+        if(!Cookie::has(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME)){
+            Log::debug("PrincipalService::get cookie op_bs is missing trying to set it again ...");
+            Cookie::queue(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME, $op_browser_state, Config::get("session.lifetime", 120), $path = '/', $domain = null, $secure = false, $httpOnly = false);
+        }
         $principal->setState
         (
             [

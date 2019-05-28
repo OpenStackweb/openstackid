@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use Auth\User;
+use Models\OAuth2\Client;
 /**
  * Interface IUserConsent
  * @package OAuth2\Models
@@ -20,15 +21,30 @@ interface IUserConsent {
     /**
      * @return string
      */
-    public function getScope();
+    public function getScope():string;
 
     /**
-     * @return IClient
+     * @return Client
      */
-    public function getClient();
+    public function getClient():Client;
 
     /**
      * @return User
      */
-    public function getUser();
+    public function getUser():User;
+
+    /**
+     * @param string $scope
+     */
+    public function setScope(string $scope): void;
+
+    /**
+     * @param Client $client
+     */
+    public function setClient(Client $client): void;
+
+    /**
+     * @param User $owner
+     */
+    public function setOwner(User $owner): void;
 } 

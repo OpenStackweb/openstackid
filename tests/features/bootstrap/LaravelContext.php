@@ -175,7 +175,7 @@ class LaravelContext
      * @param  array  $server
      * @return \Symfony\Component\HttpKernel\Client
      */
-    protected function createClient(array $server = array())
+    protected function createClient(array $server = [])
     {
         return new Client($this->app, $server);
     }
@@ -242,7 +242,7 @@ class LaravelContext
      * @param  bool    $changeHistory
      * @return \Illuminate\Http\Response
      */
-    public function action($method, $action, $wildcards = array(), $parameters = array(), $files = array(), $server = array(), $content = null, $changeHistory = true)
+    public function action($method, $action, $wildcards = [], $parameters = [], $files = [], $server = [], $content = null, $changeHistory = true)
     {
         $uri = $this->app['url']->action($action, $wildcards, true);
 

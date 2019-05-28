@@ -1,17 +1,17 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - Server Admin - Edit API</title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Edit API</title>
 @stop
 
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 <a href='{!! URL::action("AdminController@editResourceServer",array("id"=>$api->resource_server_id)) !!}'>@lang("messages.edit_api_go_back")</a>
 <legend>@lang("messages.edit_api_title", array("id" => $api->id))</legend>
 
 <div class="row">
     <div class="col-md6">
-        <form class="form-horizontal" id="api-form" name="api-form" action='{!!URL::action("Api\\ApiController@update",null)!!}'>
+        <form class="form-horizontal" id="api-form" name="api-form" action='{!!URL::action("Api\\ApiController@update",["id" => $api->id])!!}'>
                 <div class="form-group">
                     <label for="name">@lang("messages.edit_api_form_name")</label>
                     <input class="form-control" type="text" name="name" id="name" value="{!! $api->name !!}">
@@ -70,7 +70,7 @@
                     </tr>
                     </thead>
                     <tbody id="body-scopes">
-                    @foreach($api->scopes()->get() as $scope)
+                    @foreach($api->getScopes() as $scope)
                     <tr>
                         <td width="70%">{!! $scope->name!!}</td>
                         <td width="5%">
@@ -145,7 +145,7 @@
                     </tr>
                     </thead>
                     <tbody id="body-endpoints">
-                    @foreach($api->endpoints()->get() as $endpoint)
+                    @foreach($api->getEndpoints() as $endpoint)
                     <tr>
                         <td width="30%">{!! $endpoint->name !!}</td>
                         <td width="5%">
@@ -181,21 +181,21 @@
     var api_id = {!! $api->id!!};
 
 	var scopesUrls = {
-		get : '{!! URL::action("Api\ApiScopeController@getByPage",array("offset"=>1,"limit"=>1000,"api_id"=>$api->id)) !!}',
-		edit : '{!! URL::action("AdminController@editScope",array("id"=>"@id")) !!}',
-		delete : '{!! URL::action("Api\ApiScopeController@delete",array("id"=>"@id")) !!}',
-		activate:'{!! URL::action("Api\ApiScopeController@activate",array("id"=>"@id")) !!}',
-		deactivate: '{!! URL::action("Api\ApiScopeController@deactivate",array("id"=>"@id")) !!}',
-		update : '{!!URL::action("Api\ApiScopeController@update")!!}',
+		get : '{!! URL::action("Api\ApiScopeController@getAll",["page"=>1,"per_page"=>100,"filter"=> "api_id==".$api->id]) !!}',
+		edit : '{!! URL::action("AdminController@editScope",["id"=>"@id"]) !!}',
+		delete : '{!! URL::action("Api\ApiScopeController@delete",["id"=>"@id"]) !!}',
+		activate:'{!! URL::action("Api\ApiScopeController@activate",["id"=>"@id"]) !!}',
+		deactivate: '{!! URL::action("Api\ApiScopeController@deactivate",["id"=>"@id"]) !!}',
+		update : '{!!URL::action("Api\ApiScopeController@update",["id"=>"@id"])!!}',
 		add : '{!! URL::action("Api\ApiScopeController@create") !!}'
 	};
 
 	var endpointUrls = {
-		get : '{!! URL::action("Api\ApiEndpointController@getByPage",array("offset"=>1,"limit"=>1000,"api_id"=>$api->id)) !!}',
-		edit : '{!! URL::action("AdminController@editEndpoint",array("id"=>"@id")) !!}',
-		delete : '{!! URL::action("Api\ApiEndpointController@delete",array("id"=>"@id")) !!}',
-		activate:'{!! URL::action("Api\ApiEndpointController@activate",array("id"=>"@id")) !!}',
-		deactivate: '{!! URL::action("Api\ApiEndpointController@deactivate",array("id"=>"@id")) !!}',
+		get : '{!! URL::action("Api\ApiEndpointController@getAll",array("page"=>1,"per_page"=>100,"filter"=> "api_id==".$api->id)) !!}',
+		edit : '{!! URL::action("AdminController@editEndpoint",["id"=>"@id"]) !!}',
+		delete : '{!! URL::action("Api\ApiEndpointController@delete",["id"=>"@id"]) !!}',
+		activate:'{!! URL::action("Api\ApiEndpointController@activate",["id"=>"@id"]) !!}',
+		deactivate: '{!! URL::action("Api\ApiEndpointController@deactivate",["id"=>"@id"]) !!}',
 		add : '{!! URL::action("Api\ApiEndpointController@create") !!}'
 	};
 

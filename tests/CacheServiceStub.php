@@ -18,7 +18,7 @@ use Utils\Services\ICacheService;
  */
 class CacheServiceStub implements ICacheService {
 
-	private static $cache = array();
+	private static $cache = [];
 
 	/**
 	 * Determine if a key exists

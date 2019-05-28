@@ -11,7 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\BaseModelEloquent;
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 use OAuth2\Models\IAsymmetricKey;
 use jwa\cryptographic_algorithms\ICryptoAlgorithm;
 use jwa\cryptographic_algorithms\KeyManagementAlgorithms_Registry;
@@ -19,42 +21,75 @@ use jwa\cryptographic_algorithms\DigitalSignatures_MACs_Registry;
 use DateTime;
 use Exception;
 /**
+ * @ORM\Entity
+ * @ORM\InheritanceType("SINGLE_TABLE")
+ * @ORM\Table(name="oauth2_asymmetric_keys")
+ * @ORM\DiscriminatorColumn(name="class_name", type="string")
+ * @ORM\DiscriminatorMap({"ClientPublicKey" = "ClientPublicKey", "ServerPrivateKey" = "ServerPrivateKey"})
  * Class AsymmetricKey
+ * @package Models\OAuth2
  */
-abstract class AsymmetricKey extends BaseModelEloquent implements IAsymmetricKey
+abstract class AsymmetricKey extends BaseEntity implements IAsymmetricKey
 {
 
-    protected $table         = 'oauth2_asymmetric_keys';
-
-    protected $stiClassField = 'class_name';
-
-    protected $stiBaseClass  = \Models\OAuth2\AsymmetricKey::class;
-
-    protected $fillable = array
-    (
-        'kid',
-        'pem_content',
-        'active',
-        'usage',
-        'type',
-        'last_use',
-        'valid_from',
-        'valid_to',
-        'alg'
-    );
+    /**
+     * @ORM\Column(name="kid", type="string")
+     * @var string
+     */
+    protected $kid;
 
     /**
-     * @return int
+     * @ORM\Column(name="pem_content", type="string")
+     * @var string
      */
-    public function getId()
-    {
-        return (int)$this->id;
-    }
+    protected $pem_content;
+
+    /**
+     * @ORM\Column(name="active", type="boolean")
+     * @var bool
+     */
+    protected $active;
+
+    /**
+     * @ORM\Column(name="`usage`", type="string")
+     * @var string
+     */
+    protected $usage;
+
+    /**
+     * @ORM\Column(name="`type`", type="string")
+     * @var string
+     */
+    protected $type;
+
+    /**
+     * @ORM\Column(name="`alg`", type="string")
+     * @var string
+     */
+    protected $alg;
+
+    /**
+     * @ORM\Column(name="last_use", type="datetime")
+     * @var DateTime
+     */
+    protected $last_use;
+
+    /**
+     * @ORM\Column(name="valid_from", type="datetime")
+     * @var DateTime
+     */
+    protected $valid_from;
+
+    /**
+     * @ORM\Column(name="valid_to", type="datetime")
+     * @var DateTime
+     */
+    protected $valid_to;
 
     /**
      * @return string
      */
-    public function getType()
+    public function getType():string
     {
         return $this->type;
     }
@@ -62,7 +97,7 @@ abstract class AsymmetricKey extends BaseModelEloquent implements IAsymmetricKey
     /**
      * @return string
      */
-    public function getUse()
+    public function getUse():string
     {
         return $this->usage;
     }
@@ -70,15 +105,15 @@ abstract class AsymmetricKey extends BaseModelEloquent implements IAsymmetricKey
     /**
      * @return bool
      */
-    public function isActive()
+    public function isActive():bool
     {
         return (bool)$this->active;
     }
 
     /**
-     * @return \DateTime
+     * @return \DateTime|null
      */
-    public function getLastUse()
+    public function getLastUse():?DateTime
     {
         return $this->last_use;
     }
@@ -88,7 +123,7 @@ abstract class AsymmetricKey extends BaseModelEloquent implements IAsymmetricKey
      */
     public function markAsUsed()
     {
-        $this->last_use = new DateTime();
+        $this->last_use = new DateTime('now', new \DateTimeZone('UTC'));
         return $this;
     }
 
@@ -104,7 +139,7 @@ abstract class AsymmetricKey extends BaseModelEloquent implements IAsymmetricKey
     {
         $res = '';
         try {
-            $pem = str_replace(array("\n", "\r"), '', trim($this->getPublicKeyPEM()));
+            $pem = str_replace(["\n", "\r"], '', trim($this->getPublicKeyPEM()));
             $res = strtoupper(hash($alg, base64_decode($pem)));
         }
         catch(Exception $ex)
@@ -150,6 +185,7 @@ abstract class AsymmetricKey extends BaseModelEloquent implements IAsymmetricKey
         return ( $this->valid_from <= $now && $this->valid_to >= $now);
     }
 
+
     /**
      * algorithm intended for use with the key
      * @return ICryptoAlgorithm
@@ -163,6 +199,130 @@ abstract class AsymmetricKey extends BaseModelEloquent implements IAsymmetricKey
             $algorithm = KeyManagementAlgorithms_Registry::getInstance()->get($this->alg);
         }
         return $algorithm;
+    }
+
+    public function getAlgName():string{
+        return $this->alg;
+    }
+
+    /**
+     * @return string
+     */
+    public function getKid(): string
+    {
+        return $this->kid;
+    }
+
+    /**
+     * @param string $kid
+     */
+    public function setKid(string $kid): void
+    {
+        $this->kid = $kid;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPemContent(): string
+    {
+        return $this->pem_content;
+    }
+
+    /**
+     * @param string $pem_content
+     */
+    public function setPemContent(string $pem_content): void
+    {
+        $this->pem_content = $pem_content;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUsage(): string
+    {
+        return $this->usage;
+    }
+
+    /**
+     * @param string $usage
+     */
+    public function setUsage(string $usage): void
+    {
+        $this->usage = $usage;
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function getValidFrom(): DateTime
+    {
+        return $this->valid_from;
+    }
+
+    /**
+     * @param DateTime $valid_from
+     */
+    public function setValidFrom(DateTime $valid_from): void
+    {
+        $this->valid_from = $valid_from;
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function getValidTo(): DateTime
+    {
+        return $this->valid_to;
+    }
+
+    /**
+     * @param DateTime $valid_to
+     */
+    public function setValidTo(DateTime $valid_to): void
+    {
+        $this->valid_to = $valid_to;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
+    }
+
+    /**
+     * @param bool $active
+     */
+    public function setActive(bool $active): void
+    {
+        $this->active = $active;
+    }
+
+    /**
+     * @param string $type
+     */
+    public function setType(string $type): void
+    {
+        $this->type = $type;
+    }
+
+    /**
+     * @param string $alg
+     */
+    public function setAlg(string $alg): void
+    {
+        $this->alg = $alg;
+    }
+
+    /**
+     * @param DateTime $last_use
+     */
+    public function setLastUse(DateTime $last_use): void
+    {
+        $this->last_use = $last_use;
     }
 
 }

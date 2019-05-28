@@ -1,7 +1,7 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - Server Admin - Edit Resource Server</title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Edit Resource Server</title>
 @stop
 
 @section('css')
@@ -9,12 +9,12 @@
 @append
 
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 <a href="{!! URL::action("AdminController@listResourceServers") !!}">Go Back</a>
 <legend>Edit Resource Server - Id {!! $resource_server->id !!}</legend>
 <div class="row">
     <div class="col-md-12">
-        <form id="resource-server-form" name="resource-server-form" action='{!!URL::action("Api\\ApiResourceServerController@update",null)!!}'>
+        <form id="resource-server-form" name="resource-server-form" action='{!!URL::action("Api\\ApiResourceServerController@update",["id"=> $resource_server->id])!!}'>
              <div class="form-group">
                     <label class="control-label" for="host">Host&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>
                     <input type="text" class="form-control" name="host" id="host" value="{!! $resource_server->host !!}">
@@ -43,7 +43,7 @@
                     </label>
                 </div>
 
-                @if(!is_null($resource_server->client()->first()))
+                @if(!is_null($resource_server->getClient()))
                 <div class="form-group">
                     <div class="row">
                         <div class="col-lg-12">
@@ -52,7 +52,7 @@
                                     <label for="client_id" class="label-client-secret">Client ID</label>
                                 </div>
                                 <div class="col-lg-9">
-                                    <span id="client_id">{!! $resource_server->client()->first()->client_id !!}</span>
+                                    <span id="client_id">{!! $resource_server->getClient()->client_id !!}</span>
                                 </div>
                             </div>
                             <div class="row">
@@ -60,7 +60,7 @@
                                     <label for="client_secret" class="label-client-secret">Client Secret</label>
                                 </div>
                                 <div class="col-lg-7">
-                                    <span id="client_secret">{!! $resource_server->client()->first()->client_secret !!}</span>
+                                    <span id="client_secret">{!! $resource_server->getClient()->client_secret !!}</span>
                                 </div>
                                 <div class="col-lg-2">
                                     {!! HTML::link(URL::action("Api\\ApiResourceServerController@regenerateClientSecret",array("id"=> $resource_server->id)),'Regenerate',array('class'=>'btn regenerate-client-secret btn-xs btn-default active btn-delete','title'=>'Regenerates Client Secret')) !!}
@@ -109,7 +109,7 @@
                     </tr>
                     </thead>
                     <tbody id="body-apis">
-                    @foreach($resource_server->apis()->get() as $api)
+                    @foreach($resource_server->getApis() as $api)
                         <tr>
                             <td><img src="{!! $api->getLogo()!!}"  height="24" width="24" alt="{!! $api->name!!} logo"/></td>
                             <td width="60%">{!! $api->name!!}</td>
@@ -142,7 +142,7 @@
     var resource_server_id = {!! $resource_server->id!!};
 
 	var ApiUrls = {
-		get : '{!! URL::action("Api\\ApiController@getByPage",array("offset"=>1,"limit"=>1000,"resource_server_id"=>$resource_server->id)) !!}',
+		get : '{!! URL::action("Api\\ApiController@getAll",array("page"=>1,"per_page"=>100,"filter"=> "resource_server_id==".$resource_server->id)) !!}',
 		edit : '{!! URL::action("AdminController@editApi",array("id"=>-1)) !!}',
 		delete : '{!! URL::action("Api\\ApiController@delete",array("id"=>-1)) !!}',
 		add : '{!!URL::action("Api\\ApiController@create",null)!!}',

@@ -180,7 +180,7 @@
 
         $.ajax({
                 type: "GET",
-                url: dataClientUrls.get_public_keys+'?offset=1&limit=4294967296',
+                url: dataClientUrls.get_public_keys+'?page=1&per_page=4294967296',
                 dataType: "json",
                 timeout:60000,
                 success: function (data,textStatus,jqXHR) {

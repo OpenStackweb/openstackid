@@ -13,7 +13,7 @@
  **/
 use jwa\cryptographic_algorithms\ICryptoAlgorithm;
 use jwk\IJWK;
-use Utils\Model\IEntity;
+use models\utils\IEntity;
 use DateTime;
 /**
  * Interface IAsymmetricKey

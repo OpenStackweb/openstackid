@@ -11,36 +11,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use App\Http\Controllers\ICRUDController;
+use App\Http\Controllers\APICRUDController;
+use App\Http\Utils\HTMLCleaner;
+use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
 use Exception;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Input;
-use OAuth2\Exceptions\ExpiredAccessTokenException;
+use Illuminate\Support\Facades\Log;
+use models\exceptions\ValidationException;
 use OAuth2\Services\ITokenService;
 use OpenId\Services\IUserService;
-use Utils\Exceptions\EntityNotFoundException;
+use models\exceptions\EntityNotFoundException;
 use Utils\Services\ILogService;
-
 /**
  * Class UserApiController
  * @package App\Http\Controllers\Api
  */
-class UserApiController extends AbstractRESTController implements ICRUDController {
+final class UserApiController extends APICRUDController {
 
-    /**
-     * @var IUserService
-     */
-    private $user_service;
     /**
      * @var ITokenService
      */
     private $token_service;
-
-    /**
-     * @var IUserRepository
-     */
-    private $user_repository;
 
     /**
      * UserApiController constructor.
@@ -56,12 +49,34 @@ class UserApiController extends AbstractRESTController implements ICRUDControlle
         IUserService $user_service,
         ITokenService $token_service
     ){
-        parent::__construct($log_service);
-
-        $this->user_service    = $user_service;
-        $this->token_service   = $token_service;
-        $this->user_repository = $user_repository;
+        parent::__construct($user_repository, $user_service, $log_service);
+        $this->token_service = $token_service;
     }
+
+    /**
+     * @return array
+     */
+    protected function getFilterRules():array
+    {
+        return [
+            'first_name'     => ['=@', '=='],
+            'last_name'      => ['=@', '=='],
+            'email'          => ['=@', '=='],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    protected function getFilterValidatorRules():array
+    {
+        return [
+            'first_name'     => 'nullable|string',
+            'last_name'      => 'nullable|string',
+            'email'          => 'nullable|string',
+        ];
+    }
+
 
     /**
      * @param $id
@@ -69,17 +84,52 @@ class UserApiController extends AbstractRESTController implements ICRUDControlle
      */
     public function unlock($id){
         try {
-            $this->user_service->unlockUser($id);
-            return $this->updated();
+            $entity = $this->service->unlockUser($id);
+            return $this->updated(SerializerRegistry::getInstance()->getSerializer($entity)->serialize());
         }
-        catch (EntityNotFoundException $ex1) {
-            $this->log_service->error($ex1);
-            return $this->error404(array('error' => $ex1->getMessage()));
+        catch (ValidationException $ex1)
+        {
+            Log::warning($ex1);
+            return $this->error412(array($ex1->getMessage()));
+        }
+        catch (EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(array('message' => $ex2->getMessage()));
         }
         catch (Exception $ex) {
-            $this->log_service->error($ex);
+            Log::error($ex);
             return $this->error500($ex);
         }
+    }
+
+    /**
+     * @param $id
+     * @return mixed
+     */
+    public function lock($id){
+        try {
+            $entity = $this->service->lockUser($id);
+            return $this->updated(SerializerRegistry::getInstance()->getSerializer($entity)->serialize());
+        }
+        catch (ValidationException $ex1)
+        {
+            Log::warning($ex1);
+            return $this->error412(array($ex1->getMessage()));
+        }
+        catch (EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(array('message' => $ex2->getMessage()));
+        }
+        catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
+
+    protected function getAllSerializerType():string{
+        return SerializerRegistry::SerializerType_Private;
     }
 
     /**
@@ -87,104 +137,126 @@ class UserApiController extends AbstractRESTController implements ICRUDControlle
      * @param $value
      * @return mixed
      */
-    public function revokeToken($id,$value){
+    public function revokeMyToken($value){
 
         try{
             $hint = Input::get('hint','none');
 
             switch($hint){
                 case 'access-token':{
-                    $token = $this->token_service->getAccessToken($value,true);
-                    if(is_null($token))
-                        throw new Exception(sprintf("access token %s expired!.",$value));
-                    if(is_null($token->getUserId()) || intval($token->getUserId())!=intval($id))
-                        throw new Exception(sprintf("access token %s does not belongs to user id %s!.",$value,$id));
                     $this->token_service->revokeAccessToken($value,true);
                 }
-                    break;
+                break;
                 case 'refresh-token':
-                    $token = $this->token_service->getRefreshToken($value,true);
-                    if(is_null($token))
-                        throw new Exception(sprintf("access token %s expired!.",$value));
-                    if(is_null($token->getUserId()) || intval($token->getUserId())!=intval($id))
-                        throw new Exception(sprintf("refresh token %s does not belongs to user id %s!.",$value,$id));
                     $this->token_service->revokeRefreshToken($value,true);
                     break;
                 default:
                     throw new Exception(sprintf("hint %s not allowed",$hint));
                     break;
             }
-            return $this->ok();
+            return $this->deleted();
         }
-        catch(ExpiredAccessTokenException $ex1){
-            $this->log_service->warning($ex1);
-            return $this->error404();
-        }
-        catch(Exception $ex){
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
-    }
-
-
-    public function get($id)
-    {
-        try {
-            $user       = $this->user_repository->get($id);
-            if(is_null($user)){
-                return $this->error404(array('error' => 'user not found'));
-            }
-            $data = $user->toArray();
-            return $this->ok($data);
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
-    }
-
-    public function create()
-    {
-        // TODO: Implement create() method.
-    }
-
-    public function getByPage()
-    {
-        // TODO: Implement getByPage() method.
-    }
-
-    public function delete($id)
-    {
-        // TODO: Implement delete() method.
-    }
-
-    public function update()
-    {
-        // TODO: Implement update() method.
-    }
-
-    public function fetch()
-    {
-        $values = Input::all();
-        if(!isset($values['t'])) return $this->error404();
-
-        $term  = $values['t'];
-        $users = $this->user_repository->getByEmailOrName($term);
-        $list  = array();
-
-        if(count($users) > 0)
+        catch (ValidationException $ex1)
         {
-
-            foreach($users as $u)
-            {
-                array_push($list, array
-                    (
-                        'id' => $u->id,
-                        'value' => sprintf('%s', $u->getFullName())
-                    )
-                );
-            }
-
+            Log::warning($ex1);
+            return $this->error412(array( $ex1->getMessage()));
         }
-        return $this->ok($list);
+        catch (EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(array('message' => $ex2->getMessage()));
+        }
+        catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
     }
+
+    /**
+     * @return array
+     */
+    protected function getUpdatePayloadValidationRules(): array
+    {
+        return [
+            'first_name'             => 'required|string',
+            'last_name'              => 'required|string',
+            'email'                  => 'required|email',
+            'identifier'             => 'sometimes|string',
+            'bio'                    => 'nullable|string',
+            'address1'               => 'nullable|string',
+            'address2'               => 'nullable|string',
+            'city'                   => 'nullable|string',
+            'state'                  => 'nullable|string',
+            'post_code'              => 'nullable|string',
+            'country_iso_code'       => 'nullable|country_iso_alpha2_code',
+            'second_email'           => 'nullable|email',
+            'third_email'            => 'nullable|email',
+            'gender'                 => 'nullable|string',
+            'gender_specify'         => 'nullable|string',
+            'statement_of_interest'  => 'nullable|string',
+            'irc'                    => 'nullable|string',
+            'linked_in_profile'      => 'nullable|string',
+            'github_user'            => 'nullable|string',
+            'wechat_user'            => 'nullable|string',
+            'twitter_name'           => 'nullable|string',
+            'language'               => 'nullable|string',
+            'birthday'               => 'nullable|date_format:U',
+            'password'               => 'sometimes|string|min:8|confirmed',
+        ];
+    }
+
+    protected function curateUpdatePayload(array $payload):array {
+        return HTMLCleaner::cleanData($payload, [
+            'bio', 'statement_of_interest'
+        ]);
+    }
+
+    protected function curateCreatePayload(array $payload):array {
+        return HTMLCleaner::cleanData($payload, [
+            'bio', 'statement_of_interest'
+        ]);
+    }
+
+    /**
+     * @return array
+     */
+    protected function getCreatePayloadValidationRules(): array
+    {
+        return [
+            'first_name'             => 'required|string',
+            'last_name'              => 'required|string',
+            'email'                  => 'required|email',
+            'identifier'             => 'sometimes|string',
+            'bio'                    => 'nullable|string',
+            'address1'               => 'nullable|string',
+            'address2'               => 'nullable|string',
+            'city'                   => 'nullable|string',
+            'state'                  => 'nullable|string',
+            'post_code'              => 'nullable|string',
+            'country_iso_code'       => 'nullable|country_iso_alpha2_code',
+            'second_email'           => 'nullable|email',
+            'third_email'            => 'nullable|email',
+            'gender'                 => 'nullable|string',
+            'statement_of_interest'  => 'nullable|string',
+            'irc'                    => 'nullable|string',
+            'linked_in_profile'      => 'nullable|string',
+            'github_user'            => 'nullable|string',
+            'wechat_user'            => 'nullable|string',
+            'twitter_name'           => 'nullable|string',
+            'language'               => 'nullable|string',
+            'birthday'               => 'nullable|date_format:U',
+            'password'               => 'sometimes|string|min:8|confirmed',
+        ];
+    }
+
+    /**
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function updateMe(){
+        if(!Auth::check())
+            return $this->error403();
+        $myId = Auth::user()->getId();
+        return $this->update($myId);
+    }
+
 }

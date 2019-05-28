@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
 use OAuth2\Exceptions\InvalidApplicationType;
 use OAuth2\Exceptions\InvalidGrantTypeException;
@@ -28,7 +27,6 @@ use OAuth2\Responses\OAuth2AccessTokenResponse;
 use OAuth2\Responses\OAuth2Response;
 use OAuth2\Services\IClientService;
 use Utils\Services\ILogService;
-
 /**
  * Class RefreshBearerTokenGrantType
  * @see http://tools.ietf.org/html/rfc6749#section-6

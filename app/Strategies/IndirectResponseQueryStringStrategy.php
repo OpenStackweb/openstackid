@@ -32,7 +32,7 @@ class IndirectResponseQueryStringStrategy implements IHttpResponseStrategy
         $return_to    = $response->getReturnTo();
 
         if (is_null($return_to) || empty($return_to)) {
-            return Response::view('errors.404', array(), 404);
+            return Response::view('errors.404', [], 404);
         }
         $return_to = (strpos($return_to, "?") == false) ? $return_to . "?" . $query_string : $return_to . "&" . $query_string;
 

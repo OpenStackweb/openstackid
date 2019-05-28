@@ -23,7 +23,7 @@ final class ArrayUtils
      */
     static public function convert2Assoc(array $single_array)
     {
-        $multi = array();
+        $multi = [];
         foreach($single_array as $v)
         {
             $multi[$v] = $v;

@@ -11,13 +11,65 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\BaseModelEloquent;
+use App\Models\Utils\BaseEntity;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineServerConfigurationRepository")
+ * @ORM\Table(name="server_configuration")
  * Class ServerConfiguration
  * @package Models
  */
-class ServerConfiguration extends BaseModelEloquent
+class ServerConfiguration extends BaseEntity
 {
-    public $timestamps = false;
-    protected $table = 'server_configuration';
+    /**
+     * @ORM\Column(name="`key`", type="string")
+     * @var string
+     */
+    private $key;
+
+    /**
+     * @ORM\Column(name="value", type="string")
+     * @var string
+     */
+    private $value;
+
+    /**
+     * @return string
+     */
+    public function getKey(): string
+    {
+        return $this->key;
+    }
+
+    /**
+     * @param string $key
+     */
+    public function setKey(string $key): void
+    {
+        $this->key = $key;
+    }
+
+    /**
+     * @return string
+     */
+    public function getValue(): string
+    {
+        return $this->value;
+    }
+
+    /**
+     * @param string $value
+     */
+    public function setValue(string $value): void
+    {
+        $this->value = $value;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
+    }
 } 

@@ -1,64 +1,108 @@
 $(document).ready(function() {
 
+    // scopes
+
     var scopes = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
         queryTokenizer: Bloodhound.tokenizers.whitespace,
-        local: all_scopes
+        remote: {
+            url: ApiScopeGroupUrls.fetchScopes,
+            wildcard: '%QUERY%',
+            prepare: function (query, settings) {
+                settings.url = ApiScopeGroupUrls.fetchScopes+'?filter[]=name=@'+query+'&filter[]=is_assigned_by_groups==1';
+                return settings;
+            },
+            transform: function(input){
+                var page = input.data;
+                return page;
+            }
+        }
     });
 
     $('#scopes').tagsinput({
-        itemValue: 'id',
-        itemText: 'value',
+        itemValue: function(item) {
+            return item.id;
+        },
+        itemText: function(item) {
+            return item.name
+        },
         freeInput: false,
         allowDuplicates: false,
-        trimValue: true,
         typeaheadjs: [
             {
-                hint: true,
                 highlight: true,
                 minLength: 1
             },
             {
                 name: 'scopes',
-                displayKey: 'value',
-                source: scopes
+                display: function(item) {
+                    return item.name;
+                },
+                templates: {
+                    suggestion: function (item) {
+                        return '<p>' + item.name + '</p>';
+                    }
+                },
+                source: scopes,
+                limit: 10
             }
         ]
     });
 
     for(var scope of current_scopes)
     {
-        $('#scopes').tagsinput('add',scope);
+        $('#scopes').tagsinput('add', scope);
     }
+
+    // users
 
     var users = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
         queryTokenizer: Bloodhound.tokenizers.whitespace,
         remote: {
-            url: ApiScopeGroupUrls.fetchUsers+'?t=%QUERY',
-            wildcard: '%QUERY'
+            url: ApiScopeGroupUrls.fetchUsers,
+            wildcard: '%QUERY%',
+            prepare: function (query, settings) {
+                settings.url = ApiScopeGroupUrls.fetchUsers+'?filter=first_name=@'+query+',last_name=@'+query+',email=@'+query;
+                return settings;
+            },
+            transform: function(input){
+                var page = input.data;
+                return page;
+            }
         }
     });
 
     $('#users').tagsinput({
-        itemValue: 'id',
-        itemText: 'value',
+        itemValue: function(item) {
+            return item.id;
+        },
+        itemText: function(item) {
+            return item.first_name + ' ' + item.last_name;
+        },
         freeInput: false,
         allowDuplicates: false,
-        trimValue: true,
         typeaheadjs: [
             {
-                hint: true,
                 highlight: true,
                 minLength: 1
             },
             {
                 name: 'users',
-                displayKey: 'value',
-                source: users
+                display: function(item) {
+                    return item.first_name + ' ' + item.last_name;
+                },
+                templates: {
+                    suggestion: function (item) {
+                        return '<p>' + item.first_name + ' ' + item.last_name + '</p>';
+                    }
+                },
+                source: users,
+                limit: 10
             }
         ]
     });
+
 
     for(var user of current_users)
     {

@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\IEntity;
+use models\utils\IEntity;
 /**
  * Interface IAssociation
  * @package OpenId\Models
@@ -21,72 +21,80 @@ interface IAssociation extends IEntity {
     const TypePrivate = 1;
     const TypeSession = 2;
 
+
     /**
      * @return string
      */
-    public function getMacFunction();
+    public function getMacFunction(): string;
 
     /**
      * @param string $mac_function
-     * @return $this
      */
-    public function setMacFunction($mac_function);
+    public function setMacFunction(string $mac_function): void;
+
+    /**
+     * @param string $secret
+     */
+    public function setSecret(string $secret): void;
 
     /**
      * @return string
      */
-    public function getSecret();
-
-    /**
-     * @param string $secret
-     * @return $this
-     */
-    public function setSecret($secret);
+    public function getSecret(): string;
 
     /**
      * @return int
      */
-    public function getLifetime();
+    public function getLifetime():int;
 
     /**
      * @param int $lifetime
-     * @return $this
      */
-    public function setLifetime($lifetime);
+    public function setLifetime(int $lifetime): void;
 
-    public function getIssued();
+    /**
+     * @return \DateTime
+     */
+    public function getIssued(): \DateTime;
 
-    public function setIssued($issued);
+    /**
+     * @param \DateTime $issued
+     */
+    public function setIssued(\DateTime $issued): void;
+
+    /**
+     * @return int
+     */
+    public function getType():int;
+
+    /**
+     * @param int $type
+     */
+    public function setType(int $type): void;
 
     /**
      * @return string
      */
-    public function getType();
-
-    /**
-     * @param string $type
-     * @return $this
-     */
-    public function setType($type);
-
-    /**
-     * @return string
-     */
-    public function getRealm();
+    public function getRealm():?string;
 
     /**
      * @param string $realm
-     * @return $this
      */
-    public function setRealm($realm);
+    public function setRealm(string $realm): void;
 
     /**
      * @return bool
      */
-    public function IsExpired();
+    public function IsExpired():bool;
 
-    public function getRemainingLifetime();
+    /**
+     * @return int
+     */
+    public function getRemainingLifetime():int;
 
-	public function getHandle();
+    /**
+     * @return string
+     */
+	public function getHandle():string;
 
 }

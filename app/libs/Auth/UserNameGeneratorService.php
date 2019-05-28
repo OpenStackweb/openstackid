@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Models\Member;
+
 /**
  * Class UserNameGeneratorService
  * @package Auth
@@ -19,7 +19,7 @@ use Models\Member;
 final class UserNameGeneratorService implements IUserNameGeneratorService
 {
 
-    private static  $convert_table = array(
+    private static  $convert_table = [
         '&amp;' => 'and',   '@' => 'at',    '©' => 'c', '®' => 'r', 'À' => 'a',
         'Á' => 'a', 'Â' => 'a', 'Ä' => 'a', 'Å' => 'a', 'Æ' => 'ae','Ç' => 'c',
         'È' => 'e', 'É' => 'e', 'Ë' => 'e', 'Ì' => 'i', 'Í' => 'i', 'Î' => 'i',
@@ -73,7 +73,7 @@ final class UserNameGeneratorService implements IUserNameGeneratorService
         'ך' => 'k', 'כ' => 'k', 'ל' => 'l', 'ם' => 'm', 'מ' => 'm', 'ן' => 'n',
         'נ' => 'n', 'ס' => 's', 'ע' => 'e', 'ף' => 'p', 'פ' => 'p', 'ץ' => 'C',
         'צ' => 'c', 'ק' => 'q', 'ר' => 'r', 'ש' => 'w', 'ת' => 't', '™' => 'tm',
-    );
+    ];
 
     /**
      * @param string $input
@@ -83,13 +83,13 @@ final class UserNameGeneratorService implements IUserNameGeneratorService
         return strtr($input, self::$convert_table);
     }
     /**
-     * @param Member $member
+     * @param User $user
      * @return string
      */
-    public function generate(Member $member)
+    public function generate(User $user):User
     {
-        $fname     = self::normalizeChars(trim($member->FirstName));
-        $lname     = self::normalizeChars(trim($member->Surname));
+        $fname     = self::normalizeChars(trim($user->getFirstName()));
+        $lname     = self::normalizeChars(trim($user->getLastName()));
         $fname     = preg_replace('/[^\d\w_-]+/i', IUserNameGeneratorService::USER_NAME_INVALID_CHAR_REPLACEMENT, $fname);
         $lname     = preg_replace('/[^\d\w_-]+/i', IUserNameGeneratorService::USER_NAME_INVALID_CHAR_REPLACEMENT, $lname);
         $user_name = strtolower
@@ -101,10 +101,11 @@ final class UserNameGeneratorService implements IUserNameGeneratorService
         //if all characters were replaced by a connector, then is not a latin character based user name
         if(strlen($user_name) === substr_count($user_name, IUserNameGeneratorService::USER_NAME_CHAR_CONNECTOR))
         {
-            $email     = $member->Email;
+            $email     = $user->getEmail();
             $email     = explode('@', $email);
             $user_name = strtolower($email[0]);
         }
-        return $user_name;
+        $user->setIdentifier($user_name);
+        return $user;
     }
 }

@@ -1,15 +1,15 @@
 @extends('layout')
 @section('title')
-<title>Welcome to OpenStackId - My Account</title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - My Account</title>
 @stop
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 
-<legend>Authorized Access to your OpenStackId Account</legend>
+<legend>Authorized Access to your {!! Config::get('app.app_name') !!} Account</legend>
 
 <h2>Connected Sites, Apps, and Services</h2>
 <p>
-    You have granted the following services access to your OpenstackId Account: <br>
+    You have granted the following services access to your {!! Config::get('app.app_name') !!} Account: <br>
 </p>
 <h4>Online Access&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true"></span></h4>
 <hr/>
@@ -30,11 +30,11 @@
                     <tbody id="body-access-tokens">
                     @foreach($access_tokens as $access_token)
                         <tr id="{!!$access_token->value!!}">
-                            <td>{!!$access_token->client()->first()->getFriendlyApplicationType()!!}</td>
-                            <td>{!!$access_token->created_at!!}</td>
-                            <td>{!!$access_token->client()->first()->app_name!!}</td>
+                            <td>{!!$access_token->getClient()->getFriendlyApplicationType()!!}</td>
+                            <td>{!!$access_token->created_at->format("Y-m-d H:i:s")!!}</td>
+                            <td>{!!$access_token->getClient()->app_name!!}</td>
                             <td>{!!$access_token->scope!!}</td>
-                            <td>{!! HTML::link(URL::action("Api\\UserApiController@revokeToken",array("id"=>$user_id,"value"=>$access_token->value, "hint"=>'access-token')),'Revoke Access',array('data-value' => $access_token->value,'data-hint'=>'access-token','class'=>'btn btn-default btn-md active btn-delete revoke-token','title'=>'Revoke Access Token')) !!}</td>
+                            <td>{!! HTML::link(URL::action("Api\\UserApiController@revokeMyToken",array("id"=>$user_id,"value"=>$access_token->value, "hint"=>'access-token')),'Revoke Access',array('data-value' => $access_token->value,'data-hint'=>'access-token','class'=>'btn btn-default btn-md active btn-delete revoke-token','title'=>'Revoke Access Token')) !!}</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -75,11 +75,11 @@
                     <tbody id="body-refresh-tokens">
                     @foreach($refresh_tokens as $refresh_token)
                         <tr id="{!!$refresh_token->value!!}">
-                            <td>{!!$refresh_token->client()->first()->getFriendlyApplicationType()!!}</td>
-                            <td>{!!$refresh_token->created_at!!}</td>
-                            <td>{!!$refresh_token->client()->first()->app_name!!}</td>
+                            <td>{!!$refresh_token->getClient()->getFriendlyApplicationType()!!}</td>
+                            <td>{!!$refresh_token->created_at->format("Y-m-d H:i:s")!!}</td>
+                            <td>{!!$refresh_token->getClient()->app_name!!}</td>
                             <td>{!!$refresh_token->scope!!}</td>
-                            <td>{!! HTML::link(URL::action("Api\\UserApiController@revokeToken",array("id" => $user_id,"value" => $refresh_token->value, "hint" => 'refresh-token')),'Revoke Access',array('data-value' => $refresh_token->value,'data-hint' => 'refresh_token','class' => 'btn btn-default btn-md active btn-delete revoke-token','title' => 'Revoke Access Token')) !!}</td>
+                            <td>{!! HTML::link(URL::action("Api\\UserApiController@revokeMyToken",array("id" => $user_id,"value" => $refresh_token->value, "hint" => 'refresh-token')),'Revoke Access',array('data-value' => $refresh_token->value,'data-hint' => 'refresh_token','class' => 'btn btn-default btn-md active btn-delete revoke-token','title' => 'Revoke Access Token')) !!}</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -104,12 +104,12 @@
 <script type="application/javascript">
         var TokensUrls = {
             AccessTokenUrls : {
-                get : '{!! URL::action("Api\\ClientApiController@getAccessTokensByCurrentUser", array() )!!}',
-                delete :'{!! URL::action("Api\\UserApiController@revokeToken",array("id" => $user_id, "value" => -1, "hint" =>"access-token")) !!}'
+                get : '{!! URL::action("Api\\ClientApiController@getAccessTokensByCurrentUser", [] )!!}',
+                delete :'{!! URL::action("Api\\UserApiController@revokeMyToken",array("value" => -1, "hint" =>"access-token")) !!}'
             },
             RefreshTokenUrl : {
-                get: '{!! URL::action("Api\\ClientApiController@getRefreshTokensByCurrentUser", array() )!!}',
-                delete :'{!! URL::action("Api\\UserApiController@revokeToken",array("id" => $user_id, "value" => -1, "hint" => "refresh-token")) !!}'
+                get: '{!! URL::action("Api\\ClientApiController@getRefreshTokensByCurrentUser", [] )!!}',
+                delete :'{!! URL::action("Api\\UserApiController@revokeMyToken", array("value" => -1, "hint" => "refresh-token")) !!}'
             }
         };
 </script>

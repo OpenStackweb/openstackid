@@ -16,12 +16,12 @@
                 }
                 o[this.name].push(this.value || '');
             } else {
-                if(this.value)
-                    o[this.name] = this.value;
+                o[this.name] = this.value;
             }
         });
+
         //add missing checkboxes (non checked ones)
-        $('input:checkbox',$form).each(function() {
+        $('input:checkbox', $form).each(function() {
             var id    =  $(this).attr('id');
             var value =  $(this).is(':checked');
             if (!o.hasOwnProperty(id))

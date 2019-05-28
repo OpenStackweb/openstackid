@@ -35,6 +35,45 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
             Route::get('/accounts/openid2', 'OpenIdProviderController@endpoint');
         });
 
+        //user interaction
+        Route::group(array('prefix' => 'auth'), function () {
+            Route::group(array('prefix' => 'login'), function () {
+                Route::get('', "UserController@getLogin");
+                Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
+                Route::get('cancel', "UserController@cancelLogin");
+            });
+
+            // registration routes
+            Route::group(array('prefix' => 'register'), function () {
+                Route::get('', 'Auth\RegisterController@showRegistrationForm');
+                Route::post('',  ['middleware' => 'csrf', 'uses' => 'Auth\RegisterController@register']);
+            });
+
+            Route::group(array('prefix' => 'verification'), function () {
+                Route::get('', 'Auth\EmailVerificationController@showVerificationForm');
+                Route::get('{token}', 'Auth\EmailVerificationController@verify')->name("verification_verify");
+                Route::post('',  ['middleware' => 'csrf', 'uses' => 'Auth\EmailVerificationController@resend']);
+            });
+
+            // password reset routes
+
+            Route::group(array('prefix' => 'password'), function () {
+                Route::group(array('prefix' => 'set'), function () {
+                    Route::get('{token}', 'Auth\PasswordSetController@showPasswordSetForm')->name('password.set');
+                    Route::post('',  ['middleware' => 'csrf', 'uses' => 'Auth\PasswordSetController@setPassword']);
+                });
+
+                Route::group(array('prefix' => 'reset'), function () {
+                    Route::get('', 'Auth\ForgotPasswordController@showLinkRequestForm')->name('password.request');
+                    Route::get('{token}', 'Auth\ResetPasswordController@showResetForm')->name('password.reset');
+                    Route::post('',  ['middleware' => 'csrf', 'uses' => 'Auth\ResetPasswordController@reset']);
+                });
+
+                Route::post('email',  ['middleware' => 'csrf', 'uses' => 'Auth\ForgotPasswordController@sendResetLinkEmail'])->name('password.email');
+            });
+
+        });
+
         /*
         * If the Claimed Identifier was not previously discovered by the Relying Party
         * (the "openid.identity" in the request was "http://specs.openid.net/auth/2.0/identifier_select"
@@ -43,10 +82,6 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
         * the response to make sure that the OP is authorized to make assertions about the Claimed Identifier.
         */
         Route::get("/{identifier}", "UserController@getIdentity");
-        //user interaction
-        Route::get('/accounts/user/login', "UserController@getLogin");
-        Route::post('/accounts/user/login', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
-        Route::get('/accounts/user/login/cancel', "UserController@cancelLogin");
     });
 
     //oauth2 endpoints
@@ -80,9 +115,8 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
         Route::get('/accounts/user/consent', "UserController@getConsent");
         Route::post('/accounts/user/consent', ['middleware' => 'csrf', 'uses' => 'UserController@postConsent']);
         Route::any("/accounts/user/logout", "UserController@logout");
-        Route::any("/accounts/user/profile", "UserController@getProfile");
+        Route::get("/accounts/user/profile", "UserController@getProfile");
         Route::any("/accounts/user/profile/trusted_site/delete/{id}", "UserController@deleteTrustedSite");
-        Route::post('/accounts/user/profile/update', 'UserController@postUserProfileOptions');
     });
 
     Route::group(['prefix' => 'admin', 'middleware' => ['ssl', 'auth']], function () {
@@ -92,7 +126,7 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
         Route::get('/grants', 'AdminController@editIssuedGrants');
 
         //oauth2 server admin UI
-        Route::group(array('middleware' => ['oauth2.currentuser.serveradmin']), function () {
+        Route::group(['middleware' => ['oauth2.currentuser.serveradmin']], function () {
             Route::get('/api-scope-groups', 'AdminController@listApiScopeGroups');
             Route::get('/api-scope-groups/{id}', 'AdminController@editApiScopeGroup');
             Route::get('/resource-servers', 'AdminController@listResourceServers');
@@ -103,13 +137,26 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
             Route::get('/locked-clients', 'AdminController@listLockedClients');
             // server private keys
             Route::get('/private-keys', 'AdminController@listServerPrivateKeys');
+            //security
+            Route::group(array('prefix' => 'users'), function () {
+                Route::get('', 'AdminController@listUsers');
+                Route::group(array('prefix' => '{user_id}'), function () {
+                    Route::get('', 'AdminController@editUser');
+                });
+            });
+
+            Route::group(array('prefix' => 'groups'), function () {
+                Route::get('', 'AdminController@listGroups');
+                Route::group(array('prefix' => '{group_id}'), function () {
+                    Route::get('', 'AdminController@editGroup');
+                });
+            });
         });
 
         Route::group(array('middleware' => ['openstackid.currentuser.serveradmin']), function () {
-            Route::get('/locked-users', 'AdminController@listLockedUsers');
-            Route::get('/server-config', 'AdminController@listServerConfig');
-            Route::post('/server-config', 'AdminController@saveServerConfig');
-            Route::get('/banned-ips', 'AdminController@listBannedIPs');
+            Route::get('server-config', 'AdminController@listServerConfig');
+            Route::post('server-config', 'AdminController@saveServerConfig');
+            Route::get('banned-ips', 'AdminController@listBannedIPs');
         });
     });
 
@@ -120,120 +167,199 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
         'prefix'     => 'admin/api/v1',
         'middleware' => ['ssl', 'auth']], function () {
 
-        Route::group(array('prefix' => 'users'), function () {
-            Route::delete('/{id}/locked', array('middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'UserApiController@unlock'));
-            Route::delete('/{id}/token/{value}', array('middleware' => ['currentuser.checkroute'], 'uses' => 'UserApiController@revokeToken'));
-            Route::get('/fetch', array('uses' => "UserApiController@fetch"));
+        Route::group(['prefix' => 'users'], function () {
+            Route::delete('/me/tokens/{value}',"UserApiController@revokeMyToken");
+            Route::get('' , "UserApiController@getAll");
+            Route::post('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@create"]);
+            Route::put('me', "UserApiController@updateMe");
+            Route::group(['prefix' => '{id}'], function(){
+
+                Route::group(['prefix' => 'locked'], function(){
+                    Route::put('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'UserApiController@unlock']);
+                    Route::delete('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'UserApiController@lock']);
+                });
+                Route::get('',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@get"]);
+                Route::delete('',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' =>"UserApiController@delete"]);
+                Route::put('',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' =>"UserApiController@update"]);
+            });
         });
 
-        Route::group(array('prefix' => 'banned-ips', 'middleware' => ['openstackid.currentuser.serveradmin.json']), function () {
-            Route::get('/{id}', "ApiBannedIPController@get");
-            Route::get('/', "ApiBannedIPController@getByPage");
-            Route::delete('/{id?}', "ApiBannedIPController@delete");
+
+        Route::group(['prefix' => 'groups',  'middleware' => ['openstackid.currentuser.serveradmin.json']], function () {
+            Route::get('', "GroupApiController@getAll");
+            Route::post('', "GroupApiController@create");
+            Route::group(['prefix' => '{id}'], function(){
+                Route::get('', "GroupApiController@get");
+                Route::delete('', "GroupApiController@delete");
+                Route::put('', "GroupApiController@update");
+                Route::group(['prefix' => 'users'], function(){
+                    Route::get('', "GroupApiController@getUsersFromGroup");
+                    Route::group(['prefix' => '{user_id}'], function(){
+                        Route::put('','GroupApiController@addUserToGroup');
+                        Route::delete('','GroupApiController@removeUserFromGroup');
+                    });
+                });
+            });
+        });
+
+        Route::group(['prefix' => 'banned-ips', 'middleware' => ['openstackid.currentuser.serveradmin.json']], function () {
+            Route::get('/', "ApiBannedIPController@getAll");
+            Route::group(['prefix' => '{id?}'], function(){
+                Route::get('', "ApiBannedIPController@get");
+                Route::delete('', "ApiBannedIPController@delete");
+            });
         });
 
         //client api
         Route::group(array('prefix' => 'clients'), function () {
 
-            // public keys
-            Route::post('/{id}/public_keys', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@create'));
-            Route::get('/{id}/public_keys', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@getByPage'));
-            Route::delete('/{id}/public_keys/{public_key_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@delete'));
-            Route::put('/{id}/public_keys/{public_key_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@update'));
+            Route::get('', 'ClientApiController@getAll');
+            Route::post('', 'ClientApiController@create');
 
-            Route::post('/', array('middleware' => ['currentuser.checkroute'], 'uses' => 'ClientApiController@create'));
-            Route::put('/', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@update'));
-            Route::get('/{id}', "ClientApiController@get");
-            Route::get('/', array('middleware' => ['currentuser.checkroute'], 'uses' => 'ClientApiController@getByPage'));
-            Route::delete('/{id}', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@delete'));
-            //allowed redirect uris endpoints
-            Route::get('/{id}/uris', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@getRegisteredUris'));
-            Route::post('/{id}/uris', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@addAllowedRedirectUri'));
-            Route::delete('/{id}/uris/{uri_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@deleteClientAllowedUri'));
+            Route::group(['prefix' => '{id}'], function(){
+                Route::get('', "ClientApiController@get");
+                Route::put('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@update'));
+                Route::delete('', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@delete'));
+                // particular settings
 
-            //allowedApiResourceServerControllert('/{id}/origins', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@geAllowedOrigins'));
-            Route::post('/{id}/origins', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@addAllowedOrigin'));
-            Route::delete('/{id}/origins/{origin_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@deleteClientAllowedOrigin'));
-            Route::delete('/{id}/lock', array('middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@unlock'));
-            Route::put('/{id}/secret', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@regenerateClientSecret'));
-            Route::put('/{id}/use-refresh-token', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@setRefreshTokenClient'));
-            Route::put('/{id}/rotate-refresh-token', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@setRotateRefreshTokenPolicy'));
-            Route::get('/{id}/access-token', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@getAccessTokens'));
-            Route::get('/{id}/refresh-token', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@getRefreshTokens'));
-            Route::get('/me/access-tokens', array('middleware' => [], 'uses' => 'ClientApiController@getAccessTokensByCurrentUser'));
-            Route::get('/me/refresh-tokens', array('middleware' => [], 'uses' => 'ClientApiController@getRefreshTokensByCurrentUser'));
-            Route::delete('/{id}/token/{value}/{hint}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@revokeToken'));
-            Route::put('/{id}/scopes/{scope_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@addAllowedScope'));
-            Route::delete('/{id}/scopes/{scope_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@removeAllowedScope'));
-            Route::put('/{id}/active', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@activate'));
-            Route::delete('/{id}/active', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@deactivate'));
+                Route::delete('lock', array('middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@unlock'));
+                Route::put('secret', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@regenerateClientSecret'));
+                Route::put('use-refresh-tokens/{use_refresh_token}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@setRefreshTokenClient'));
+                Route::put('rotate-refresh-tokens/{rotate_refresh_token}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@setRotateRefreshTokenPolicy'));
+                Route::get('access-tokens', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@getAccessTokens'));
+                Route::get('refresh-tokens', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@getRefreshTokens'));
 
+                // public keys
+                Route::group(['prefix' => 'public_keys'], function(){
+                    Route::post('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@_create'));
+                    Route::get('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@getAll'));
+                    Route::group(['prefix' => '{public_key_id}'], function(){
+                        Route::delete('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@_delete'));
+                        Route::put('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@_update'));
+                    });
+                });
+                //allowed redirect uris endpoints
+                Route::group(['prefix' => 'uris'], function(){
+                    Route::get('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@getRegisteredUris'));
+                    Route::post('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@addAllowedRedirectUri'));
+                    Route::delete('{uri_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@deleteClientAllowedUri'));
+                });
+
+                // allowed origins
+                Route::group(['prefix' => 'origins'], function(){
+                    Route::post('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@addAllowedOrigin'));
+                    Route::delete('{origin_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@deleteClientAllowedOrigin'));
+
+                });
+
+                Route::delete('token/{value}/{hint}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@revokeToken'));
+                // scopes
+                Route::group(['prefix' => 'scopes'], function(){
+                    Route::put('{scope_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@addAllowedScope'));
+                    Route::delete('{scope_id}', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@removeAllowedScope'));
+                });
+
+                Route::put('active', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@activate'));
+                Route::delete('active', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@deactivate'));
+            });
+
+            Route::group(['prefix' => 'me'], function(){
+                Route::get('access-tokens', array('middleware' => [], 'uses' => 'ClientApiController@getAccessTokensByCurrentUser'));
+                Route::get('refresh-tokens', array('middleware' => [], 'uses' => 'ClientApiController@getRefreshTokensByCurrentUser'));
+            });
         });
 
         // resource servers
         Route::group(array('prefix' => 'resource-servers', 'middleware' => ['oauth2.currentuser.serveradmin.json']), function () {
-            Route::get('/{id}', "ApiResourceServerController@get");
-            Route::get('/', "ApiResourceServerController@getByPage");
-            Route::post('/', "ApiResourceServerController@create");
-            Route::delete('/{id}', "ApiResourceServerController@delete");
-            Route::put('/', "ApiResourceServerController@update");
-            Route::put('/{id}/client-secret', "ApiResourceServerController@regenerateClientSecret");
-            Route::put('/{id}/active', "ApiResourceServerController@activate");
-            Route::delete('/{id}/active', "ApiResourceServerController@deactivate");
+
+            Route::get('', "ApiResourceServerController@getAll");
+            Route::post('', "ApiResourceServerController@create");
+
+            Route::group(['prefix' => '{id}'], function(){
+                Route::get('', "ApiResourceServerController@get");
+                Route::delete('', "ApiResourceServerController@delete");
+                Route::put('', "ApiResourceServerController@update");
+                Route::put('client-secret', "ApiResourceServerController@regenerateClientSecret");
+                Route::put('active', "ApiResourceServerController@activate");
+                Route::delete('active', "ApiResourceServerController@deactivate");
+            });
         });
 
         // api scope groups
-        Route::group(array('prefix' => 'api-scope-groups', 'middleware' => ['oauth2.currentuser.serveradmin.json']), function () {
-            Route::get('/{id}', "ApiScopeGroupController@get");
-            Route::get('/', "ApiScopeGroupController@getByPage");
-            Route::put('/', "ApiScopeGroupController@update");
-            Route::post('/', "ApiScopeGroupController@create");
-            Route::delete('/{id}', "ApiScopeGroupController@delete");
-            Route::put('/{id}/active', "ApiScopeGroupController@activate");
-            Route::delete('/{id}/active', "ApiScopeGroupController@deactivate");
+        Route::group(['prefix' => 'api-scope-groups', 'middleware' => ['oauth2.currentuser.serveradmin.json']], function () {
+            Route::get('', "ApiScopeGroupController@getAll");
+            Route::post('', "ApiScopeGroupController@create");
+
+            Route::group(['prefix' => '{id}'], function(){
+                Route::put('', "ApiScopeGroupController@update");
+                Route::get('', "ApiScopeGroupController@get");
+                Route::delete('', "ApiScopeGroupController@delete");
+                Route::put('/active', "ApiScopeGroupController@activate");
+                Route::delete('/active', "ApiScopeGroupController@deactivate");
+            });
+
         });
 
         // apis
-        Route::group(array('prefix' => 'apis', 'middleware' => ['oauth2.currentuser.serveradmin.json']), function () {
-            Route::get('/{id}', "ApiController@get");
-            Route::get('/', "ApiController@getByPage");
-            Route::post('/', "ApiController@create");
-            Route::delete('/{id}', "ApiController@delete");
-            Route::put('/', "ApiController@update");
-            Route::put('/{id}/active', "ApiController@activate");
-            Route::delete('/{id}/active', "ApiController@deactivate");
+        Route::group(['prefix' => 'apis', 'middleware' => ['oauth2.currentuser.serveradmin.json']], function () {
+
+            Route::get('', "ApiController@getAll");
+            Route::post('', "ApiController@create");
+
+            Route::group(['prefix' => '{id}'], function(){
+                Route::get('', "ApiController@get");
+                Route::delete('', "ApiController@delete");
+                Route::put('', "ApiController@update");
+                Route::put('/active', "ApiController@activate");
+                Route::delete('/active', "ApiController@deactivate");
+            });
         });
 
         // scopes
-        Route::group(array('prefix' => 'scopes', 'middleware' => ['oauth2.currentuser.serveradmin.json']), function () {
-            Route::get('/{id}', "ApiScopeController@get");
-            Route::get('/', "ApiScopeController@getByPage");
+        Route::group(['prefix' => 'scopes', 'middleware' => ['oauth2.currentuser.serveradmin.json']], function () {
+
+            Route::get('/', "ApiScopeController@getAll");
             Route::post('/', "ApiScopeController@create");
-            Route::delete('/{id}', "ApiScopeController@delete");
-            Route::put('/', "ApiScopeController@update");
-            Route::put('/{id}/active', "ApiScopeController@activate");
-            Route::delete('/{id}/active', "ApiScopeController@deactivate");
+
+            Route::group(['prefix' => '{id}'], function(){
+                Route::get('', "ApiScopeController@get");
+                Route::delete('', "ApiScopeController@delete");
+                Route::put('', "ApiScopeController@update");
+                Route::put('/active', "ApiScopeController@activate");
+                Route::delete('/active', "ApiScopeController@deactivate");
+            });
         });
 
         // endpoints
-        Route::group(array('prefix' => 'endpoints', 'middleware' => ['oauth2.currentuser.serveradmin.json']), function () {
-            Route::get('/{id}', "ApiEndpointController@get");
-            Route::get('/', "ApiEndpointController@getByPage");
-            Route::post('/', "ApiEndpointController@create");
-            Route::delete('/{id}', "ApiEndpointController@delete");
-            Route::put('/', "ApiEndpointController@update");
-            Route::put('/{id}/scope/{scope_id}', "ApiEndpointController@addRequiredScope");
-            Route::delete('/{id}/scope/{scope_id}', "ApiEndpointController@removeRequiredScope");
-            Route::put('/{id}/active', "ApiEndpointController@activate");
-            Route::delete('/{id}/active', "ApiEndpointController@deactivate");
+        Route::group(['prefix' => 'endpoints', 'middleware' => ['oauth2.currentuser.serveradmin.json']], function () {
+
+            Route::get('', "ApiEndpointController@getAll");
+            Route::post('', "ApiEndpointController@create");
+
+            Route::group(['prefix' => '{id}'], function(){
+                Route::get('', "ApiEndpointController@get");
+                Route::delete('', "ApiEndpointController@delete");
+                Route::put('', "ApiEndpointController@update");
+                Route::put('/active', "ApiEndpointController@activate");
+                Route::delete('/active', "ApiEndpointController@deactivate");
+                Route::group(['prefix' => 'scope'], function(){
+                    Route::group(['prefix' => '{scope_id}'], function(){
+                        Route::put('', "ApiEndpointController@addRequiredScope");
+                        Route::delete('', "ApiEndpointController@removeRequiredScope");
+                    });
+                });
+            });
         });
 
         // private keys
         Route::group(array('prefix' => 'private-keys', 'middleware' => ['oauth2.currentuser.serveradmin.json']), function () {
-            Route::get('/', "ServerPrivateKeyApiController@getByPage");
-            Route::post('/', "ServerPrivateKeyApiController@create");
-            Route::delete('/{id}', "ServerPrivateKeyApiController@delete");
-            Route::put('/{id}', "ServerPrivateKeyApiController@update");
+            Route::get('', "ServerPrivateKeyApiController@getAll");
+            Route::post('', "ServerPrivateKeyApiController@create");
+
+            Route::group(['prefix' => '{id}'], function(){
+                Route::delete('', "ServerPrivateKeyApiController@delete");
+                Route::put('', "ServerPrivateKeyApiController@update");
+            });
         });
 
     });
@@ -247,9 +373,14 @@ Route::group(
         'middleware' => ['api']
     ], function () {
 
-    Route::group(array('prefix' => 'users'), function () {
+    Route::group(['prefix' => 'users'], function () {
+        Route::get('', 'OAuth2UserApiController@getAll');
         Route::get('/me', 'OAuth2UserApiController@me');
         Route::get('/info', 'OAuth2UserApiController@userInfo');
         Route::post('/info', 'OAuth2UserApiController@userInfo');
+    });
+
+    Route::group(['prefix' => 'user-registration-requests'], function(){
+        Route::post('', 'OAuth2UserRegistrationRequestApiController@register');
     });
 });

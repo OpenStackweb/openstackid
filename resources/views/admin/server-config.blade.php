@@ -1,11 +1,11 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - Server Admin - Configuration</title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Configuration</title>
 @stop
 
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 <div class="row">
     <div class="col-md-6">
         <form method="POST" id="form-server-configuration">

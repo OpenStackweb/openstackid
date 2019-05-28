@@ -1,7 +1,7 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - Server Admin - Resource Server</title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Resource Server</title>
 @stop
 
 @section('css')
@@ -9,7 +9,7 @@
 @append
 
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 <div class="row">
     <div class="row">
         <h4 style="float:left"><span aria-hidden="true" class="glyphicon glyphicon-info-sign pointable" title="Registered Resource Servers"></span>&nbsp;Resource Servers</h4>
@@ -38,7 +38,7 @@
         </tr>
         </thead>
         <tbody id="body-resource-servers">
-        @foreach ($resource_servers as $resource_server)
+        @foreach ($resource_servers->getItems() as $resource_server)
         <tr id="{!! $resource_server->id !!}">
             <td width="25%">{!!$resource_server->friendly_name!!}</td>
             <td width="25%">{!!$resource_server->host!!}</td>
@@ -62,14 +62,14 @@
     </table>
 </div>
 
-@include('modal', array ('modal_id' => 'dialog-form-resource-server', 'modal_title' => 'Register New Resource Server', 'modal_save_css_class' => 'save-resource-server', 'modal_save_text' => 'Save', 'modal_form' => 'oauth2.profile.admin.resource-server-add-form', 'modal_form_data' => array()))
+@include('modal', ['modal_id' => 'dialog-form-resource-server', 'modal_title' => 'Register New Resource Server', 'modal_save_css_class' => 'save-resource-server', 'modal_save_text' => 'Save', 'modal_form' => 'oauth2.profile.admin.resource-server-add-form', 'modal_form_data' => []])
 
 @stop
 
 @section('scripts')
 <script type="application/javascript">
 	var resourceServerUrls = {
-		get : '{!!URL::action("Api\ApiResourceServerController@getByPage",array("offset"=>1,"limit"=>1000))!!}',
+		get : '{!!URL::action("Api\ApiResourceServerController@getAll",array("oage"=>1,"per_page"=> 100 ))!!}',
 		edit : '{!! URL::action("AdminController@editResourceServer",array("id"=>-1)) !!}',
 		delete : '{!! URL::action("Api\ApiResourceServerController@delete",array("id"=>-1)) !!}',
 		activate : '{!! URL::action("Api\ApiResourceServerController@activate",array("id"=>"@id")) !!}',

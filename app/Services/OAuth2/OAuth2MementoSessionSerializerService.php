@@ -11,11 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Requests\OAuth2RequestMemento;
 use OAuth2\Services\IMementoOAuth2SerializerService;
 use Illuminate\Support\Facades\Session;
-
 /**
  * Class OAuth2MementoSessionSerializerService
  * @package Services\OAuth2

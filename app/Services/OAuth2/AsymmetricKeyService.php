@@ -11,21 +11,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Services\AbstractService;
+use models\exceptions\EntityNotFoundException;
+use models\utils\IEntity;
 use Utils\Db\ITransactionService;
 use OAuth2\Repositories\IAsymmetricKeyRepository;
-use OAuth2\Models\IAsymmetricKey;
-
 /**
  * Class AsymmetricKeyService
  * @package Services\OAuth2
  */
-abstract class AsymmetricKeyService
+abstract class AsymmetricKeyService extends AbstractService
 {
-    /**
-     * @var ITransactionService
-     */
-    protected $tx_service;
 
     /**
      * @var IAsymmetricKeyRepository
@@ -36,75 +32,54 @@ abstract class AsymmetricKeyService
         IAsymmetricKeyRepository $repository,
         ITransactionService $tx_service)
     {
-        $this->tx_service        = $tx_service;
+        parent::__construct($tx_service);
         $this->repository        = $repository;
     }
 
     /**
      * @param array $params
-     * @return IAsymmetricKey
+     * @return IEntity
      */
-    abstract public function register(array $params);
-
+    abstract public function create(array $params):IEntity;
 
     /**
-     * @param int $key_id
-     * @return bool
+     * @param $key_id
+     * @param array $params
+     * @throws EntityNotFoundException
+     * @return IEntity
      */
-    public function delete($key_id)
-    {
-        $repository = $this->repository;
+    public function update(int $key_id, array $params): IEntity {
 
-        return $this->tx_service->transaction(function() use($key_id, $repository)
+        return $this->tx_service->transaction(function() use($key_id, $params)
         {
 
-            $key = $repository->getById($key_id);
-            if(!$key) return false;
-            $repository->delete($key);
-            return true;
+            $key = $this->repository->getById($key_id);
+            if(is_null($key))
+                throw new EntityNotFoundException();
+
+            if(isset($params['active'])){
+                $key->setActive($params['active']);
+            }
+
+            return $key;
         });
     }
 
     /**
-     * @param int $key_id
-     * @param array $params
-     * @return bool
+     * @param int $id
+     * @throws EntityNotFoundException
      */
-    public function update($key_id, array $params)
+    public function delete(int $id):void
     {
-        $repository = $this->repository;
 
-        return $this->tx_service->transaction(function () use ($key_id, $params, $repository) {
+        $this->tx_service->transaction(function() use($id)
+        {
 
-            $key = $repository->getById($key_id);
+            $key = $this->repository->getById($id);
+            if(is_null($key))
+                throw new EntityNotFoundException();
 
-            if (is_null($key))
-            {
-                return false;
-            }
-
-            $key_active = $repository->getActiveByCriteria($key->getType(), $key->getUse(), $key->getAlg()->getName());
-
-            if($key_active && $params['active'] === true)
-            {
-                $key_active->active = false;
-                $repository->add($key_active);
-            }
-
-            $allowed_update_params = array
-            (
-                'active',
-            );
-
-            foreach ($allowed_update_params as $param) {
-                if (array_key_exists($param, $params)) {
-                    $key->{$param} = $params[$param];
-                }
-            }
-
-            $repository->add($key);
-            return true;
+            $this->repository->delete($key);
         });
     }
-
 }

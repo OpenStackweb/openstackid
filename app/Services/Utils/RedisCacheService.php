@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Utils\Services\ICacheService;
 use Illuminate\Support\Facades\Redis;
 /**
@@ -72,7 +71,7 @@ final class RedisCacheService implements ICacheService {
      */
     public function getHash($name, array $values)
     {
-        $res = array();
+        $res = [];
         if($this->redis->exists($name)){
             $cache_values = $this->redis->hmget($name,$values);
             for($i=0;$i<count($cache_values);$i++)

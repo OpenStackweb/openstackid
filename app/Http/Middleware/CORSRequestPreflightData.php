@@ -28,7 +28,7 @@ class CORSRequestPreflightData
 	/** Final HTTP request expected method */
 	private $expected_method = null;
 	/** Final HTTP request expected custom headers */
-	private $expected_custom_headers = array();
+	private $expected_custom_headers = [];
 	/** Current HTTP request uri */
 	private $uri = null;
 	/** Current HTTP request origin header */
@@ -69,7 +69,7 @@ class CORSRequestPreflightData
 	 */
 	public function toArray()
 	{
-		$res                            = array();
+		$res                            = [];
 		$res['sender']                  = $this->sender;
 		$res['uri']                     = $this->uri;
 		$res['origin']                  = $this->origin;

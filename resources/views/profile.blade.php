@@ -1,138 +1,344 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - OpenStack ID Account Settings</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - Account Settings</title>
 @stop
 
 @section('content')
 
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+    @include('menu')
 
-<div class="col-md-9" id="sidebar">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="row">
-                <div class="col-md-12 col-xs-10">
-                    Hello, {!! $username !!}.
-                    <div>Your OPENID: <a href="{!! str_replace("%23","#",$openid_url) !!}">{!! str_replace("%23","#",$openid_url) !!}</a></div>
+    <div class="col-md-9 hide" id="sidebar">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="col-md-12 col-xs-10">
+                        Hello, {!! $user->fullname !!}
+                        <div>Your OPENID: <a
+                                    href="{!! str_replace("%23","#",$openid_url) !!}">{!! str_replace("%23","#",$openid_url) !!}</a>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    {!! Form::open(array('url' => URL::action('UserController@postUserProfileOptions'), 'method' => 'post')) !!}
-                    <legend><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true" title="this information will be public on your profile page"></span>&nbsp;OpenStack ID Account Settings:</legend>
-                    <div class="checkbox">
-                        <span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true" title="this is your openid identifier"></span>
-                        {!! Form::label('identifier', 'OpenId Identifier') !!}
-                        {!! Form::text('identifier', $identifier) !!}
-                        @if ($errors->has('identifier'))
-                            <div class="alert alert-warning alert-dismissible" role="alert">
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                <strong>Warning!</strong> {{ $errors->first('identifier') }}
+                <div class="row">
+                    <div class="col-md-12">
+                        <form id="user-form" name="user-form" role="form"
+                              autocomplete="off"
+                              action='{!!URL::action("Api\\UserApiController@updateMe") !!}'>
+
+                            <legend><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true"
+                                          title="this information will be public on your profile page"></span>&nbsp;{!! Config::get('app.app_name') !!} Account Settings:
+                            </legend>
+
+                            <div class="form-group col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                                <span class="control-label col-md-2">
+                                    <img src="{!! $user->pic !!}" class="img-circle" title="Gravatar profile pic">
+                                </span>
+                                <div class="col-md-10" style="margin-top: 5px;">
+                                    <p class="help-block">
+                                        {!! Config::get('app.app_name') !!} uses the 'Gravatar' profile picture associated with your email address. You can customise your profile pic at <a href="http://en.gravatar.com/" target="_blank">Gravatar.com</a>
+                                    </p>
+                                </div>
                             </div>
-                        @endif
-                    </div>
-                    <div class="checkbox">
-                        <label class="checkbox">
-                        {!! Form::checkbox('show_full_name', '1', $show_full_name) !!}Show Full Name
-                        </label>
-                    </div>
-                    <div class="checkbox">
-                        <label class="checkbox">
-                        {!! Form::checkbox('show_email', '1', $show_email) !!}Show Email
-                        </label>
-                    </div>
-                    <div class="checkbox">
-                        <label class="checkbox">
-                        {!! Form::checkbox('show_pic', '1', $show_pic) !!}Show Photo
-                        </label>
-                    </div>
-                    <div class="pull-right">
-                        {!! Form::submit('Save',array('id'=>'save','class'=>'btn btn-default btn-md active')) !!}
-                    </div>
 
-                    {!! Form::close() !!}
-                </div>
-            </div>
-            @if (count($sites)>0)
-            <div class="row">
-                <div id="trusted_sites" class="col-md-12">
-                    <legend><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true" title="Users can keep track of their trusted sites and manage them"></span>&nbsp;Trusted Sites</legend>
-                    <div class="table-responsive">
-                    <table class="table table-hover table-condensed">
-                        <thead>
-                        <tr>
-                            <th>Realm</th>
-                            <th>Policy</th>
-                            <th>Trusted Data</th>
-                            <th>&nbsp;</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @foreach ($sites as $site)
-                        @if($site->getAuthorizationPolicy()=='AllowForever')
-                        <tr class="success">
-                            @else
-                        <tr class="error">
-                            @endif
-                            <td width="50%">{!! $site->getRealm() !!}</td>
-                            <td width="10%">{!! $site->getAuthorizationPolicy()!!}</td>
-                            <td width="20%">{!! $site->getUITrustedData() !!}</td>
-                            <td width="10%">{!! HTML::link(URL::action("UserController@deleteTrustedSite",array("id"=>$site->id)),'Delete',array('class'=>'btn btn-default btn-md active btn-delete del-realm','title'=>'Deletes a decision about a particular trusted site,')) !!}</td>
-                        </tr>
-                        @endforeach
-                        </tbody>
-                    </table>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="first_name">First name</label>
+                                <input autocomplete="off" class="form-control" type="text" name="first_name" id="first_name"
+                                       value="{!! $user->first_name !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="last_name">Last name</label>
+                                <input autocomplete="off" class="form-control" type="text" name="last_name" id="last_name"
+                                       value="{!! $user->last_name !!}">
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="email">Email</label>
+                                <input class="form-control" type="email" name="email" id="email"
+                                       autocomplete="username"
+                                       value="{!! $user->email !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="identifier">Identifier</label>
+                                <input autocomplete="off" class="form-control" type="text" name="identifier" id="identifier"
+                                       value="{!! $user->identifier !!}">
+                            </div>
+
+                            <div class="clearfix"></div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="second_email">Second Email</label>
+                                <input autocomplete="off" class="form-control" type="email" name="second_email" id="second_email"
+                                       value="{!! $user->second_email !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="third_email">Third Email</label>
+                                <input autocomplete="off" class="form-control" type="email" name="third_email" id="third_email"
+                                       value="{!! $user->third_email !!}">
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="birthday">Birthday</label>
+                                <input class="form-control" type="text" name="birthday" id="birthday"
+                                       autocomplete="off"
+                                       @if($user->birthday)
+                                       value="{!! $user->birthday->format("m/d/Y") !!}"
+                                       @endif
+                                />
+                            </div>
+
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="gender">Gender</label>
+                                <select id="gender" class="form-control" name="gender">
+                                    <option value="">--SELECT A GENDER --</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Prefer not to say">Prefer not to say</option>
+                                    <option value="Specify">Let me specify</option>
+                                </select>
+                                <input class="form-control hide" type="text"
+                                       name="gender_specify" id="gender_specify"
+                                       placeholder="Specify your gender"
+                                       autocomplete="off"
+                                       value="{!! $user->gender_specify !!}">
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                <label for="bio">Bio</label>
+                                <textarea autocomplete="off" class="form-control" name="bio" id="bio">{!! $user->bio !!}</textarea>
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                <label for="bio">Statement of interest</label>
+                                <textarea autocomplete="off" class="form-control" name="statement_of_interest"
+                                          id="statement_of_interest">{!! $user->statement_of_interest !!}</textarea>
+                            </div>
+
+                            <div class="form-group col-xs-10 col-sm-4 col-md-4 col-lg-4">
+                                <label for="irc">IRC</label>
+                                <input autocomplete="off" class="form-control" type="text" name="irc" id="irc" value="{!! $user->irc !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-4 col-lg-4">
+                                <label for="github_user">Github user</label>
+                                <input autocomplete="off" class="form-control" type="text" name="github_user" id="github_user"
+                                       value="{!! $user->github_user !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-4 col-lg-4">
+                                <label for="github_user">Twitter</label>
+                                <input autocomplete="off" class="form-control" type="text" name="twitter_name" id="twitter_name"
+                                       value="{!! $user->twitter_name !!}">
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="wechat_user">WEChat user</label>
+                                <input autocomplete="off" class="form-control" type="text" name="wechat_user" id="wechat_user"
+                                       value="{!! $user->wechat_user !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="linked_in_profile">LinkedIn Profile</label>
+                                <input autocomplete="off" class="form-control" type="text" name="linked_in_profile" id="linked_in_profile"
+                                       value="{!! $user->linked_in_profile !!}">
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="address1">Address 1</label>
+                                <input autocomplete="off" class="form-control" type="text" name="address1" id="address1"
+                                       value="{!! $user->address1 !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="address2">Address 2</label>
+                                <input autocomplete="off" class="form-control" type="text" name="address2" id="address2"
+                                       value="{!! $user->address2 !!}">
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="city">City</label>
+                                <input autocomplete="off" class="form-control" type="text" name="city" id="city"
+                                       value="{!! $user->city !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="state">State</label>
+                                <input autocomplete="off" class="form-control" type="text" name="state" id="state"
+                                       value="{!! $user->state !!}">
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="post_code">Post Code</label>
+                                <input autocomplete="off" class="form-control" type="text" name="post_code" id="post_code"
+                                       value="{!! $user->post_code !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="country_iso_code">Country</label>
+                                <select id="country_iso_code" class="form-control" name="country_iso_code"
+                                        value="{!! $user->country_iso_code !!}" autofocus>
+                                    <option value="">--SELECT A COUNTRY --</option>
+                                    @foreach($countries as $country)
+                                        <option value="{!! $country->getAlpha2() !!}">{!! $country->getName() !!}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                <label for="language">Language</label>
+                                <select id="language" class="form-control" name="language"
+                                        value="{!! $user->language !!}">
+                                    <option value="">--SELECT A LANGUAGE --</option>
+                                    @foreach($languages as $language)
+                                        <option value="{!! $language->getAlpha2() !!}">{!! $language->getName() !!}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                <a href="#" class="change-password-link">Change Password</a>
+                            </div>
+                            <div id="password_container">
+                                <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                    <input type="password" class="form-control" id="password" name="password"
+                                           autocomplete="new-password"
+                                           placeholder="Password">
+                                </div>
+                                <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                    <input type="password" class="form-control" id="password-confirm"
+                                           autocomplete="new-password"
+                                           name="password_confirmation" placeholder="Confirm Password">
+                                </div>
+                            </div>
+                            <div class="checkbox col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                <label>
+                                    <input type="checkbox" id="public_profile_show_fullname" name="public_profile_show_fullname"
+                                           @if($user->public_profile_show_fullname)
+                                           checked
+                                            @endif
+                                    />&nbsp;Show Full name on Public Profile?
+                                </label>
+                            </div>
+                            <div class="checkbox col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                <label>
+                                    <input type="checkbox" id="public_profile_show_photo" name="public_profile_show_photo"
+                                           @if($user->public_profile_show_photo)
+                                           checked
+                                            @endif
+                                    />&nbsp;Show Pic on Public Profile?
+                                </label>
+                            </div>
+                            <div class="checkbox col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                <label>
+                                    <input type="checkbox" id="public_profile_show_email" name="public_profile_show_email"
+                                           @if($user->public_profile_show_email)
+                                           checked
+                                            @endif
+                                    />&nbsp;Show Email on Public Profile?
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-default btn-lg btn-primary">Save</button>
+                            <input type="hidden" name="id" id="id" value="{!! $user->id !!}"/>
+                        </form>
                     </div>
                 </div>
-            </div>
-            @endif
-
-            @if (count($actions)>0)
-            <div class="row">
-                <div id="actions" class="col-md-12">
-                    <legend><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true" title="Users actions"></span>&nbsp;User Actions</legend>
-                    <div class="table-responsive">
-
-                    <table class="table table-hover table-condensed">
-                        <thead>
-                        <tr>
-                            <th>From Realm</th>
-                            <th>Action</th>
-                            <th>From IP</th>
-                            <th><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true"title="Time is on UTC"></span>&nbsp;When</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @foreach ($actions as $action)
-                        <tr>
-                            @if(is_null($action->realm))
-                            <td>Site</td>
-                            @else
-                            <td>{!! $action->realm !!}</td>
-                            @endif
-                            <td>{!! $action->user_action !!}</td>
-                            <td>{!! $action->from_ip !!}</td>
-                            <td>{!! $action->created_at !!}</td>
-                        </tr>
-                        @endforeach
-                        </tbody>
-                    </table>
+                @if (count($sites)>0)
+                    <div class="row">
+                        <div id="trusted_sites" class="col-md-12">
+                            <legend><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true"
+                                          title="Users can keep track of their trusted sites and manage them"></span>&nbsp;Trusted
+                                Sites
+                            </legend>
+                            <div class="table-responsive">
+                                <table class="table table-hover table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Realm</th>
+                                        <th>Policy</th>
+                                        <th>Trusted Data</th>
+                                        <th>&nbsp;</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach ($sites as $site)
+                                        @if($site->getAuthorizationPolicy()=='AllowForever')
+                                            <tr class="success">
+                                        @else
+                                            <tr class="error">
+                                                @endif
+                                                <td width="50%">{!! $site->getRealm() !!}</td>
+                                                <td width="10%">{!! $site->getAuthorizationPolicy()!!}</td>
+                                                <td width="20%">{!! $site->getUITrustedData() !!}</td>
+                                                <td width="10%">{!! HTML::link(URL::action("UserController@deleteTrustedSite",["id"=>$site->getId()]),'Delete',array('class'=>'btn btn-default btn-md active btn-delete del-realm','title'=>'Deletes a decision about a particular trusted site,')) !!}</td>
+                                            </tr>
+                                            @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                @endif
+
+                @if (count($actions)>0)
+                    <div class="row">
+                        <div id="actions" class="col-md-12">
+                            <legend><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true"
+                                          title="Users actions"></span>&nbsp;User Actions
+                            </legend>
+                            <div class="table-responsive">
+
+                                <table class="table table-hover table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>From Realm</th>
+                                        <th>Action</th>
+                                        <th>From IP</th>
+                                        <th><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true"
+                                                  title="Time is on UTC"></span>&nbsp;When
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach ($actions as $action)
+                                        <tr>
+                                            @if(!$action->hasRealm())
+                                                <td>Site</td>
+                                            @else
+                                                <td>{!! $action->getRealm() !!}</td>
+                                            @endif
+                                            <td>{!! $action->getUserAction() !!}</td>
+                                            <td>{!! $action->getFromIp() !!}</td>
+                                            <td>{!! $action->getCreatedAt()->format("Y-m-d H:i:s") !!}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             </div>
-            @endif
         </div>
     </div>
-</div>
-<div class="col-md-3">
-    &nbsp;
-</div>
+    <div class="col-md-3">&nbsp;
+    </div>
 @stop
 @section('scripts')
-<script type="application/javascript">
-    $(document).ready(function() {
-        $('#profile','#main-menu').addClass('active');
-    });
-</script>
+    <script type="application/javascript">
+        $(document).ready(function () {
+            $('#profile', '#main-menu').addClass('active');
+        });
+    </script>
 @stop
+
+@section('scripts')
+    <!-- include summernote css/js -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/summernote/0.8.12/summernote.css" rel="stylesheet">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/summernote/0.8.12/summernote.js"></script>
+    <script type="application/javascript">
+        var current_language = '{!!$user->language!!}';
+        var current_country  = '{!!$user->country_iso_code!!}';
+        var current_gender   = '{!! $user->gender !!}';
+    </script>
+    {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
+    {!! HTML::style('assets/chosen-js/chosen.css') !!}
+    {!! HTML::script('assets/chosen-js/chosen.jquery.js') !!}
+    {!! HTML::script("assets/js/urlfragment.jquery.js") !!}
+    {!! HTML::script("assets/moment/min/moment.min.js") !!}
+    {!! HTML::script('assets/js/profile.js') !!}
+@append

@@ -38,13 +38,13 @@ final class LaravelMailerHandler extends MailHandler
      * Optional headers for the message
      * @var array
      */
-    protected $headers = array();
+    protected $headers = [];
 
     /**
      * Optional parameters for the message
      * @var array
      */
-    protected $parameters = array();
+    protected $parameters = [];
 
     /**
      * The wordwrap length for the message

@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Services;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,32 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Models\IAsymmetricKey;
-
+use App\Services\IBaseService;
 /**
  * Interface IAsymmetricKeyService
  * @package OAuth2\Services
  */
-interface IAsymmetricKeyService
+interface IAsymmetricKeyService extends IBaseService
 {
-    /**
-     * @param array $params
-     * @return IAsymmetricKey
-     */
-    public function register(array $params);
-
-    /**
-     * @param $key_id
-     * @return bool
-     */
-    public function delete($key_id);
-
-    /**
-     * @param int $key_id
-     * @param array $params
-     * @return bool
-     */
-    public function update($key_id, array $params);
 
 }

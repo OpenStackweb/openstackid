@@ -17,7 +17,7 @@
         <label for="rate_limit">Rate Limit (Per Hour)&nbsp;<span aria-hidden="true"
                                                                  class="glyphicon glyphicon-info-sign pointable"
                                                                  title=''></span></label>
-        <input class="form-control" type="number" name="rate_limit" id="rate_limit">
+        <input class="form-control" type="number" name="rate_limit" id="rate_limit" value="0">
     </div>
     <div class="form-group">
         <label for="http_method">HTTP Method&nbsp;<span aria-hidden="true"

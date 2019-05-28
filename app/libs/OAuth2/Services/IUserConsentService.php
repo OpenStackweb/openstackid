@@ -11,9 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\Models\IUserConsent;
-use Utils\Exceptions\EntityNotFoundException;
-
+use Auth\User;
+use Models\OAuth2\Client;
+use Models\OAuth2\UserConsent;
+use models\exceptions\EntityNotFoundException;
 /**
  * Interface IUserConsentService
  * @package OAuth2\Services
@@ -21,19 +22,11 @@ use Utils\Exceptions\EntityNotFoundException;
 interface IUserConsentService
 {
     /**
-     * @param int $user_id
-     * @param string $client_id
+     * @param User $user
+     * @param Client $client
      * @param string $scopes
-     * @return IUserConsent
-     */
-    public function get($user_id, $client_id, $scopes);
-
-    /**
-     * @param int  $user_id
-     * @param string $client_id
-     * @param string $scopes
-     * @return IUserConsent
+     * @return UserConsent
      * @throws EntityNotFoundException
      */
-    public function add($user_id, $client_id, $scopes);
+    public function addUserConsent(User $user, Client $client, string $scopes):UserConsent;
 } 

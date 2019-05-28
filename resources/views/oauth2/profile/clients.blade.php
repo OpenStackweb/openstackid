@@ -1,9 +1,9 @@
 @extends('layout')
 @section('title')
-    <title>Welcome to OpenStackId - OAUTH2 Console - Clients</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - OAUTH2 Console - Clients</title>
 @stop
 @section('content')
-    @include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+    @include('menu')
     <div class="row">
         <div id="clients" class="col-md-12">
             <div class="table-responsive">
@@ -11,7 +11,7 @@
                           title="Users can keep track of their registered applications and manage them"></span>&nbsp;Registered
                 Applications
             </legend>
-            {!! HTML::link(URL::action("Api\ClientApiController@create",null),'Register Application',array('class'=>'btn btn-primary btn-md active add-client','title'=>'Adds a Registered Application')) !!}
+            {!! HTML::link(URL::action("Api\ClientApiController@create"),'Register Application',['class'=>'btn btn-primary btn-md active add-client','title'=>'Adds a Registered Application']) !!}
             @if (count($clients)>0)
                 <table id='tclients' class="table table-hover table-condensed">
                     <thead>
@@ -30,30 +30,30 @@
                     @foreach ($clients as $client)
                         <tr>
                             <td>@if (!$client->isOwner(Auth::user()))<i title="you have admin rights on this application" class="fa fa-user"></i>@endif</td>
-                            <td>{!! $client->app_name !!}</td>
+                            <td>{!! $client->getApplicationName() !!}</td>
                             <td>{!! $client->getFriendlyApplicationType()!!}</td>
                             <td>
                                 @if ($client->isOwner(Auth::user()))
-                                <input type="checkbox" class="app-active-checkbox" id="app-active_{!!$client->id!!}"
-                                       @if ( $client->active)
+                                <input type="checkbox" class="app-active-checkbox" id="app-active_{!!$client->getId()!!}"
+                                       @if ( $client->isActive())
                                        checked
                                        @endif
-                                       value="{!!$client->id!!}"/>
+                                       value="{!!$client->getId()!!}"/>
                                 @endif
                             </td>
                             <td>
-                                <input type="checkbox" class="app-locked-checkbox" id="app-locked_{!!$client->id!!}"
-                                @if ( $client->locked)
+                                <input type="checkbox" class="app-locked-checkbox" id="app-locked_{!!$client->getId()!!}"
+                                @if ( $client->isLocked())
                                        checked
                                        @endif
-                                       value="{!!$client->id!!}" disabled="disabled" />
+                                       value="{!!$client->getId()!!}" disabled="disabled" />
                             </td>
-                            <td>{!! $client->updated_at !!}</td>
+                            <td>{!! $client->getUpdatedAt()->format("Y-m-d H:i:s") !!}</td>
                             <td>{!! $client->getEditedByNice() !!}</td>
                             <td>&nbsp;
-                                {!! HTML::link(URL::action("AdminController@editRegisteredClient",array("id"=>$client->id)),'Edit',array('class'=>'btn btn-default btn-md active edit-client','title'=>'Edits a Registered Application')) !!}
+                                {!! HTML::link(URL::action("AdminController@editRegisteredClient",array("id"=>$client->getId())),'Edit',array('class'=>'btn btn-default btn-md active edit-client','title'=>'Edits a Registered Application')) !!}
                                 @if ($client->canDelete(Auth::user()))
-                                {!! HTML::link(URL::action("Api\ClientApiController@delete",array("id"=>$client->id)),'Delete',array('class'=>'btn btn-default btn-md active del-client','title'=>'Deletes a Registered Application')) !!}</td>
+                                {!! HTML::link(URL::action("Api\ClientApiController@delete",array("id"=>$client->getId())),'Delete',array('class'=>'btn btn-default btn-md active del-client','title'=>'Deletes a Registered Application')) !!}</td>
                                 @endif
                         </tr>
                     @endforeach
@@ -91,13 +91,13 @@
     <script type="application/javascript">
         var userId = {!!$user_id!!};
         var clientsUrls = {
-            load: '{!! URL::action("Api\\ClientApiController@getByPage",array("offset"=>1,"limit"=>1000,"user_id"=>$user_id ))!!}',
+            load: '{!! URL::action("Api\\ClientApiController@getAll", array("page"=>1,"per_page"=>100))!!}',
             edit: '{!! URL::action("AdminController@editRegisteredClient",array("id"=>"@id")) !!}',
             delete: '{!! URL::action("Api\\ClientApiController@delete",array("id"=>"@id")) !!}',
             add: '{!!URL::action("Api\\ClientApiController@create",null)!!}',
             activate: '{!! URL::action("Api\\ClientApiController@activate",array("id"=>"@id")) !!}',
             deactivate: '{!! URL::action("Api\\ClientApiController@deactivate",array("id"=>"@id")) !!}',
-            fetchUsers: '{!!URL::action("Api\\UserApiController@fetch")!!}',
+            fetchUsers: '{!!URL::action("Api\\UserApiController@getAll")!!}',
         };
     </script>
     {!! HTML::script('assets/js/oauth2/profile/clients.js') !!}

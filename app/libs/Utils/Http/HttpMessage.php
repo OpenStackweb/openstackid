@@ -29,12 +29,12 @@ class HttpMessage implements ArrayAccess
     /**
      * @var array
      */
-    protected $container = array();
+    protected $container = [];
 
     /**
      * @param array $values
      */
-    public function __construct(array $values = array())
+    public function __construct(array $values = [])
     {
         $this->container = $values;
     }

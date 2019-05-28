@@ -1,11 +1,12 @@
 @extends('layout')
 @section('title')
-    <title>Welcome to OpenStackId - Server Admin - Server Private Keys</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Server Private Keys</title>
 @stop
 @section('css')
     {!! HTML::style('assets/css/private-keys.css') !!}
 @append
 @section('scripts')
+    {!! HTML::script("assets/moment/min/moment.min.js") !!}
     {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
     {!! HTML::script('assets/js/oauth2/profile/admin/server-private-keys.js') !!}
 
@@ -13,7 +14,7 @@
         var privateKeyUrls =
         {
             add: '{!!URL::action("Api\ServerPrivateKeyApiController@create")!!}',
-            get: '{!!URL::action("Api\ServerPrivateKeyApiController@getByPage")!!}',
+            get: '{!!URL::action("Api\ServerPrivateKeyApiController@getAll", array("page"=>1,"per_page"=>100))!!}',
             delete: '{!!URL::action("Api\ServerPrivateKeyApiController@delete",array("id" =>'@id'))!!}',
             update: '{!!URL::action("Api\ServerPrivateKeyApiController@update",array('public_key_id'=> '@id'))!!}'
         };
@@ -31,7 +32,7 @@
     </script>
 @append
 @section('content')
-    @include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+    @include('menu')
 
     <table id="private-keys-table" class="table">
         <caption>
@@ -52,7 +53,7 @@
         </tr>
         </thead>
         <tbody id="body-private-keys">
-        @foreach ($private_keys as $private_key)
+        @foreach ($private_keys->getItems() as $private_key)
             <tr id="tr_{!!$private_key->id!!}">
                 <td width="7%">
                     <div class="row">
@@ -79,7 +80,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-md-12">
-                                    <span class="private-key-validity-range">valid from <strong>{!!$private_key->valid_from!!}</strong> to <strong>{!!$private_key->valid_to!!}</strong></span>
+                                    <span class="private-key-validity-range">valid from <strong>{!!$private_key->valid_from->format('Y-m-d H:i:s')!!}</strong> to <strong>{!!$private_key->valid_to->format('Y-m-d H:i:s')!!}</strong></span>
                                 </div>
                             </div>
                         </div>
@@ -91,7 +92,7 @@
         </tbody>
     </table>
     <div class="alert alert-danger private-keys-empty-message" role="alert"
-         @if(count($private_keys) > 0 )
+         @if($private_keys->getTotal() > 0 )
          style="display: none"
          @endif
          >

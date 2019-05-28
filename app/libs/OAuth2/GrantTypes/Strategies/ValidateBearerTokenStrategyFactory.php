@@ -11,27 +11,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Utils\IUserIPHelperProvider;
 use OAuth2\Models\ClientAuthenticationContext;
 use OAuth2\Models\IClient;
 use OAuth2\Services\ITokenService;
-
 /**
  * Class ValidateBearerTokenStrategyFactory
  * @package OAuth2\GrantTypes\Strategies
  */
 final class ValidateBearerTokenStrategyFactory
 {
-
-
     /**
      * @param ClientAuthenticationContext $client_auth_context
      * @param ITokenService $token_service
      * @param IClient $client
+     * @param IUserIPHelperProvider $ip_helper
      * @return ValidateBearerTokenResourceServerStrategy|ValidateBearerTokenStrategy
      */
-    public static function build(ClientAuthenticationContext $client_auth_context, ITokenService $token_service, IClient $client){
+    public static function build
+    (
+        ClientAuthenticationContext $client_auth_context,
+        ITokenService $token_service,
+        IClient $client,
+        IUserIPHelperProvider $ip_helper
+    )
+    {
         if($client->isResourceServerClient())
-            return new ValidateBearerTokenResourceServerStrategy($token_service);
+            return new ValidateBearerTokenResourceServerStrategy($token_service, $ip_helper);
         return new ValidateBearerTokenStrategy($client_auth_context);
     }
 }

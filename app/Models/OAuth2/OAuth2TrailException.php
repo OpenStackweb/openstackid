@@ -11,12 +11,89 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\BaseModelEloquent;
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOAuth2TrailExceptionRepository")
+ * @ORM\Table(name="oauth2_exception_trail")
  * Class OAuth2TrailException
  * @package Models
  */
-class OAuth2TrailException extends BaseModelEloquent
+class OAuth2TrailException extends BaseEntity
 {
-    protected $table = 'oauth2_exception_trail';
-} 
+    /**
+     * @ORM\Column(name="from_ip", type="string")
+     * @var string
+     */
+    private $from_ip;
+
+    /**
+     * @ORM\Column(name="exception_type", type="string")
+     * @var string
+     */
+    private $exception_type;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"})
+     * @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=true)
+     * @var Client
+     */
+    private $client;
+
+    /**
+     * @return string
+     */
+    public function getFromIp(): string
+    {
+        return $this->from_ip;
+    }
+
+    /**
+     * @param string $from_ip
+     */
+    public function setFromIp(string $from_ip): void
+    {
+        $this->from_ip = $from_ip;
+    }
+
+    /**
+     * @return string
+     */
+    public function getExceptionType(): string
+    {
+        return $this->exception_type;
+    }
+
+    /**
+     * @param string $exception_type
+     */
+    public function setExceptionType(string $exception_type): void
+    {
+        $this->exception_type = $exception_type;
+    }
+
+    /**
+     * @return Client
+     */
+    public function getClient(): Client
+    {
+        return $this->client;
+    }
+
+    /**
+     * @param Client $client
+     */
+    public function setClient(Client $client): void
+    {
+        $this->client = $client;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
+    }
+}

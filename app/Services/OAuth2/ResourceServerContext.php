@@ -11,9 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\IResourceServerContext;
-
 /**
  * Class ResourceServerContext
  * @package Services\OAuth2
@@ -30,7 +28,7 @@ class ResourceServerContext implements IResourceServerContext {
      */
     public function getCurrentScope()
     {
-        return isset($this->auth_context['scope'])? explode(' ',$this->auth_context['scope']):array();
+        return isset($this->auth_context['scope'])? explode(' ',$this->auth_context['scope']):[];
     }
 
     /**

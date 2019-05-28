@@ -14,7 +14,6 @@
 use Illuminate\Support\Facades\Request;
 use OpenId\Xrds\XRDSDocumentBuilder;
 use App\Http\Controllers\Controller;
-
 /**
  * Class OpenIdController
  * @package App\Http\Controllers\OpenId

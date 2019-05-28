@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use App\Http\Utils\IUserIPHelperProvider;
 use Illuminate\Support\ServiceProvider;
 use OAuth2\Services\AccessTokenGenerator;
 use OAuth2\Services\AuthorizationCodeGenerator;
@@ -19,7 +20,6 @@ use OAuth2\Services\OAuth2ServiceCatalog;
 use OAuth2\Services\RefreshTokenGenerator;
 use Utils\Services\UtilsServiceCatalog;
 use Illuminate\Support\Facades\App;
-
 /**
  * Class OAuth2ServiceProvider
  * @package Services\OAuth2
@@ -55,7 +55,8 @@ final class OAuth2ServiceProvider extends ServiceProvider
             return new IdTokenBuilderImpl
             (
                 App::make(\OAuth2\Repositories\IServerPrivateKeyRepository::class),
-                new HttpIClientJWKSetReader
+                new HttpIClientJWKSetReader,
+                App::make(UtilsServiceCatalog::TransactionService)
             );
         });
 
@@ -81,6 +82,7 @@ final class OAuth2ServiceProvider extends ServiceProvider
                 App::make(\OAuth2\Repositories\IAccessTokenRepository::class),
                 App::make(\OAuth2\Repositories\IRefreshTokenRepository::class),
                 App::make(\OAuth2\Repositories\IResourceServerRepository::class),
+                App::make(IUserIPHelperProvider::class),
                 App::make(UtilsServiceCatalog::TransactionService)
             );
         });

@@ -11,10 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Models\IResourceServer;
-use Utils\Db\IBaseRepository;
-
+use Models\OAuth2\ResourceServer;
+use models\utils\IBaseRepository;
 /**
  * Interface IResourceServerRepository
  * @package OAuth2\Repositories
@@ -22,28 +20,28 @@ use Utils\Db\IBaseRepository;
 interface IResourceServerRepository extends IBaseRepository
 {
     /**
-     * @param string $host
-     * @return IResourceServer
+     * @param string|array $host
+     * @return ResourceServer
      */
-    public function getByHost($host);
+    public function getByHost(string $host):?ResourceServer;
 
     /**
      * @param string $ip
-     * @return IResourceServer
+     * @return ResourceServer
      */
-    public function getByIp($ip);
+    public function getByIp(string $ip):?ResourceServer;
 
     /**
      * @param string $name
-     * @return IResourceServer
+     * @return ResourceServer
      */
-    public function getByFriendlyName($name);
+    public function getByFriendlyName(string $name):?ResourceServer;
 
     /**
      * @param array $audience
      * @param string $ip
-     * @return IResourceServer
+     * @return ResourceServer
      */
-    public function getByAudienceAndIpAndActive(array $audience, $ip);
+    public function getByAudienceAndIpAndActive(array $audience, string $ip):?ResourceServer;
 
 }

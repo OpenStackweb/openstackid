@@ -1,16 +1,16 @@
 @extends('layout')
 
 @section('title')
-    <title>Welcome to OpenStackId - Server Admin - Edit API Endpoint</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Edit API Endpoint</title>
 @stop
 
 @section('content')
-    @include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
-    <a href='{!! URL::action("AdminController@editApi", array("id"=>$endpoint->api_id)) !!}'>Go Back</a>
-    <legend>@lang("messages.edit_endpoint_title", array("id" => $endpoint->id))</legend>
+    @include('menu')
+    <a href='{!! URL::action("AdminController@editApi", ["id"=>$endpoint->api_id]) !!}'>Go Back</a>
+    <legend>@lang("messages.edit_endpoint_title", ["id" => $endpoint->id])</legend>
     <div class="row-fluid">
         <div class="span6">
-            <form id="endpoint-form" name="endpoint-form" action='{!!URL::action("Api\\ApiEndpointController@update",null)!!}'>
+            <form id="endpoint-form" name="endpoint-form" action='{!!URL::action("Api\\ApiEndpointController@update",['id' => $endpoint->id])!!}'>
                 <div class="form-group">
                     <label for="name">Name</label>
                     <input class="form-control" type="text" name="name" id="name" value="{!! $endpoint->name !!}">
@@ -62,6 +62,7 @@
 
                 <button type="submit" class="btn btn-default active">Save</button>
                 <input type="hidden" name="id" id="id" value="{!! $endpoint->id !!}"/>
+                <input type="hidden" name="api_id" id="api_id" value="{!! $endpoint->api_id !!}"/>
             </form>
         </div>
     </div>
@@ -73,7 +74,7 @@
                                                                                    title='@lang("messages.edit_endpoint_scope_info_title")'></span>
             </legend>
             <ul class="unstyled list-inline">
-                @foreach($endpoint->api()->first()->scopes()->get() as $scope)
+                @foreach($endpoint->getApi()->getScopes() as $scope)
                     <li>
                         <div class="checkbox">
                             <label>

@@ -12,98 +12,140 @@
  * limitations under the License.
  **/
 use Auth\User;
-use OAuth2\Models\IClient;
-use Utils\Model\BaseModelEloquent;
 use DateTime;
 use DateInterval;
 use DateTimeZone;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Cache;
-
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineAccessTokenRepository")
+ * @ORM\Table(name="oauth2_access_token")
  * Class AccessToken
  * @package Models\OAuth2
  */
-class AccessToken extends BaseModelEloquent {
+class AccessToken extends BaseEntity {
 
-    protected $fillable = array
-    (
-        'value',
-        'user_id',
-        'from_ip',
-        'associated_authorization_code',
-        'lifetime',
-        'scope',
-        'audience',
-        'created_at',
-        'updated_at',
-        'client_id',
-        'refresh_token_id'
-    );
+    /**
+     * @ORM\Column(name="from_ip", type="string")
+     * @var string
+     */
+    private $from_ip;
 
-    protected $table = 'oauth2_access_token';
+    /**
+     * @ORM\Column(name="value", type="string")
+     * @var string
+     */
+    private $value;
+
+    /**
+     * @ORM\Column(name="associated_authorization_code", type="string", nullable=true)
+     * @var string
+     */
+    private $associated_authorization_code;
+
+    /**
+     * @ORM\Column(name="lifetime", type="integer")
+     * @var int
+     */
+    private $lifetime;
+
+    /**
+     * @ORM\Column(name="scope", type="string")
+     * @var string
+     */
+    private $scope;
+
+    /**
+     * @ORM\Column(name="audience", type="string")
+     * @var string
+     */
+    private $audience;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\RefreshToken", cascade={"persist"}, inversedBy="access_tokens")
+     * @ORM\JoinColumn(name="refresh_token_id", referencedColumnName="id", nullable=true)
+     * @var RefreshToken
+     */
+    private $refresh_token;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"}, inversedBy="access_tokens")
+     * @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=true)
+     * @var Client
+     */
+    private $client;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="access_tokens")
+     * @ORM\JoinColumn(name="user_id", referencedColumnName="id", nullable=true)
+     * @var User
+     */
+    private $owner;
 
     private $friendly_scopes;
 
-    public function refresh_token()
+
+    public function __construct()
     {
-        return $this->belongsTo('Models\OAuth2\RefreshToken');
+        parent::__construct();
+        $this->refresh_tokens = new ArrayCollection();
     }
 
     /**
-     * @return RefreshToken
+     * @return RefreshToken|null
      */
-    public function getRefreshToken(){
-        return Cache::remember
-        (
-            'refresh_token_'.$this->refresh_token_id,
-            Config::get("cache_regions.region_refresh_token_lifetime", 1140),
-            function() {
-                return $this->refresh_token()->first();
-            }
-        );
-    }
-
-    public function client(){
-        return $this->belongsTo('Models\OAuth2\Client');
+    public function getRefreshToken() : ?RefreshToken {
+        return $this->refresh_token;
     }
 
     /**
-     * @return IClient
+     * @return Client
      */
-    public function getClient(){
-        return Cache::remember
-        (
-            'client_'.$this->client_id,
-            Config::get("cache_regions.region_clients_lifetime", 1140),
-            function() {
-                return $this->client()->first();
-            }
-        );
+    public function getClient():Client{
+        return $this->client;
     }
-
-    public function user(){
-        return $this->belongsTo('Auth\User');
-    }
-
     /**
      * @return User
      */
-    public function getUser(){
-        return Cache::remember
-        (
-            'user_'.$this->user_id,
-            Config::get("cache_regions.region_users_lifetime", 1140),
-            function() {
-                return $this->user()->first();
-            }
-        );
+    public function getUser():User{
+       return $this->owner;
+    }
+
+
+    public function getFriendlyScopes():string {
+        return $this->friendly_scopes;
+    }
+
+    /**
+     * @param string $friendly_scopes
+     */
+    public function setFriendlyScopes(string $friendly_scopes){
+        $this->friendly_scopes = $friendly_scopes;
+    }
+
+    /**
+     * @return int
+     */
+    public function getRemainingLifetime():int
+    {
+        //check is refresh token is stills alive... (ZERO is infinite lifetime)
+        if (intval($this->lifetime) == 0) return 0;
+        $created_at = clone $this->created_at;
+        $created_at->setTimezone(new DateTimeZone('UTC'));
+        $created_at->add(new DateInterval('PT' . intval($this->lifetime) . 'S'));
+        $now = new DateTime(gmdate("Y-m-d H:i:s", time()), new DateTimeZone("UTC"));
+        //check validity...
+        if ($now > $created_at)
+            return -1;
+        $seconds = abs($created_at->getTimestamp() - $now->getTimestamp());;
+        return $seconds;
     }
 
     /**
      * @return bool
      */
-    public function isVoid(){
+    public function isVoid():bool {
         //check lifetime...
         $created_at = $this->created_at;
         $created_at->add(new DateInterval('PT' . intval($this->lifetime) . 'S'));
@@ -112,33 +154,195 @@ class AccessToken extends BaseModelEloquent {
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getFriendlyScopes(){
-        return $this->friendly_scopes;
+    public function getFromIp(): string
+    {
+        return $this->from_ip;
     }
 
     /**
-     * @param $friendly_scopes
+     * @return string
      */
-    public function setFriendlyScopes($friendly_scopes){
-        $this->friendly_scopes = $friendly_scopes;
+    public function getValue(): string
+    {
+        return $this->value;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getAssociatedAuthorizationCode(): ?string
+    {
+        return $this->associated_authorization_code;
     }
 
     /**
      * @return int
      */
-    public function getRemainingLifetime()
+    public function getLifetime(): int
     {
-        //check is refresh token is stills alive... (ZERO is infinite lifetime)
-        if (intval($this->lifetime) == 0) return 0;
-        $created_at = new DateTime($this->created_at, new DateTimeZone("UTC"));
-        $created_at->add(new DateInterval('PT' . intval($this->lifetime) . 'S'));
-        $now = new DateTime(gmdate("Y-m-d H:i:s", time()), new DateTimeZone("UTC"));
-        //check validity...
-        if ($now > $created_at)
-            return -1;
-        $seconds = abs($created_at->getTimestamp() - $now->getTimestamp());;
-        return $seconds;
+        return $this->lifetime;
+    }
+
+    /**
+     * @return string
+     */
+    public function getScope(): string
+    {
+        return $this->scope;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAudience(): string
+    {
+        return $this->audience;
+    }
+
+    /**
+     * @return User
+     */
+    public function getOwner(): User
+    {
+        return $this->owner;
+    }
+
+    /**
+     * @param string $from_ip
+     */
+    public function setFromIp(string $from_ip): void
+    {
+        $this->from_ip = $from_ip;
+    }
+
+    /**
+     * @param string $value
+     */
+    public function setValue(string $value): void
+    {
+        $this->value = $value;
+    }
+
+    /**
+     * @param string $associated_authorization_code
+     */
+    public function setAssociatedAuthorizationCode(string $associated_authorization_code): void
+    {
+        $this->associated_authorization_code = $associated_authorization_code;
+    }
+
+    /**
+     * @param int $lifetime
+     */
+    public function setLifetime(int $lifetime): void
+    {
+        $this->lifetime = $lifetime;
+    }
+
+    /**
+     * @param string $scope
+     */
+    public function setScope(string $scope): void
+    {
+        $this->scope = $scope;
+    }
+
+    /**
+     * @param string $audience
+     */
+    public function setAudience(string $audience): void
+    {
+        $this->audience = $audience;
+    }
+
+    /**
+     * @param RefreshToken $refresh_token
+     */
+    public function setRefreshToken(RefreshToken $refresh_token): void
+    {
+        $this->refresh_token = $refresh_token;
+    }
+
+    /**
+     * @param Client $client
+     */
+    public function setClient(Client $client): void
+    {
+        $this->client = $client;
+    }
+
+    /**
+     * @param User $owner
+     */
+    public function setOwner(User $owner): void
+    {
+        $this->owner = $owner;
+    }
+
+    /**
+     * @return int
+     */
+    public function getOwnerId():int{
+        try {
+            return is_null($this->owner) ? 0 : $this->owner->getId();
+        }
+        catch(\Exception $ex){
+            return 0;
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasOwner():bool{
+        return $this->getOwnerId() > 0;
+    }
+
+    /**
+     * @return int
+     */
+    public function getClientId():int{
+        try {
+            return is_null($this->client) ? 0 : $this->client->getId();
+        }
+        catch(\Exception $ex){
+            return 0;
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasClient():bool{
+        return $this->getClientId() > 0;
+    }
+
+    /**
+     * @return int
+     */
+    public function getRefreshTokenId():int{
+        try {
+            return is_null($this->refresh_token) ? 0 : $this->refresh_token->getId();
+        }
+        catch(\Exception $ex){
+            return 0;
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasRefreshToken():bool{
+        return $this->getRefreshTokenId() > 0;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
     }
 } 

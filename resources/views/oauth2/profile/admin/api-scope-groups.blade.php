@@ -1,12 +1,12 @@
 @extends('layout')
 
 @section('title')
-    <title>Welcome to OpenStackId - Server Admin - Api Scope Groups</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Api Scope Groups</title>
 @stop
 
 @section('content')
 
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 <div class="row">
     <div class="row">
         <h4 style="float:left"><span aria-hidden="true" class="glyphicon glyphicon-info-sign pointable" title="Registered Api Scope Groups"></span>&nbsp;Api Scope Groups</h4>
@@ -30,7 +30,7 @@
         </tr>
         </thead>
         <tbody id="body-api-scope-groups">
-        @foreach ($groups as $group)
+        @foreach ($groups->getItems() as $group)
             <tr id="{!! $group->id !!}">
                 <td>{!!$group->name!!}</td>
                 <td>
@@ -51,7 +51,7 @@
         </tbody>
     </table>
     <div  id="info-api-scope-groups" class="alert alert-danger private-keys-empty-message" role="alert"
-         @if(count($groups) > 0 )
+         @if($groups->getTotal() > 0)
          style="display: none"
          @endif
     >
@@ -68,25 +68,15 @@
     <script type="application/javascript">
         var ApiScopeGroupUrls =
         {
-            get : '{!!URL::action("Api\ApiScopeGroupController@getByPage",array("offset"=>1,"limit"=>1000))!!}',
+            get : '{!!URL::action("Api\ApiScopeGroupController@getAll",array("page"=>1,"per_page"=>100))!!}',
             edit : '{!! URL::action("AdminController@editApiScopeGroup",array("id"=>-1)) !!}',
             delete : '{!! URL::action("Api\ApiScopeGroupController@delete",array("id"=>-1)) !!}',
             activate : '{!! URL::action("Api\ApiScopeGroupController@activate",array("id"=>"@id")) !!}',
             deactivate : '{!! URL::action("Api\ApiScopeGroupController@deactivate",array("id"=>"@id")) !!}',
             add : '{!!URL::action("Api\ApiScopeGroupController@create",null)!!}',
-            fetchUsers: '{!!URL::action("Api\UserApiController@fetch")!!}'
+            fetchUsers: '{!!URL::action("Api\UserApiController@getAll")!!}',
+            fetchScopes: '{!!URL::action("Api\ApiScopeController@getAll")!!}'
         };
-        var all_scopes = [];
-
-        @foreach($non_selected_scopes as $scope)
-            all_scopes.push(
-                {
-                    id: {!!$scope->id!!},
-                    value: '{!!$scope->name!!}'
-                }
-            );
-        @endforeach
-
     </script>
     {!! HTML::script('assets/js/oauth2/profile/admin/api-scope-groups.js') !!}
 @append

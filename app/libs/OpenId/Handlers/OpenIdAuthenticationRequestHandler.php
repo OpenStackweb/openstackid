@@ -82,8 +82,9 @@ final class OpenIdAuthenticationRequestHandler extends OpenIdMessageHandler
      * @var
      */
     private $extensions;
+
     /**
-     * @var
+     * @var RequestContext
      */
     private $current_request_context;
     /**
@@ -463,7 +464,7 @@ final class OpenIdAuthenticationRequestHandler extends OpenIdMessageHandler
             default:
                 $this->memento_service->forget();
                 $this->auth_service->clearUserAuthorizationResponse();
-                throw new \Exception("Invalid Authorization response!");
+                throw new Exception("Invalid Authorization response!");
                 break;
         }
     }
@@ -487,8 +488,12 @@ final class OpenIdAuthenticationRequestHandler extends OpenIdMessageHandler
 
         $requested_data = $this->current_request_context->getTrustedData();
 
-        $sites = $this->trusted_sites_service->getTrustedSites($currentUser, $this->current_request->getRealm(),
-            $requested_data);
+        $sites = $this->trusted_sites_service->getTrustedSites
+        (
+            $currentUser,
+            $this->current_request->getRealm(),
+            $requested_data
+        );
 
         if (is_null($sites) || count($sites) == 0) {
             //need setup to continue
@@ -524,8 +529,6 @@ final class OpenIdAuthenticationRequestHandler extends OpenIdMessageHandler
      */
     protected function canHandle(OpenIdMessage $message)
     {
-        $res = OpenIdAuthenticationRequest::IsOpenIdAuthenticationRequest($message);
-
-        return $res;
+        return OpenIdAuthenticationRequest::IsOpenIdAuthenticationRequest($message);
     }
 }

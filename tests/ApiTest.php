@@ -13,8 +13,8 @@
  **/
 use Models\OAuth2\Api;
 use Models\OAuth2\ResourceServer;
-use Tests\TestCase;
 use Tests\BrowserKitTestCase;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class ApiTest
  */
@@ -36,62 +36,65 @@ final class ApiTest extends BrowserKitTestCase {
 
     public function testGetById(){
 
-        $api = Api::where('name','=','api')->first();
+        $repository = EntityManager::getRepository(Api::class);
+        $api = $repository->findOneBy(['active'=>true]);
 
         $response = $this->action("GET", "Api\ApiController@get",
-            $parameters = array('id' => $api->id),
-            array(),
-            array(),
-            array());
+            $parameters = array('id' => $api->getId()),
+            [],
+            [],
+            []);
 
         $content                  = $response->getContent();
         $response_api = json_decode($content);
 
         $this->assertResponseStatus(200);
-        $this->assertTrue($response_api->id === $api->id);
+        $this->assertTrue($response_api->id === $api->getId());
     }
 
-    public function testGetByPage(){
+    public function testGetAll(){
 
-        $response = $this->action("GET", "Api\ApiController@getByPage",
-            $parameters = array('offset' => 1,'limit'=>10),
-            array(),
-            array(),
-            array());
+        $response = $this->action("GET", "Api\ApiController@getAll",
+            $parameters = ['page' => 1,'per_page'=> 10],
+            [],
+            [],
+            []);
 
         $content         = $response->getContent();
         $list            = json_decode($content);
-        $this->assertTrue(isset($list->total_items) && intval($list->total_items)>0);
+        $this->assertTrue(isset($list->total) && intval($list->total)>0);
         $this->assertResponseStatus(200);
     }
 
     public function testCreate(){
 
-        $resource_server = ResourceServer::where('host','=', $this->current_host)->first();
+        $repository      = EntityManager::getRepository(ResourceServer::class);
+        $resource_server = $repository->findOneBy(['host'=> $this->current_host]);
 
-        $data = array(
+        $data = [
             'name'               => 'test-api',
             'description'        => 'test api',
             'active'             => true,
-            'resource_server_id' => $resource_server->id,
-        );
+            'resource_server_id' => $resource_server->getId(),
+        ];
 
         $response = $this->action("POST", "Api\ApiController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
         $json_response = json_decode($content);
 
         $this->assertResponseStatus(201);
-        $this->assertTrue(isset($json_response->api_id) && !empty($json_response->api_id));
+        $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
     }
 
     public function testDelete(){
 
-        $resource_server = ResourceServer::where('host','=', $this->current_host)->first();
+        $repository      = EntityManager::getRepository(ResourceServer::class);
+        $resource_server = $repository->findOneBy(['host'=> $this->current_host]);
 
         $data = array(
             'name'               => 'test-api',
@@ -102,9 +105,9 @@ final class ApiTest extends BrowserKitTestCase {
 
         $response = $this->action("POST", "Api\ApiController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
         $json_response = json_decode($content);
@@ -114,17 +117,17 @@ final class ApiTest extends BrowserKitTestCase {
 
         $new_id = $json_response->api_id;
         $response = $this->action("DELETE", "Api\ApiController@delete",$parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(204);
 
         $response = $this->action("GET", "Api\ApiController@get",
             $parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content                  = $response->getContent();
         $response_api_endpoint    = json_decode($content);
@@ -144,9 +147,9 @@ final class ApiTest extends BrowserKitTestCase {
 
         $response = $this->action("POST", "Api\ApiController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
         $json_response = json_decode($content);
@@ -163,9 +166,9 @@ final class ApiTest extends BrowserKitTestCase {
             'description'        => 'test api updated',
         );
 
-        $response = $this->action("PUT", "Api\ApiController@update",$parameters = $data_update, array(),
-            array(),
-            array());
+        $response = $this->action("PUT", "Api\ApiController@update",$parameters = $data_update, [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -176,9 +179,9 @@ final class ApiTest extends BrowserKitTestCase {
 
         $response = $this->action("GET", "Api\ApiController@get",
             $parameters = array('id' =>$new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -235,18 +238,18 @@ final class ApiTest extends BrowserKitTestCase {
         $id = $resource_server_api->id;
 
         $response = $this->action("DELETE", "Api\ApiController@delete",$parameters = array('id' => $id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
 
         $this->assertResponseStatus(204);
 
         $response = $this->action("GET", "Api\ApiController@get",
             $parameters = array('id' => $id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(404);
     }

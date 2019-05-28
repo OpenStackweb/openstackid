@@ -11,64 +11,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OpenId\Models\IOpenIdUser;
-use Models\Member;
-use Utils\Exceptions\EntityNotFoundException;
-use Services\Exceptions\ValidationException;
+use App\Services\IBaseService;
+use Auth\User;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
 /**
  * Interface IUserService
  * @package OpenId\Services
  */
-interface IUserService
+interface IUserService extends IBaseService
 {
-
     /**
-     * @param Member $member
-     * @return IOpenIdUser
+     * @param int $user_id
+     * @return User
+     * @throws EntityNotFoundException
      */
-    public function buildUser(Member $member);
+    public function updateLastLoginDate(int $user_id):User;
 
     /**
      * @param int $user_id
-     * @return void
+     * @return User
      * @throws EntityNotFoundException
      */
-    public function updateLastLoginDate($user_id);
+    public function updateFailedLoginAttempts(int $user_id):User;
 
     /**
      * @param int $user_id
-     * @return void
+     * @return User
      * @throws EntityNotFoundException
      */
-    public function updateFailedLoginAttempts($user_id);
-
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws EntityNotFoundException
-     */
-    public function lockUser($user_id);
+    public function lockUser(int $user_id):User;
 
     /**
      * @param $user_id
-     * @return void
+     * @return User
      * @throws EntityNotFoundException
      */
-    public function unlockUser($user_id);
-
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws EntityNotFoundException
-     */
-    public function activateUser($user_id);
-
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws EntityNotFoundException
-     */
-    public function deActivateUser($user_id);
+    public function unlockUser(int $user_id):User;
 
     /**
      * @param int $user_id

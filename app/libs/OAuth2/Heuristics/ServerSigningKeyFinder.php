@@ -11,11 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 use jwa\cryptographic_algorithms\ICryptoAlgorithm;
 use jwa\cryptographic_algorithms\macs\MAC_Algorithm;
-use jwk\exceptions\InvalidJWKAlgorithm;
-use jwk\exceptions\JWKInvalidSpecException;
 use jwk\IJWK;
 use jwk\impl\OctetSequenceJWKFactory;
 use jwk\impl\OctetSequenceJWKSpecification;
@@ -25,7 +24,7 @@ use OAuth2\Exceptions\InvalidClientType;
 use OAuth2\Exceptions\ServerKeyNotFoundException;
 use OAuth2\Models\IClient;
 use OAuth2\Repositories\IServerPrivateKeyRepository ;
-
+use Utils\Db\ITransactionService;
 /**
  * Class ServerSigningKeyFinder
  * @package OAuth2\Heuristics
@@ -39,85 +38,94 @@ final class ServerSigningKeyFinder implements IKeyFinder
     private $server_private_key_repository;
 
     /**
+     * @var ITransactionService
+     */
+    private $tx_service;
+
+    /**
      * @param IServerPrivateKeyRepository $server_private_key_repository
      */
-    public function __construct(IServerPrivateKeyRepository $server_private_key_repository)
+    public function __construct(
+        IServerPrivateKeyRepository $server_private_key_repository
+    )
     {
         $this->server_private_key_repository = $server_private_key_repository;
+        // @todo Refactor IOC
+        $this->tx_service = App::make(ITransactionService::class);
     }
 
     /**
-     * @param  IClient $client
-     * @param  ICryptoAlgorithm $alg
-     * @param  string|null $kid_hint
-     * @return IJWK
-     * @throws InvalidClientType
-     * @throws ServerKeyNotFoundException
-     * @throws InvalidJWKAlgorithm
-     * @throws JWKInvalidSpecException
+     * @param IClient $client
+     * @param ICryptoAlgorithm $alg
+     * @param string|null $kid_hint
+     * @return IJWK|mixed
+     * @throws \Exception
      */
-    public function find(IClient $client, ICryptoAlgorithm $alg, $kid_hint = null)
+    public function find(IClient $client, ICryptoAlgorithm $alg, ?string $kid_hint = null)
     {
-        $jwk = null;
+        return $this->tx_service->transaction(function() use($client, $alg, $kid_hint ){
+            $jwk = null;
 
-        if ($alg instanceof MAC_Algorithm) {
-            // use secret
-            if ($client->getClientType() !== IClient::ClientType_Confidential) {
-                throw new InvalidClientType;
+            if ($alg instanceof MAC_Algorithm) {
+                // use secret
+                if ($client->getClientType() !== IClient::ClientType_Confidential) {
+                    throw new InvalidClientType;
+                }
+
+                $jwk = OctetSequenceJWKFactory::build
+                (
+                    new OctetSequenceJWKSpecification
+                    (
+                        $client->getClientSecret(),
+                        $alg->getName()
+                    )
+                );
+
+                $jwk->setId('shared_secret');
+
+                return $jwk;
             }
 
-            $jwk = OctetSequenceJWKFactory::build
-            (
-                new OctetSequenceJWKSpecification
-                (
-                    $client->getClientSecret(),
-                    $alg->getName()
-                )
-            );
+            $key = null;
 
-            $jwk->setId('shared_secret');
+            if (!is_null($kid_hint))
+            {
+                Log::debug(sprintf("ServerSigningKeyFinder::find: trying to get key kid_hint %s", $kid_hint));
+                $key = $this->server_private_key_repository->getByKeyIdentifier($kid_hint);
+                if (!is_null($key) && !$key->isActive())
+                {
+                    $key = null;
+                }
+                if (!is_null($key) && $key->getAlg()->getName() !== $alg->getName())
+                {
+                    $key = null;
+                }
+            }
+
+            if(is_null($key))
+            {
+                $key = $this->server_private_key_repository->getActiveByCriteria
+                (
+                    JSONWebKeyTypes::RSA,
+                    JSONWebKeyPublicKeyUseValues::Signature,
+                    $alg->getName()
+                );
+            }
+
+            if (is_null($key))
+            {
+                throw new ServerKeyNotFoundException
+                (
+                    sprintf('sig key not found  - client id %s - requested alg %s', $client->getClientId(), $alg->getName())
+                );
+            }
+
+            $jwk = $key->toJWK();
+
+            $key->markAsUsed();
 
             return $jwk;
-        }
+        });
 
-        $key = null;
-
-        if (!is_null($kid_hint))
-        {
-            $key = $this->server_private_key_repository->get($kid_hint);
-            if (!$key->isActive())
-            {
-                $key = null;
-            }
-            if ($key->getAlg()->getName() !== $alg->getName())
-            {
-                $key = null;
-            }
-        }
-
-        if(is_null($key))
-        {
-            $key = $this->server_private_key_repository->getActiveByCriteria
-            (
-                JSONWebKeyTypes::RSA,
-                JSONWebKeyPublicKeyUseValues::Signature,
-                $alg->getName()
-            );
-        }
-
-        if (is_null($key))
-        {
-            throw new ServerKeyNotFoundException
-            (
-                sprintf('sig key not found  - client id %s - requested alg %s', $client->getClientId(), $alg->getName())
-            );
-        }
-
-        $jwk = $key->toJWK();
-
-        $key->markAsUsed();
-        $key->save();
-
-        return $jwk;
     }
 }

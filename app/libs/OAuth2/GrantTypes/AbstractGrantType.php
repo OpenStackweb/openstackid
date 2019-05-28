@@ -1,5 +1,4 @@
 <?php namespace OAuth2\GrantTypes;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Exceptions\InvalidClientCredentials;
 use OAuth2\Exceptions\InvalidClientException;
 use OAuth2\Exceptions\LockedClientException;
@@ -26,7 +24,6 @@ use OAuth2\Responses\OAuth2Response;
 use OAuth2\Services\IClientService;
 use OAuth2\Strategies\ClientAuthContextValidatorFactory;
 use Utils\Services\ILogService;
-
 /**
  * Class AbstractGrantType
  * @package OAuth2\GrantTypes

@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Heuristics;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use jwa\cryptographic_algorithms\ICryptoAlgorithm;
 use jwk\exceptions\InvalidJWKAlgorithm;
 use jwk\exceptions\JWKInvalidSpecException;
@@ -20,7 +18,6 @@ use jwk\IJWK;
 use OAuth2\Exceptions\InvalidClientType;
 use OAuth2\Exceptions\RecipientKeyNotFoundException;
 use OAuth2\Models\IClient;
-
 /**
  * Interface IKeyFinder
  * @package OAuth2\Heuristics
@@ -37,5 +34,5 @@ interface IKeyFinder
      * @throws InvalidJWKAlgorithm
      * @throws JWKInvalidSpecException
      */
-    public function find(IClient $client, ICryptoAlgorithm $alg, $kid_hint = null);
+    public function find(IClient $client, ICryptoAlgorithm $alg, ?string $kid_hint = null);
 }

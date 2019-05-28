@@ -11,90 +11,180 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\Models\IApiScope;
-use OAuth2\Models\IOAuth2User;
-use Utils\Model\BaseModelEloquent;
-use Utils\Model\IEntity;
+use App\Models\Utils\BaseEntity;
+use Auth\User;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 /**
- * Class ApiScopeGroup
- * @package Models
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineApiScopeGroupRepository")
+ * @ORM\Table(name="oauth2_api_scope_group")
+ * Class ApiScope
+ * @package Models\OAuth2
  */
-class ApiScopeGroup extends BaseModelEloquent implements IEntity
+class ApiScopeGroup extends BaseEntity
 {
-    protected $table = 'oauth2_api_scope_group';
+    /**
+     * @ORM\Column(name="name", type="string")
+     * @var string
+     */
+    private $name;
 
-    protected $fillable = array('name' ,'description','active');
+    /**
+     * @ORM\Column(name="description", type="string")
+     * @var string
+     */
+    private $description;
 
-    public function scopes()
+    /**
+     * @ORM\Column(name="active", type="boolean")
+     * @var bool
+     */
+    private $active;
+
+    /**
+     * @ORM\ManyToMany(targetEntity="ApiScope", cascade={"persist"})
+     * @ORM\JoinTable(name="oauth2_api_scope_group_scope",
+     *      joinColumns={@ORM\JoinColumn(name="group_id", referencedColumnName="id")},
+     *      inverseJoinColumns={@ORM\JoinColumn(name="scope_id", referencedColumnName="id")}
+     *     )
+     * @var ApiScope[]
+     */
+    private $scopes;
+
+    /**
+     * @ORM\ManyToMany(targetEntity="Auth\User", cascade={"persist"})
+     * @ORM\JoinTable(name="oauth2_api_scope_group_users",
+     *      joinColumns={@ORM\JoinColumn(name="group_id", referencedColumnName="id")},
+     *      inverseJoinColumns={@ORM\JoinColumn(name="user_id", referencedColumnName="id")}
+     *     )
+     * @var User[]
+     */
+    private $users;
+
+    /**
+     * ApiEndpoint constructor.
+     */
+    public function __construct()
     {
-        return $this->belongsToMany('Models\OAuth2\ApiScope','oauth2_api_scope_group_scope','group_id','scope_id');
-    }
-
-    public function users()
-    {
-        return $this->belongsToMany('Auth\User','oauth2_api_scope_group_users','group_id','user_id');
+        parent::__construct();
+        $this->scopes      = new ArrayCollection();
+        $this->users       = new ArrayCollection();
+        $this->description = "";
+        $this->active      = false;
     }
 
     /**
-     * @param IApiScope $scope
-     * @return $this
+     * @return string
      */
-    public function addScope(IApiScope $scope)
+    public function getName(): string
     {
-        $this->scopes()->attach($scope->id);
-        return $this;
+        return $this->name;
     }
 
     /**
-     * @param IOAuth2User $user
-     * @return $this
+     * @param string $name
      */
-    public function addUser(IOAuth2User $user)
+    public function setName(string $name): void
     {
-        $this->users()->attach($user->id);
-        return $this;
+        $this->name = $name;
     }
 
     /**
-     * @param IOAuth2User $scope
-     * @return $this
+     * @return string|null
      */
-    public function removeScope(IOAuth2User $scope)
+    public function getDescription(): ?string
     {
-        $this->scopes()->detach($scope->id);
-        return $this;
+        return $this->description;
     }
 
     /**
-     * @return $this
+     * @param string $description
      */
-    public function removeAllScopes()
+    public function setDescription(string $description): void
     {
-        $this->scopes()->detach();
-        return $this;
+        $this->description = $description;
     }
 
     /**
-     * @param IOAuth2User $user
-     * @return $this
+     * @return bool
      */
-    public function removeUser(IOAuth2User $user)
+    public function isActive(): bool
     {
-        $this->users()->detach($user->id);
-        return $this;
-    }
-
-    public function removeAllUsers()
-    {
-        $this->users()->detach();
-        return $this;
+        return $this->active;
     }
 
     /**
-     * @return int
+     * @param bool $active
      */
-    public function getId()
+    public function setActive(bool $active): void
     {
-       return (int)$this->id;
+        $this->active = $active;
     }
+
+    /**
+     * @return ApiScope[]
+     */
+    public function getScopes()
+    {
+        return $this->scopes;
+    }
+
+    public function clearScopes(){
+        $this->scopes->clear();
+    }
+
+    /**
+     * @param ApiScope $scope
+     * @return bool
+     */
+    public function hasScope(ApiScope $scope):bool{
+        return $this->scopes->contains($scope);
+    }
+
+    /**
+     * @param ApiScope $scope
+     */
+    public function addScope(ApiScope $scope){
+        if($this->scopes->contains($scope)) return;
+        $this->scopes->add($scope);
+    }
+
+    /**
+     * @param ApiScope $scope
+     */
+    public function removeScope(ApiScope $scope){
+        if(!$this->scopes->contains($scope)) return;
+        $this->scopes->removeElement($scope);
+    }
+
+    /**
+     * @return User[]
+     */
+    public function getUsers()
+    {
+        return $this->users;
+    }
+
+    public function clearUsers(){
+        $this->users->clear();
+    }
+
+    /**
+     * @param User $user
+     */
+    public function addUser(User $user){
+        if($this->users->contains($user)) return;
+        $this->users->add($user);
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
+    }
+
 }

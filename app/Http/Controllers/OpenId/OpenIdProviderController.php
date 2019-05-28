@@ -1,5 +1,4 @@
 <?php namespace App\Http\Controllers\OpenId;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +24,6 @@ use OpenId\OpenIdMessage;
 use OpenId\Responses\OpenIdResponse;
 use OpenId\Services\IMementoOpenIdSerializerService;
 use OpenId\Strategies\OpenIdResponseStrategyFactoryMethod;
-
 /**
  * Class OpenIdProviderController
  * @package App\Http\Controllers\OpenId

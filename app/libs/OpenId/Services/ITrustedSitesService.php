@@ -11,9 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Exception;
-use OpenId\Models\IOpenIdUser;
-use OpenId\Models\ITrustedSite;
+use Auth\User;
+use Models\OpenId\OpenIdTrustedSite;
 /**
  * Interface ITrustedSitesService
  * @package OpenId\Services
@@ -21,27 +20,26 @@ use OpenId\Models\ITrustedSite;
 interface ITrustedSitesService
 {
     /**
-     * @param IOpenIdUser $user
+     * @param User $user
      * @param string $realm
-     * @param $policy
+     * @param string $policy
      * @param array $data
-     * @return bool|ITrustedSite
-     * @throws Exception
+     * @return OpenIdTrustedSite
      */
-    public function addTrustedSite(IOpenIdUser $user, $realm, $policy, $data = array());
+    public function addTrustedSite(User $user, string $realm, string $policy, $data = []):OpenIdTrustedSite;
 
     /**
      * @param $id
      * @return bool
      */
-    public function delTrustedSite($id);
+    public function delete(int $id):void;
 
     /**
-     * @param IOpenIdUser $user
-     * @param $realm
+     * @param User $user
+     * @param string $realm
      * @param array $data
-     * @return mixed
+     * @return array
      */
-    public function getTrustedSites(IOpenIdUser $user, $realm, $data = array());
+    public function getTrustedSites(User $user, string $realm, $data = []):array;
 
 }

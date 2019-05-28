@@ -1,5 +1,4 @@
 <?php namespace OpenId\Models;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\BaseModelEloquent;
-
+use DateTime;
 /**
  * Class Association
  * @package OpenId\Models
  */
-class Association extends BaseModelEloquent implements IAssociation
+class Association implements IAssociation
 {
-
     /**
      * @var string
      */
@@ -38,7 +35,7 @@ class Association extends BaseModelEloquent implements IAssociation
      */
     private $lifetime;
     /**
-     * @var
+     * @var DateTime
      */
     private $issued;
     /**
@@ -56,11 +53,20 @@ class Association extends BaseModelEloquent implements IAssociation
      * @param string $secret
      * @param string $mac_function
      * @param int $lifetime
-     * @param $issued
+     * @param DateTime $issued
      * @param string $type
      * @param string $realm
      */
-    public function __construct($handle, $secret, $mac_function, $lifetime, $issued, $type, $realm)
+    public function __construct
+    (
+        ?string $handle = null,
+        ?string $secret = null ,
+        ?string $mac_function = null,
+        ?string $lifetime = null,
+        ?DateTime $issued = null,
+        ?string $type = null,
+        ?string $realm = null
+    )
     {
         $this->handle = $handle;
         $this->secret = $secret;
@@ -71,79 +77,102 @@ class Association extends BaseModelEloquent implements IAssociation
         $this->realm = $realm;
     }
 
-    public function getMacFunction()
+    public function getMacFunction():string
     {
         return $this->mac_function;
     }
 
-    public function setMacFunction($mac_function)
+    public function setMacFunction(string $mac_function):void
     {
-        // TODO: Implement setMacFunction() method.
+        $this->mac_function = $mac_function;
     }
 
-    public function getSecret()
+    public function getSecret():string
     {
         return $this->secret;
     }
 
-    public function setSecret($secret)
+    public function setSecret(string $secret): void
     {
-        // TODO: Implement setSecret() method.
+       $this->secret = $secret;
     }
 
-    public function getLifetime()
+    public function getLifetime():int
     {
         return intval($this->lifetime);
     }
 
-    public function setLifetime($lifetime)
+    public function setLifetime(int $lifetime):void
     {
-        // TODO: Implement setLifetime() method.
+        $this->lifetime = $lifetime;
     }
 
-    public function getIssued()
+    public function getIssued():DateTime
     {
         return $this->issued;
     }
 
-    public function setIssued($issued)
+    public function setIssued(DateTime $issued):void
     {
-        // TODO: Implement setIssued() method.
+        $this->issued = $issued;
     }
 
-    public function getType()
+    public function getType():int
     {
         return $this->type;
     }
 
-    public function setType($type)
+    public function setType(int $type):void
     {
-        // TODO: Implement setType() method.
+        $this->type = $type;
     }
 
-    public function getRealm()
+    public function getRealm():?string
     {
         return $this->realm;
     }
 
-    public function setRealm($realm)
+    public function setRealm(string $realm):void
     {
-        // TODO: Implement setRealm() method.
+        $this->realm = $realm;
     }
 
-    public function IsExpired()
+    public function IsExpired():bool
     {
         // TODO: Implement IsExpired() method.
     }
 
-    public function getRemainingLifetime()
+    public function getRemainingLifetime():int
     {
         // TODO: Implement getRemainingLifetime() method.
     }
 
-    public function getHandle()
+    public function getHandle():string
     {
         return $this->handle;
     }
 
+    /**
+     * @return int
+     */
+    public function getId()
+    {
+        // TODO: Implement getId() method.
+    }
+
+    /**
+     * @return int
+     */
+    public function getIdentifier()
+    {
+        // TODO: Implement getIdentifier() method.
+    }
+
+    /**
+     * @return bool
+     */
+    public function isNew(): bool
+    {
+        // TODO: Implement isNew() method.
+    }
 }

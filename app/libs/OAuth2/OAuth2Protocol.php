@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Http\Utils\UserIPHelperProvider;
 use Exception;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
 use jwk\impl\JWKSet;
@@ -63,7 +63,6 @@ use utils\factories\BasicJWTFactory;
 use Utils\Services\IAuthService;
 use Utils\Services\ICheckPointService;
 use Utils\Services\ILogService;
-
 /**
  * Class OAuth2Protocol
  * Implementation of @see http://tools.ietf.org/html/rfc6749
@@ -423,7 +422,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
         if($flow === OAuth2Protocol::OAuth2Protocol_GrantType_Hybrid)
             return $hybrid_flow;
 
-        return array();
+        return [];
     }
 
     /**
@@ -769,7 +768,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * grant types
      * @var array
      */
-    private $grant_types = array();
+    private $grant_types = [];
 
     /**
      * @var IServerPrivateKeyRepository
@@ -787,6 +786,26 @@ final class OAuth2Protocol implements IOAuth2Protocol
     private $memento_service;
 
 
+    /**
+     * OAuth2Protocol constructor.
+     * @param ILogService $log_service
+     * @param IClientService $client_service
+     * @param IClientRepository $client_repository
+     * @param ITokenService $token_service
+     * @param IAuthService $auth_service
+     * @param IOAuth2AuthenticationStrategy $auth_strategy
+     * @param ICheckPointService $checkpoint_service
+     * @param IApiScopeService $scope_service
+     * @param IUserConsentService $user_consent_service
+     * @param IServerPrivateKeyRepository $server_private_keys_repository
+     * @param IOpenIDProviderConfigurationService $oidc_provider_configuration_service
+     * @param IMementoOAuth2SerializerService $memento_service
+     * @param ISecurityContextService $security_context_service
+     * @param IPrincipalService $principal_service
+     * @param IServerPrivateKeyRepository $server_private_key_repository
+     * @param IClientJWKSetReader $jwk_set_reader_service
+     * @param UserIPHelperProvider $ip_helper
+     */
     public function __construct
     (
         ILogService    $log_service,
@@ -804,7 +823,8 @@ final class OAuth2Protocol implements IOAuth2Protocol
         ISecurityContextService         $security_context_service,
         IPrincipalService               $principal_service,
         IServerPrivateKeyRepository     $server_private_key_repository,
-        IClientJWKSetReader             $jwk_set_reader_service
+        IClientJWKSetReader             $jwk_set_reader_service,
+        UserIPHelperProvider            $ip_helper
     )
     {
 
@@ -829,7 +849,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $jwk_set_reader_service
         );
 
-        $implicit_grant_type              = new ImplicitGrantType
+        $implicit_grant_type = new ImplicitGrantType
         (
             $scope_service,
             $client_service,
@@ -897,7 +917,16 @@ final class OAuth2Protocol implements IOAuth2Protocol
         $this->authorize_endpoint         = new AuthorizationEndpoint($this);
         $this->token_endpoint             = new TokenEndpoint($this);
         $this->revoke_endpoint            = new TokenRevocationEndpoint($this, $client_service, $client_repository, $token_service, $log_service);
-        $this->introspection_endpoint     = new TokenIntrospectionEndpoint($this, $client_service, $client_repository, $token_service, $auth_service, $log_service);
+        $this->introspection_endpoint     = new TokenIntrospectionEndpoint
+        (
+            $this,
+            $client_service,
+            $client_repository,
+            $token_service,
+            $auth_service,
+            $log_service,
+            $ip_helper
+        );
     }
 
     /**
@@ -1225,7 +1254,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
     public function getJWKSDocument()
     {
         $keys = $this->server_private_keys_repository->getActives();
-        $set  = array();
+        $set  = [];
 
         foreach($keys as $private_key)
         {
@@ -1421,8 +1450,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             }
 
             $user_id = $this->auth_service->unwrapUserId(intval($user_id->getString()));
-
-            $user    = $this->auth_service->getUserByExternalId($user_id);
+            $user    = $this->auth_service->getUserById($user_id);
 
             if(is_null($user)){
                 $this->log_service->debug_msg("OAuth2Protocol::endSession user not found!");

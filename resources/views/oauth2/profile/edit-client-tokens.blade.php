@@ -22,7 +22,7 @@
                             <tbody id="body-access-tokens">
                             @foreach ($access_tokens as $access_token)
                                 <tr id="{!! $access_token->value !!}">
-                                    <td>{!! $access_token->created_at !!}</td>
+                                    <td>{!! $access_token->created_at->format('Y-m-d H:i:s') !!}</td>
                                     <td>{!! $access_token->scope !!}</td>
                                     <td>{!! $access_token->getRemainingLifetime() !!}</td>
                                     <td>{!! HTML::link(URL::action("Api\ClientApiController@revokeToken",array("id"=>$client->id,"value"=>$access_token->value,'hint'=>'access-token')),'Revoke',array('class'=>'btn btn-default btn-md active btn-delete revoke-token revoke-access-token','title'=>'Revoke Access Token','data-value'=>$access_token->value,'data-hint'=>'access-token')) !!}</td>
@@ -70,7 +70,7 @@
                             <tbody id="body-refresh-tokens">
                             @foreach ($refresh_tokens as $refresh_token)
                                 <tr id="{!! $refresh_token->value !!}">
-                                    <td>{!! $refresh_token->created_at !!}</td>
+                                    <td>{!! $refresh_token->created_at->format('Y-m-d H:i:s') !!}</td>
                                     <td>{!! $refresh_token->scope !!}</td>
                                     @if($refresh_token->getRemainingLifetime()===0)
                                         <td>Not Expire</td>

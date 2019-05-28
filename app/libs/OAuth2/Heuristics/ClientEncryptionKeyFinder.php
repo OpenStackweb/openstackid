@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Heuristics;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use jwa\cryptographic_algorithms\ICryptoAlgorithm;
 use jwa\cryptographic_algorithms\key_management\modes\DirectEncryption;
 use jwk\IJWK;
@@ -23,6 +21,7 @@ use OAuth2\Exceptions\InvalidClientType;
 use OAuth2\Exceptions\RecipientKeyNotFoundException;
 use OAuth2\Models\IClient;
 use OAuth2\Services\IClientJWKSetReader;
+use Utils\Db\ITransactionService;
 
 /**
  * Class ClientEncryptionKeyFinder
@@ -36,94 +35,105 @@ final class ClientEncryptionKeyFinder implements IKeyFinder
     private $jwk_set_reader_service;
 
     /**
-     * @param IClientJWKSetReader $jwk_set_reader_service
+     * @var ITransactionService
      */
-    public function __construct(IClientJWKSetReader $jwk_set_reader_service)
+    private $tx_service;
+
+    /**
+     * ClientEncryptionKeyFinder constructor.
+     * @param IClientJWKSetReader $jwk_set_reader_service
+     * @param ITransactionService $tx_service
+     */
+    public function __construct(IClientJWKSetReader $jwk_set_reader_service,  ITransactionService $tx_service)
     {
         $this->jwk_set_reader_service = $jwk_set_reader_service;
+        $this->tx_service = $tx_service;
     }
 
     /**
      * @param IClient $client
      * @param ICryptoAlgorithm $alg
-     * @param null $kid_hint
+     * @param string|null $kid_hint
      * @return IJWK
      * @throws InvalidClientType
      * @throws RecipientKeyNotFoundException
      */
-    public function find(IClient $client, ICryptoAlgorithm $alg, $kid_hint = null)
+    public function find(IClient $client, ICryptoAlgorithm $alg, ?string $kid_hint = null)
     {
-        if($alg instanceof DirectEncryption)
-        {
-            // use secret
-            if($client->getClientType() !== IClient::ClientType_Confidential)
-                throw new InvalidClientType;
+        return $this->tx_service->transaction(function() use($client, $alg, $kid_hint){
 
-            $jwk = OctetSequenceJWKFactory::build
-            (
-                new OctetSequenceJWKSpecification
-                (
-                    $client->getClientSecret(),
-                    $alg->getName()
-                )
-            );
-
-            $jwk->setId('shared_secret');
-
-            return $jwk;
-        }
-
-
-        $recipient_key = null;
-
-        if(!is_null($kid_hint))
-        {
-            $recipient_key = $client->getPublicKeyByIdentifier($kid_hint);
-            if(!$recipient_key->isActive()) $recipient_key = null;
-            if($recipient_key->getAlg()->getName() !== $alg->getName()) $recipient_key = null;
-        }
-
-        if(is_null($recipient_key))
-        {
-            $recipient_key = $client->getCurrentPublicKeyByUse
-            (
-                JSONWebKeyPublicKeyUseValues::Encryption,
-                $alg->getName()
-            );
-        }
-
-        if(!is_null($recipient_key))
-        {
-            $recipient_key->markAsUsed();
-            $recipient_key->save();
-            $recipient_key = $recipient_key->toJWK();
-        }
-        else
-        {
-            // check on jwk uri
-            $jwk_set = $this->jwk_set_reader_service->read($client);
-
-            if(is_null($jwk_set))
-                throw new RecipientKeyNotFoundException;
-
-            foreach($jwk_set->getKeys() as $jwk)
+            if($alg instanceof DirectEncryption)
             {
-                if
-                (
-                    $jwk->getKeyUse() ===  JSONWebKeyPublicKeyUseValues::Encryption &&
-                    $jwk->getAlgorithm()->getString() === $alg->getName()
-                )
-                {
+                // use secret
+                if($client->getClientType() !== IClient::ClientType_Confidential)
+                    throw new InvalidClientType;
 
-                    $recipient_key = $jwk;
-                    break;
+                $jwk = OctetSequenceJWKFactory::build
+                (
+                    new OctetSequenceJWKSpecification
+                    (
+                        $client->getClientSecret(),
+                        $alg->getName()
+                    )
+                );
+
+                $jwk->setId('shared_secret');
+
+                return $jwk;
+            }
+
+
+            $recipient_key = null;
+
+            if(!is_null($kid_hint))
+            {
+                $recipient_key = $client->getPublicKeyByIdentifier($kid_hint);
+                if(!$recipient_key->isActive()) $recipient_key = null;
+                if($recipient_key->getAlg()->getName() !== $alg->getName()) $recipient_key = null;
+            }
+
+            if(is_null($recipient_key))
+            {
+                $recipient_key = $client->getCurrentPublicKeyByUse
+                (
+                    JSONWebKeyPublicKeyUseValues::Encryption,
+                    $alg->getName()
+                );
+            }
+
+            if(!is_null($recipient_key))
+            {
+                $recipient_key->markAsUsed();
+                $recipient_key = $recipient_key->toJWK();
+            }
+            else
+            {
+                // check on jwk uri
+                $jwk_set = $this->jwk_set_reader_service->read($client);
+
+                if(is_null($jwk_set))
+                    throw new RecipientKeyNotFoundException;
+
+                foreach($jwk_set->getKeys() as $jwk)
+                {
+                    if
+                    (
+                        $jwk->getKeyUse() ===  JSONWebKeyPublicKeyUseValues::Encryption &&
+                        $jwk->getAlgorithm()->getString() === $alg->getName()
+                    )
+                    {
+
+                        $recipient_key = $jwk;
+                        break;
+                    }
                 }
             }
-        }
 
-        if(is_null($recipient_key))
-            throw new RecipientKeyNotFoundException;
+            if(is_null($recipient_key))
+                throw new RecipientKeyNotFoundException;
 
-        return $recipient_key;
+            return $recipient_key;
+        });
+
     }
 }

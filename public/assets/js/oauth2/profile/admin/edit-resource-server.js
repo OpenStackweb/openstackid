@@ -5,9 +5,9 @@ function loadApis(){
         url: ApiUrls.get,
         contentType: "application/json; charset=utf-8",
         timeout:60000,
-        success: function (data,textStatus,jqXHR) {
-            var apis = data.page;
-            if(apis.length>0){
+        success: function (page,textStatus,jqXHR) {
+            var items = page.data;
+            if(items.length > 0){
                 $('#info-apis').hide();
                 $('#table-apis').show();
                 var template = $('<tbody><tr><td class="image"><img height="24" width="24"/></td><td width="60%" class="name"></td><td><input type="checkbox" class="api-active-checkbox"></td><td>&nbsp;<a class="btn btn-default active edit-api" title="Edits a Registered Resource Server API">Edit</a>&nbsp;<a class="btn btn-default btn-delete active delete-api" title="Deletes a Registered Resource Server API">Delete</a></td></tr></tbody>');
@@ -43,7 +43,7 @@ function loadApis(){
                         }
                     }
                 };
-                var html = template.render(apis, directives);
+                var html = template.render(items, directives);
                 $('#body-apis').html(html.html());
             }
             else{
@@ -236,7 +236,7 @@ jQuery(document).ready(function($){
                     timeout:60000,
                     success: function (data,textStatus,jqXHR) {
                         //load data...
-                        $('#client_secret').text(data.new_secret);
+                        $('#client_secret').text(data.client_secret);
                         //clean token UI
                         $('#table-access-tokens').remove();
                         $('#table-refresh-tokens').remove();

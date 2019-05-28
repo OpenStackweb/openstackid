@@ -12,7 +12,7 @@ class ResponseContext {
 
     public function __construct()
     {
-        $this->sign_params = array();
+        $this->sign_params = [];
     }
 
     /**

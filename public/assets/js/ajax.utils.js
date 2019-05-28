@@ -1,20 +1,27 @@
 function ajaxError(jqXHR, textStatus, errorThrown){
     var HTTP_status = jqXHR.status;
-    if(HTTP_status!=200){
+    if(HTTP_status != 200){
         response = $.parseJSON(jqXHR.responseText);
-        if(response.error==='validation'){
+        if(HTTP_status == 412 ){
+            var msg = '';
+            for(var property in response.messages) {
+                msg +='* '+ response.messages[property]+'\n';
+            }
+            displayErrorMessage('Validation error', msg);
+            return;
+        }
+        if(HTTP_status == 404 ){
             var msg = '';
             for(var property in response.messages) {
                 msg +='* '+response.messages[property]+'\n';
             }
-            displayErrorMessage('You got an error!',msg);
+            displayErrorMessage('Entity Not Found', msg);
+            return;
         }
-        else
-            displayErrorMessage('You got an error!',response.error);
+        displayErrorMessage('You got an error!',response.error);
+        return;
     }
-    else{
-        displayErrorMessage('You got an error!','server error');
-    }
+    displayErrorMessage('You got an error!','server error');
 }
 
 function displayErrorMessage(title, message){

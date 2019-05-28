@@ -54,8 +54,8 @@ class ClientPublicKeyApiTest extends TestCase {
         $response = $this->action("POST", "Api\ClientPublicKeyApiController@create",
             $wildcards = array('id' => $client->id),
             $data,
-            array(),
-            array());
+            [],
+            []);
 
         $content       = $response->getContent();
         $json_response = json_decode($content);

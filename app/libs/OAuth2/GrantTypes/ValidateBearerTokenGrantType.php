@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use App\Http\Utils\UserIPHelperProvider;
 use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
 use OAuth2\Exceptions\ExpiredAccessTokenException;
 use OAuth2\Exceptions\InvalidAccessTokenException;
@@ -22,7 +23,6 @@ use OAuth2\Exceptions\InvalidGrantTypeException;
 use OAuth2\Exceptions\InvalidOAuth2Request;
 use OAuth2\Exceptions\LockedClientException;
 use OAuth2\GrantTypes\Strategies\ValidateBearerTokenStrategyFactory;
-use OAuth2\Models\IClient;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Requests\OAuth2AccessTokenValidationRequest;
 use OAuth2\Requests\OAuth2Request;
@@ -30,10 +30,8 @@ use OAuth2\Responses\OAuth2AccessTokenValidationResponse;
 use OAuth2\Responses\OAuth2Response;
 use OAuth2\Services\IClientService;
 use OAuth2\Services\ITokenService;
-use Utils\IPHelper;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
-
 /**
  * Class ValidateBearerTokenGrantType
  * In OAuth2, the contents of tokens are opaque to clients.  This means
@@ -63,7 +61,6 @@ use Utils\Services\ILogService;
  * @see http://tools.ietf.org/html/draft-richer-oauth-introspection-04
  * @package oauth2\grant_types
  */
-
 class ValidateBearerTokenGrantType extends AbstractGrantType
 {
 
@@ -75,12 +72,18 @@ class ValidateBearerTokenGrantType extends AbstractGrantType
     private $auth_service;
 
     /**
+     * @var UserIPHelperProvider
+     */
+    private $ip_helper;
+
+    /**
      * ValidateBearerTokenGrantType constructor.
      * @param IClientService $client_service
      * @param IClientRepository $client_repository
      * @param ITokenService $token_service
      * @param IAuthService $auth_service
      * @param ILogService $log_service
+     * @param UserIPHelperProvider $ip_helper
      */
     public function __construct
     (
@@ -88,11 +91,13 @@ class ValidateBearerTokenGrantType extends AbstractGrantType
         IClientRepository $client_repository,
         ITokenService     $token_service,
         IAuthService      $auth_service,
-        ILogService       $log_service
+        ILogService       $log_service,
+        UserIPHelperProvider $ip_helper
     )
     {
         parent::__construct($client_service, $client_repository, $token_service, $log_service);
         $this->auth_service = $auth_service;
+        $this->ip_helper = $ip_helper;
     }
 
     /**
@@ -174,7 +179,8 @@ class ValidateBearerTokenGrantType extends AbstractGrantType
             (
                 $this->client_auth_context,
                 $this->token_service,
-                $this->current_client
+                $this->current_client,
+                $this->ip_helper
             );
 
             $strategy->validate($access_token, $this->current_client);

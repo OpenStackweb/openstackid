@@ -35,7 +35,7 @@ class OpenIdServiceProvider extends ServiceProvider {
      */
     public function register()
     {
-	    App::singleton(\OpenId\IOpenIdProtocol::class, \OpenId\OpenIdProtocol::class);
+	    App::singleton(IOpenIdProtocol::class, OpenIdProtocol::class);
 
         $auth_extension_service = App::make('Auth\\IAuthenticationExtensionService');
 

@@ -39,9 +39,9 @@ final class ApiScopeTest extends BrowserKitTestCase {
 
         $response = $this->action("GET", "Api\ApiScopeController@get",
             $parameters = array('id' => $scope->id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content      = $response->getContent();
         $response_scope = json_decode($content);
@@ -55,15 +55,15 @@ final class ApiScopeTest extends BrowserKitTestCase {
      * @covers get api scopes by list (paginated)
      */
     public function testGetByPage(){
-        $response = $this->action("GET", "Api\ApiScopeController@getByPage",
-            $parameters = array('offset' => 1,'limit'=>10),
-            array(),
-            array(),
-            array());
+        $response = $this->action("GET", "Api\ApiScopeController@getAll",
+            $parameters = array('page' => 1,'per_page'=>10),
+            [],
+            [],
+            []);
 
         $content         = $response->getContent();
         $list            = json_decode($content);
-        $this->assertTrue(isset($list->total_items) && intval($list->total_items)>0);
+        $this->assertTrue(isset($list->total) && intval($list->total)>0);
         $this->assertResponseStatus(200);
     }
 
@@ -90,9 +90,9 @@ final class ApiScopeTest extends BrowserKitTestCase {
 
         $response = $this->action("POST", "Api\ApiScopeController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
         $json_response = json_decode($content);
@@ -114,9 +114,9 @@ final class ApiScopeTest extends BrowserKitTestCase {
         $id = $scope->id;
 
         $response = $this->action("DELETE", "Api\ApiScopeController@delete",$parameters = array('id' => $id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(204);
 

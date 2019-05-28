@@ -1,5 +1,4 @@
 <?php namespace App\Http\Controllers;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use App\Http\Controllers\OpenId\DiscoveryController;
 use App\Http\Controllers\OpenId\OpenIdController;
 use Auth\Exceptions\AuthenticationException;
@@ -35,8 +33,9 @@ use OAuth2\Services\ISecurityContextService;
 use OAuth2\Services\ITokenService;
 use OpenId\Services\IMementoOpenIdSerializerService;
 use OpenId\Services\ITrustedSitesService;
-use Services\Exceptions\ValidationException;
+use models\exceptions\ValidationException;
 use Services\IUserActionService;
+use Sokil\IsoCodes\IsoCodesFactory;
 use Strategies\DefaultLoginStrategy;
 use Strategies\IConsentStrategy;
 use Strategies\OAuth2ConsentStrategy;
@@ -47,7 +46,6 @@ use Utils\IPHelper;
 use Utils\Services\IAuthService;
 use Utils\Services\IServerConfigurationService;
 use Utils\Services\IServerConfigurationService as IUtilsServerConfigurationService;
-
 /**
  * Class UserController
  * @package App\Http\Controllers
@@ -271,9 +269,9 @@ final class UserController extends OpenIdController
                 //failed login attempt...
                 $user = $this->auth_service->getUserByUsername($username);
 
-                if ($user)
+                if (!is_null($user))
                 {
-                    $login_attempts = $user->login_failed_attempt;
+                    $login_attempts = $user->getLoginFailedAttempt();
                 }
 
                 return $this->login_strategy->errorLogin
@@ -383,6 +381,14 @@ final class UserController extends OpenIdController
                 */
                 return $this->discovery->user($identifier);
             }
+
+            $redirect = Session::get('backurl');
+            if (!empty($redirect)) {
+                Session::forget('backurl');
+                Session::save();
+                return Redirect::to($redirect);
+            }
+
             $current_user = $this->auth_service->getCurrentUser();
             $another_user = false;
             if ($current_user && $current_user->getIdentifier() != $user->getIdentifier())
@@ -394,8 +400,8 @@ final class UserController extends OpenIdController
             $pic_url = $user->getPic();
             $pic_url = str_contains($pic_url, 'http') ? $pic_url : $assets_url . $pic_url;
 
-            $params = array
-            (
+            $params = [
+
                 'show_fullname' => $user->getShowProfileFullName(),
                 'username' => $user->getFullName(),
                 'show_email' => $user->getShowProfileEmail(),
@@ -404,7 +410,7 @@ final class UserController extends OpenIdController
                 'show_pic' => $user->getShowProfilePic(),
                 'pic' => $pic_url,
                 'another_user' => $another_user,
-            );
+            ];
 
             return View::make("identity", $params);
         }
@@ -433,55 +439,35 @@ final class UserController extends OpenIdController
     {
         $user    = $this->auth_service->getCurrentUser();
         $sites   = $user->getTrustedSites();
-        $actions = $user->getActions();
+        $actions = $user->getLatestNActions(10);
 
-        return View::make("profile", array
-        (
-            "username"             => $user->getFullName(),
-            "user_id"              => $user->getId(),
-            "is_oauth2_admin"      => $user->isOAuth2ServerAdmin(),
-            "is_openstackid_admin" => $user->isOpenstackIdAdmin(),
-            "use_system_scopes"    => $user->canUseSystemScopes(),
-            "openid_url"           => $this->server_configuration_service->getUserIdentityEndpointURL($user->getIdentifier()),
-            "identifier "          => $user->getIdentifier(),
-            "sites"                => $sites,
-            'identifier'           => $user->getIdentifier(),
-            "show_pic"             => $user->getShowProfilePic(),
-            "show_full_name"       => $user->getShowProfileFullName(),
-            "show_email"           => $user->getShowProfileEmail(),
-            'actions'              => $actions,
-        ));
-    }
+        // init database
+        $isoCodes = new IsoCodesFactory();
 
-    public function postUserProfileOptions()
-    {
-        $values = Input::all();
-        $show_full_name = intval(Input::get("show_full_name", 0));
-        $show_email     = intval(Input::get("show_email", 0));
-        $show_pic       = intval(Input::get("show_pic", 0));
-        $identifier     = Input::get("identifier", null);
-
-        $validator = Validator::make($values, ['identifier' => 'required|openid.identifier']);
-
-        if ($validator->fails()) {
-            return Redirect::back()->withErrors($validator);
+        // get languages database
+        $languages = $isoCodes->getLanguages()->toArray();
+        $lang2Code = [];
+        foreach ($languages as $lang){
+            if(!empty($lang->getAlpha2()))
+                $lang2Code[] = $lang;
         }
 
-        try {
-            $user = $this->auth_service->getCurrentUser();
-            $this->user_service->saveProfileInfo($user->getId(), $show_pic, $show_full_name, $show_email, $identifier);
+        // get countries database
+        $countries = $isoCodes->getCountries()->toArray();
 
-            return Redirect::action("UserController@getProfile");
-        }
-        catch(ValidationException $ex1){
-            $validator->errors()->add('identifier', $ex1->getMessage());
-            return Redirect::back()->withErrors($validator);
-        }
+        return View::make("profile", [
+            'user'       => $user,
+            "openid_url" => $this->server_configuration_service->getUserIdentityEndpointURL($user->getIdentifier()),
+            "sites"      => $sites,
+            'actions'    => $actions,
+            'countries'  => $countries,
+            'languages'  => $lang2Code,
+        ]);
     }
 
     public function deleteTrustedSite($id)
     {
-        $this->trusted_sites_service->delTrustedSite($id);
+        $this->trusted_sites_service->delete($id);
         return Redirect::action("UserController@getProfile");
     }
 

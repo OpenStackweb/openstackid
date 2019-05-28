@@ -37,7 +37,7 @@ class CustomValidator extends Validator
         'RequiredWithoutField'
     );
 
-    public function __construct(Translator $translator, $data, $rules, $messages = array())
+    public function __construct(Translator $translator, $data, $rules, $messages = [])
     {
         parent::__construct($translator, $data, $rules, $messages);
         $this->isImplicit('fail');

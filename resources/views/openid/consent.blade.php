@@ -1,17 +1,17 @@
 @extends('layout')
 @section('title')
-<title>Welcome to OpenStackId - consent </title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - Consent </title>
 @append
 
 @section('header_right')
 @if(Auth::check())
-Welcome, <a href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->identifier!!}</a>
+Welcome, <a href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->getIdentifier()!!}</a>
 @endif
 @append
 
 @section('content')
 <div class="container">
-    <h4>OpenstackId - Openid verification</h4>
+    <h4>{!! Config::get('app.app_name') !!} - Openid verification</h4>
     {!! Form::open(array('url' => URL::action("UserController@postConsent"),'id'=>'authorization_form', 'method' => 'post',  "autocomplete" => "off")) !!}
     <legend>
         Sign in to <b>{!! $realm !!}</b> using your OpenStackId

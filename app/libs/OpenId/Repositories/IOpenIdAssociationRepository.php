@@ -11,8 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OpenId\Models\IAssociation;
-use Utils\Db\IBaseRepository;
+use Models\OpenId\OpenIdAssociation;
+use models\utils\IBaseRepository;
 /**
  * Interface IOpenIdAssociationRepository
  * @package OpenId\Repositories
@@ -20,14 +20,8 @@ use Utils\Db\IBaseRepository;
 interface IOpenIdAssociationRepository extends IBaseRepository {
 
 	/**
-	 * @param int $id
-	 * @return bool
-	 */
-	public function deleteById($id);
-
-    /**
      * @param string $handle
-     * @return IAssociation
+     * @return OpenIdAssociation
      */
-	public function getByHandle($handle);
+	public function getByHandle(string $handle): ?OpenIdAssociation;
 } 

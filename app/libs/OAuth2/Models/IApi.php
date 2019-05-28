@@ -12,49 +12,5 @@
  * limitations under the License.
  **/
 interface IApi {
-    /**
-     * @return IResourceServer
-     */
-    public function getResourceServer();
-
-    /**
-     * @return string
-     */
-    public function getName();
-
-    /**
-     * @return string
-     */
-    public function getLogo();
-
-    /**
-     * @return string
-     */
-    public function getDescription();
-
-    public function getScope();
-
-    /**
-     * @return bool
-     */
-    public function isActive();
-
-    /**
-     * @param string $name
-     * @return $this`
-     */
-    public function setName($name);
-
-    /**
-     * @param string $description
-     * @return $this
-     */
-    public function setDescription($description);
-
-    /**
-     * @param bool $active
-     * @return $this
-     */
-    public function setStatus($active);
 
 } 

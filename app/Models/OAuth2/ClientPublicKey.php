@@ -12,22 +12,40 @@
  * limitations under the License.
  **/
 use OAuth2\Models\IClientPublicKey;
-use OAuth2\Models\IClient;
 use jwk\impl\RSAJWKFactory ;
 use jwk\impl\RSAJWKPEMPublicKeySpecification;
 use jwk\IJWK;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineClientPublicKeyRepository")
  * Class ClientPublicKey
+ * @package Models\OAuth2
  */
-final class ClientPublicKey extends AsymmetricKey implements IClientPublicKey
+class ClientPublicKey extends AsymmetricKey implements IClientPublicKey
 {
 
     /**
-     * @return IClient
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", inversedBy="public_keys")
+     * @ORM\JoinColumn(name="oauth2_client_id", referencedColumnName="id")
+     * @var Client
      */
-    public function getOwner()
+    private $owner;
+
+    /**
+     * @return Client
+     */
+    public function getOwner():Client
     {
-        return $this->belongsTo('Models\OAuth2\Client');
+        return $this->owner;
+    }
+
+    /**
+     * @param \Models\OAuth2\Client $owner
+     */
+    public function setOwner(Client $owner)
+    {
+        $this->owner = $owner;
     }
 
     /**
@@ -78,5 +96,13 @@ final class ClientPublicKey extends AsymmetricKey implements IClientPublicKey
         $jwk->setType($this->type);
         $jwk->setKeyUse($this->usage);
         return $jwk;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
     }
 }

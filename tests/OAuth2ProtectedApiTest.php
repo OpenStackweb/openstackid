@@ -16,6 +16,8 @@ use Auth\User;
 use Utils\Services\IAuthService;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
+use LaravelDoctrine\ORM\Facades\EntityManager;
+
 /**
  * Class OAuth2ProtectedApiTest
  */
@@ -44,10 +46,10 @@ abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
     {
         parent::prepareForTests();
         $this->current_realm = Config::get('app.url');
-
-        $user =  User::where('identifier','=','sebastian.marcet')->first();
-
-        $this->be($user);
+        //already logged user
+        $user_repository = EntityManager::getRepository(User::class);
+        $user = $user_repository->findOneBy(["identifier" => 'sebastian.marcet']);
+        $this->be($user, 'web');
 
         Session::start();
 
@@ -69,9 +71,9 @@ abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $status  = $response->getStatusCode();
         $url     = $response->getTargetUrl();
@@ -79,7 +81,7 @@ abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $params = array
@@ -94,9 +96,9 @@ abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
             $method = "POST",
             $action = "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             array("HTTP_Authorization" => " Basic " . base64_encode($this->client_id . ':' . $this->client_secret))
         );
 

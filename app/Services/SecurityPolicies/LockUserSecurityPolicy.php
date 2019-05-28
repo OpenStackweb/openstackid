@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Auth\Exceptions\AuthenticationInvalidPasswordAttemptException;
 use Utils\Services\ISecurityPolicy;
 use Utils\Services\ISecurityPolicyCounterMeasure;
-
 /**
  * Class LockUserSecurityPolicy
  * @package Services\SecurityPolicies
@@ -56,9 +54,9 @@ final class LockUserSecurityPolicy implements ISecurityPolicy
     {
         try {
             if($ex instanceof AuthenticationInvalidPasswordAttemptException) {
-                $user_identifier = $ex->getIdentifier();
-                if (!is_null($user_identifier) && !empty($user_identifier))
-                    $this->counter_measure->trigger(array('user_identifier' => $user_identifier));
+                $user_id = $ex->getUserId();
+                if (!is_null($user_id) && !empty($user_id))
+                    $this->counter_measure->trigger(['user_id' => $user_id]);
             }
         } catch (Exception $ex) {
             Log::error($ex);

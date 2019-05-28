@@ -21,27 +21,45 @@ jQuery(document).ready(function($){
         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
         queryTokenizer: Bloodhound.tokenizers.whitespace,
         remote: {
-            url: dataClientUrls.fetchUsers+'?t=%QUERY',
-            wildcard: '%QUERY'
+            url: dataClientUrls.fetchUsers,
+            wildcard: '%QUERY%',
+            prepare: function (query, settings) {
+                settings.url = dataClientUrls.fetchUsers+'?filter=first_name=@'+query+',last_name=@'+query+',email=@'+query;
+                return settings;
+            },
+            transform: function(input){
+                var page = input.data;
+                return page;
+            }
         }
     });
 
     $('#admin_users').tagsinput({
-        itemValue: 'id',
-        itemText: 'value',
+        itemValue: function(item) {
+            return item.id;
+        },
+        itemText: function(item) {
+            return item.first_name + ' ' + item.last_name;
+        },
         freeInput: false,
         allowDuplicates: false,
-        trimValue: true,
         typeaheadjs: [
             {
-                hint: true,
                 highlight: true,
                 minLength: 1
             },
             {
                 name: 'users',
-                displayKey: 'value',
-                source: users
+                display: function(item) {
+                    return item.first_name + ' ' + item.last_name;
+                },
+                templates: {
+                    suggestion: function (item) {
+                        return '<p>' + item.first_name + ' ' + item.last_name + '</p>';
+                    }
+                },
+                source: users,
+                limit: 10
             }
         ]
     });
@@ -105,8 +123,8 @@ jQuery(document).ready(function($){
                     timeout:60000,
                     success: function (data,textStatus,jqXHR) {
                         //load data...
-                        $('#client_secret').text(data.new_secret);
-                        $('#client_secret_expiration_date').text(data.new_expiration_date.date);
+                        $('#client_secret').text(data.client_secret);
+                        //$('#client_secret_expiration_date').text(data.new_expiration_date.date);
                         //clean token UI
                         $('#table-access-tokens').remove();
                         $('#table-refresh-tokens').remove();
@@ -122,13 +140,11 @@ jQuery(document).ready(function($){
     });
 
     $("body").on('click',"#use-refresh-token",function(event){
-        var param = {};
-        param.use_refresh_token  = $(this).is(':checked');
+        var use_refresh_token  = $(this).is(':checked');
         $.ajax(
             {
                 type: "PUT",
-                url: dataClientUrls.refresh,
-                data: JSON.stringify(param),
+                url: decodeURI(dataClientUrls.refresh).replace('@use_refresh_token', use_refresh_token),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
                 timeout:60000,
@@ -143,13 +159,11 @@ jQuery(document).ready(function($){
     });
 
     $("body").on('click',"#use-rotate-refresh-token-policy",function(event){
-        var param = {};
-        param.rotate_refresh_token  = $(this).is(':checked');
+        var rotate_refresh_token  = $(this).is(':checked');
         $.ajax(
             {
                 type: "PUT",
-                url: dataClientUrls.rotate,
-                data: JSON.stringify(param),
+                url: decodeURI(dataClientUrls.rotate).replace('@rotate_refresh_token', rotate_refresh_token),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
                 timeout:60000,
@@ -180,13 +194,23 @@ jQuery(document).ready(function($){
         var is_valid = $(this).valid();
         if (is_valid) {
             $('.btn-save-client-data').attr('disabled','disabled');
-            var application_data = $(this).serializeForm();
-
+            var application = $(this).serializeForm();
+            if(is_mine) {
+                var admin_users = application.admin_users;
+                delete application.admin_users;
+                if (admin_users != '') {
+                    admin_users = admin_users.split(",");
+                    for (var i = 0; i < admin_users.length; i++) {
+                        admin_users[i] = parseInt(admin_users[i], 10);
+                    }
+                    application.admin_users = admin_users;
+                }
+            }
             $.ajax(
                 {
                     type: "PUT",
-                    url: dataClientUrls.update + '?client_id=' + application_data.id,
-                    data: JSON.stringify(application_data),
+                    url: dataClientUrls.update,
+                    data: JSON.stringify(application),
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     timeout: 60000,

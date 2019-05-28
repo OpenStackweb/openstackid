@@ -25,7 +25,7 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getConsentResponse(array $data = array())
+    public function getConsentResponse(array $data = [])
     {
         return Response::view("oauth2.consent", $data, 200);
     }
@@ -34,16 +34,16 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getLoginResponse(array $data = array())
+    public function getLoginResponse(array $data = [])
     {
-        return Response::view("login", $data, 200);
+        return Response::view("auth.login", $data, 200);
     }
 
     /**
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getLoginErrorResponse(array $data = array())
+    public function getLoginErrorResponse(array $data = [])
     {
         $response =  Redirect::action('UserController@getLogin')
             ->with('max_login_attempts_2_show_captcha', $data['max_login_attempts_2_show_captcha'])

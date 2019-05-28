@@ -11,71 +11,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\Services\AbstractService;
+use Auth\Repositories\IUserRepository;
+use Auth\User;
 use Models\OAuth2\Client;
-use OAuth2\Exceptions\AbsentClientException;
-use OAuth2\Models\IUserConsent;
+use OAuth2\Repositories\IClientRepository;
 use OAuth2\Services\IUserConsentService;
 use Models\OAuth2\UserConsent;
-use Utils\Exceptions\EntityNotFoundException;
-use Utils\MathUtils;
+use Utils\Db\ITransactionService;
+use models\exceptions\EntityNotFoundException;
 /**
  * Class UserConsentService
  * @package Services\OAuth2
  */
-class UserConsentService implements IUserConsentService
+class UserConsentService extends AbstractService implements IUserConsentService
 {
 
     /**
-     * @param int $user_id
-     * @param string $client_id
-     * @param string $scopes
-     * @return IUserConsent
+     * @var IUserRepository
      */
-    public function get($user_id, $client_id, $scopes)
+    private $user_repository;
+
+    /**
+     * @var IClientRepository
+     */
+    private $client_repository;
+
+    /**
+     * UserConsentService constructor.
+     * @param IUserRepository $user_repository
+     * @param IClientRepository $client_repository
+     * @param ITransactionService $tx_service
+     */
+    public function __construct
+    (
+        IUserRepository $user_repository,
+        IClientRepository $client_repository,
+        ITransactionService $tx_service
+    )
     {
-        $scope_set = explode(' ', $scopes);
-        sort($scope_set);
-
-        $consent  = UserConsent
-             ::where('user_id', '=', $user_id)
-            ->where('client_id', '=', $client_id)
-            ->where('scopes', 'like', '%' . join(' ', $scope_set).'%')->first();
-
-        if(is_null($consent)){
-            $consents = UserConsent
-                ::where('user_id', '=', $user_id)
-                ->where('client_id', '=', $client_id)->get();
-
-            foreach($consents as $aux_consent){
-                // check if the requested scopes are on the former consent present
-                 if(str_contains($aux_consent->scopes, $scope_set)){
-                     $consent = $aux_consent;
-                     break;
-                 }
-            }
-        }
-        return $consent;
+        parent::__construct($tx_service);
+        $this->user_repository = $user_repository;
+        $this->client_repository = $client_repository;
     }
 
     /**
-     * @param int $user_id
-     * @param string $client_id
+     * @param User $user
+     * @param Client $client
      * @param string $scopes
-     * @return IUserConsent|void
+     * @return UserConsent
      * @throws EntityNotFoundException
      */
-    public function add($user_id, $client_id, $scopes)
+    public function addUserConsent(User $user, Client $client, string $scopes):UserConsent
     {
-        $consent   = new UserConsent();
-        $scope_set = explode(' ', $scopes);
-        sort($scope_set);
-        if (is_null(Client::find($client_id))) {
-            throw new EntityNotFoundException();
-        }
+        return $this->tx_service->transaction(function() use($user, $client, $scopes){
 
-        $consent->client_id = $client_id;
-        $consent->user_id   = $user_id;
-        $consent->scopes    = join(' ', $scope_set);
-        $consent->Save();
+            $scope_set = explode(' ', $scopes);
+            sort($scope_set);
+            $consent   = new UserConsent();
+            $consent->setClient($client);
+            $consent->setOwner($user);
+            $consent->setScope(join(' ', $scope_set));
+            $user->addConsent($consent);
+
+            return $consent;
+        });
     }
 }

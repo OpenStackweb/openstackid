@@ -11,7 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redis;
 use Laravel\BrowserKitTesting\TestCase as BaseTestCase;
 /**
@@ -39,7 +42,6 @@ abstract class BrowserKitTestCase extends BaseTestCase
         $this->prepareForTests();
     }
 
-
     /**
      * Migrates the database and set the mailer to 'pretend'.
      * This will cause the tests to run quickly.
@@ -47,8 +49,8 @@ abstract class BrowserKitTestCase extends BaseTestCase
      */
     protected function prepareForTests()
     {
-        Artisan::call('migrate');
-        //Mail::pretend(true);
+        Artisan::call('doctrine:migrations:migrate', ['--connection=model ']);
+        Mail::fake();
         $this->seed('TestSeeder');
     }
 }

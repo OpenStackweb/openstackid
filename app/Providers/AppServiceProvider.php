@@ -11,10 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Utils\CountriesISOCodes;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Validator;
+use Sokil\IsoCodes\IsoCodesFactory;
 use Validators\CustomValidator;
 use App\Http\Utils\Log\LaravelMailerHandler;
 /**
@@ -48,10 +51,25 @@ class AppServiceProvider extends ServiceProvider
             $logger->pushHandler($handler);
         }
 
-
         Validator::resolver(function($translator, $data, $rules, $messages)
         {
             return new CustomValidator($translator, $data, $rules, $messages);
+        });
+
+        Validator::extend('country_iso_alpha2_code', function($attribute, $value, $parameters, $validator)
+        {
+
+            $validator->addReplacer('country_iso_alpha2_code', function($message, $attribute, $rule, $parameters) use ($validator) {
+                return sprintf("%s should be a valid country iso code", $attribute);
+            });
+            if(!is_string($value)) return false;
+            $value = trim($value);
+
+            $isoCodes  = new IsoCodesFactory();
+            $countries = $isoCodes->getCountries();
+            $country   = $countries->getByAlpha2($value);
+
+            return !is_null($country);
         });
 
         Validator::extend('openid.identifier', function($attribute, $value, $parameters, $validator)
@@ -62,6 +80,21 @@ class AppServiceProvider extends ServiceProvider
 
             return preg_match('/^(\w|\.)+$/', $value);
         });
+
+
+        Validator::extend('int_array', function($attribute, $value, $parameters, $validator)
+        {
+            $validator->addReplacer('int_array', function($message, $attribute, $rule, $parameters) use ($validator) {
+                return sprintf("%s should be an array of integers", $attribute);
+            });
+            if(!is_array($value)) return false;
+            foreach($value as $element)
+            {
+                if(!is_int($element)) return false;
+            }
+            return true;
+        });
+
     }
 
     /**

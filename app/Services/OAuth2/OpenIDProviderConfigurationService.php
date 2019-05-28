@@ -14,7 +14,6 @@
 use OAuth2\Discovery\IOpenIDProviderConfigurationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
-
 /**
  * Class OpenIDProviderConfigurationService
  * @package Services\OAuth2

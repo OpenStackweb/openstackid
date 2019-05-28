@@ -18,16 +18,17 @@ use OAuth2\ResourceServer\IUserService;
 final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
 
 
+
     /**
      * @covers OAuth2UserApiController::get()
      */
     public function testGetInfo(){
 
         $response = $this->action("GET", "Api\OAuth2\OAuth2UserApiController@me",
-            array(),
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
+            [],
             array("HTTP_Authorization" => " Bearer " .$this->access_token));
 
         $this->assertResponseStatus(200);
@@ -37,10 +38,10 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
 
     public function testGetInfoCORS(){
         $response = $this->action("GET", "Api\OAuth2\OAuth2UserApiController@me",
-            array(),
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
+            [],
             array(
                 "HTTP_Authorization"                  => " Bearer " .$this->access_token,
                 'HTTP_Origin'                         => array('www.test.com'),

@@ -222,12 +222,12 @@
 
         $.ajax({
                 type: "GET",
-                url: privateKeyUrls.get+'?offset=1&limit=4294967296',
+                url: privateKeyUrls.get,
                 dataType: "json",
                 timeout:60000,
-                success: function (data,textStatus,jqXHR) {
+                success: function (page,textStatus,jqXHR) {
                     //load data...
-                    var private_keys = data.page;
+                    var private_keys = page.data;
 
                     if(private_keys.length > 0){
 
@@ -272,18 +272,18 @@
                             'tr':{
                                 'private_key<-context':{
                                     '.private-key-status@title':function(arg){
-                                        return parseInt(arg.item.active) === 1 ? 'active': 'deactivated';
+                                        return arg.item.active ? 'active': 'deactivated';
                                     },
                                     '.private-key-status@data-private-key-id':  'private_key.id',
                                     '.private-key-status@class+':function(arg){
-                                        return parseInt(arg.item.active) === 1? ' private-key-active': ' private-key-deactivated';
+                                        return arg.item.active ? ' private-key-active': ' private-key-deactivated';
                                     },
                                     '.fa-key@title':function(arg){
                                         return arg.item.kid+' ('+arg.item.type+')';
                                     },
                                     '.delete-private-key@data-private-key-id': 'private_key.id',
                                     '.private-key-validity-range':function(arg){
-                                        return 'valid from <strong>'+arg.item.valid_from+'</strong> to <strong>'+arg.item.valid_to+'</strong>';
+                                        return 'valid from <strong>'+moment.unix(arg.item.valid_from).format()+'</strong> to <strong>'+moment.unix(arg.item.valid_to).format()+'</strong>';
                                     },
                                     '.private-key-fingerprint' : 'private_key.sha_256',
                                     '.private-key-title' : function(arg){

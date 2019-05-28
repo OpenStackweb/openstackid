@@ -15,6 +15,7 @@ use OAuth2\Models\IClient;
 use Auth\User;
 use Models\OAuth2\Client;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Config;
 /**
  * Class ClientApiTest
  */
@@ -42,9 +43,9 @@ class ClientApiTest extends \Tests\BrowserKitTestCase {
         $client   = Client::where('app_name','=','oauth2_test_app')->first();
         $response = $this->action("GET", "Api\\ClientApiController@get",
             $parameters = array('id' => $client->id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content         = $response->getContent();
         $response_client = json_decode($content);
@@ -57,9 +58,9 @@ class ClientApiTest extends \Tests\BrowserKitTestCase {
 
         $response = $this->action("GET", "Api\\ClientApiController@getByPage",
             $parameters = array('offset' => 1,'limit'=>10),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content         = $response->getContent();
         $this->assertResponseStatus(200);
@@ -81,9 +82,9 @@ class ClientApiTest extends \Tests\BrowserKitTestCase {
 
         $response = $this->action("POST", "Api\\ClientApiController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content       = $response->getContent();
         $json_response = json_decode($content);

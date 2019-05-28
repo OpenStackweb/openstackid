@@ -255,7 +255,7 @@ final class OAuth2ProviderController extends Controller
      */
     public function checkSessionIFrame()
     {
-        $data = array();
+        $data = [];
         return View::make("oauth2.session.check-session", $data);
     }
 

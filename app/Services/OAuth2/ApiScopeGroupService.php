@@ -11,19 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Models\OAuth2\Factories\ApiScopeGroupFactory;
 use Auth\Repositories\IUserRepository;
+use models\exceptions\EntityNotFoundException;
+use models\utils\IEntity;
 use OAuth2\Exceptions\InvalidApiScopeGroup;
-use OAuth2\Models\IApiScopeGroup;
 use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Services\IApiScopeGroupService;
 use OAuth2\Repositories\IApiScopeGroupRepository;
 use OAuth2\Services\IApiScopeService;
-use Utils\Exceptions\EntityNotFoundException;
 use Utils\Services\ILogService;
 use Utils\Db\ITransactionService;
 use Models\OAuth2\ApiScopeGroup;
-
 /**
  * Class ApiScopeGroupService
  * @package Services\OAuth2
@@ -80,136 +79,114 @@ final class ApiScopeGroupService implements IApiScopeGroupService
         $this->tx_service       = $tx_service;
     }
 
-    public function update($id, array $params)
+    /**
+     * @param int $id
+     * @param array $payload
+     * @return IEntity
+     * @throws \Exception
+     */
+    public function update(int $id, array $payload):IEntity
     {
-        $repository      = $this->repository;
-        $scope_service   = $this->scope_service;
-        $user_repository = $this->user_repository;
+        return $this->tx_service->transaction(function () use ($id, $payload) {
 
-        return $this->tx_service->transaction(function () use ($id, $params, $repository, $scope_service, $user_repository) {
+            $group = $this->repository->getById($id);
 
-            $group = $repository->get($id);
-
-            if (is_null($group))
+            if (is_null($group) ||!$group instanceof ApiScopeGroup)
             {
                 throw new InvalidApiScopeGroup(sprintf('api scope group id %s does not exists!', $id));
             }
 
-            $allowed_update_params = array('name', 'active', 'description', 'users', 'scopes');
-
-            foreach ($allowed_update_params as $param)
-            {
-                if (array_key_exists($param, $params))
+            if(isset($payload['name'])){
+                $former_group = $this->repository->getByName($payload['name']);
+                if(!is_null($former_group) && $former_group->getId() != $id)
                 {
-
-                    if ($param == 'name')
-                    {
-                        $older_group = $repository->getByName($params[$param]);
-                        if(!is_null($older_group) && $older_group->id != $id)
-                        {
-                            throw new InvalidApiScopeGroup(sprintf('there is already another api scope group name (%s).', $params[$param]));
-                        }
-                    }
-                    if($param === 'scopes')
-                    {
-                        $ids = $group->scopes()->pluck('id')->all();
-                        $group->scopes()->detach($ids);
-                        $scopes = explode(',', $params['scopes']);
-                        foreach($scopes as $scope_id)
-                        {
-                            $scope = $this->scope_repository->get(intval($scope_id));
-                            if(is_null($scope)) throw new EntityNotFoundException(sprintf('scope %s not found.',$scope_id));
-                            $group->addScope($scope);
-                        }
-                    }
-                    else if($param === 'users'){
-                        $group->removeAllUsers();
-                        $users = explode(',', $params['users']);
-                        foreach($users as $user_id)
-                        {
-                            $user = $user_repository->get(intval($user_id));
-                            if(is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.',$user_id));
-                            $group->addUser($user);
-                        }
-                    }
-                    else
-                        $group->{$param} = $params[$param];
+                    throw new InvalidApiScopeGroup(sprintf('there is already another api scope group name (%s).', $payload['name']));
                 }
             }
-            $repository->add($group);
-            return true;
+
+            ApiScopeGroupFactory::populate($group, $payload);
+
+            if(isset($payload['users'])){
+                $group->clearUsers();
+                $users = explode(',', $payload['users']);
+                foreach($users as $user_id)
+                {
+                    $user = $this->user_repository->getById(intval($user_id));
+                    if(is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.',$user_id));
+                    $group->addUser($user);
+                }
+            }
+
+            if(isset($payload['scopes'])){
+                $scopes = explode(',', $payload['scopes']);
+                foreach($scopes as $scope_id)
+                {
+                    $scope = $this->scope_repository->getById(intval($scope_id));
+                    if(is_null($scope)) throw new EntityNotFoundException(sprintf('scope %s not found.',$scope_id));
+                    $group->addScope($scope);
+                }
+            }
+
+            return $group;
+        });
+    }
+
+    /**
+     * @param array $payload
+     * @return IEntity
+     */
+    public function create(array $payload):IEntity
+    {
+        return $this->tx_service->transaction(function () use ($payload) {
+
+            $name         = trim($payload['name']);
+            $former_group = $this->repository->getByName($name);
+
+            if(!is_null($former_group))
+            {
+                throw new InvalidApiScopeGroup(sprintf('there is already another api scope group name (%s).', $name));
+            }
+            $group  = ApiScopeGroupFactory::build($payload);
+            $scopes = $payload['scopes'];
+            $users  = $payload['users'];
+            $scopes = explode(',', $scopes);
+            $users  = explode(',', $users);
+
+            foreach($scopes as $scope_id)
+            {
+                $scope = $this->scope_repository->getById(intval($scope_id));
+                if(is_null($scope)) throw new EntityNotFoundException(sprintf('scope %s not found.',$scope_id));
+                $group->addScope($scope);
+            }
+
+            foreach($users as $user_id)
+            {
+                $user = $this->user_repository->getById(intval($user_id));
+                if(is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.',$user_id));
+                $group->addUser($user);
+            }
+
+            $this->repository->add($group);
+
+            return $group;
         });
     }
 
     /**
      * @param int $id
-     * @param bool $status status (active/non active)
-     * @return void
+     * @throws \Exception
      */
-    public function setStatus($id, $status)
+    public function delete(int $id): void
     {
-        $this->tx_service->transaction(function() use($id, $status){
-            $group = $this->repository->get($id);
-            if(is_null($group)) return;
-            $group->active = $status;
-            $this->repository->add($group);
-        });
-    }
+        $this->tx_service->transaction(function () use ($id) {
 
-    /**
-     * @param string $name
-     * @param bool $active
-     * @param string $scopes
-     * @param string $users
-     * @return IApiScopeGroup
-     */
-    public function register($name, $active, $scopes, $users)
-    {
-        $repository      = $this->repository;
-        $scope_service   = $this->scope_service;
-        $user_repository = $this->user_repository;
+            $group = $this->repository->getById($id);
 
-        return $this->tx_service->transaction(function () use (
-            $name,
-            $active,
-            $scopes,
-            $users,
-            $repository,
-            $scope_service,
-            $user_repository
-        ) {
+            if(is_null($group))
+                throw new EntityNotFoundException();
 
-            if (ApiScopeGroup::where('name', '=', trim($name))->count() > 0)
-            {
-                throw new InvalidApiScopeGroup(sprintf('there is already another group with that name (%s).', $name));
-            }
+            $this->repository->delete($group);
 
-            // todo : move to factory
-            $repository->add($instance = new ApiScopeGroup
-            (
-                array
-                (
-                    'name'        => trim($name),
-                    'active'      => $active,
-                    'description' => ''
-                )
-            ));
-
-            $scopes = explode(',', $scopes);
-            $users  = explode(',', $users);
-            foreach($scopes as $scope_id)
-            {
-                $scope = $this->scope_repository->get(intval($scope_id));
-                if(is_null($scope)) throw new EntityNotFoundException(sprintf('scope %s not found.',$scope_id));
-                $instance->addScope($scope);
-            }
-            foreach($users as $user_id)
-            {
-                $user = $user_repository->get(intval($user_id));
-                if(is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.',$user_id));
-                $instance->addUser($user);
-            }
-            return $instance;
         });
     }
 }

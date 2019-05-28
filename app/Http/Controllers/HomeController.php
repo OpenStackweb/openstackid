@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Redirect;
 use App\Http\Controllers\OpenId\OpenIdController;
 use App\Http\Controllers\OpenId\DiscoveryController;
-
 /**
  * Class HomeController
  * @package App\Http\Controllers

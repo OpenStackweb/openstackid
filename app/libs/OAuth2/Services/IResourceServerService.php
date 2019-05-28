@@ -11,55 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Exceptions\InvalidResourceServer;
-use OAuth2\Models\IResourceServer;
-use Utils\Exceptions\EntityNotFoundException;
-
+use App\Services\IBaseService;
+use Models\OAuth2\ResourceServer;
+use models\exceptions\EntityNotFoundException;
 /**
  * Interface IResourceServerService
  * @package OAuth2\Services
  */
-interface IResourceServerService {
-
-    /**
-     * @param string $host
-     * @param string $ips
-     * @param string $friendly_name
-     * @param bool $active
-     * @return IResourceServer
-     * @throws InvalidResourceServer
-     */
-    public function add($host, $ips, $friendly_name, $active);
+interface IResourceServerService extends IBaseService {
 
     /**
      * @param int $id
-     * @param array $params
-     * @return bool
-     * @throws InvalidResourceServer
+     * @return ResourceServer
      * @throws EntityNotFoundException
      */
-    public function update($id, array $params);
-
-    /**
-     * @param int $id
-     * @param bool $active
-     * @return bool
-     * @throws EntityNotFoundException
-     */
-    public function setStatus($id , $active);
-
-    /**
-     * @param int $id
-     * @return bool
-     * @throws EntityNotFoundException
-     */
-    public function delete($id);
-
-    /**
-     * @param int $id
-     * @return string
-     * @throws EntityNotFoundException
-     */
-    public function regenerateClientSecret($id);
+    public function regenerateClientSecret(int $id):ResourceServer;
 }

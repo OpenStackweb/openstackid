@@ -7,28 +7,29 @@ function updateAccessTokenList(page, page_size){
     //reload access tokens
     $.ajax({
         type: "GET",
-        url: TokensUrls.AccessTokenUrls.get +'?offset='+page+'&limit='+page_size,
+        url: TokensUrls.AccessTokenUrls.get +'?page='+page+'&per_page='+page_size,
         dataType: "json",
         timeout:60000,
-        success: function (data,textStatus,jqXHR) {
+        success: function (page,textStatus,jqXHR) {
             //load data...
 
-            if(data.items.length === 0){
+            if(page.data.length === 0){
                 $('#table-access-tokens').hide();
                 $('#info-access-tokens').show();
             }
             else{
                 $('#info-access-tokens').hide();
                 $('#table-access-tokens').show();
-                var template   = $('<tbody><tr><td class="app_type"></td><td class="issued"></td><td class="scope"></td><td class="lifetime"></td><td><a title="Revoke Access Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-access-token" data-hint="access-token">Revoke</a></td></tr></tbody>');
+                var template   = $('<tbody><tr><td class="app_type"></td><td class="issued"></td><td class="app_name"></td><td class="scope"></td><td class="lifetime"></td><td><a title="Revoke Access Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-access-token" data-hint="access-token">Revoke</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
                         'token<-context':{
                             '@id'         :'token.value',
-                            'td.app_type' :'token.app_type',
-                            'td.issued'   :'token.issued',
+                            'td.app_type' :'token.client_type',
+                            'td.app_name' :'token.client_name',
+                            'td.issued'   :'token.created_at',
                             'td.scope'    :'token.scope',
-                            'td.lifetime' :'token.lifetime',
+                            'td.lifetime' :'token.remaining_lifetime',
                             'a@href':function(arg){
                                 var token_value = arg.item.value;
                                 var href = TokensUrls.AccessTokenUrls.delete;
@@ -38,10 +39,11 @@ function updateAccessTokenList(page, page_size){
                         }
                     }
                 };
-                var html = template.render(data.items, directives);
+                var html = template.render(page.data, directives);
                 $('#body-access-tokens').html(html.html());
                 var pages_html = '';
-                for(var i = 0 ; i <  data.pages ; i++){
+                var pages_qty  = Math.ceil(page.total / page.per_page);
+                for(var i = 0 ; i <  pages_qty ; i++){
                     var active = ((i+1) == accessTokenCurrentPage) ? true : false;
                     pages_html += "<li "+(active ? "class='active'":"" )+"><a class='access_token_page' href='#' data-page-nbr='"+(i+1)+"'>"+(i+1)+"</a></li>";
                 }
@@ -59,29 +61,30 @@ function updateRefreshTokenList(page, page_size){
     //reload access tokens
     $.ajax({
         type: "GET",
-        url: TokensUrls.RefreshTokenUrl.get+'?offset='+page+'&limit='+page_size,
+        url: TokensUrls.RefreshTokenUrl.get+'?page='+page+'&per_page='+page_size,
         dataType: "json",
         timeout:60000,
-        success: function (data,textStatus,jqXHR) {
+        success: function (page,textStatus,jqXHR) {
             //load data...
 
-            if(data.items.length===0){
+            if(page.data.length===0){
                 $('#table-refresh-tokens').hide();
                 $('#info-refresh-tokens').show();
             }
             else{
                 $('#info-refresh-tokens').hide();
                 $('#table-refresh-tokens').show();
-                var template   = $('<tbody><tr><td class="app_type"></td><td class="issued"></td><td class="scope"></td><td class="lifetime"></td><td><a title="Revoke Refresh Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-refresh-token" data-hint="refresh-token">Revoke</a></td></tr></tbody>');
+                var template   = $('<tbody><tr><td class="app_type"></td><td class="issued"></td><td class="app_name"></td><td class="scope"></td><td class="lifetime"></td><td><a title="Revoke Refresh Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-refresh-token" data-hint="refresh-token">Revoke</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
                         'token<-context':{
                             '@id'         :'token.value',
-                            'td.app_type' :'token.app_type',
-                            'td.issued'   :'token.issued',
+                            'td.app_type' :'token.client_type',
+                            'td.app_type' :'token.client_name',
+                            'td.issued'   :'token.created_at',
                             'td.scope'    :'token.scope',
                             'td.lifetime' : function(arg){
-                                var token_lifetime = arg.item.lifetime;
+                                var token_lifetime = arg.item.remaining_lifetime;
                                 return token_lifetime===0?'Not Expire':token_lifetime;
                             },
                             'a@href':function(arg){
@@ -93,10 +96,11 @@ function updateRefreshTokenList(page, page_size){
                         }
                     }
                 };
-                var html = template.render(data.items, directives);
+                var html = template.render(page.data, directives);
                 $('#body-refresh-tokens').html(html.html());
                 var pages_html = '';
-                for(var i = 0 ; i <  data.pages ; i++){
+                var pages_qty  = Math.ceil(page.total / page.per_page);
+                for(var i = 0 ; i < pages_qty  ; i++){
                     var active = ((i+1) == refreshTokenCurrentPage) ? true : false;
                     pages_html += "<li "+(active ? "class='active'":"" )+"><a class='refresh_token_page' href='#' data-page-nbr='"+(i+1)+"'>"+(i+1)+"</a></li>";
                 }

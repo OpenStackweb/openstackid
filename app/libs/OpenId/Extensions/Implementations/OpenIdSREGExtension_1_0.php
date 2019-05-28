@@ -1,16 +1,4 @@
 <?php namespace OpenId\Extensions\Implementations;
-use Auth\IAuthenticationExtensionService;
-use Mockery\Exception;
-use OpenId\Extensions\OpenIdExtension;
-use OpenId\OpenIdProtocol;
-use OpenId\Requests\Contexts\PartialView;
-use OpenId\Requests\Contexts\RequestContext;
-use OpenId\Requests\OpenIdRequest;
-use OpenId\Responses\Contexts\ResponseContext;
-use OpenId\Responses\OpenIdResponse;
-use Utils\Services\IAuthService;
-use Utils\Services\ILogService;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +11,17 @@ use Utils\Services\ILogService;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use Auth\IAuthenticationExtensionService;
+use Mockery\Exception;
+use OpenId\Extensions\OpenIdExtension;
+use OpenId\OpenIdProtocol;
+use OpenId\Requests\Contexts\PartialView;
+use OpenId\Requests\Contexts\RequestContext;
+use OpenId\Requests\OpenIdRequest;
+use OpenId\Responses\Contexts\ResponseContext;
+use OpenId\Responses\OpenIdResponse;
+use Utils\Services\IAuthService;
+use Utils\Services\ILogService;
 /**
  * Class OpenIdSREGExtension_1_0
  * @see http://openid.net/specs/openid-simple-registration-extension-1_0.html
@@ -53,7 +51,7 @@ class OpenIdSREGExtension_1_0 extends OpenIdExtension
     /**
      * @var array
      */
-    public static $available_properties = array();
+    public static $available_properties = [];
 
     /**
      * @var IAuthenticationExtensionService
@@ -149,7 +147,7 @@ class OpenIdSREGExtension_1_0 extends OpenIdExtension
                 if ($attr == self::Country) {
                     $response->addParam(self::param($attr), $user->getCountry());
                 }
-                if ($attr == self::Nickname || $attr == self::FullName) {
+                if ($attr == self::FullName) {
                     $response->addParam(self::param($attr), $user->getFullName());
                 }
                 if ($attr == self::Nickname) {
@@ -189,7 +187,7 @@ class OpenIdSREGExtension_1_0 extends OpenIdExtension
      */
     public function getTrustedData(OpenIdRequest $request)
     {
-        $data = array();
+        $data = [];
         try {
             $simple_reg_request = $this->buildRequest($request);
 
@@ -200,7 +198,7 @@ class OpenIdSREGExtension_1_0 extends OpenIdExtension
                 $attributes     = array_merge($attributes, $opt_attributes);
 
                 foreach ($attributes as $key => $value) {
-                    array_push($data, $key);
+                    $data[] = $key;
                 }
             }
         } catch (Exception $ex) {

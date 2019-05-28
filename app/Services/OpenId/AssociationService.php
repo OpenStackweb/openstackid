@@ -23,7 +23,7 @@ use Utils\Db\ITransactionService;
 use Utils\Exceptions\UnacquiredLockException;
 use Utils\Services\ICacheService;
 use Utils\Services\ILockManagerService;
-
+use OpenId\Models\Association as SnapShotAssociation;
 /**
  * Class AssociationService
  * @package Services\OpenId
@@ -102,16 +102,16 @@ class AssociationService implements IAssociationService
                     }
                     //convert secret to hexa representation
                     // bin2hex
-                    $secret_unpack = \unpack('H*', $assoc->secret);
+                    $secret_unpack = \unpack('H*', $assoc->getSecret());
                     $secret_unpack = array_shift($secret_unpack);
                     //repopulate cache
                     $this->cache_service->storeHash($handle, [
-                        "type" => $assoc->type,
-                        "mac_function" => $assoc->mac_function,
-                        "issued" => $assoc->issued,
-                        "lifetime" => $assoc->lifetime,
-                        "secret" => $secret_unpack,
-                        "realm" => $assoc->realm
+                        "type"         => $assoc->getType(),
+                        "mac_function" => $assoc->getMacFunction(),
+                        "issued"       => $assoc->getIssued()->format("Y-m-d H:i:s"),
+                        "lifetime"     => $assoc->getLifetime(),
+                        "secret"       => $secret_unpack,
+                        "realm"        => $assoc->getRealm()
                     ], $remaining_lifetime);
                 }
 
@@ -136,19 +136,19 @@ class AssociationService implements IAssociationService
 
                 //convert hex 2 bin
                 $secret = \pack('H*', $cache_values['secret']);
-                $assoc  = new OpenIdAssociation();
+                $assoc  = new SnapShotAssociation();
 
-                $assoc->type         = $cache_values['type'];
-                $assoc->mac_function = $cache_values['mac_function'];
-                $assoc->issued       = $cache_values['issued'];
-                $assoc->lifetime     = intval($cache_values['lifetime']);
-                $assoc->secret       = $secret;
-                $realm               = $cache_values['realm'];
+                $assoc->setType($cache_values['type']);
+                $assoc->setMacFunction($cache_values['mac_function']);
+                $issued = $cache_values['issued'];
+                $assoc->setIssued(new \DateTime($issued));
+                $assoc->setLifetime(intval($cache_values['lifetime']));
+                $assoc->setSecret($secret);
+                $realm  = $cache_values['realm'];
 
                 if (!empty($realm)) {
-                    $assoc->realm = $realm;
+                    $assoc->setRealm($realm);
                 }
-
                 return $assoc;
 
             } catch (UnacquiredLockException $ex1) {
@@ -161,26 +161,23 @@ class AssociationService implements IAssociationService
     }
 
     /**
-     * @param $handle
-     * @return bool
+     * @param string $handle
      */
-    public function deleteAssociation($handle)
+    public function deleteAssociation(string $handle)
     {
-        return $this->tx_service->transaction(function() use($handle){
+        $this->tx_service->transaction(function() use($handle){
 
             $this->cache_service->delete($handle);
             $assoc = $this->repository->getByHandle($handle);
             if (!is_null($assoc)) {
-                return $this->repository->delete($assoc);
+                $this->repository->delete($assoc);
             }
-
-            return false;
         });
     }
 
     /**
      * @param IAssociation $association
-     * @return IAssociation
+     * @return OpenIdAssociation
      * @throws ReplayAttackException
      */
     public function addAssociation(IAssociation $association)
@@ -192,16 +189,16 @@ class AssociationService implements IAssociationService
                 $lock_name = 'lock.add.assoc.' . $association->getHandle();
 
                 $this->lock_manager_service->acquireLock($lock_name);
-
-                $assoc->identifier   = $association->getHandle();;
-                $assoc->secret       = $association->getSecret();
-                $assoc->type         = $association->getType();;
-                $assoc->mac_function = $association->getMacFunction();
-                $assoc->lifetime     = intval($association->getLifetime());
-                $assoc->issued       = $association->getIssued();
+                // todo: move to a factory
+                $assoc->setIdentifier($association->getHandle());
+                $assoc->setSecret($association->getSecret());
+                $assoc->setType($association->getType());
+                $assoc->setMacFunction($association->getMacFunction());
+                $assoc->setLifetime(intval($association->getLifetime()));
+                $assoc->setIssued($association->getIssued());
 
                 if (!is_null($association->getRealm())) {
-                    $assoc->realm = $association->getRealm();
+                    $assoc->setRealm($association->getRealm());
                 }
 
                 if ($association->getType() == IAssociation::TypeSession) {
@@ -216,7 +213,7 @@ class AssociationService implements IAssociationService
                     [
                         "type"         => $association->getType(),
                         "mac_function" => $association->getMacFunction(),
-                        "issued"       => $association->getIssued(),
+                        "issued"       => $association->getIssued()->format("Y-m-d H:i:s"),
                         "lifetime"     => intval($association->getLifetime()),
                         "secret"       => $secret_unpack,
                         "realm"        => !is_null($association->getRealm()) ? $association->getRealm() : ''

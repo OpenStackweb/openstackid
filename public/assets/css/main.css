@@ -8,13 +8,10 @@ body {
 }
 
 #logo a {
-    background: url("../img/openstack-logo-full.svg") no-repeat scroll left center rgba(0, 0, 0, 0);
     display: block;
     height: 54px;
-    margin-left: -10px;
     margin-top: 8px;
     text-indent: -1000em;
-    width: 177px;
 }
 
 .panel-heading {
@@ -28,12 +25,13 @@ body {
 
 .panel {
     background-color: #FFFFFF;
-    border: 1px solid #DDDDDD;
+    border: 1px solid #DDDDDD !important;
     border-radius: 4px;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
     padding: 15px;
 }
+
 
 * {
     -moz-box-sizing: border-box;
@@ -211,4 +209,134 @@ textarea {
 
 .alert{
     margin-top: 5px;
+}
+
+.center{
+    text-align: center;
+}
+
+.bootstrap-tagsinput {
+    width: 100%;
+}
+
+.password-container > .progress {
+    margin-top: 5px;
+    font-weight: bold;
+    background-color: #B0BEC5 !important;
+}
+
+.password-container> .error-list
+{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+}
+
+.password-container > .error-list li span::before
+{
+    font: normal normal normal 14px/1 FontAwesome;
+    content: "\f06a";
+    margin-right: 5px;
+}
+
+span.help-block
+{
+    font-size: 12px;
+    color: #d52929 !important;
+}
+
+span.help-block::before {
+    font: normal normal normal 14px/1 FontAwesome;
+    content: "\f06a";
+    margin-right: 5px;
+}
+
+.recaptcha-container{
+    text-align:center;
+}
+
+.recaptcha-container > .g-recaptcha {
+    display: inline-block;
+}
+
+/*Iphone 5*/
+@media only screen and (min-device-width : 320px) and (max-device-width : 568px) and (orientation : portrait) {
+    .recaptcha-container > .g-recaptcha {
+        display: inline-block;
+        transform: scale(0.66);
+        transform-origin: 0 0;
+    }
+}
+
+/*iPhone 6, 7, 8 in portrait*/
+@media only screen and (min-device-width : 375px) and (max-device-width : 667px) and (orientation : portrait) {
+    .recaptcha-container > .g-recaptcha {
+        display: inline-block;
+        transform: scale(0.85);
+        transform-origin: 0 0;
+    }
+}
+
+/* Pixel 2 */
+@media only screen and (min-device-width : 411px) and (max-device-width : 667px) and (orientation : portrait) {
+    .recaptcha-container > .g-recaptcha {
+        display: inline-block;
+        transform: scale(0.95);
+        transform-origin: 0 0;
+    }
+}
+
+.datepicker-dropdown{
+    z-index: 999999999999999999999 !important;
+}
+
+.add-item-button{
+    margin-bottom: 10px;
+}
+
+#search-term
+{
+    width: 40% !important;
+    height: 26px !important;
+    padding: 3px;
+
+}
+
+.delete-item{
+    color: #900 !important;
+    font-weight: bold !important;
+}
+
+#gender_specify{
+    margin-top: 10px;
+}
+
+.img-circle{
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    line-height: 1.42857143;
+    color: #333;
+    font-size: 14px;
+    font-family: "Roboto",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-weight: normal;
+    box-sizing: border-box;
+    border: 0;
+    vertical-align: middle;
+    border-radius: 50%;
+}
+
+.help-block{
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    line-height: 1.42857143;
+    font-weight: 400;
+    font-family: "Roboto",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+    box-sizing: border-box;
+    margin: 0 0 10px;
+    display: block;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #aaa;
 }

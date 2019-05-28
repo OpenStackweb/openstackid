@@ -41,9 +41,9 @@ final class HttpIClientJWKSetReader implements IClientJWKSetReader
 
             $client = new HttpClient([
                 'defaults' => [
-                    'timeout' => Config::get('curl.timeout', 60),
+                    'timeout'         => Config::get('curl.timeout', 60),
                     'allow_redirects' => Config::get('curl.allow_redirects', false),
-                    'verify' => Config::get('curl.verify_ssl_cert', true)
+                    'verify'          => Config::get('curl.verify_ssl_cert', true)
                 ]
             ]);
 

@@ -11,20 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-
+use App\Services\IBaseService;
+use models\exceptions\EntityNotFoundException;
+use Models\OAuth2\Client;
 use OAuth2\Exceptions\InvalidClientAuthMethodException;
 use OAuth2\Exceptions\MissingClientAuthorizationInfo;
 use OAuth2\Models\ClientAuthenticationContext;
-use OAuth2\Models\IClient;
-use Services\Exceptions\ValidationException;
-use Utils\Exceptions\EntityNotFoundException;
-
+use models\exceptions\ValidationException;
 /**
  * Interface IClientService
  * @package OAuth2\Services
  */
-interface IClientService {
+interface IClientService  extends IBaseService {
 
     /**
      * Clients in possession of a client password MAY use the HTTP Basic
@@ -42,97 +40,78 @@ interface IClientService {
     public function getCurrentClientAuthInfo();
 
     /**
-     * @param string $application_type
-     * @param string $app_name
-     * @param string $app_description
-     * @param null|string  $app_url
-     * @param array $admin_users
-     * @param string $app_logo
-     * @return IClient
+     * @param int $id
+     * @param int $scope_id
+     * @return Client|null
      * @throws ValidationException
-     */
-    public function register
-    (
-        $application_type,
-        $app_name,
-        $app_description,
-        $app_url = null,
-        array $admin_users = array(),
-        $app_logo = ''
-    );
-
-    /**
-     * @param $id
-     * @param array $params
      * @throws EntityNotFoundException
+     */
+    public function addClientScope(int $id, int $scope_id):?Client;
+
+    /**
+     * @param int $id
+     * @param int $scope_id
+     * @return Client|null
      * @throws ValidationException
-     * @return IClient
+     * @throws EntityNotFoundException
      */
-    public function update($id, array $params);
-
-    /**
-     * @param int $id
-     * @param int $scope_id
-     * @return mixed
-     */
-    public function addClientScope($id, $scope_id);
-
-    /**
-     * @param int $id
-     * @param int $scope_id
-     * @return mixed
-     */
-    public function deleteClientScope($id, $scope_id);
-
-    /**
-     * @param  int $id
-     * @return mixed
-     */
-    public function deleteClientByIdentifier($id);
+    public function deleteClientScope(int $id, int $scope_id):?Client;
 
     /**
      * Regenerates Client Secret
      * @param int $id
-     * @return IClient
+     * @return Client|null
+     * @throws ValidationException
+     * @throws EntityNotFoundException
      */
-    public function regenerateClientSecret($id);
+    public function regenerateClientSecret(int $id):?Client;
 
     /**
      * Lock a client application by id
      * @param int $id
-     * @return bool
+     * @return Client|null
+     * @throws ValidationException
+     * @throws EntityNotFoundException
      */
-    public function lockClient($id);
+    public function lockClient(int $id):?Client;
 
     /**
      * unLock a client application by id
-     * @param string $id
-     * @return bool
+     * @param int $id
+     * @return Client|null
+     * @throws ValidationException
+     * @throws EntityNotFoundException
      */
-    public function unlockClient($id);
+    public function unlockClient(int $id):?Client;
 
     /**
      * Activate/Deactivate given client
      * @param int $id
      * @param bool $active
-     * @return bool
+     * @return Client|null
+     * @throws ValidationException
+     * @throws EntityNotFoundException
      */
-    public function activateClient($id, $active);
+    public function activateClient(int $id, bool $active):?Client;
 
     /**
      * set/unset refresh token usage for a given client
      * @param int $id
      * @param bool $use_refresh_token
-     * @return bool
+     * @return Client|null
+     * @throws ValidationException
+     * @throws EntityNotFoundException
      */
-    public function setRefreshTokenUsage($id, $use_refresh_token);
+    public function setRefreshTokenUsage(int $id, bool $use_refresh_token):?Client;
 
     /**
      * set/unset rotate refresh token policy for a given client
      * @param int $id
      * @param bool $rotate_refresh_token
-     * @return bool
+     * @return Client|null
+     * @throws ValidationException
+     * @throws EntityNotFoundException
      */
-    public function setRotateRefreshTokenPolicy($id, $rotate_refresh_token);
+    public function setRotateRefreshTokenPolicy(int $id, bool $rotate_refresh_token):?Client;
 
 } 

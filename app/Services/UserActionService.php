@@ -11,13 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Auth\Repositories\IUserRepository;
 use Exception;
+use models\exceptions\EntityNotFoundException;
 use Models\UserAction;
 use Illuminate\Support\Facades\Log;
 use Utils\Db\ITransactionService;
-
 /**
  * Class UserActionService
  * @package Services
@@ -33,10 +32,15 @@ final class UserActionService implements IUserActionService
      */
     private $tx_service;
 
+    /**
+     * UserActionService constructor.
+     * @param IUserRepository $user_repository
+     * @param ITransactionService $tx_service
+     */
     public function __construct(IUserRepository $user_repository, ITransactionService $tx_service)
     {
         $this->user_repository = $user_repository;
-        $this->tx_service      = $tx_service;
+        $this->tx_service = $tx_service;
     }
 
     /**
@@ -44,28 +48,24 @@ final class UserActionService implements IUserActionService
      * @param string $ip
      * @param string $user_action
      * @param null|string $realm
-     * @return bool
+     * @return UserAction
      */
-    public function addUserAction($user_id, $ip, $user_action, $realm = null)
+    public function addUserAction($user_id, $ip, $user_action, $realm = null): UserAction
     {
-        return $this->tx_service->transaction(function() use($user_id, $ip, $user_action, $realm){
-            try {
+        return $this->tx_service->transaction(function () use ($user_id, $ip, $user_action, $realm) {
 
-                $action              = new UserAction();
-                $action->from_ip     = $ip;
-                $action->user_action = $user_action;
-                $action->realm       = $realm;
-                $user                = $this->user_repository->get($user_id);
+            $action = new UserAction();
+            $action->setFromIp($ip);
+            $action->setUserAction($user_action);
+            if(!empty($realm))
+                $action->setRealm($realm);
+            $user = $this->user_repository->getById($user_id);
+            if (is_null($user))
+                throw new EntityNotFoundException();
 
-                if ($user) {
-                    $user->actions()->save($action);
-                    return true;
-                }
-                return false;
-            } catch (Exception $ex) {
-                Log::error($ex);
-                return false;
-            }
+            $user->addUserAction($action);
+
+            return $action;
         });
 
     }

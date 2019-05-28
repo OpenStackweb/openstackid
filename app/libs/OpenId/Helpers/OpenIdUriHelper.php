@@ -11,9 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 define('OpenIdUriHelper_HostSegmentRe', "/^(?:[-a-zA-Z0-9!$&'\\(\\)\\*+,;=._~]|%[a-zA-Z0-9]{2})*$/");
-
 /**
  * Class OpenIdUriHelper
  * @package OpenId\Helpers
@@ -414,7 +412,7 @@ final class OpenIdUriHelper
             return false;
         }
 
-        if (array_intersect($keys, $forbidden_parts) != array()) {
+        if (array_intersect($keys, $forbidden_parts) != []) {
             return false;
         }
 
@@ -481,7 +479,7 @@ final class OpenIdUriHelper
      */
     private static function urinorm($uri)
     {
-        $uri_matches = array();
+        $uri_matches = [];
         preg_match(self::URIPattern, $uri, $uri_matches);
 
         if (count($uri_matches) < 9) {
@@ -490,7 +488,7 @@ final class OpenIdUriHelper
             }
         }
 
-        $illegal_matches = array();
+        $illegal_matches = [];
         preg_match(self::URLIllegalCharRE,
             $uri, $illegal_matches);
         if ($illegal_matches) {
@@ -520,7 +518,7 @@ final class OpenIdUriHelper
             return null;
         }
 
-        $authority_matches = array();
+        $authority_matches = [];
         preg_match(self::AuthorityPattern,
             $authority, $authority_matches);
         if (count($authority_matches) === 0) {
@@ -605,7 +603,7 @@ final class OpenIdUriHelper
      */
     public static function getUnreserved()
     {
-        $_unreserved = array();
+        $_unreserved = [];
         for ($i = 0; $i < 256; $i++) {
             $_unreserved[$i] = false;
         }
@@ -636,7 +634,7 @@ final class OpenIdUriHelper
      */
     private static function remove_dot_segments($path)
     {
-        $result_segments = array();
+        $result_segments = [];
 
         while ($path) {
             if (self::startswith($path, '../')) {

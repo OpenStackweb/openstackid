@@ -11,24 +11,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Http\Utils\IUserIPHelperProvider;
+use App\libs\OAuth2\Repositories\IOAuth2TrailExceptionRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
+use OAuth2\Exceptions\InvalidClientCredentials;
+use OAuth2\Exceptions\InvalidClientException;
+use OAuth2\Exceptions\InvalidRedeemAuthCodeException;
 use OAuth2\Exceptions\OAuth2ClientBaseException;
 use OAuth2\Repositories\IClientRepository;
-use OAuth2\Services\IClientService;
+use Utils\Db\ITransactionService;
 use Utils\Services\ISecurityPolicy;
 use Utils\Services\ISecurityPolicyCounterMeasure;
 use Models\OAuth2\OAuth2TrailException;
 use Utils\Services\IServerConfigurationService;
-use Utils\IPHelper;
-
 /**
  * Class OAuth2SecurityPolicy
  * @package Services\SecurityPolicies
  */
-class OAuth2SecurityPolicy  implements ISecurityPolicy {
+class OAuth2SecurityPolicy implements ISecurityPolicy {
 
     /**
      * @var ISecurityPolicyCounterMeasure
@@ -37,7 +40,7 @@ class OAuth2SecurityPolicy  implements ISecurityPolicy {
     /**
      * @var array
      */
-    private $exception_dictionary = array();
+    private $exception_dictionary = [];
     /**
      * @var IServerConfigurationService
      */
@@ -48,21 +51,48 @@ class OAuth2SecurityPolicy  implements ISecurityPolicy {
     private $client_repository;
 
     /**
+     * @var IUserIPHelperProvider
+     */
+    private $ip_helper;
+
+    /**
+     * @var IOAuth2TrailExceptionRepository
+     */
+    private $user_exception_trail_repository;
+
+    /**
+     * @var ITransactionService
+     */
+    private $tx_service;
+
+    /**
      * OAuth2SecurityPolicy constructor.
+     * @param IUserIPHelperProvider $ip_helper
      * @param IServerConfigurationService $server_configuration_service
      * @param IClientRepository $client_repository
+     * @param IOAuth2TrailExceptionRepository $user_exception_trail_repository
      */
-    public function __construct(IServerConfigurationService $server_configuration_service, IClientRepository $client_repository)
+    public function __construct
+    (
+        IUserIPHelperProvider $ip_helper,
+        IServerConfigurationService $server_configuration_service,
+        IClientRepository $client_repository,
+        IOAuth2TrailExceptionRepository $user_exception_trail_repository,
+        ITransactionService $tx_service
+    )
     {
-        $this->server_configuration_service = $server_configuration_service;
-	    $this->client_repository            = $client_repository;
+        $this->server_configuration_service    = $server_configuration_service;
+	    $this->client_repository               = $client_repository;
+	    $this->ip_helper                       = $ip_helper;
+	    $this->user_exception_trail_repository = $user_exception_trail_repository;
+	    $this->tx_service                      = $tx_service;
 
-        $this->exception_dictionary = array(
-            'auth2\exceptions\BearerTokenDisclosureAttemptException' => array('OAuth2SecurityPolicy.MaxBearerTokenDisclosureAttempts'),
-            'auth2\exceptions\InvalidClientException'                => array('OAuth2SecurityPolicy.MaxInvalidClientExceptionAttempts'),
-            'auth2\exceptions\InvalidRedeemAuthCodeException'        => array('OAuth2SecurityPolicy.MaxInvalidRedeemAuthCodeAttempts'),
-            'auth2\exceptions\InvalidClientCredentials'              => array('OAuth2SecurityPolicy.MaxInvalidClientCredentialsAttempts'),
-        );
+        $this->exception_dictionary = [
+            BearerTokenDisclosureAttemptException::class => ['OAuth2SecurityPolicy.MaxBearerTokenDisclosureAttempts'],
+            InvalidClientException::class                => ['OAuth2SecurityPolicy.MaxInvalidClientExceptionAttempts'],
+            InvalidRedeemAuthCodeException::class        => ['OAuth2SecurityPolicy.MaxInvalidRedeemAuthCodeAttempts'],
+            InvalidClientCredentials::class              => ['OAuth2SecurityPolicy.MaxInvalidClientCredentialsAttempts'],
+        ];
     }
     /**
      * Check if current security policy is meet or not
@@ -80,40 +110,44 @@ class OAuth2SecurityPolicy  implements ISecurityPolicy {
      */
     public function apply(Exception $ex)
     {
-        try {
-            if($ex instanceof OAuth2ClientBaseException){
-                $client_id = $ex->getClientId();
-                //save oauth2 exception by client id
-                if (!is_null($client_id) && !empty($client_id)){
-                    $client                = $this->client_repository->getClientById($client_id);
-                    if(!is_null($client)) {
-                        $exception_class       = get_class($ex);
-                        $trail                 = new OAuth2TrailException();
-                        $trail->from_ip        = IPHelper::getUserIp();
-                        $trail->exception_type = $exception_class;
-                        $trail->client_id      = $client->getId();
-                        $trail->Save();
+        return $this->tx_service->transaction(function () use ($ex) {
+            try {
+                if($ex instanceof OAuth2ClientBaseException){
+                    $client_id = $ex->getClientId();
+                    //save oauth2 exception by client id
+                    if (!is_null($client_id) && !empty($client_id)){
+                        $client = $this->client_repository->getClientById($client_id);
+                        if(!is_null($client)) {
+                            $exception_class       = get_class($ex);
+                            $trail                 = new OAuth2TrailException();
+                            $trail->setFromIp($this->ip_helper->getCurrentUserIpAddress());
+                            $trail->setExceptionType($exception_class);
+                            $trail->setClient($client);
 
-                        //check exception count by type on last "MinutesWithoutExceptions" minutes...
-                        $exception_count = intval(OAuth2TrailException::where('client_id', '=', intval($client->getId()))
-                            ->where('exception_type', '=', $exception_class)
-                            ->where('created_at', '>', DB::raw('( UTC_TIMESTAMP() - INTERVAL ' . $this->server_configuration_service->getConfigValue("OAuth2SecurityPolicy.MinutesWithoutExceptions") . ' MINUTE )'))
-                            ->count());
+                            $this->user_exception_trail_repository->add($trail, true);
+                            //check exception count by type on last "MinutesWithoutExceptions" minutes...
+                            $exception_count =  $this->user_exception_trail_repository->getCountByIPTypeOfLatestUserExceptions
+                            (
+                                $client,
+                                $exception_class,
+                                $this->server_configuration_service->getConfigValue("OAuth2SecurityPolicy.MinutesWithoutExceptions")
+                            );
 
-                        if(array_key_exists($exception_class,$this->exception_dictionary)){
-                            $params                   = $this->exception_dictionary[$exception_class];
-                            $max_attempts             = !is_null($params[0]) && !empty($params[0])? intval($this->server_configuration_service->getConfigValue($params[0])):0;
-                            if ($exception_count >= $max_attempts)
-                                $this->counter_measure->trigger(array('client_id' => $client->getId()));
+                            if(array_key_exists($exception_class,$this->exception_dictionary)){
+                                $params                   = $this->exception_dictionary[$exception_class];
+                                $max_attempts             = !is_null($params[0]) && !empty($params[0])? intval($this->server_configuration_service->getConfigValue($params[0])):0;
+                                if ($exception_count >= $max_attempts)
+                                    $this->counter_measure->trigger(['client_id' => $client->getId()]);
+                            }
                         }
                     }
                 }
-            }
 
-        } catch (Exception $ex) {
-            Log::error($ex);
-        }
-        return $this;
+            } catch (Exception $ex) {
+                Log::error($ex);
+            }
+            return $this;
+        });
     }
 
     /**

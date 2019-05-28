@@ -1,13 +1,13 @@
 @extends('layout')
 @section('title')
-<title>Welcome to OpenStackId - Request for Permission </title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - Request for Permission </title>
 @stop
 
 @section('header_right')
     @if(Auth::check())
         <div class="row">
             <div class="col-md-6 col-md-offset-8">
-                Welcome, <a href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->identifier!!}</a>
+                Welcome, <a href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->getIdentifier()!!}</a>
             </div>
         </div>
     @endif
@@ -25,7 +25,7 @@
             <legend>This app would like to:</legend>
             <ul class="list-unstyled">
             @foreach ($requested_scopes as $scope)
-                <li> {!!$scope->short_description!!}&nbsp;<span class="glyphicon glyphicon-info-sign pointable info" aria-hidden="true" data-content="{!! $scope->description !!}" title="Scope Info"></span></li>
+                <li> {!!$scope->getShortDescription()!!}&nbsp;<span class="glyphicon glyphicon-info-sign pointable info" aria-hidden="true" data-content="{!! $scope->getDescription() !!}" title="Scope Info"></span></li>
             @endforeach
             </ul>
             {!! Form::open(array('url' => URL::action("UserController@postConsent") ,'id'=>'authorization_form', 'method' => 'post',  "autocomplete" => "off")) !!}
@@ -33,7 +33,7 @@
                 <button class="btn btn-default btn-md btn-consent-action" id="cancel-authorization" type="button">Cancel</button>
                 <button class="btn btn-primary btn-md btn-consent-action" id="approve-authorization" type="button">Accept</button>
             {!! Form::close() !!}
-            <p class="privacy-policy">** <b>{!!$app_name!!}</b> Application and <b>OpenStack</b> will use this information in accordance with their respective <a target='_blank' href="{!!$tos_uri!!}">terms of service</a> and <a target='_blank' href="{!!$policy_uri!!}">privacy policies</a>.</p>
+            <p class="privacy-policy">** <b>{!!$app_name!!}</b> Application and <b>{!! Config::get('app.tenant_name') !!}</b> will use this information in accordance with their respective <a target='_blank' href="{!!$tos_uri!!}">terms of service</a> and <a target='_blank' href="{!!$policy_uri!!}">privacy policies</a>.</p>
         </div>
     </div>
 </div>

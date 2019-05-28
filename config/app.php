@@ -135,13 +135,13 @@ return [
         /*
          * Application Service Providers...
          */
+        \App\Http\Utils\UtilsProvider::class,
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         Services\Utils\UtilsProvider::class,
         Repositories\RepositoriesProvider::class,
-        Factories\FactoriesProvider::class,
         Services\OAuth2\OAuth2ServiceProvider::class,
         Services\OpenId\OpenIdProvider::class,
         Auth\AuthenticationServiceProvider::class,
@@ -149,11 +149,19 @@ return [
         Strategies\StrategyProvider::class,
         OAuth2\OAuth2ServiceProvider::class,
         OpenId\OpenIdServiceProvider::class,
-        App\Providers\CustomAuthProvider::class,
         Collective\Html\HtmlServiceProvider::class,
         \Providers\OAuth2\ClientAuthContextValidatorFactoryProvider::class,
         Greggilbert\Recaptcha\RecaptchaServiceProvider::class,
         Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
+        // Doctrine ORM
+        LaravelDoctrine\ORM\DoctrineServiceProvider::class,
+        // Doctrine Extensions
+        LaravelDoctrine\Extensions\GedmoExtensionsServiceProvider::class,
+        // Doctrine Migrations
+        LaravelDoctrine\Migrations\MigrationsServiceProvider::class,
+        // Doctrine Beberlei (Query/Type) extensions install them:
+        LaravelDoctrine\Extensions\BeberleiExtensionsServiceProvider::class,
+        \App\Models\Utils\MySQLExtensionsServiceProvider::class,
     ],
 
     /*
@@ -204,11 +212,15 @@ return [
         'Recaptcha' => Greggilbert\Recaptcha\Facades\Recaptcha::class,
         'ServerConfigurationService' => \Services\Facades\ServerConfigurationService::class,
         'ExternalUrlService'=> \Services\Facades\ExternalUrlService::class,
+        // Doctrine ORM Facades
+        'EntityManager' => LaravelDoctrine\ORM\Facades\EntityManager::class,
+        'Registry'      => LaravelDoctrine\ORM\Facades\Registry::class,
+        'Doctrine'      => LaravelDoctrine\ORM\Facades\Doctrine::class,
     ],
 
-    'version' => env('APP_VERSION', 'XX.XX.XX'),
-    'registration_url'         => env('REGISTRATION_URL', '#'),
-    'registration_mobile_url' => env('REGISTRATION_MOBILE_URL', '#'),
-    'lost_password_url'        => env('LOST_PASSWORD_URL', '#'),
-    'resend_verification_url'  => env('RESEND_VERIFICATION_URL', '#'),
+    'version'     => env('APP_VERSION', 'XX.XX.XX'),
+    'app_name'    => env('APP_NAME', 'OpenStackId'),
+    'tenant_name' => env('TENANT_NAME', 'OpenStack'),
+    'logo_url'    => env('LOGO_URL', '/assets/img/openstack-logo-full.svg'),
+    'tenant_favicon' => env('TENANT_FAV_ICON_URL', '/assets/img/favicon-32x32.png'),
 ];

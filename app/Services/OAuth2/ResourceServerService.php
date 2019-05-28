@@ -11,18 +11,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Models\OAuth2\Factories\ResourceServerFactory;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
 use Models\OAuth2\ResourceServer;
-use OAuth2\Exceptions\InvalidResourceServer;
+use models\utils\IEntity;
 use OAuth2\Models\IClient;
-use OAuth2\Models\IResourceServer;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Repositories\IResourceServerRepository;
 use OAuth2\Services\IClientService;
 use OAuth2\Services\IResourceServerService;
 use Utils\Db\ITransactionService;
-use Utils\Exceptions\EntityNotFoundException;
-
 /**
  * Class ResourceServerService
  * @package Services\OAuth2
@@ -72,200 +71,139 @@ final class ResourceServerService implements IResourceServerService
     }
 
     /**
-     * @param string $host
-     * @param string $ips
-     * @param string $friendly_name
-     * @param bool $active
-     * @return IResourceServer
-     * @throws InvalidResourceServer
+     * @param array $payload
+     * @return IEntity
+     * @throws \Exception
      */
-    public function add($host, $ips, $friendly_name, $active)
+    public function create(array $payload): IEntity
     {
 
-        $client_service = $this->client_service;
+        return $this->tx_service->transaction(function () use ($payload) {
 
-        if (is_string($active)) {
-            $active = strtoupper($active) == 'TRUE' ? true : false;
-        }
-
-        return $this->tx_service->transaction(function () use (
-            $host,
-            $ips,
-            $friendly_name,
-            $active,
-            $client_service
-        ) {
-
+            $host = trim($payload['host']);
+            $friendly_name = trim($payload['friendly_name']);
             if ($this->repository->getByHost($host) != null) {
-                throw new InvalidResourceServer
+                throw new ValidationException
                 (
-                    sprintf('there is already another resource server with that hostname (%s).',$host)
+                    sprintf('there is already another resource server with that hostname (%s).', $host)
                 );
             }
 
-
-
             if ($this->repository->getByFriendlyName($friendly_name) != null) {
-                throw new InvalidResourceServer
+                throw new ValidationException
                 (
                     sprintf('there is already another resource server with that friendly name (%s).', $friendly_name)
                 );
             }
 
-            // todo : move to factory
-            $instance = new ResourceServer
+            $resource_server = ResourceServerFactory::build($payload);
+
+            // creates a new client for this brand new resource server
+            $resource_server_client = $this->client_service->create
             (
                 [
-                    'host'          => $host,
-                    'ips'           => $ips,
-                    'active'        => $active,
-                    'friendly_name' => $friendly_name
+                    'application_type' => IClient::ApplicationType_Service,
+                    'app_name' => $host . '.confidential.application',
+                    'app_description' => $friendly_name . ' confidential oauth2 application'
                 ]
             );
 
-            $this->repository->add($instance);
 
-            // creates a new client for this brand new resource server
-            $new_client = $client_service->register
-            (
-                IClient::ApplicationType_Service,
-                $host . '.confidential.application',
-                $friendly_name . ' confidential oauth2 application'
-            );
-
-            $new_client->resource_server()->associate($instance);
+            $resource_server->setClient($resource_server_client);
             // does not expires ...
-            $new_client->client_secret_expires_at = null;
-            $this->client_repository->add($new_client);
-            return $instance;
+            $resource_server_client->setClientSecretNoExpiration();
+
+            $this->repository->add($resource_server);
+
+            return $resource_server;
         });
 
     }
 
     /**
      * @param int $id
-     * @param array $params
-     * @return bool
-     * @throws InvalidResourceServer
-     * @throws EntityNotFoundException
+     * @param array $payload
+     * @return IEntity
+     * @throws \Exception
      */
-    public function update($id, array $params)
+    public function update(int $id, array $payload): IEntity
     {
 
+        return $this->tx_service->transaction(function () use ($id, $payload) {
 
-        return $this->tx_service->transaction(function () use ($id, $params) {
-
-            $resource_server = $this->repository->get($id);
-
-            if (is_null($resource_server)) {
+            $resource_server = $this->repository->getById($id);
+            if (is_null($resource_server) || !$resource_server instanceof ResourceServer) {
                 throw new EntityNotFoundException(sprintf('resource server id %s does not exists!', $id));
             }
 
-            $allowed_update_params = array('host', 'ips', 'active', 'friendly_name');
-
-            foreach ($allowed_update_params as $param) {
-                if (array_key_exists($param, $params)) {
-
-                    if ($param == 'host') {
-                        $former_resource_server = $this->repository->getByHost($params[$param]);
-                        if (!is_null($former_resource_server) && $former_resource_server->id != $id) {
-                            throw new InvalidResourceServer
-                            (
-                                sprintf('there is already another resource server with that hostname (%s).',$params[$param])
-                            );
-                        }
-                    }
-
-                    if ($param == 'friendly_name') {
-                        $former_resource_server = $this->repository->getByFriendlyName($params[$param]);
-                        if (!is_null($former_resource_server) && $former_resource_server->id != $id) {
-                            throw new InvalidResourceServer
-                            (
-                                sprintf('there is already another resource server with that friendly name (%s).', $params[$param])
-                            );
-                        }
-                    }
-
-                    $resource_server->{$param} = $params[$param];
+            if (isset($payload['host'])) {
+                $host = trim($payload['host']);
+                $former_resource_server = $this->repository->getByHost($host);
+                if (!is_null($former_resource_server) && $former_resource_server->getId() != $resource_server->getId()) {
+                    throw new ValidationException
+                    (
+                        sprintf('there is already another resource server with that hostname (%s).', $host)
+                    );
                 }
             }
-            $this->repository->add($resource_server);
-            return true;
-        });
-    }
 
-
-    /**
-     * @param int $id
-     * @param bool $active
-     * @return bool
-     * @throws EntityNotFoundException
-     */
-    public function setStatus($id, $active)
-    {
-        return $this->tx_service->transaction(function () use ($id, $active) {
-            $resource_server = $this->repository->get($id);
-
-            if (is_null($resource_server)) {
-                throw new EntityNotFoundException(sprintf('resource server id %s does not exists!', $id));
+            if (isset($payload['friendly_name'])) {
+                $friendly_name = trim($payload['friendly_name']);
+                $former_resource_server = $this->repository->getByFriendlyName($friendly_name);
+                if (!is_null($former_resource_server) && $former_resource_server->getId() != $resource_server->getId()) {
+                    throw new ValidationException
+                    (
+                        sprintf('there is already another resource server with that friendly name (%s).', $friendly_name)
+                    );
+                }
             }
-            $resource_server->active = $active;
-            $this->repository->add($resource_server);
-            return true;
+
+            return ResourceServerFactory::populate($resource_server, $payload);
+
         });
     }
 
     /**
      * @param int $id
-     * @return bool
-     * @throws EntityNotFoundException
+     * @throws \Exception
      */
-    public function delete($id)
+    public function delete(int $id): void
     {
 
+        $this->tx_service->transaction(function () use ($id) {
 
-        return $this->tx_service->transaction(function () use ($id) {
-
-            $resource_server = $this->repository->get($id);
+            $resource_server = $this->repository->getById($id);
 
             if (is_null($resource_server)) {
                 throw new EntityNotFoundException(sprintf('resource server id %s does not exists!', $id));
             }
-
-            $client = $resource_server->client()->first();
-            if (!is_null($client)) {
-                $this->client_repository->delete($client);
-            }
-
             $this->repository->delete($resource_server);
-            return true;
         });
-
     }
 
     /**
      * @param int $id
-     * @return string
+     * @return ResourceServer
      * @throws EntityNotFoundException
      */
-    public function regenerateClientSecret($id)
+    public function regenerateClientSecret(int $id): ResourceServer
     {
 
         return $this->tx_service->transaction(function () use ($id) {
 
-            $resource_server = $this->repository->get($id);
+            $resource_server = $this->repository->getById($id);
 
-            if (is_null($resource_server)) {
+            if (is_null($resource_server) || !$resource_server instanceof ResourceServer) {
                 throw new EntityNotFoundException(sprintf('resource server id %s does not exists!', $id));
             }
 
-            $client = $resource_server->client()->first();
-            if (is_null($client))
+            if (!$resource_server->hasClient())
                 throw new EntityNotFoundException(sprintf('client not found for resource server id %s!', $id));
 
-            $client = $this->client_service->regenerateClientSecret($client->id);
+            $client = $resource_server->getClient();
+            $this->client_service->regenerateClientSecret($client->getId());
 
-            return $client->getClientSecret();
+            return $resource_server;
 
         });
     }

@@ -11,17 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use models\exceptions\EntityNotFoundException;
+use Models\OAuth2\AsymmetricKey;
+use Models\OAuth2\Client;
+use models\utils\IEntity;
 use OAuth2\Models\IAsymmetricKey;
 use OAuth2\Services\IClientPublicKeyService;
 use Utils\Db\ITransactionService;
 use OAuth2\Repositories\IClientPublicKeyRepository;
 use Models\OAuth2\ClientPublicKey;
 use OAuth2\Repositories\IClientRepository;
-use Services\Exceptions\ValidationException;
+use models\exceptions\ValidationException;
 use Utils\Services\IAuthService;
 use DateTime;
-
 /**
  * Class ClientPublicKeyService
  * @package Services\OAuth2
@@ -64,39 +66,36 @@ final class ClientPublicKeyService extends AsymmetricKeyService implements IClie
      * @param array $params
      * @return IAsymmetricKey
      */
-    public function register(array $params)
+    public function create(array $params):IEntity
     {
-        $client_repository = $this->client_repository;
-        $repository        = $this->repository;
-        $auth_service      = $this->auth_service;
 
-        return $this->tx_service->transaction(function() use($params, $repository, $client_repository, $auth_service)
+        return $this->tx_service->transaction(function() use($params)
         {
 
-            if ($repository->getByPEM($params['pem_content']))
+            if ($this->repository->getByPEM($params['pem_content']))
             {
                 throw new ValidationException('public key already exists on another client, choose another one!.');
             }
 
-            $client = $client_repository->get(intval($params['client_id']));
+            $client = $this->client_repository->getById(intval($params['client_id']));
 
-            if(is_null($client))
-                throw new ValidationException('client does not exits!');
+            if(is_null($client) || !$client instanceof Client)
+                throw new EntityNotFoundException('client does not exits!');
 
-            $existent_kid = $client->public_keys()->where('kid','=', $params['kid'])->first();
+            $existent_kid = $client->getPublicKeyByIdentifier(trim($params['kid']));
 
             if ($existent_kid)
             {
                 throw new ValidationException('public key identifier (kid) already exists!.');
             }
 
-            $old_key_active = $client->public_keys()
-                ->where('type','=', $params['type'])
-                ->where('usage','=', $params['usage'])
-                ->where('alg','=', $params['alg'])
-                ->where('valid_from','<=',new DateTime($params['valid_to']))
-                ->where('valid_to','>=', new DateTime($params['valid_from']))
-                ->first();
+            $old_key_active = $client->getCurrentPublicKeyByTypeUseAlgAndRange(
+                trim($params['type']),
+                trim($params['usage']),
+                trim($params['usage']),
+                new DateTime($params['valid_to']),
+                new DateTime($params['valid_from'])
+            );
 
             $public_key = ClientPublicKey::buildFromPEM
             (
@@ -111,8 +110,8 @@ final class ClientPublicKeyService extends AsymmetricKeyService implements IClie
             );
 
             $client->addPublicKey($public_key);
-            $client->setEditedBy($auth_service->getCurrentUser());
-            $client_repository->add($client);
+            $client->setEditedBy($this->auth_service->getCurrentUser());
+
             return $public_key;
         });
     }

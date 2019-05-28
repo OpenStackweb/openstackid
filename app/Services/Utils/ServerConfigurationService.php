@@ -11,20 +11,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Repositories\IServerConfigurationRepository;
+use App\Services\AbstractService;
 use Exception;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Models\ServerConfiguration;
 use OpenId\Services\IServerConfigurationService;
 use Utils\Db\ITransactionService;
 use Utils\Services\ICacheService;
 use Utils\Services\IServerConfigurationService as IOpenIdServerConfigurationService;
-
 /**
  * Class ServerConfigurationService
  * @package Services\Utils
  */
-class ServerConfigurationService implements IOpenIdServerConfigurationService, IServerConfigurationService
+class ServerConfigurationService
+    extends AbstractService
+    implements IOpenIdServerConfigurationService,
+    IServerConfigurationService
 {
 
     const DefaultAssetsUrl                          = 'https://www.openstack.org/';
@@ -38,21 +42,33 @@ class ServerConfigurationService implements IOpenIdServerConfigurationService, I
      * @var array
      */
     private $default_config_params;
-    /**
-     * @var ITransactionService
-     */
-    private $tx_service;
 
-    /***
+    /**
+     * @var IServerConfigurationRepository
+     */
+    private $server_config_repository;
+
+    /**
+     * @var ICacheService
+     */
+    private $cache_service;
+
+    /**
+     * ServerConfigurationService constructor.
+     * @param IServerConfigurationRepository $server_config_repository
      * @param ICacheService $cache_service
      * @param ITransactionService $tx_service
      */
-    public function __construct(ICacheService $cache_service, ITransactionService $tx_service)
+    public function __construct(
+        IServerConfigurationRepository $server_config_repository,
+        ICacheService $cache_service,
+        ITransactionService $tx_service
+    )
     {
-
+        parent::__construct($tx_service);
         $this->cache_service = $cache_service;
-        $this->tx_service = $tx_service;
-        $this->default_config_params = array();
+        $this->server_config_repository = $server_config_repository;
+        $this->default_config_params = [];
         //default config values
 
         //general
@@ -163,38 +179,37 @@ class ServerConfigurationService implements IOpenIdServerConfigurationService, I
      */
     public function getConfigValue($key)
     {
-        $res = null;
-        $cache_service = $this->cache_service;
-        $default_config_params = $this->default_config_params;
 
-        $this->tx_service->transaction(function () use ($key, &$res, &$cache_service, &$default_config_params) {
+        return $this->tx_service->transaction(function () use ($key) {
+            $res = null;
             try {
-
-                if (!$cache_service->exists($key)) {
-
-                    if (!is_null($conf = ServerConfiguration::where('key', '=', $key)->first())) {
-                        $cache_service->addSingleValue($key, $conf->value);
-                    } else {
-                        if (isset($default_config_params[$key])) {
-                            $cache_service->addSingleValue($key, $default_config_params[$key]);
-                        } else {
-                            $res = null;
-
-                            return;
-                        }
+                if (!$this->cache_service->exists($key)) {
+                    if (!is_null($conf = $this->server_config_repository->getByKey($key))) {
+                        $this->cache_service->addSingleValue($key, $conf->getValue());
+                        return $conf->getValue();
                     }
-                }
-                $res = $cache_service->getSingleValue($key);
 
-            } catch (Exception $ex) {
+                    if (isset($this->default_config_params[$key])) {
+                        $this->cache_service->addSingleValue($key, $this->default_config_params[$key]);
+                        return $this->default_config_params[$key];
+                    }
+
+                    return null;
+                }
+
+                $res = $this->cache_service->getSingleValue($key);
+
+            }
+            catch (Exception $ex) {
                 Log::error($ex);
-                if (isset($default_config_params[$key])) {
-                    $res = $default_config_params[$key];
+                if (isset($this->default_config_params[$key])) {
+                    $res = $this->default_config_params[$key];
                 }
             }
+
+            return $res;
         });
 
-        return $res;
     }
 
     public function getAllConfigValues()
@@ -202,29 +217,29 @@ class ServerConfigurationService implements IOpenIdServerConfigurationService, I
         // TODO: Implement getAllConfigValues() method.
     }
 
-    public function saveConfigValue($key, $value)
+    /**
+     * @param string $key
+     * @param $value
+     * @return mixed|void
+     * @throws Exception
+     */
+    public function saveConfigValue(string $key, $value)
     {
-        $res = false;
-        $cache_service = $this->cache_service;
+        $this->tx_service->transaction(function () use ($key, $value) {
 
-        $this->tx_service->transaction(function () use ($key, $value, &$res, &$cache_service) {
-
-            $conf = ServerConfiguration::where('key', '=', $key)->first();
+            $conf = $this->server_config_repository->getByKey($key);
 
             if (is_null($conf)) {
                 $conf = new ServerConfiguration();
-                $conf->key = $key;
-                $conf->value = $value;
-                $res = $conf->Save();
+                $conf->setKey($key);
+                $conf->setValue($value);
+                $this->server_config_repository->add($conf);
             } else {
-                $conf->value = $value;
-                $res = $conf->Save();
+                $conf->setValue($value);
             }
 
-            $cache_service->delete($key);
+            $this->cache_service->delete($key);
         });
-
-        return $res;
     }
 
     /**

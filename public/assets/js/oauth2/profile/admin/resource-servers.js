@@ -6,9 +6,9 @@ function loadResourceServers(){
             url: link,
             dataType: "json",
             timeout:60000,
-            success: function (data,textStatus,jqXHR) {
+            success: function (page,textStatus,jqXHR) {
                 //load data...
-                var uris = data.page;
+                var items = page.data;
                 var template = $('<tbody><tr><td width="25%" class="fname"></td><td width="25%" class="hname"></td><td width="10%"class="ips"></td><td width="5%" class="resource-server-active"><input type="checkbox" class="resource-server-active-checkbox"></td><td width="25%">&nbsp;<a class="btn btn-default active edit-resource-server" title="Edits a Registered Resource Server">Edit</a>&nbsp;<a class="btn btn-default btn-delete active delete-resource-server" title="Deletes a Registered Resource Server">Delete</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
@@ -38,7 +38,7 @@ function loadResourceServers(){
                         }
                     }
                 };
-                var html = template.render(uris, directives);
+                var html = template.render(items, directives);
                 $('#body-resource-servers').html(html.html());
             },
             error: function (jqXHR, textStatus, errorThrown) {

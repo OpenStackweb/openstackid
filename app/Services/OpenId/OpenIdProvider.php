@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
 use OpenId\Services\NonceUniqueIdentifierGenerator;
 use OpenId\Services\OpenIdServiceCatalog;
 use Utils\Services\UtilsServiceCatalog;
-
 /**
  * Class OpenIdProvider
  * @package Services\OpenId

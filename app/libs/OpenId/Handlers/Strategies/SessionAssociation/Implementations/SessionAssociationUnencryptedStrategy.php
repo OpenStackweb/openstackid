@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OpenId\Exceptions\InvalidDHParam;
 use OpenId\Handlers\Strategies\ISessionAssociationStrategy;
 use OpenId\Requests\OpenIdAssociationSessionRequest;
@@ -24,7 +23,6 @@ use OpenId\Services\IAssociationService;
 use OpenId\Services\IServerConfigurationService;
 use Utils\Services\ILogService;
 use OpenId\Helpers\AssociationFactory;
-
 /**
  * Class SessionAssociationUnencryptedStrategy
  * @package OpenId\Handlers\Strategies\Implementations

@@ -12,13 +12,13 @@
  * limitations under the License.
  **/
 
+use Models\OAuth2\Client;
 use OAuth2\Models\IClient;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Services\IClientCredentialGenerator;
 use Zend\Math\Rand;
 use DateTime;
 use DateInterval;
-
 /**
  * Class ClientCredentialGenerator
  * @package Services\OAuth2
@@ -27,21 +27,22 @@ final class ClientCredentialGenerator implements IClientCredentialGenerator
 {
 
     /**
-     * @param IClient $client
-     * @param bool|false $only_secret
-     * @return IClient
+     * @param Client $client
+     * @param bool $only_secret
+     * @return Client
+     * @throws \Exception
      */
-    public function generate(IClient $client, $only_secret = false)
+    public function generate(Client $client, $only_secret = false)
     {
         if(!$only_secret)
-            $client->client_id = Rand::getString(32, OAuth2Protocol::VsChar, true) . IClientCredentialGenerator::ClientSuffix;
+            $client->setClientId(Rand::getString(32, OAuth2Protocol::VsChar, true) . IClientCredentialGenerator::ClientSuffix);
 
-        if ($client->client_type === IClient::ClientType_Confidential)
+        if ($client->getClientType() === IClient::ClientType_Confidential)
         {
-            $now                              = new DateTime();
-            $client->client_secret            = Rand::getString(64, OAuth2Protocol::VsChar, true);
+            $now = new DateTime('now', new \DateTimeZone('UTC'));
+            $client->setClientSecret(Rand::getString(64, OAuth2Protocol::VsChar, true));
             // default 6 months
-            $client->client_secret_expires_at = $now->add( new DateInterval('P6M'));
+            $client->setClientSecretExpiresAt($now->add( new DateInterval('P6M')));
         }
         return $client;
     }

@@ -1,5 +1,4 @@
 <?php namespace OAuth2\GrantTypes;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 use jwe\IJWE;
 use jwk\exceptions\InvalidJWKAlgorithm;
 use jws\IJWS;
@@ -98,7 +96,6 @@ abstract class InteractiveGrantType extends AbstractGrantType
      * @var IMementoOAuth2SerializerService
      */
     protected $memento_service;
-
 
     /**
      * @var IServerPrivateKeyRepository
@@ -268,14 +265,8 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 throw new AccessDeniedException;
             }
 
-            //check for former user consents
-            $former_user_consent = $this->user_consent_service->get
-            (
-                $user->getId(),
-                $client->getId(),
-                $scope
-            );
-
+            // check for former user consents
+            $former_user_consent   = $user->findFirstConsentByClientAndScopes($client, $scope);
             $auto_approval         = $approval_prompt == OAuth2Protocol::OAuth2Protocol_Approval_Prompt_Auto;
             $has_former_consent    = !is_null($former_user_consent);
             $should_prompt_consent = $this->shouldPromptConsent($request);
@@ -285,7 +276,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $this->auth_service->registerRPLogin($client_id);
                 //save positive consent
                 if (is_null($former_user_consent)) {
-                    $this->user_consent_service->add($user->getId(), $client->getId(), $scope);
+                    $this->user_consent_service->addUserConsent($user, $client, $scope);
                 }
                 $response = $this->buildResponse($request, $has_former_consent);
                 // clear save data ...
@@ -413,7 +404,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
             else
             {
                 $user_id = $this->auth_service->unwrapUserId($login_hint);
-                $user    = $this->auth_service->getUserByExternalId($user_id);
+                $user    = $this->auth_service->getUserById($user_id);
             }
         }
         else if(!empty($token_hint))
@@ -489,7 +480,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
             $sub     = $jwt->getClaimSet()->getSubject();
             $user_id = $this->auth_service->unwrapUserId($sub->getString());
-            $user    = $this->auth_service->getUserByExternalId($user_id);
+            $user    = $this->auth_service->getUserById($user_id);
 
             $jti = $jwt->getClaimSet()->getJWTID();
             if(is_null($jti)) throw new InvalidLoginHint('invalid jti!');
@@ -498,7 +489,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
         }
 
-        if($user)
+        if(!is_null($user))
         {
             $this->log_service->debug_msg("InteractiveGrantType::processUserHint: checking principal");
             $logged_user = $this->auth_service->getCurrentUser();
@@ -639,7 +630,13 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
         if($request instanceof OAuth2AuthenticationRequest)
         {
-            $this->processUserHint($request);
+            try {
+                $this->processUserHint($request);
+            }
+            catch (Exception $ex){
+                Log::warning($ex);
+                return true;
+            }
         }
 
         if($this->shouldPromptLogin($request))

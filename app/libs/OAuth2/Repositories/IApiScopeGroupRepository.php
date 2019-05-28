@@ -12,7 +12,7 @@
  * limitations under the License.
  **/
 use Models\OAuth2\ApiScopeGroup;
-use Utils\Db\IBaseRepository;
+use models\utils\IBaseRepository;
 /**
  * Interface IApiScopeGroupRepository
  * @package OAuth2\Repositories
@@ -21,7 +21,7 @@ interface IApiScopeGroupRepository extends IBaseRepository
 {
     /**
      * @param string $name
-     * @return ApiScopeGroup
+     * @return ApiScopeGroup|null
      */
-    public function getByName($name);
+    public function getByName(string $name): ?ApiScopeGroup;
 }

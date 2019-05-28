@@ -1,6 +1,6 @@
 @extends('layout')
 @section('title')
-<title>Welcome to OpenStackId</title>
+<title>Welcome to {!! Config::get('app.app_name') !!}</title>
 @stop
 @section('meta')
 <meta http-equiv="X-XRDS-Location" content="{!! URL::action("OpenId\DiscoveryController@user", ['identifier'=> $identifier ]) !!}" />
@@ -14,13 +14,13 @@
                 @if( $show_fullname )
                 <legend>{!! $username !!}</legend>
                 @endif
-                @if( $show_pic && !empty($pic))
-                <div class="row">
-                    <div class="col-md-4">
-                        <img src="{!!$pic !!}" class="img-thumbnail">
-                    </div>
-                </div>
-                @endif
+                    @if( $show_pic && !empty($pic))
+                        <div class="row">
+                            <div class="col-md-4">
+                                <img src="{!! $pic !!}" class="img-thumbnail">
+                            </div>
+                        </div>
+                    @endif
                 @if( $show_email )
                     <div class="row email-row">
                         <div class="col-md-4">
@@ -33,12 +33,12 @@
     @else
         <div class="row">
             <div class="col-md-12">
-                Welcome, {!! $username !!} .
+                Welcome, {!! $username !!}
             </div>
         </div>
         <div class="row">
             <div class="col-md-12">
-                <a class="btn btn-default btn-sm active" href="{!! URL::action('UserController@getProfile') !!}">edit your profile</a>
+                <a class="btn btn-default btn-sm active" href="{!! URL::action('UserController@getProfile') !!}">Manage account</a>
                 <a class="btn btn-default btn-sm active" href="{!! URL::action('UserController@logout') !!}">logout</a>
             </div>
         </div>
@@ -50,13 +50,13 @@
             @if( $show_fullname )
             <legend>{!! $username !!}</legend>
             @endif
-            @if( $show_pic && !empty($pic))
-            <div class="row">
-                <div class="col-md-4">
-                    <img src="{!! $pic !!}" class="img-thumbnail">
-                </div>
-            </div>
-            @endif
+                @if( $show_pic && !empty($pic))
+                    <div class="row">
+                        <div class="col-md-4">
+                            <img src="{!! $pic !!}" class="img-thumbnail">
+                        </div>
+                    </div>
+                @endif
             @if( $show_email )
             <div class="row email-row">
                 <div class="col-md-4">

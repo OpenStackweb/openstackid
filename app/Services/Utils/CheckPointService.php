@@ -11,15 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Utils\Db\ITransactionService;
 use Utils\Services\ICheckPointService;
 use Utils\Services\ISecurityPolicy;
 use Utils\IPHelper;
 use Models\UserExceptionTrail;
-
 /**
  * Class CheckPointService
  * @package Services\Utils
@@ -31,10 +31,30 @@ class CheckPointService implements ICheckPointService
      */
     private $policies;
 
-    public function __construct(ISecurityPolicy $policy)
+    /**
+     * @var ITransactionService
+     */
+    private $tx_service;
+
+    /**
+     * @var IUserExceptionTrailRepository
+     */
+    private $user_exception_trail_repository;
+
+    /**
+     * CheckPointService constructor.
+     * @param IUserExceptionTrailRepository $user_exception_trail_repository
+     * @param ITransactionService $tx_service
+     */
+    public function __construct
+    (
+        IUserExceptionTrailRepository $user_exception_trail_repository,
+        ITransactionService $tx_service
+    )
     {
-        $this->policies = array();
-        array_push($this->policies, $policy);
+        $this->policies = [];
+        $this->tx_service = $tx_service;
+        $this->user_exception_trail_repository = $user_exception_trail_repository;
     }
 
     public function check()
@@ -52,31 +72,33 @@ class CheckPointService implements ICheckPointService
     }
 
     /**
-     * Keeps track of exceptions
      * @param Exception $ex
-     * @return mixed
+     * @throws Exception
      */
-    public function trackException(Exception $ex)
+    public function trackException(Exception $ex):void
     {
-        try {
-            $remote_ip                  = IPHelper::getUserIp();
-            $class_name                 = get_class($ex);
-            $user_trail                 = new UserExceptionTrail();
-            $user_trail->from_ip        = $remote_ip;
-            $user_trail->exception_type = $class_name;
-            $user_trail->stack_trace    = $ex->getTraceAsString();
-            if(Auth::check()){
-                $user_trail->user_id = Auth::user()->getId();
+        $this->tx_service->transaction(function() use($ex){
+            try {
+                $remote_ip                  = IPHelper::getUserIp();
+                $class_name                 = get_class($ex);
+                $user_trail                 = new UserExceptionTrail();
+                $user_trail->setFromIp($remote_ip);
+                $user_trail->setExceptionType($class_name);
+                $user_trail->setStackTrace($ex->getTraceAsString());
+                if(Auth::check()){
+                    $user_trail->setUser(Auth::user());
+                }
+                $this->user_exception_trail_repository->add($user_trail, true);
+
+                Log::warning(sprintf("* CheckPointService - exception : << %s >> - IP Address: %s",$ex->getMessage(),$remote_ip));
+                //applying policies
+                foreach ($this->policies as $policy) {
+                    $policy->apply($ex);
+                }
+            } catch (Exception $ex) {
+                Log::error($ex);
             }
-            $user_trail->Save();
-            Log::warning(sprintf("* CheckPointService - exception : << %s >> - IP Address: %s",$ex->getMessage(),$remote_ip));
-            //applying policies
-            foreach ($this->policies as $policy) {
-                $policy->apply($ex);
-            }
-        } catch (Exception $ex) {
-            Log::error($ex);
-        }
+        });
     }
 
     /**
@@ -85,7 +107,7 @@ class CheckPointService implements ICheckPointService
      */
     public function addPolicy(ISecurityPolicy $policy)
     {
-        array_push($this->policies, $policy);
+        $this->policies[] = $policy;
         return $this;
     }
 }

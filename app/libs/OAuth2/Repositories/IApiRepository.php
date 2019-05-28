@@ -11,8 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\Models\IApi;
-use Utils\Db\IBaseRepository;
+use Models\OAuth2\Api;
+use models\utils\IBaseRepository;
 /**
  * Interface IApiRepository
  * @package OAuth2\Repositories
@@ -21,14 +21,14 @@ interface IApiRepository extends IBaseRepository
 {
     /**
      * @param string $api_name
-     * @return IApi
+     * @return Api
      */
-    public function getByName($api_name);
+    public function getByName(string $api_name):?Api;
 
     /**
      * @param string $api_name
      * @param int $resource_server_id
-     * @return IApi
+     * @return Api
      */
-    public function getByNameAndResourceServer($api_name, $resource_server_id);
+    public function getByNameAndResourceServer(string $api_name, int $resource_server_id):?Api;
 }

@@ -12,12 +12,13 @@
  * limitations under the License.
  **/
 use Auth\Repositories\IUserRepository;
+use Auth\User;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use OpenId\Services\IUserService;
+use Utils\Db\ITransactionService;
 use Utils\Services\ISecurityPolicyCounterMeasure;
 use Utils\Services\IServerConfigurationService;
-
 /**
  * Class LockUserCounterMeasure
  * @package Services\SecurityPolicies
@@ -38,43 +39,53 @@ class LockUserCounterMeasure implements ISecurityPolicyCounterMeasure
     private $repository;
 
     /**
+     * @var ITransactionService
+     */
+    private $tx_service;
+
+    /**
      * LockUserCounterMeasure constructor.
      * @param IUserRepository $repository
      * @param IUserService $user_service
      * @param IServerConfigurationService $server_configuration
+     * @param ITransactionService $tx_service
      */
     public function __construct(
         IUserRepository $repository,
         IUserService $user_service,
-        IServerConfigurationService $server_configuration
+        IServerConfigurationService $server_configuration,
+        ITransactionService $tx_service
     ) {
         $this->user_service = $user_service;
         $this->server_configuration = $server_configuration;
         $this->repository = $repository;
+        $this->tx_service = $tx_service;
     }
 
     /**
      * @param array $params
      * @return $this
      */
-    public function trigger(array $params = array())
+    public function trigger(array $params = [])
     {
-        try {
-            if (isset($params["user_identifier"])) {
-                $user_identifier = $params["user_identifier"];
-                $user            = $this->repository->getByExternalId($user_identifier);
-                if (!is_null($user)) {
-                    //apply lock policy
-                    if (intval($user->login_failed_attempt) < intval($this->server_configuration->getConfigValue("MaxFailed.Login.Attempts"))) {
-                        $this->user_service->updateFailedLoginAttempts($user->id);
-                    } else {
-                        $this->user_service->lockUser($user->id);
+        return $this->tx_service->transaction(function() use($params){
+            try {
+                if (isset($params["user_id"])) {
+                    $user_id = $params["user_id"];
+                    $user    = $this->repository->getById($user_id);
+                    if (!is_null($user) && $user instanceof User) {
+                        //apply lock policy
+                        if (intval($user->getLoginFailedAttempt()) < intval($this->server_configuration->getConfigValue("MaxFailed.Login.Attempts"))) {
+                            $this->user_service->updateFailedLoginAttempts($user->getId());
+                            return $this;
+                        }
+                        $this->user_service->lockUser($user->getId());
                     }
                 }
+            } catch (Exception $ex) {
+                Log::error($ex);
             }
-        } catch (Exception $ex) {
-            Log::error($ex);
-        }
-        return $this;
+            return $this;
+        });
     }
 }

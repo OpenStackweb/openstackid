@@ -26,7 +26,7 @@ class OpenIdMessage extends HttpMessage
     /**
      * @param array $values
      */
-    public function __construct(array $values = array())
+    public function __construct(array $values = [])
     {
         parent::__construct($values);
     }

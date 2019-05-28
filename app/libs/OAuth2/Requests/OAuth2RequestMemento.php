@@ -24,7 +24,7 @@ class OAuth2RequestMemento
     /**
      * @var array
      */
-    protected $state  = array();
+    protected $state  = [];
 
     /**
      * @param array $state

@@ -1,34 +1,57 @@
 <?php
-
+/**
+ * Copyright 2015 OpenStack Foundation
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
 use OAuth2\Models\IClient;
 use OAuth2\OAuth2Protocol;
 use Auth\User;
 use Utils\Services\IAuthService;
 use Models\OAuth2\Client;
-use Models\Member;
 use Models\OAuth2\ResourceServer;
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Api;
 use Models\OAuth2\ApiEndpoint;
-use Models\ServerConfiguration;
-use Models\OpenId\ServerExtension;
 use \jwk\JSONWebKeyPublicKeyUseValues;
 use \jwk\JSONWebKeyTypes;
 use \jwa\JSONWebSignatureAndEncryptionAlgorithms;
 use Illuminate\Database\Seeder;
-use Models\OpenId\OpenIdTrustedSite;
 use Models\OAuth2\ClientPublicKey;
 use Models\OAuth2\ServerPrivateKey;
 use OpenId\Extensions\Implementations\OpenIdAXExtension;
 use OpenId\Extensions\Implementations\OpenIdSREGExtension;
 use OpenId\Extensions\Implementations\OpenIdOAuth2Extension;
-use Models\Group;
 use OpenId\Extensions\Implementations\OpenIdSREGExtension_1_0;
+use LaravelDoctrine\ORM\Facades\EntityManager;
+use App\libs\Auth\Factories\UserFactory;
+use App\libs\Auth\Factories\GroupFactory;
+use OAuth2\Models\IOAuth2User;
+use OpenId\Models\IOpenIdUser;
+use Auth\Group;
+use App\Models\Factories\ServerConfigurationFactory;
+use App\Models\OpenId\Factories\ServerExtensionFactory;
+use App\Models\OAuth2\Factories\ResourceServerFactory;
+use Illuminate\Support\Facades\Config;
+use App\Models\OAuth2\Factories\ApiFactory;
+use App\Models\OAuth2\Factories\ApiScopeFactory;
+use App\Models\OAuth2\Factories\ClientFactory;
+use App\Models\OpenId\Factories\OpenIdTrustedSiteFactory;
+use App\Models\OAuth2\Factories\ApiEndpointFactory;
+use App\libs\OAuth2\IUserScopes;
+use App\libs\Auth\Models\IGroupSlugs;
 /**
  * Class OAuth2ApplicationSeeder
  * This seeder is only for testing purposes
  */
-class TestSeeder extends Seeder {
+final class TestSeeder extends Seeder {
 
 static $client_private_key_1 = <<<PPK
 -----BEGIN RSA PRIVATE KEY-----
@@ -172,111 +195,113 @@ In2KVE6kd5a0t8BHgdu/yQIDAQAB
 -----END PUBLIC KEY-----
 PPK;
 
+    private function createTestGroups(){
+        $groups_payloads = [
+            [
+                'name' => IOAuth2User::OAuth2ServerAdminGroup,
+                'slug' => IOAuth2User::OAuth2ServerAdminGroup,
+            ],
+            [
+                'name' => IOAuth2User::OAuth2SystemScopeAdminGroup,
+                'slug' => IOAuth2User::OAuth2SystemScopeAdminGroup,
+            ],
+            [
+                'name' => IOpenIdUser::OpenIdServerAdminGroup,
+                'slug' => IOpenIdUser::OpenIdServerAdminGroup,
+            ],
+            [
+                'name' => IGroupSlugs::SuperAdminGroup,
+                'slug' => IGroupSlugs::SuperAdminGroup,
+            ],
+            [
+                'name' => IGroupSlugs::RawUsersGroup,
+                'slug' => IGroupSlugs::RawUsersGroup,
+            ]
+        ];
+
+        foreach ($groups_payloads as $payload){
+            $group = GroupFactory::build($payload);
+            EntityManager::persist($group);
+        }
+        EntityManager::flush();
+    }
+
+    private function createTestUsers(){
+        $group_repository = EntityManager::getRepository(Group::class);
+
+        $oauth2_admin_group = $group_repository->findOneBy(['slug' => IOAuth2User::OAuth2ServerAdminGroup]);
+        $opendid_admin_group = $group_repository->findOneBy(['slug' => IOpenIdUser::OpenIdServerAdminGroup,]);
+        $system_scopes_admin_group = $group_repository->findOneBy(['slug' => IOAuth2User::OAuth2SystemScopeAdminGroup]);
+        $super_admin_group = $group_repository->findOneBy(['slug' => IGroupSlugs::SuperAdminGroup]);
+        $raw_users_group = $group_repository->findOneBy(['slug' => IGroupSlugs::RawUsersGroup]);
+
+        $user_payloads = [
+           [
+                'first_name' => 'Sebastian',
+                'last_name' => 'Marcet',
+                'email' => 'sebastian@tipit.net',
+                'password' => '1qaz2wsx',
+                'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
+                'gender' => 'male',
+                'address1' => 'Av. Siempre Viva 111',
+                'address2' => 'Av. Siempre Viva 111',
+                'city' => 'Lanus Este',
+                'state' => 'Buenos Aires',
+                'post_code' => '1824',
+                'country' => 'AR',
+                'language' => 'ESP',
+                'active' => true,
+                'email_verified' => true,
+                'groups' => [
+                    $super_admin_group
+                ]
+            ]
+        ];
+
+        foreach ($user_payloads as $payload){
+            $user = UserFactory::build($payload);
+            EntityManager::persist($user);
+            $raw_password = $payload['password'];
+            if(!$user->checkPassword($raw_password))
+                throw new Exception("password verification failed !!!");
+        }
+        EntityManager::flush();
+
+    }
 
     public function run()
     {
 
-        Eloquent::unguard();
+        DB::table('banned_ips')->delete();
+        DB::table('user_exceptions_trail')->delete();
+        DB::table('server_configuration')->delete();
+        DB::table('server_extensions')->delete();
 
-        $member_table = <<<SQL
-      CREATE TABLE Member
-      (
-          ID integer primary key,
-          FirstName varchar(50),
-          ClassName varchar(255),
-          Surname varchar(50),
-          Email varchar(254),
-          Password varchar(254),
-          PasswordEncryption varchar(50),
-          Salt varchar(50),
-          Locale varchar(6),
-          Address varchar(255),
-          City varchar(64),
-          Suburb varchar(64),
-          State varchar(64),
-          Postcode varchar(64),
-          Country varchar(2),
-          Gender varchar(32),
-          EmailVerified integer,
-          Active integer,
-          LastEdited datetime,
-          Created datetime
-      );
-SQL;
+        DB::table('oauth2_client_api_scope')->delete();
+        DB::table('oauth2_client_authorized_uri')->delete();
+        DB::table('oauth2_access_token')->delete();
+        DB::table('oauth2_refresh_token')->delete();
+        DB::table('oauth2_asymmetric_keys')->delete();
+        DB::table('oauth2_client')->delete();
 
-        DB::connection('ss')->statement($member_table);
+        DB::table('openid_trusted_sites')->delete();
+        DB::table('openid_associations')->delete();
+        DB::table('user_actions')->delete();
+        DB::table('user_groups')->delete();
+        DB::table('users')->delete();
+        DB::table('groups')->delete();
 
-        $groups_table = <<<SQL
-CREATE TABLE `Group` (
-   ID integer primary key,
-   ClassName varchar(255),
-   Title varchar(255),
-   Description  varchar(255),
-   Code  varchar(255),
-   LastEdited datetime,
-   Created datetime
-);
-SQL;
+        DB::table('oauth2_api_endpoint_api_scope')->delete();
+        DB::table('oauth2_api_endpoint')->delete();
+        DB::table('oauth2_api_scope')->delete();
+        DB::table('oauth2_api')->delete();
+        DB::table('oauth2_resource_server')->delete();
 
-        DB::connection('ss')->statement($groups_table);
+        $this->createTestGroups();
 
-        $groups_members_table = <<<SQL
-CREATE TABLE Group_Members (
-   ID integer primary key,
-   GroupID integer,
-   MemberID integer
-);
+        $this->createTestUsers();
 
-SQL;
-
-        DB::connection('ss')->statement($groups_members_table);
-
-        Member::create(
-            array(
-                'ID'   => 1,
-                'FirstName' => 'Sebastian',
-                'Surname' => 'Marcet',
-                'Email' => 'sebastian@tipit.net',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-
-        Group::create(
-            array(
-                'ID'   => 1,
-                'Title' => \OAuth2\Models\IOAuth2User::OAuth2ServerAdminGroup,
-                'Code' => \OAuth2\Models\IOAuth2User::OAuth2ServerAdminGroup,
-            )
-        );
-
-        Group::create(
-            array(
-                'ID'   => 2,
-                'Title' => \OAuth2\Models\IOAuth2User::OAuth2SystemScopeAdminGroup,
-                'Code' => \OAuth2\Models\IOAuth2User::OAuth2SystemScopeAdminGroup,
-            )
-        );
-
-        Group::create(
-            array(
-                'ID'   => 3,
-                'Title' => \OpenId\Models\IOpenIdUser::OpenStackIdServerAdminGroup,
-                'Code' => \OpenId\Models\IOpenIdUser::OpenStackIdServerAdminGroup,
-            )
-        );
-
+        /*
         $member = Member::find(1);
 
         $member->groups()->attach([1,2,3]);
@@ -456,296 +481,157 @@ SQL;
                 'EmailVerified' => 1,
             )
         );
-
-        DB::table('banned_ips')->delete();
-        DB::table('user_exceptions_trail')->delete();
-        DB::table('server_configuration')->delete();
-        DB::table('server_extensions')->delete();
-
-        DB::table('oauth2_client_api_scope')->delete();
-        DB::table('oauth2_client_authorized_uri')->delete();
-        DB::table('oauth2_access_token')->delete();
-        DB::table('oauth2_refresh_token')->delete();
-        DB::table('oauth2_asymmetric_keys')->delete();
-        DB::table('oauth2_client')->delete();
-
-        DB::table('openid_trusted_sites')->delete();
-        DB::table('openid_associations')->delete();
-        DB::table('user_actions')->delete();
-        DB::table('openid_users')->delete();
-
-        DB::table('oauth2_api_endpoint_api_scope')->delete();
-        DB::table('oauth2_api_endpoint')->delete();
-        DB::table('oauth2_api_scope')->delete();
-        DB::table('oauth2_api')->delete();
-        DB::table('oauth2_resource_server')->delete();
+        */
 
         $this->seedServerConfiguration();
         $this->seedServerExtensions();
-
-        $current_realm          = Config::get('app.url');
-        $components             = parse_url($current_realm);
-
-        ResourceServer::create(
-            array(
-                'friendly_name'    => 'test resource server',
-                'host'             => $components['host'],
-                'ips'              => '127.0.0.1,10.0.0.0,2001:4800:7821:101:be76:4eff:fe06:858b,174.143.201.173'
-            )
-        );
-
-        ResourceServer::create(
-            array(
-                'friendly_name'    => 'test resource server 2',
-                'host'             => $components['host'],
-                'ips'              => '10.0.0.0,2001:4800:7821:101:be76:4eff:fe06:858b,174.143.201.173'
-            )
-        );
-
-        $resource_server = ResourceServer::first();
-
+        $this->seedTestResourceServers();
         $this->seedApis();
-        //scopes
-
-        ApiScope::create(
-            array(
-                'name'               => OAuth2Protocol::OpenIdConnect_Scope,
-                'short_description'  => 'OIDC',
-                'description'        => 'OIDC',
-                'api_id'             => null,
-                'system'             => true,
-                'default'            => true,
-                'active'             => true,
-            )
-        );
-
-        ApiScope::create(
-            array(
-                'name'               => OAuth2Protocol::OfflineAccess_Scope,
-                'short_description'  => 'allow to emit refresh tokens (offline access without user presence)',
-                'description'        => 'allow to emit refresh tokens (offline access without user presence)',
-                'api_id'             => null,
-                'system'             => true,
-                'default'            => true,
-                'active'             => true,
-            )
-        );
-
+        $this->seedBasicScopes();
         $this->seedResourceServerScopes();
         $this->seedApiScopes();
         $this->seedApiEndpointScopes();
         $this->seedApiScopeScopes();
         $this->seedUsersScopes();
+        $this->seedUsersRegistrationScopes();
         $this->seedPublicCloudScopes();
         $this->seedPrivateCloudScopes();
         $this->seedConsultantScopes();
+        /*
         //endpoints
         $this->seedResourceServerEndpoints();
         $this->seedApiEndpoints();
         $this->seedApiEndpointEndpoints();
         $this->seedScopeEndpoints();
-        $this->seedUsersEndpoints();
+
         $this->seedPublicCloudsEndpoints();
         $this->seedPrivateCloudsEndpoints();
         $this->seedConsultantsEndpoints();
+        */
+        $this->seedUsersEndpoints();
+        $this->seedUserRegistrationEndpoints();
         //clients
         $this->seedTestUsersAndClients();
     }
 
     private function seedServerConfiguration(){
-        ServerConfiguration::create(
+        $config_payloads = [
             array(
                 'key'   => 'Private.Association.Lifetime',
                 'value' => '240',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'Session.Association.Lifetime',
                 'value' => '21600',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'MaxFailed.Login.Attempts',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'MaxFailed.LoginAttempts.2ShowCaptcha',
                 'value' => '3',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'Nonce.Lifetime',
                 'value' => '360',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'Assets.Url',
                 'value' => 'http://www.openstack.org/',
-            )
-        );
-
-        //blacklist policy config values
-
-        ServerConfiguration::create(
-            array(
-                'key'   => 'BannedIpLifeTimeSeconds',
-                'value' => '21600',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
+            //blacklist policy config values
+             array(
+                 'key'   => 'BannedIpLifeTimeSeconds',
+                 'value' => '21600',
+             ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.MinutesWithoutExceptions',
                 'value' => '5',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.ReplayAttackExceptionInitialDelay',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.MaxInvalidNonceAttempts',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.InvalidNonceInitialDelay',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.MaxInvalidOpenIdMessageExceptionAttempts',
                 'value' => '10',
-            )
-        );
-
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.InvalidOpenIdMessageExceptionInitialDelay',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.MaxOpenIdInvalidRealmExceptionAttempts',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.OpenIdInvalidRealmExceptionInitialDelay',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.MaxInvalidOpenIdMessageModeAttempts',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.InvalidOpenIdMessageModeInitialDelay',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.MaxInvalidOpenIdAuthenticationRequestModeAttempts',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.InvalidOpenIdAuthenticationRequestModeInitialDelay',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.MaxAuthenticationExceptionAttempts',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'BlacklistSecurityPolicy.AuthenticationExceptionInitialDelay',
                 'value' => '20',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'AuthorizationCodeRedeemPolicy.MinutesWithoutExceptions',
                 'value' => '5',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'AuthorizationCodeRedeemPolicy.MaxAuthCodeReplayAttackAttempts',
                 'value' => '3',
-            )
-        );
-
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'AuthorizationCodeRedeemPolicy.AuthCodeReplayAttackInitialDelay',
                 'value' => '10',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'AuthorizationCodeRedeemPolicy.MaxInvalidAuthorizationCodeAttempts',
                 'value' => '3',
-            )
-        );
-
-        ServerConfiguration::create(
+            ),
             array(
                 'key'   => 'AuthorizationCodeRedeemPolicy.InvalidAuthorizationCodeInitialDelay',
                 'value' => '10',
             )
-        );
-
-
+        ];
+        foreach($config_payloads as $payload) {
+            EntityManager::persist(ServerConfigurationFactory::build($payload));
+        }
+        EntityManager::flush();
 
     }
 
     private function seedServerExtensions(){
 
-        ServerExtension::create(
+        $extensions_payloads = [
             array(
                 'name'            => 'SREG_1_0',
                 'namespace'       => 'http://openid.net/sreg/1.0',
@@ -753,10 +639,7 @@ SQL;
                 'extension_class' => OpenIdSREGExtension_1_0::class,
                 'description'     => 'OpenID Simple Registration 1.0 is an extension to the OpenID Authentication protocol that allows for very light-weight profile exchange.',
                 'view_name'       => 'extensions.sreg',
-            )
-        );
-
-        ServerExtension::create(
+            ),
             array(
                 'name'            => 'AX',
                 'namespace'       => 'http://openid.net/srv/ax/1.0',
@@ -764,10 +647,7 @@ SQL;
                 'extension_class' => OpenIdAXExtension::class,
                 'description'     => 'OpenID service extension for exchanging identity information between endpoints',
                 'view_name'       =>'extensions.ax',
-            )
-        );
-
-        ServerExtension::create(
+            ),
             array(
                 'name'            => 'SREG',
                 'namespace'       => 'http://openid.net/extensions/sreg/1.1',
@@ -775,10 +655,7 @@ SQL;
                 'extension_class' => OpenIdSREGExtension::class,
                 'description'     => 'OpenID Simple Registration is an extension to the OpenID Authentication protocol that allows for very light-weight profile exchange.',
                 'view_name'       => 'extensions.sreg',
-            )
-        );
-
-        ServerExtension::create(
+            ),
             array(
                 'name'            => 'OAUTH2',
                 'namespace'       => 'http://specs.openid.net/extensions/oauth/2.0',
@@ -787,36 +664,172 @@ SQL;
                 'description'     => 'The OpenID OAuth2 Extension describes how to make the OpenID Authentication and OAuth2 Core specifications work well together.',
                 'view_name'       => 'extensions.oauth2',
             )
-        );
+        ];
+        foreach($extensions_payloads as $payload) {
+            EntityManager::persist(ServerExtensionFactory::build($payload));
+        }
+        EntityManager::flush();
+    }
+
+    private function seedTestResourceServers(){
+        $current_realm          = Config::get('app.url');
+        $components             = parse_url($current_realm);
+
+        $resource_server_payloads = [
+            array(
+                'friendly_name'    => 'test resource server',
+                'host'             => $components['host'],
+                'ips'              => '127.0.0.1,10.0.0.0,2001:4800:7821:101:be76:4eff:fe06:858b,174.143.201.173',
+                 'active'           => true
+            ),
+            array(
+                'friendly_name'    => 'test resource server 2',
+                'host'             => $components['host'],
+                'ips'              => '10.0.0.0,2001:4800:7821:101:be76:4eff:fe06:858b,174.143.201.173',
+                'active'           => true,
+            )
+        ];
+        foreach($resource_server_payloads as $payload) {
+            EntityManager::persist(ResourceServerFactory::build($payload));
+        }
+        EntityManager::flush();
+    }
+
+    private function seedApis(){
+        $resource_server_repository = EntityManager::getRepository(ResourceServer::class);
+
+        $resource_server = $resource_server_repository->findOneBy([
+            'friendly_name' => 'test resource server'
+        ]);
+
+        $api_payloads = [
+            array(
+                'name'               => 'resource-server',
+                'active'             =>  true,
+                'description'        => 'Resource Server CRUD operations',
+                'resource_server'    => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'api',
+                'active'          =>  true,
+                'description'     => 'Api CRUD operations',
+                'resource_server' => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'api-endpoint',
+                'active'          =>  true,
+                'description'     => 'Api Endpoints CRUD operations',
+                'resource_server' => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'api-scope',
+                'active'          =>  true,
+                'description'     => 'Api Scopes CRUD operations',
+                'resource_server' => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'users',
+                'active'          =>  true,
+                'description'     => 'User Info',
+                'resource_server'    => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'user-registration',
+                'active'          =>  true,
+                'description'     => 'User Registration',
+                'resource_server'    => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'public-clouds',
+                'active'          =>  true,
+                'description'     => 'Marketplace Public Clouds',
+                'resource_server'    => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'private-clouds',
+                'active'          =>  true,
+                'description'     => 'Marketplace Private Clouds',
+                'resource_server'    => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'consultants',
+                'active'          =>  true,
+                'description'     => 'Marketplace Consultants',
+                'resource_server'    => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            )
+        ];
+
+        foreach($api_payloads as $payload) {
+            EntityManager::persist(ApiFactory::build($payload));
+        }
+        EntityManager::flush();
+    }
+
+    private function seedBasicScopes(){
+        //scopes
+
+        $api_scope_payloads = [
+            array(
+                'name'               => OAuth2Protocol::OpenIdConnect_Scope,
+                'short_description'  => 'OIDC',
+                'description'        => 'OIDC',
+                'system'             => true,
+                'default'            => true,
+                'active'             => true,
+            ),
+            array(
+                'name'               => OAuth2Protocol::OfflineAccess_Scope,
+                'short_description'  => 'allow to emit refresh tokens (offline access without user presence)',
+                'description'        => 'allow to emit refresh tokens (offline access without user presence)',
+                'system'             => true,
+                'default'            => true,
+                'active'             => true,
+            )
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
     }
 
     private function seedTestUsersAndClients(){
 
-        $resource_server  = ResourceServer::where('friendly_name', '=', 'test resource server')->first();
-        $resource_server2 = ResourceServer::where('friendly_name', '=', 'test resource server 2')->first();
+        $resource_server_repository = EntityManager::getRepository(ResourceServer::class);
 
-        // create users and clients ...
-        User::create(
-            array(
-                'identifier'          => 'sebastian.marcet',
-                'external_identifier' => 1,
-                'last_login_date'     => gmdate("Y-m-d H:i:s", time())
-            )
-        );
+        $resource_server = $resource_server_repository->findOneBy([
+            'friendly_name' => 'test resource server'
+        ]);
 
-        $user = User::where('identifier','=','sebastian.marcet')->first();
+        $resource_server2 = $resource_server_repository->findOneBy([
+            'friendly_name' => 'test resource server 2'
+        ]);
 
-        OpenIdTrustedSite::create(
-            array(
-                'user_id'=>$user->id,
-                'realm'=>'https://www.test.com/',
-                'policy'=>IAuthService::AuthorizationResponse_AllowForever
-            )
-        );
+        $user_repository = EntityManager::getRepository(User::class);
 
-        $now     = new \DateTime();
+        $user = $user_repository->findOneBy(['email' => 'sebastian@tipit.net']);
 
-        Client::create(
+        $trusted_site = OpenIdTrustedSiteFactory::build([
+            'realm'  => 'https://www.test.com/',
+            'policy' => IAuthService::AuthorizationResponse_AllowForever
+        ]);
+
+        $user->addTrustedSite($trusted_site);
+        EntityManager::persist($user);
+        //EntityManager::flush();
+
+        $now = new \DateTime('now', new \DateTimeZone('UTC'));
+
+        $client_payloads = [
             array(
                 'app_name'             => 'oauth2_test_app',
                 'app_description'      => 'oauth2_test_app',
@@ -826,7 +839,7 @@ SQL;
                 'client_type'          => IClient::ClientType_Confidential,
                 'application_type'     => IClient::ApplicationType_Web_App,
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
-                'user_id'              => $user->id,
+                'owner'                  => $user,
                 'rotate_refresh_token' => true,
                 'use_refresh_token'    => true,
                 'redirect_uris' => 'https://www.test.com/oauth2,https://op.certification.openid.net:60393/authz_cb',
@@ -834,10 +847,7 @@ SQL;
                 'id_token_encrypted_response_alg' => JSONWebSignatureAndEncryptionAlgorithms::RSA_OAEP_256,
                 'id_token_encrypted_response_enc' => JSONWebSignatureAndEncryptionAlgorithms::A256CBC_HS512,
                 'client_secret_expires_at' => $now->add(new \DateInterval('P6M')),
-            )
-        );
-
-        Client::create(
+            ),
             array
             (
                 'app_name'             => 'oauth2_test_app2',
@@ -850,20 +860,15 @@ SQL;
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretJwt,
                 'token_endpoint_auth_signing_alg' => JSONWebSignatureAndEncryptionAlgorithms::HS512,
                 'subject_type' => IClient::SubjectType_Pairwise,
-                'user_id'              => $user->id,
+                'owner'              => $user,
                 'rotate_refresh_token' => true,
                 'use_refresh_token'    => true,
                 'redirect_uris' => 'https://www.test.com/oauth2',
                 'id_token_signed_response_alg'    => JSONWebSignatureAndEncryptionAlgorithms::HS512,
                 'id_token_encrypted_response_alg' => JSONWebSignatureAndEncryptionAlgorithms::RSA_OAEP_256,
                 'id_token_encrypted_response_enc' => JSONWebSignatureAndEncryptionAlgorithms::A256CBC_HS512,
-
                 'client_secret_expires_at'        => $now->add(new \DateInterval('P6M')),
-            )
-        );
-
-        Client::create
-        (
+            ),
             array(
                 'app_name'             => 'oauth2_test_app3',
                 'app_description'      => 'oauth2_test_app3',
@@ -873,17 +878,14 @@ SQL;
                 'client_type'          => IClient::ClientType_Confidential,
                 'application_type'     => IClient::ApplicationType_Web_App,
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
-                'user_id'              => $user->id,
+                'owner'              => $user,
                 'rotate_refresh_token' => true,
                 'use_refresh_token'    => true,
                 'redirect_uris' => 'https://www.test.com/oauth2',
                 'id_token_signed_response_alg'    => JSONWebSignatureAndEncryptionAlgorithms::HS512,
                 'userinfo_signed_response_alg'    => JSONWebSignatureAndEncryptionAlgorithms::RS512,
                 'client_secret_expires_at' => $now->add(new \DateInterval('P6M')),
-            )
-        );
-
-        Client::create(
+            ),
             array(
                 'app_name'             => 'oauth2.service',
                 'app_description'      => 'oauth2.service',
@@ -893,15 +895,12 @@ SQL;
                 'client_type'          => IClient::ClientType_Confidential,
                 'application_type'     => IClient::ApplicationType_Service,
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
-                'user_id'              => $user->id,
+                'owner'              => $user,
                 'rotate_refresh_token' => true,
                 'use_refresh_token'    => true,
                 'redirect_uris' => 'https://www.test.com/oauth2',
                 'client_secret_expires_at' => $now->add(new \DateInterval('P6M')),
-            )
-        );
-
-        Client::create(
+            ),
             array(
                 'app_name'             => 'oauth2_test_app_public',
                 'app_description'      => 'oauth2_test_app_public',
@@ -911,15 +910,11 @@ SQL;
                 'application_type'     => IClient::ApplicationType_JS_Client,
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_PrivateKeyJwt,
                 'token_endpoint_auth_signing_alg' => JSONWebSignatureAndEncryptionAlgorithms::RS512,
-                'user_id'              => $user->id,
+                'owner'              => $user,
                 'rotate_refresh_token' => false,
                 'use_refresh_token'    => false,
                 'redirect_uris' => 'https://www.test.com/oauth2',
-
-            )
-        );
-
-        Client::create(
+            ),
             array(
                 'app_name'             => 'oauth2_native_app',
                 'app_description'      => 'oauth2_native_app',
@@ -929,14 +924,11 @@ SQL;
                 'client_type'          => IClient::ClientType_Confidential,
                 'application_type'     => IClient::ApplicationType_Native,
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
-                'user_id'              => $user->id,
+                'owner'              => $user,
                 'rotate_refresh_token' => true,
                 'use_refresh_token'    => true,
                 'redirect_uris'        => 'androipapp://oidc_endpoint_callback',
-            )
-        );
-
-        Client::create(
+            ),
             array(
                 'app_name'             => 'oauth2_native_app2',
                 'app_description'      => 'oauth2_native_app2',
@@ -947,14 +939,11 @@ SQL;
                 'application_type'     => IClient::ApplicationType_Native,
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_PrivateKeyJwt,
                 'token_endpoint_auth_signing_alg' => JSONWebSignatureAndEncryptionAlgorithms::RS512,
-                'user_id'              => $user->id,
+                'owner'              => $user,
                 'rotate_refresh_token' => true,
                 'use_refresh_token'    => true,
                 'redirect_uris'        => 'androipapp://oidc_endpoint_callback2',
-            )
-        );
-
-        Client::create(
+            ),
             array(
                 'app_name'             => 'oauth2_test_app_public_2',
                 'app_description'      => 'oauth2_test_app_public_2',
@@ -963,14 +952,11 @@ SQL;
                 'client_secret'        => null,
                 'client_type'          => IClient::ClientType_Public,
                 'application_type'     => IClient::ApplicationType_JS_Client,
-                'user_id'              => $user->id,
+                'owner'                => $user,
                 'rotate_refresh_token' => false,
                 'use_refresh_token'    => false,
                 'redirect_uris' => 'https://www.test.com/oauth2'
-            )
-        );
-
-        Client::create(
+            ),
             array(
                 'app_name'             => 'resource_server_client',
                 'app_description'      => 'resource_server_client',
@@ -980,15 +966,11 @@ SQL;
                 'client_type'          =>  IClient::ClientType_Confidential,
                 'application_type'     => IClient::ApplicationType_Service,
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
-                'resource_server_id'   => $resource_server->id,
+                'resource_server'   => $resource_server,
                 'rotate_refresh_token' => false,
                 'use_refresh_token'    => false,
                 'client_secret_expires_at' => $now->add(new \DateInterval('P6M')),
-            )
-        );
-
-
-        Client::create(
+            ),
             array(
                 'app_name'             => 'resource_server_client2',
                 'app_description'      => 'resource_server_client2',
@@ -998,36 +980,46 @@ SQL;
                 'client_type'          =>  IClient::ClientType_Confidential,
                 'application_type'     => IClient::ApplicationType_Service,
                 'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
-                'resource_server_id'   => $resource_server2->id,
+                'resource_server'       => $resource_server2,
                 'rotate_refresh_token' => false,
                 'use_refresh_token'    => false,
                 'client_secret_expires_at' => $now->add(new \DateInterval('P6M')),
             )
-        );
+        ];
 
-        $client_confidential  = Client::where('app_name','=','oauth2_test_app')->first();
-        $client_confidential2 = Client::where('app_name','=','oauth2_test_app2')->first();
-        $client_confidential3 = Client::where('app_name','=','oauth2_test_app3')->first();
-        $client_public        = Client::where('app_name','=','oauth2_test_app_public')->first();
-        $client_service       = Client::where('app_name','=','oauth2.service')->first();
-        $client_native        = Client::where('app_name','=','oauth2_native_app')->first();
-        $client_native2        = Client::where('app_name','=','oauth2_native_app2')->first();
-
-        //attach all scopes
-        $scopes = ApiScope::get();
-        foreach($scopes as $scope)
-        {
-            $client_confidential->scopes()->attach($scope->id);
-            $client_confidential2->scopes()->attach($scope->id);
-            $client_confidential3->scopes()->attach($scope->id);
-            $client_public->scopes()->attach($scope->id);
-            $client_service->scopes()->attach($scope->id);
-            $client_native->scopes()->attach($scope->id);
-            $client_native2->scopes()->attach($scope->id);
+        foreach ($client_payloads as $payload){
+            EntityManager::persist(ClientFactory::build($payload));
         }
 
-        $now =  new \DateTime('now');
-        $to = new \DateTime('now');
+        EntityManager::flush();
+
+        $client_repository = EntityManager::getRepository(Client::class);
+
+        $client_confidential   = $client_repository->findOneBy(['app_name' => 'oauth2_test_app']);
+        $client_confidential2  = $client_repository->findOneBy(['app_name' => 'oauth2_test_app2']);
+        $client_confidential3  = $client_repository->findOneBy(['app_name' => 'oauth2_test_app3']);
+        $client_public         = $client_repository->findOneBy(['app_name' => 'oauth2_test_app_public']);
+        $client_service        = $client_repository->findOneBy(['app_name' => 'oauth2.service']);
+        $client_native         = $client_repository->findOneBy(['app_name' => 'oauth2_native_app']);
+        $client_native2        = $client_repository->findOneBy(['app_name' => 'oauth2_native_app2']);
+
+        //attach all scopes
+        $scopes_repository = EntityManager::getRepository(ApiScope::class);
+        $scopes = $scopes_repository->findAll();
+
+        foreach($scopes as $scope)
+        {
+            $client_confidential->addScope($scope);
+            $client_confidential2->addScope($scope);
+            $client_confidential3->addScope($scope);
+            $client_public->addScope($scope);
+            $client_service->addScope($scope);
+            $client_native->addScope($scope);
+            $client_native2->addScope($scope);
+        }
+
+        $now =  new \DateTime('now', new DateTimeZone('UTC'));
+        $to   = new \DateTime('now', new DateTimeZone('UTC'));
         $to->add(new \DateInterval('P31D'));
 
         $public_key_1 = ClientPublicKey::buildFromPEM(
@@ -1041,8 +1033,7 @@ SQL;
             $to
         );
 
-        $public_key_1->oauth2_client_id = $client_confidential->id;
-        $public_key_1->save();
+        $client_confidential->addPublicKey($public_key_1);
 
         $public_key_2 = ClientPublicKey::buildFromPEM(
             'public_key_2',
@@ -1055,8 +1046,7 @@ SQL;
             $to
         );
 
-        $public_key_2->oauth2_client_id = $client_confidential->id;
-        $public_key_2->save();
+        $client_confidential->addPublicKey($public_key_2);
 
         // confidential client 2
         $public_key_11 = ClientPublicKey::buildFromPEM(
@@ -1070,8 +1060,7 @@ SQL;
             $to
         );
 
-        $public_key_11->oauth2_client_id = $client_confidential2->id;
-        $public_key_11->save();
+        $client_confidential2->addPublicKey($public_key_11);
 
         $public_key_22 = ClientPublicKey::buildFromPEM(
             'public_key_2',
@@ -1084,8 +1073,7 @@ SQL;
             $to
         );
 
-        $public_key_22->oauth2_client_id = $client_confidential2->id;
-        $public_key_22->save();
+        $client_confidential2->addPublicKey($public_key_22);
 
         // public native client
         $public_key_33 = ClientPublicKey::buildFromPEM(
@@ -1099,8 +1087,7 @@ SQL;
             $to
         );
 
-        $public_key_33->oauth2_client_id = $client_native2->id;
-        $public_key_33->save();
+        $client_native2->addPublicKey($public_key_33);
 
         $public_key_44 = ClientPublicKey::buildFromPEM(
             'public_key_44',
@@ -1113,8 +1100,7 @@ SQL;
             $to
         );
 
-        $public_key_44->oauth2_client_id = $client_native2->id;
-        $public_key_44->save();
+        $client_native2->addPublicKey($public_key_44);
 
         // server private keys
 
@@ -1130,8 +1116,7 @@ SQL;
             TestKeys::$private_key_pem
         );
 
-        $pkey_1->save();
-
+        EntityManager::persist($pkey_1);
 
         $pkey_2 = ServerPrivateKey::build
         (
@@ -1145,484 +1130,430 @@ SQL;
             TestKeys::$private_key_pem
         );
 
-        $pkey_2->save();
-    }
 
-    private function seedApis(){
-        $resource_server = ResourceServer::first();
+        EntityManager::persist($pkey_2);
 
-        Api::create(
-            array(
-                'name'               => 'resource-server',
-                'logo'               =>  null,
-                'active'             =>  true,
-                'Description'        => 'Resource Server CRUD operations',
-                'resource_server_id' => $resource_server->id,
-                'logo'               => asset('/assets/img/apis/server.png')
-            )
-        );
-
-        Api::create(
-            array(
-                'name'            => 'api',
-                'logo'            =>  null,
-                'active'          =>  true,
-                'Description'     => 'Api CRUD operations',
-                'resource_server_id' => $resource_server->id,
-                'logo'               => asset('/assets/img/apis/server.png')
-            )
-        );
-
-
-        Api::create(
-            array(
-                'name'            => 'api-endpoint',
-                'logo'            =>  null,
-                'active'          =>  true,
-                'Description'     => 'Api Endpoints CRUD operations',
-                'resource_server_id' => $resource_server->id,
-                'logo'               => asset('/assets/img/apis/server.png')
-            )
-        );
-
-        Api::create(
-            array(
-                'name'            => 'api-scope',
-                'logo'            =>  null,
-                'active'          =>  true,
-                'Description'     => 'Api Scopes CRUD operations',
-                'resource_server_id' => $resource_server->id,
-                'logo'               => asset('/assets/img/apis/server.png')
-            )
-        );
-
-        Api::create(
-            array(
-                'name'            => 'users',
-                'logo'            =>  null,
-                'active'          =>  true,
-                'Description'     => 'User Info',
-                'resource_server_id' => $resource_server->id,
-                'logo'               => asset('/assets/img/apis/server.png')
-            )
-        );
-
-        Api::create(
-            array(
-                'name'            => 'public-clouds',
-                'logo'            =>  null,
-                'active'          =>  true,
-                'Description'     => 'Marketplace Public Clouds',
-                'resource_server_id' => $resource_server->id,
-                'logo'               => asset('/assets/img/apis/server.png')
-            )
-        );
-
-        Api::create(
-            array(
-                'name'            => 'private-clouds',
-                'logo'            =>  null,
-                'active'          =>  true,
-                'Description'     => 'Marketplace Private Clouds',
-                'resource_server_id' => $resource_server->id,
-                'logo'               => asset('/assets/img/apis/server.png')
-            )
-        );
-
-        Api::create(
-            array(
-                'name'            => 'consultants',
-                'logo'            =>  null,
-                'active'          =>  true,
-                'Description'     => 'Marketplace Consultants',
-                'resource_server_id' => $resource_server->id,
-                'logo'               => asset('/assets/img/apis/server.png')
-            )
-        );
-
+        EntityManager::flush();
     }
 
     private function seedResourceServerScopes(){
 
-        $resource_server        = Api::where('name','=','resource-server')->first();
-        $current_realm          = Config::get('app.url');
+        $api_repository = EntityManager::getRepository(Api::class);
+        $resource_server = $api_repository->findOneBy(['name' => 'resource-server']);
 
-        ApiScope::create(
+        $current_realm = Config::get('app.url');
+
+        $api_scope_payloads = [
             array(
                 'name'               => sprintf('%s/resource-server/read',$current_realm),
                 'short_description'  => 'Resource Server Read Access',
                 'description'        => 'Resource Server Read Access',
-                'api_id'             => $resource_server->id,
+                'api'                => $resource_server,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/resource-server/read.page',$current_realm),
                 'short_description'  => 'Resource Server Page Read Access',
                 'description'        => 'Resource Server Page Read Access',
-                'api_id'             => $resource_server->id,
+                'api'                => $resource_server,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/resource-server/write',$current_realm),
                 'short_description'  => 'Resource Server Write Access',
                 'description'        => 'Resource Server Write Access',
-                'api_id'             => $resource_server->id,
+                'api'                => $resource_server,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/resource-server/delete',$current_realm),
                 'short_description'  => 'Resource Server Delete Access',
                 'description'        => 'Resource Server Delete Access',
-                'api_id'             => $resource_server->id,
+                'api'                => $resource_server,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/resource-server/update',$current_realm),
                 'short_description'  => 'Resource Server Update Access',
                 'description'        => 'Resource Server Update Access',
-                'api_id'             => $resource_server->id,
+                'api'                => $resource_server,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/resource-server/update.status',$current_realm),
                 'short_description'  => 'Resource Server Update Status',
                 'description'        => 'Resource Server Update Status',
-                'api_id'             => $resource_server->id,
+                'api'                => $resource_server,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/resource-server/regenerate.secret',$current_realm),
                 'short_description'  => 'Resource Server Regenerate Client Secret',
                 'description'        => 'Resource Server Regenerate Client Secret',
-                'api_id'             => $resource_server->id,
+                'api'                => $resource_server,
                 'system'             => true,
+                'active'             => true,
             )
-        );
+        ];
 
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
     }
 
     private function seedApiScopes(){
-        $api           = Api::where('name','=','api')->first();
+
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api = $api_repository->findOneBy(['name' => 'api']);
+
         $current_realm = Config::get('app.url');
 
-        ApiScope::create(
+        $api_scope_payloads = [
             array(
                 'name'               => sprintf('%s/api/read',$current_realm),
                 'short_description'  => 'Get Api',
                 'description'        => 'Get Api',
-                'api_id'             => $api->id,
+                'api'                => $api,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api/delete',$current_realm),
                 'short_description'  => 'Deletes Api',
                 'description'        => 'Deletes Api',
-                'api_id'             => $api->id,
+                'api'                => $api,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api/write',$current_realm),
                 'short_description'  => 'Create Api',
                 'description'        => 'Create Api',
-                'api_id'             => $api->id,
+                'api'                => $api,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api/update',$current_realm),
                 'short_description'  => 'Update Api',
                 'description'        => 'Update Api',
-                'api_id'             => $api->id,
+                'api'                => $api,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api/update.status',$current_realm),
                 'short_description'  => 'Update Api Status',
                 'description'        => 'Update Api Status',
-                'api_id'             => $api->id,
+                'api'                => $api,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api/read.page',$current_realm),
                 'short_description'  => 'Get Api By Page',
                 'description'        => 'Get Api By Page',
-                'api_id'             => $api->id,
+                'api'                => $api,
                 'system'             => true,
+                'active'             => true,
             )
-        );
+        ];
 
-
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
     }
 
     private function seedApiEndpointScopes(){
-        $api_endpoint  = Api::where('name','=','api-endpoint')->first();
-        $current_realm = Config::get('app.url');
 
-        ApiScope::create(
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api_endpoint = $api_repository->findOneBy(['name' => 'api-endpoint']);
+        $current_realm = Config::get('app.url');
+        $api_scope_payloads = [
             array(
                 'name'               => sprintf('%s/api-endpoint/read',$current_realm),
                 'short_description'  => 'Get Api Endpoint',
                 'description'        => 'Get Api Endpoint',
-                'api_id'             => $api_endpoint->id,
+                'api'                => $api_endpoint,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-endpoint/delete',$current_realm),
                 'short_description'  => 'Deletes Api Endpoint',
                 'description'        => 'Deletes Api Endpoint',
-                'api_id'             => $api_endpoint->id,
+                'api'                => $api_endpoint,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-endpoint/write',$current_realm),
                 'short_description'  => 'Create Api Endpoint',
                 'description'        => 'Create Api Endpoint',
-                'api_id'             => $api_endpoint->id,
+                'api'                => $api_endpoint,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-endpoint/update',$current_realm),
                 'short_description'  => 'Update Api Endpoint',
                 'description'        => 'Update Api Endpoint',
-                'api_id'             => $api_endpoint->id,
+                'api'                => $api_endpoint,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-endpoint/update.status',$current_realm),
                 'short_description'  => 'Update Api Endpoint Status',
                 'description'        => 'Update Api Endpoint Status',
-                'api_id'             => $api_endpoint->id,
+                'api'                => $api_endpoint,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-endpoint/read.page',$current_realm),
                 'short_description'  => 'Get Api Endpoints By Page',
                 'description'        => 'Get Api Endpoints By Page',
-                'api_id'             => $api_endpoint->id,
+                'api'                => $api_endpoint,
                 'system'             => true,
-            )
-        );
-
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-endpoint/add.scope',$current_realm),
                 'short_description'  => 'Add required scope to endpoint',
                 'description'        => 'Add required scope to endpoint',
-                'api_id'             => $api_endpoint->id,
+                'api'                => $api_endpoint,
                 'system'             => true,
-            )
-        );
-
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-endpoint/remove.scope',$current_realm),
                 'short_description'  => 'Remove required scope to endpoint',
                 'description'        => 'Remove required scope to endpoint',
-                'api_id'             => $api_endpoint->id,
+                'api'                => $api_endpoint,
                 'system'             => true,
+                'active'             => true,
             )
-        );
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
 
     }
 
     private function seedApiScopeScopes(){
 
-        $current_realm = Config::get('app.url');
-        $api_scope              = Api::where('name','=','api-scope')->first();
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api_scope      = $api_repository->findOneBy(['name' => 'api-scope']);
+        $current_realm  = Config::get('app.url');
 
-        ApiScope::create(
+        $api_scope_payloads = [
             array(
                 'name'               => sprintf('%s/api-scope/read',$current_realm),
                 'short_description'  => 'Get Api Scope',
                 'description'        => 'Get Api Scope',
-                'api_id'             => $api_scope->id,
+                'api'                => $api_scope,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-scope/delete',$current_realm),
                 'short_description'  => 'Deletes Api Scope',
                 'description'        => 'Deletes Api Scope',
-                'api_id'             => $api_scope->id,
+                'api'                => $api_scope,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-scope/write',$current_realm),
                 'short_description'  => 'Create Api Scope',
                 'description'        => 'Create Api Scope',
-                'api_id'             => $api_scope->id,
+                'api'                => $api_scope,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-scope/update',$current_realm),
                 'short_description'  => 'Update Api Scope',
                 'description'        => 'Update Api Scope',
-                'api_id'             => $api_scope->id,
+                'api'                => $api_scope,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+            ),
             array(
                 'name'               => sprintf('%s/api-scope/update.status',$current_realm),
                 'short_description'  => 'Update Api Scope Status',
                 'description'        => 'Update Api Scope Status',
-                'api_id'             => $api_scope->id,
+                'api'                => $api_scope,
                 'system'             => true,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => sprintf('%s/api-scope/read.page',$current_realm),
                 'short_description'  => 'Get Api Scopes By Page',
                 'description'        => 'Get Api Scopes By Page',
-                'api_id'             => $api_scope->id,
+                'api'                => $api_scope,
                 'system'             => true,
+                'active'             => true,
             )
-        );
+        ];
+
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
 
     }
 
     private function seedUsersScopes(){
-        $current_realm = Config::get('app.url');
-        $users    = Api::where('name','=','users')->first();
 
-        ApiScope::create(
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api = $api_repository->findOneBy(['name' => 'users']);
+
+        $current_realm = Config::get('app.url');
+
+
+        $api_scope_payloads = [
             array(
                 'name'               => 'profile',
                 'short_description'  => 'This scope value requests access to the End-Users default profile Claims',
                 'description'        => 'This scope value requests access to the End-Users default profile Claims, which are: name, family_name, given_name, middle_name, nickname, preferred_username, profile, picture, website, gender, birthdate, zoneinfo, locale, and updated_at',
-                'api_id'             => $users->id,
+                'api'                => $api,
                 'system'             => false,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => 'email',
                 'short_description'  => 'This scope value requests access to the email and email_verified Claims',
                 'description'        => 'This scope value requests access to the email and email_verified Claims',
-                'api_id'             => $users->id,
+                'api'                => $api,
                 'system'             => false,
-            )
-        );
-
-        ApiScope::create(
+                'active'             => true,
+            ),
             array(
                 'name'               => 'address',
                 'short_description'  => 'This scope value requests access to the address Claim.',
                 'description'        => 'This scope value requests access to the address Claim.',
-                'api_id'             => $users->id,
+                'api'                => $api,
                 'system'             => false,
+                'active'             => true,
             )
-        );
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
+    }
+
+    private function seedUsersRegistrationScopes(){
+
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api = $api_repository->findOneBy(['name' => 'user-registration']);
+
+        $current_realm = Config::get('app.url');
+
+
+        $api_scope_payloads = [
+            array(
+                'name'               => IUserScopes::Registration,
+                'short_description'  => 'request-user-registration',
+                'description'        => 'request-user-registration',
+                'api'                => $api,
+                'system'             => false,
+                'active'             => true,
+            ),
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
     }
 
     private function seedPublicCloudScopes(){
 
-        $current_realm = Config::get('app.url');
-        $public_clouds    = Api::where('name','=','public-clouds')->first();
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api = $api_repository->findOneBy(['name' => 'public-clouds']);
 
-        ApiScope::create(
+        $current_realm = Config::get('app.url');
+
+
+        $api_scope_payloads = [
             array(
                 'name'               => sprintf('%s/public-clouds/read',$current_realm),
                 'short_description'  => 'Get Public Clouds',
                 'description'        => 'Get Public Clouds',
-                'api_id'             => $public_clouds->id,
+                'api'                => $api,
                 'system'             => false,
+                'active'             => true,
             )
-        );
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
     }
 
     private function seedPrivateCloudScopes(){
 
-        $current_realm  = Config::get('app.url');
-        $private_clouds = Api::where('name','=','private-clouds')->first();
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api = $api_repository->findOneBy(['name' => 'private-clouds']);
 
-        ApiScope::create(
+        $current_realm = Config::get('app.url');
+
+
+        $api_scope_payloads = [
             array(
                 'name'               => sprintf('%s/private-clouds/read',$current_realm),
                 'short_description'  => 'Get Private Clouds',
                 'description'        => 'Get Private Clouds',
-                'api_id'             => $private_clouds->id,
+                'api'                => $api,
                 'system'             => false,
+                'active'             => true,
             )
-        );
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
     }
 
 
     private function seedConsultantScopes(){
 
-        $current_realm  = Config::get('app.url');
-        $consultants = Api::where('name','=','consultants')->first();
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api = $api_repository->findOneBy(['name' => 'consultants']);
 
-        ApiScope::create(
+        $current_realm = Config::get('app.url');
+
+        $api_scope_payloads = [
             array(
                 'name'               => sprintf('%s/consultants/read',$current_realm),
                 'short_description'  => 'Get Consultants',
                 'description'        => 'Get Consultants',
-                'api_id'             => $consultants->id,
+                'api'                => $api,
                 'system'             => false,
+                'active'             => true,
             )
-        );
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
     }
 
     private function seedResourceServerEndpoints(){
@@ -2067,58 +1998,86 @@ SQL;
     }
 
     private function seedUsersEndpoints(){
-        $users                  = Api::where('name','=','users')->first();
-        $current_realm  = Config::get('app.url');
-        // endpoints scopes
+        $api_repository = EntityManager::getRepository(Api::class);
+        $endpoint_repository = EntityManager::getRepository(ApiEndpoint::class);
+        $users = $api_repository->findOneBy(['name' => 'users']);
 
-        ApiEndpoint::create(
+        $api_scope_payloads = [
             array(
                 'name'            => 'get-user-info',
                 'active'          =>  true,
-                'api_id'          => $users->id,
+                'api'          => $users,
                 'route'           => '/api/v1/users/me',
                 'http_method'     => 'GET'
-            )
-        );
-
-        ApiEndpoint::create(
+            ),
             array(
                 'name'            => 'get-user-claims-get',
                 'active'          =>  true,
-                'api_id'          => $users->id,
+                'api'             => $users,
                 'route'           => '/api/v1/users/info',
                 'http_method'     => 'GET'
-            )
-        );
-
-        ApiEndpoint::create(
+            ),
             array(
                 'name'            => 'get-user-claims-post',
                 'active'          =>  true,
-                'api_id'          => $users->id,
+                'api'             => $users,
                 'route'           => '/api/v1/users/info',
                 'http_method'     => 'POST'
             )
-        );
 
-        $profile_scope = ApiScope::where('name','=','profile')->first();
-        $email_scope   = ApiScope::where('name','=','email')->first();
-        $address_scope = ApiScope::where('name','=','address')->first();
+        ];
 
-        $get_user_info_endpoint = ApiEndpoint::where('name','=','get-user-info')->first();
-        $get_user_info_endpoint->scopes()->attach($profile_scope->id);
-        $get_user_info_endpoint->scopes()->attach($email_scope->id);
-        $get_user_info_endpoint->scopes()->attach($address_scope->id);
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiEndpointFactory::build($payload));
+        }
+        EntityManager::flush();
 
-        $get_user_info_endpoint = ApiEndpoint::where('name','=','get-user-claims-get')->first();
-        $get_user_info_endpoint->scopes()->attach($profile_scope->id);
-        $get_user_info_endpoint->scopes()->attach($email_scope->id);
-        $get_user_info_endpoint->scopes()->attach($address_scope->id);
+        $api_scope_repository = EntityManager::getRepository(ApiScope::class);
+        $profile_scope = $api_scope_repository->findOneBy(['name' => 'profile']);
+        $email_scope   = $api_scope_repository->findOneBy(['name' => 'email']);
+        $address_scope = $api_scope_repository->findOneBy(['name' => 'address']);
 
-        $get_user_info_endpoint = ApiEndpoint::where('name','=','get-user-claims-post')->first();
-        $get_user_info_endpoint->scopes()->attach($profile_scope->id);
-        $get_user_info_endpoint->scopes()->attach($email_scope->id);
-        $get_user_info_endpoint->scopes()->attach($address_scope->id);
+        foreach($api_scope_payloads as $payload) {
+           $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
+           $endpoint->addScope($address_scope);
+           $endpoint->addScope($email_scope);
+           $endpoint->addScope($profile_scope);
+           EntityManager::persist($endpoint);
+        }
+
+        EntityManager::flush();
+    }
+
+    private function seedUserRegistrationEndpoints(){
+        $api_repository = EntityManager::getRepository(Api::class);
+        $endpoint_repository = EntityManager::getRepository(ApiEndpoint::class);
+        $api = $api_repository->findOneBy(['name' => 'user-registration']);
+
+        $api_scope_payloads = [
+            array(
+                'name'            => 'request-user-registration',
+                'active'          =>  true,
+                'api'             => $api,
+                'route'           => '/api/v1/user-registration-requests',
+                'http_method'     => 'POST'
+            ),
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiEndpointFactory::build($payload));
+        }
+        EntityManager::flush();
+
+        $api_scope_repository = EntityManager::getRepository(ApiScope::class);
+        $scope = $api_scope_repository->findOneBy(['name' => IUserScopes::Registration]);
+
+        foreach($api_scope_payloads as $payload) {
+            $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
+            $endpoint->addScope($scope);
+            EntityManager::persist($endpoint);
+        }
+
+        EntityManager::flush();
     }
 
     private function seedPublicCloudsEndpoints(){
@@ -2263,4 +2222,5 @@ SQL;
         $endpoint              = ApiEndpoint::where('name','=','get-consultant-offices')->first();
         $endpoint->scopes()->attach($consultant_read_scope->id);
     }
+
 }

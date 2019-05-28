@@ -11,107 +11,123 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\Http\Controllers\APICRUDController;
+use App\libs\Auth\Repositories\IBannedIPRepository;
+use App\ModelSerializers\SerializerRegistry;
+use Illuminate\Support\Facades\Log;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
 use Utils\Services\IBannedIPService;
 use Utils\Services\ILogService;
-use App\Http\Controllers\ICRUDController;
 use Illuminate\Support\Facades\Input;
 use Exception;
-
 /**
  * Class ApiBannedIPController
  * @package App\Http\Controllers\Api
  */
-class ApiBannedIPController extends AbstractRESTController implements ICRUDController
+final class ApiBannedIPController extends APICRUDController
 {
 
-    private $banned_ip_service;
 
     /**
+     * ApiBannedIPController constructor.
+     * @param IBannedIPRepository $banned_ip_repository
      * @param IBannedIPService $banned_ip_service
      * @param ILogService $log_service
      */
-    public function __construct(IBannedIPService $banned_ip_service, ILogService $log_service)
+    public function __construct
+    (
+        IBannedIPRepository $banned_ip_repository,
+        IBannedIPService $banned_ip_service,
+        ILogService $log_service
+    )
     {
 
-        parent::__construct($log_service);
-
-        $this->banned_ip_service         = $banned_ip_service;
-        $this->allowed_filter_fields     = array();
-        $this->allowed_projection_fields = array('*');
+        parent::__construct($banned_ip_repository, $banned_ip_service, $log_service);
     }
 
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
     public function get($id)
     {
         try {
 
             $ip = Input::get("ip", null);
             if (!is_null($ip)) {
-                $banned_ip = $this->banned_ip_service->getByIP($ip);
+                $banned_ip = $this->repository->getByIp(strval($ip));
             } else {
-                $banned_ip = $this->banned_ip_service->get($id);
+                $banned_ip = $this->repository->getById(intval($id));
             }
             if (is_null($banned_ip)) {
-                return $this->error404(array('error' => 'banned ip not found'));
+                throw new EntityNotFoundException();
             }
-
-            $data = $banned_ip->toArray();
-            return $this->ok($data);
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
+            return $this->ok(SerializerRegistry::getInstance()->getSerializer($banned_ip)->serialize());
+        }
+        catch (ValidationException $ex1)
+        {
+            Log::warning($ex1);
+            return $this->error412(array( $ex1->getMessage()));
+        }
+        catch (EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(array('message' => $ex2->getMessage()));
+        }
+        catch (Exception $ex) {
+            Log::error($ex);
             return $this->error500($ex);
         }
     }
 
-    public function create()
-    {
-        // TODO: Implement create() method.
-    }
-
-    public function getByPage()
-    {
-        try {
-            //check for optional filters param on querystring
-            $fields    = $this->getProjection(Input::get('fields', null));
-            $filters   = $this->getFilters(Input::except('fields', 'limit', 'offset'));
-            $page_nbr  = intval(Input::get('offset', 1));
-            $page_size = intval(Input::get('limit', 10));
-
-            $list = $this->banned_ip_service->getByPage($page_nbr, $page_size, $filters, $fields);
-            $items = array();
-            foreach ($list->getItems() as $ip) {
-                array_push($items, $ip->toArray());
-            }
-            return $this->ok(array(
-                'page'        => $items,
-                'total_items' => $list->getTotal()
-            ));
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
-    }
-
+    /**
+     * @param null $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
     public function delete($id = null)
     {
         try {
             if (is_null($id)) {
                 $ip = Input::get("ip", null);
             } else {
-                $banned_ip = $this->banned_ip_service->get($id);
-                $ip        = $banned_ip->ip;
+                $banned_ip = $this->repository->getById($id);
+                $ip        = $banned_ip->getIp();
             }
             if (is_null($ip))
                 return $this->error400('invalid request');
-            $res = $this->banned_ip_service->delete($ip);
-            return $res ? $this->deleted() : $this->error404(array('error' => 'operation failed'));
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
+            $this->service->deleteByIP($ip);
+            return $this->deleted();
+        }
+        catch (ValidationException $ex1)
+        {
+            Log::warning($ex1);
+            return $this->error412(array( $ex1->getMessage()));
+        }
+        catch (EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(array('message' => $ex2->getMessage()));
+        }
+        catch (Exception $ex) {
+            Log::error($ex);
             return $this->error500($ex);
         }
     }
 
-    public function update()
+    /**
+     * @return array
+     */
+    protected function getUpdatePayloadValidationRules(): array
     {
-        // TODO: Implement update() method.
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    protected function getCreatePayloadValidationRules(): array
+    {
+        return [];
     }
 }

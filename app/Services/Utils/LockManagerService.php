@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Utils\Services\ICacheService;
 use Utils\Services\ILockManagerService;
 use Utils\Exceptions\UnacquiredLockException;
 use Closure;
 use Exception;
-
 /**
  * Class LockManagerService
  * @package Services\Utils

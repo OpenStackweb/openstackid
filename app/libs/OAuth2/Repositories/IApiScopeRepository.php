@@ -11,8 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\Models\IApiScope;
-use Utils\Db\IBaseRepository;
+use Models\OAuth2\ApiScope;
+use models\utils\IBaseRepository;
 /**
  * Interface IApiScopeRepository
  * @package OAuth2\Repositories
@@ -21,28 +21,43 @@ interface IApiScopeRepository extends IBaseRepository
 {
     /**
      * @param array $scopes_names
-     * @return IApiScope[]
+     * @return ApiScope[]
      */
-    public function getByName(array $scopes_names);
+    public function getByNames(array $scopes_names):array ;
 
     /**
      * @param string $scope_name
-     * @return IApiScope
+     * @return ApiScope
      */
-    public function getFirstByName($scope_name);
+    public function getFirstByName(string $scope_name):?ApiScope;
 
     /**
-     * @return IApiScope[]
+     * @return ApiScope[]
      */
-    public function getDefaults();
+    public function getDefaults():array;
 
     /**
-     * @return IApiScope[]
+     * @return ApiScope[]
      */
-    public function getActives();
+    public function getActives():array;
 
     /**
-     * @return IApiScope[]
+     * @return ApiScope[]
      */
-    public function getAssignableByGroups();
+    public function getAssignableByGroups():array;
+
+    /**
+     * @param array $scopes_names
+     * @return string[]
+     */
+    public function getFriendlyScopesByName(array $scopes_names):array;
+
+    /**
+     * Get all active scopes (system/non system ones)
+     * @param bool $system
+     * @param bool $assigned_by_groups
+     * @return ApiScope[]
+     */
+    public function getAvailableScopes(bool $system = false, bool $assigned_by_groups = false):array;
+
 }

@@ -1,11 +1,11 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - Server Admin - Banned Ips</title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Banned Ips</title>
 @stop
 
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 <legend>Banned Ips</legend>
 <div class="row">
     <div class="col-md-12">
@@ -22,15 +22,15 @@
             </tr>
             </thead>
             <tbody id="body-ips">
-            @foreach($ips as $ip)
+            @foreach($page->getItems() as $ip)
             <tr id="{!!$ip->id!!}">
                 <td>{!!$ip->ip!!}</td>
-                <td>{!!$ip->created_at!!}</td>
+                <td>{!!$ip->created_at->format("Y-m-d H:i:s")!!}</td>
                 <td>{!!$ip->hits!!}</td>
                 <td>{!!$ip->exception_type!!}</td>
                 <td>
-                    @if(!is_null($ip->user()->first()))
-                    {!! $ip->user()->first()->getEmail() !!}
+                    @if($ip->hasUser())
+                        {!! $ip->getUser()->getEmail() !!}
                     @else
                     N\A
                     @endif

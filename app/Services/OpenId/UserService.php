@@ -11,23 +11,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\libs\Auth\Factories\UserFactory;
+use App\libs\Auth\Repositories\IGroupRepository;
+use App\Services\AbstractService;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
-use Models\Member;
-use OpenId\Models\IOpenIdUser;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
+use models\utils\IEntity;
 use OpenId\Services\IUserService;
+use phpDocumentor\Reflection\Types\Parent_;
 use Utils\Db\ITransactionService;
-use Utils\Exceptions\EntityNotFoundException;
 use Utils\Services\ILogService;
-use Illuminate\Support\Facades\Mail;
 use Utils\Services\IServerConfigurationService;
-use Services\Exceptions\ValidationException;
 /**
  * Class UserService
  * @package Services\OpenId
  */
-final class UserService implements IUserService
+final class UserService extends AbstractService implements IUserService
 {
 
      /**
@@ -38,10 +40,6 @@ final class UserService implements IUserService
      * @var ILogService
      */
     private $log_service;
-    /**
-     * @var ITransactionService
-     */
-    private $tx_service;
 
     /**
      * @var IUserNameGeneratorService
@@ -54,8 +52,14 @@ final class UserService implements IUserService
     private $configuration_service;
 
     /**
+     * @var IGroupRepository
+     */
+    private $group_repository;
+
+    /**
      * UserService constructor.
      * @param IUserRepository $repository
+     * @param IGroupRepository $group_repository
      * @param IUserNameGeneratorService $user_name_generator
      * @param ITransactionService $tx_service
      * @param IServerConfigurationService $configuration_service
@@ -64,32 +68,62 @@ final class UserService implements IUserService
     public function __construct
     (
         IUserRepository $repository,
+        IGroupRepository $group_repository,
         IUserNameGeneratorService $user_name_generator,
         ITransactionService $tx_service,
         IServerConfigurationService $configuration_service,
         ILogService $log_service
     )
     {
+        parent::__construct($tx_service);
         $this->repository            = $repository;
+        $this->group_repository      = $group_repository;
         $this->user_name_generator   = $user_name_generator;
         $this->configuration_service = $configuration_service;
         $this->log_service           = $log_service;
-        $this->tx_service            = $tx_service;
     }
-
 
     /**
      * @param int $user_id
-     * @return void
+     * @return User
      * @throws EntityNotFoundException
      */
-    public function updateLastLoginDate($user_id)
+    public function updateLastLoginDate(int $user_id):User
     {
-        $this->tx_service->transaction(function() use($user_id){
-            $user = $this->repository->get($user_id);
-            if(is_null($user)) throw new EntityNotFoundException();
-            $user->last_login_date = gmdate("Y-m-d H:i:s", time());
-            $this->repository->add($user);
+        return $this->tx_service->transaction(function() use($user_id){
+            $user = $this->repository->getById($user_id);
+            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            $user->updateLastLoginDate();
+            return $user;
+        });
+    }
+
+    /**
+     * @param int $user_id
+     * @return User
+     * @throws EntityNotFoundException
+     */
+    public function updateFailedLoginAttempts(int $user_id):User
+    {
+         return $this->tx_service->transaction(function() use($user_id){
+            $user = $this->repository->getById($user_id);
+            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            $user->updateLoginFailedAttempt();
+            return $user;
+        });
+    }
+
+    /**
+     * @param int $user_id
+     * @return User
+     * @throws EntityNotFoundException
+     */
+    public function lockUser(int $user_id):User
+    {
+        return $this->tx_service->transaction(function() use($user_id){
+            $user = $this->repository->getById($user_id);
+            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            return $user->lock();
         });
     }
 
@@ -98,87 +132,12 @@ final class UserService implements IUserService
      * @return void
      * @throws EntityNotFoundException
      */
-    public function updateFailedLoginAttempts($user_id)
+    public function unlockUser(int $user_id):User
     {
-         $this->tx_service->transaction(function() use($user_id){
-            $user = $this->repository->get($user_id);
-            if(is_null($user)) throw new EntityNotFoundException();
-            $user->login_failed_attempt += 1;
-            $this->repository->add($user);
-        });
-    }
-
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws EntityNotFoundException
-     */
-    public function lockUser($user_id)
-    {
-        $this->tx_service->transaction(function() use($user_id){
-            $user = $this->repository->get($user_id);
-            if(is_null($user)) throw new EntityNotFoundException();
-
-            $user->lock = true;
-            $this->repository->add($user);
-
-            $support_email = $this->configuration_service->getConfigValue('SupportEmail');
-            Mail::send('emails.auth.user_locked', [
-                'user_name'     => $user->getFullName(),
-                'attempts'      => $user->login_failed_attempt,
-                'support_email' => $support_email,
-            ], function($message) use ($user, $support_email)
-            {
-                $message
-                    ->from($support_email, 'OpenStack Support Team')
-                    ->to($user->getEmail(), $user->getFullName())
-                    ->subject('OpenStackId - your user has been locked!');
-            });
-        });
-    }
-
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws EntityNotFoundException
-     */
-    public function unlockUser($user_id)
-    {
-        $this->tx_service->transaction(function() use($user_id){
-            $user = $this->repository->get($user_id);
-            if(is_null($user)) throw new EntityNotFoundException();
-            $user->lock = false;
-            $this->repository->update($user);
-        });
-    }
-
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws EntityNotFoundException
-     */
-    public function activateUser($user_id)
-    {
-        $this->tx_service->transaction(function() use($user_id){
-            $user = $this->repository->get($user_id);
-            if(is_null($user))  throw new EntityNotFoundException();
-            $user->active = true;
-            $this->repository->update($user);
-        });
-    }
-
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws EntityNotFoundException
-     */
-    public function deActivateUser($user_id)
-    {
-        $this->tx_service->transaction(function() use($user_id){
-            $user = $this->repository->get($user_id);
-            if(is_null($user)) throw new EntityNotFoundException();
-            $user->active = false;
-            $this->repository->update($user);
+        return $this->tx_service->transaction(function() use($user_id){
+            $user = $this->repository->getById($user_id);
+            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            return $user->unlock();
         });
     }
 
@@ -188,73 +147,126 @@ final class UserService implements IUserService
      * @param bool $show_full_name
      * @param bool $show_email
      * @param string $identifier
-     * @return bool
+     * @return User
      * @throws EntityNotFoundException
      * @throws ValidationException
      */
-    public function saveProfileInfo($user_id, $show_pic, $show_full_name, $show_email, $identifier)
+    public function saveProfileInfo($user_id, $show_pic, $show_full_name, $show_email, $identifier):User
     {
 
         return $this->tx_service->transaction(function() use($user_id, $show_pic, $show_full_name, $show_email, $identifier){
-            $user = $this->repository->get($user_id);
-            if(is_null($user)) throw new EntityNotFoundException();
+            $user = $this->repository->getById($user_id);
+            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
 
             $former_user = $this->repository->getByIdentifier($identifier);
 
-            if(!is_null($former_user) && $former_user->id != $user_id){
+            if(!is_null($former_user) && $former_user->getId() != $user_id){
                 throw new ValidationException("there is already another user with that openid identifier");
             }
 
-            $user->public_profile_show_photo    = $show_pic;
-            $user->public_profile_show_fullname = $show_full_name;
-            $user->public_profile_show_email    = $show_email;
-            $user->identifier                   = $identifier;
-            $this->repository->update($user);
-            return true;
-        });
-    }
+            $user->setPublicProfileShowPhoto($show_pic);
+            $user->setPublicProfileShowFullname($show_full_name);
+            $user->setPublicProfileShowEmail($show_email);
+            $user->setIdentifier($identifier);
 
-    /**
-     * @param Member $member
-     * @return IOpenIdUser
-     */
-    public function buildUser(Member $member)
-    {
-        $repository          = $this->repository;
-        $user_name_generator = $this->user_name_generator;
-
-        return $this->tx_service->transaction(function () use($member, $user_name_generator, $repository){
-            //create user
-            $old_user = $repository->getByExternalId($member->ID);
-            if(!is_null($old_user))
-                throw new ValidationException(sprintf('already exists an user with external_identifier %s', $member->ID));
-
-            $user                       = new User();
-            $user->external_identifier  = $member->ID;
-            $user->identifier           = $member->ID;
-            $user->last_login_date      = gmdate("Y-m-d H:i:s", time());
-            $user->active               = true;
-            $user->lock                 = false;
-            $user->login_failed_attempt = 0;
-
-            $done                  = false;
-            $fragment_nbr          = 1;
-            $identifier            = $original_identifier = $user_name_generator->generate($member);
-            do
-            {
-                $old_user = $repository->getByIdentifier($identifier);
-                if(!is_null($old_user))
-                {
-                    $identifier = $original_identifier . IUserNameGeneratorService::USER_NAME_CHAR_CONNECTOR . $fragment_nbr;
-                    $fragment_nbr++;
-                    continue;
-                }
-                $user->identifier = $identifier;
-                break;
-            } while (1);
-            $repository->add($user);
             return $user;
         });
     }
 
+    /**
+     * @param array $payload
+     * @return IEntity
+     * @throws ValidationException
+     * @throws EntityNotFoundException
+     */
+    public function create(array $payload): IEntity
+    {
+        return $this->tx_service->transaction(function() use($payload){
+            if(isset($payload["email"])){
+                $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
+                if(!is_null($former_user))
+                    throw new ValidationException(sprintf("email %s already belongs to another user", $payload["email"]));
+            }
+
+            if(isset($payload["identifier"])){
+                $former_user = $this->repository->getByIdentifier(trim($payload["identifier"]));
+                if(!is_null($former_user))
+                    throw new ValidationException(sprintf("identifier %s already belongs to another user", $payload["identifier"]));
+            }
+
+            $user = UserFactory::build($payload);
+
+            if(isset($payload['groups'])){
+                foreach($payload['groups'] as $group_id) {
+                    $group = $this->group_repository->getById($group_id);
+                    if(is_null($group))
+                        throw new EntityNotFoundException("group not found");
+                    $user->addToGroup($group);
+                }
+            }
+
+            $this->repository->add($user);
+
+            return $user;
+        });
+    }
+
+    /**
+     * @param int $id
+     * @param array $payload
+     * @return IEntity
+     * @throws ValidationException
+     * @throws EntityNotFoundException
+     */
+    public function update(int $id, array $payload): IEntity
+    {
+        return $this->tx_service->transaction(function() use($id, $payload){
+            $user = $this->repository->getById($id);
+            if(is_null($user) || !$user instanceof User)
+                throw new EntityNotFoundException("user not found");
+
+            if(isset($payload["email"])){
+                $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
+                if(!is_null($former_user) && $former_user->getId() != $id)
+                    throw new ValidationException(sprintf("email %s already belongs to another user", $payload["email"]));
+            }
+
+            if(isset($payload["identifier"])){
+                $former_user = $this->repository->getByIdentifier(trim($payload["identifier"]));
+                if(!is_null($former_user) && $former_user->getId() != $id)
+                    throw new ValidationException(sprintf("identifier %s already belongs to another user", $payload["identifier"]));
+            }
+
+            $user = UserFactory::populate($user, $payload);
+
+            if(isset($payload['groups'])){
+                $user->clearGroups();
+                foreach($payload['groups'] as $group_id) {
+                    $group = $this->group_repository->getById($group_id);
+                    if(is_null($group))
+                        throw new EntityNotFoundException("group not found");
+                    $user->addToGroup($group);
+                }
+            }
+
+            return $user;
+
+        });
+    }
+
+    /**
+     * @param int $id
+     * @throws ValidationException
+     * @throws EntityNotFoundException
+     */
+    public function delete(int $id): void
+    {
+        $this->tx_service->transaction(function() use($id) {
+            $user = $this->repository->getById($id);
+            if(is_null($user) || !$user instanceof User)
+                throw new EntityNotFoundException("user not found");
+
+            $this->repository->delete($user);
+        });
+    }
 }

@@ -238,7 +238,6 @@ final class OAuth2BearerAccessTokenRequestValidator
             if (!is_null($access_token->getUserId()))
             {
                 $context['user_id']          = $access_token->getUserId();
-                //$context['user_external_id'] = $access_token->getUserExternalId();
             }
 
             $this->context->setAuthorizationContext($context);
@@ -324,12 +323,13 @@ final class OAuth2BearerAccessTokenRequestValidator
      */
     protected function getHeaders()
     {
-        $headers = array();
+        $headers = [];
         if (function_exists('getallheaders')) {
             foreach (getallheaders() as $name => $value) {
                 $headers[strtolower($name)] = $value;
             }
-        } else {
+        }
+        if(empty($headers)){
             // @codeCoverageIgnoreEnd
             foreach ($_SERVER as $name => $value) {
                 if (substr($name, 0, 5) == 'HTTP_') {

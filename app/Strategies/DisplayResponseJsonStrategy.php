@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\ModelSerializers\SerializerRegistry;
 use Illuminate\Contracts\Support\MessageProvider;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Illuminate\Support\Facades\Response;
@@ -27,14 +29,14 @@ class DisplayResponseJsonStrategy implements IDisplayResponseStrategy
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getConsentResponse(array $data = array())
+    public function getConsentResponse(array $data = [])
     {
         // fix scopes
         $requested_scopes                     = $data['requested_scopes'];
-        $data['requested_scopes']             = array();
+        $data['requested_scopes']             = [];
         foreach($requested_scopes as $scope)
         {
-            array_push($data['requested_scopes'], $scope->toArray());
+            $data['requested_scopes'][] = SerializerRegistry::getInstance()->getSerializer($scope)->serialize();
         }
 
         $data['required_params']              = array('_token', 'trust');
@@ -47,7 +49,7 @@ class DisplayResponseJsonStrategy implements IDisplayResponseStrategy
             ),
             '_token' => csrf_token()
         );
-        $data['optional_params'] = array();
+        $data['optional_params'] = [];
         $data['url']             = URL::action('UserController@postConsent');
         $data['method']          = 'POST';
         return Response::json($data, 412);
@@ -57,7 +59,7 @@ class DisplayResponseJsonStrategy implements IDisplayResponseStrategy
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getLoginResponse(array $data = array())
+    public function getLoginResponse(array $data = [])
     {
         $data['required_params'] = array('username','password', '_token');
         $data['optional_params'] = array('remember');
@@ -66,7 +68,7 @@ class DisplayResponseJsonStrategy implements IDisplayResponseStrategy
 
         if(!isset($data['required_params_valid_values']))
         {
-            $data['required_params_valid_values'] = array();
+            $data['required_params_valid_values'] = [];
         }
 
         $data['required_params_valid_values']['_token'] = csrf_token();
@@ -77,13 +79,13 @@ class DisplayResponseJsonStrategy implements IDisplayResponseStrategy
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getLoginErrorResponse(array $data = array())
+    public function getLoginErrorResponse(array $data = [])
     {
         if(isset($data['validator']) && $data['validator'] instanceof MessageProvider )
         {
             $validator = $data['validator'];
             unset($data['validator']);
-            $data['error_message'] = array();
+            $data['error_message'] = [];
             $errors = $validator->getMessageBag()->getMessages();
             foreach($errors as $e)
             {

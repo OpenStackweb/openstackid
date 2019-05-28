@@ -13,5 +13,5 @@ interface ISecurityPolicyCounterMeasure
      * @param array $params
      * @return $this
      */
-    public function trigger(array $params = array());
+    public function trigger(array $params = []);
 } 

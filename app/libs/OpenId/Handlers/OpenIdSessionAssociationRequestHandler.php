@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
 use OpenId\Exceptions\InvalidAssociationTypeException;
 use OpenId\Exceptions\InvalidOpenIdMessageException;
@@ -24,7 +23,6 @@ use OpenId\Responses\OpenIdAssociationSessionUnsuccessfulResponse;
 use OpenId\Responses\OpenIdDirectGenericErrorResponse;
 use Utils\Services\ILogService;
 use Utils\Services\ICheckPointService;
-
 /**
  * Class OpenIdSessionAssociationRequestHandler
  * Implements @see http://openid.net/specs/openid-authentication-2_0.html#associations

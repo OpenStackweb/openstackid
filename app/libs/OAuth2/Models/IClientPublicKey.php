@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use DateTime;
+use Models\OAuth2\Client;
 /**
  * Interface IClientPublicKey
  * @package OAuth2\Models
@@ -20,9 +21,11 @@ interface IClientPublicKey extends IAsymmetricKey
 {
 
     /**
-     * @return IClient
+     * @return Client
      */
-    public function getOwner();
+    public function getOwner():Client;
+
+    public function setOwner(Client $owner);
 
     /**
      * @param string $kid

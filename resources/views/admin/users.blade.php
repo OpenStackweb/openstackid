@@ -1,46 +1,90 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - Server Admin - Users</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - Security - Users</title>
 @stop
 
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
-<legend>Locked Users</legend>
-<div class="row">
-    <div class="col-md-12">
-        <table id="users-table" class="table table-hover table-condensed">
-            <thead>
-            <tr>
-                <th>User</th>
-                <th>Email</th>
-                <th>&nbsp;</th>
-            </tr>
-            </thead>
-            <tbody id="body-locked-users">
-            @foreach($users as $user)
-            <tr id="{!!$user->id!!}">
-                <td>
-                    <div style="min-width: 400px">
-                        {!! $user->getFullName() !!}
-                    </div>
-                </td>
-                <td>
-                    <div style="min-width: 100px">
-                        {!! $user->getEmail() !!}
-                    </div>
-                </td>
-                <td>
-                    {!! HTML::link(URL::action("Api\UserApiController@unlock", array("id"=>$user->id)),'Unlock',array('data-user-id'=>$user->id,'class'=>'btn btn-default btn-md active  unlock-user','title'=>'Unlocks given user')) !!}
-                </td>
-            </tr>
-            @endforeach
-            </tbody>
-        </table>
-        <span id="users-info" class="label label-info">** There are not any locked Users.</span>
+    @include('menu')
+    <legend>Users</legend>
+    <div class="row">
+       <div class="col-md-12">
+           {!! HTML::link( null,'Add New User',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add an user']) !!}
+       </div>
     </div>
-</div>
+    <div class="row">
+        <div class="col-md-12">
+            <input type="text" placeholder="Search By Name/Email" id="search-term">
+            <button id="btn-do-search"><i class="fa fa-search"></i></button>
+            <button id="btn-do-search-clear"><i class="fa fa-close"></i></button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <table id="table" class="table table-hover table-condensed">
+                <thead>
+                <tr>
+                    <th>Identifier</th>
+                    <th>First Name</th>
+                    <th>Surname</th>
+                    <th>Email</th>
+                    <th>Active</th>
+                    <th>Last Login Date</th>
+                    <th>&nbsp;</th>
+                </tr>
+                </thead>
+                <tbody id="body-table">
+                </tbody>
+            </table>
+            <span id="info" class="label hidden label-info">** There are not any Users.</span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12" id="pager-container">
+            <ul id="pager" class="pagination">
+            </ul>
+        </div>
+    </div>
+    <div id="dialog-form-add-item" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span></button>
+                    <h3 id="myModalLabel">Register new User</h3>
+                </div>
+                <div class="modal-body">
+                    @include('admin.add-user-form',[])
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button id='save-item' type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @stop
 @section('scripts')
-{!! HTML::script('assets/js/admin/users.js') !!}
+
+    {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
+    {!! HTML::script("assets/js/urlfragment.jquery.js") !!}
+    {!! HTML::script("assets/moment/min/moment.min.js") !!}
+    {!! HTML::script('assets/js/basic-crud.js') !!}
+    {!! HTML::script('assets/js/admin/users.js') !!}
+
+    <script type="application/javascript">
+        var urls = {
+            add: '{!! URL::action("Api\\UserApiController@create") !!}',
+            load: '{!! URL::action("Api\\UserApiController@getAll")!!}',
+            delete: '{!! URL::action("Api\\UserApiController@delete",["id"=>"@id"]) !!}',
+            unlock: '{!! URL::action("Api\\UserApiController@unlock",["id"=>"@id"]) !!}',
+            lock: '{!! URL::action("Api\\UserApiController@lock",["id"=>"@id"]) !!}',
+            edit: '{!! URL::action("AdminController@editUser",["id"=>"@id"]) !!}',
+            fetchGroups: '{!!URL::action("Api\GroupApiController@getAll")!!}',
+        };
+
+        var user = new UsersCrud(urls, 10);
+        user.init();
+    </script>
+
 @append

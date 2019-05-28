@@ -15,8 +15,6 @@ use OAuth2\IOAuth2Protocol;
 use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Responses\OAuth2AuthorizationResponse;
-use OAuth2\Services\IApiScopeService;
-use OAuth2\Services\IClientService;
 use OpenId\Requests\Contexts\PartialView;
 use OpenId\Extensions\OpenIdExtension;
 use OpenId\OpenIdProtocol;
@@ -155,7 +153,7 @@ class OpenIdOAuth2Extension extends OpenIdExtension
 
             $scopes           = explode(' ', $scopes);
             //get scopes entities
-            $requested_scopes = $this->scope_repository->getByName($scopes);
+            $requested_scopes = $this->scope_repository->getByNames($scopes);
 
             // set view data
 
@@ -163,14 +161,14 @@ class OpenIdOAuth2Extension extends OpenIdExtension
             $url_parts = @parse_url($return_to);
             $return_to = $url_parts['scheme'] . '://' . $url_parts['host'] . $url_parts['path'];
 
-            $partial_view = new PartialView ($this->view, array(
+            $partial_view = new PartialView ($this->view, [
                 'requested_scopes' => $requested_scopes,
                 'app_name'         => $client->getApplicationName(),
                 'app_logo'         => $client->getApplicationLogo(),
                 'redirect_to'      => $return_to,
                 'website'          => $client->getWebsite(),
                 'dev_info_email'   => $client->getDeveloperEmail()
-            ));
+            ]);
 
             $context->addPartialView($partial_view);
         } catch (Exception $ex) {
@@ -191,7 +189,7 @@ class OpenIdOAuth2Extension extends OpenIdExtension
             if (!$oauth2_request->isValid()) return;
             //get auth code
             $oauth2_msg = new OAuth2Message(
-                array(
+                [
                     OAuth2Protocol::OAuth2Protocol_ClientId        => $oauth2_request->getClientId(),
                     OAuth2Protocol::OAuth2Protocol_Scope           => $oauth2_request->getScope(),
                     OAuth2Protocol::OAuth2Protocol_RedirectUri     => $request->getParam(OpenIdProtocol::OpenIDProtocol_ReturnTo),
@@ -199,7 +197,7 @@ class OpenIdOAuth2Extension extends OpenIdExtension
                     OAuth2Protocol::OAuth2Protocol_Approval_Prompt => $oauth2_request->getApprovalPrompt(),
                     OAuth2Protocol::OAuth2Protocol_AccessType      => $oauth2_request->getAccessType(),
                     OAuth2Protocol::OAuth2Protocol_ResponseType    => OAuth2Protocol::OAuth2Protocol_ResponseType_Code
-                )
+                ]
             );
             // do oauth2 Authorization Code Grant 1st step (get auth code to exchange for an access token)
             // http://tools.ietf.org/html/rfc6749#section-4.1
@@ -243,7 +241,7 @@ class OpenIdOAuth2Extension extends OpenIdExtension
      */
     public function getTrustedData(OpenIdRequest $request)
     {
-        $data = array();
+        $data = [];
         try {
             $oauth2_request = new OpenIdOAuth2Request($request->getMessage());
             if ($oauth2_request->isValid()) {

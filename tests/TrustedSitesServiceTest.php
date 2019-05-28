@@ -47,7 +47,7 @@ final class TrustedSitesServiceTest extends BrowserKitTestCase {
 		$res = $service->addTrustedSite($mock_user,
 			                            $realm = 'https://www.test.com',
 			                            IAuthService::AuthorizationResponse_AllowForever,
-			                            $data = array());
+			                            $data = []);
 
 		$this->assertTrue(!is_null($res));
 	}
@@ -58,7 +58,7 @@ final class TrustedSitesServiceTest extends BrowserKitTestCase {
 		$res = $service->addTrustedSite($user,
 			$realm = 'https://www.test.com',
 			IAuthService::AuthorizationResponse_AllowForever,
-			$data = array());
+			$data = []);
 
 		$this->assertTrue(!is_null($res));
 	}

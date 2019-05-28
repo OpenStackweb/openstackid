@@ -11,10 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\App;
-
 /**
  * Class OAuth2ServiceProvider
  * @package OAuth2
@@ -29,11 +27,11 @@ final class OAuth2ServiceProvider extends ServiceProvider
 
     public function register()
     {
-        App::singleton(\OAuth2\IOAuth2Protocol::class, \OAuth2\OAuth2Protocol::class);
+        App::singleton(IOAuth2Protocol::class, OAuth2Protocol::class);
     }
 
     public function provides()
     {
-        return [\OAuth2\IOAuth2Protocol::class];
+        return [IOAuth2Protocol::class];
     }
 }

@@ -11,29 +11,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Models\OAuth2\Factories\ApiScopeFactory;
+use App\Services\AbstractService;
+use models\exceptions\ValidationException;
+use Models\OAuth2\Api;
 use Models\OAuth2\ApiScope;
-use Illuminate\Support\Facades\DB;
-use OAuth2\Exceptions\InvalidApi;
-use OAuth2\Exceptions\InvalidApiScope;
-use OAuth2\Models\IApiScope;
+use models\utils\IEntity;
 use OAuth2\Repositories\IApiRepository;
 use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Services\IApiScopeService;
 use Utils\Db\ITransactionService;
-use Utils\Exceptions\EntityNotFoundException;
-
+use models\exceptions\EntityNotFoundException;
 /**
  * Class ApiScopeService
  * @package Services\OAuth2
  */
-final class ApiScopeService implements IApiScopeService
+final class ApiScopeService extends AbstractService implements IApiScopeService
 {
-
-    /**
-     * @var ITransactionService
-     */
-    private $tx_service;
 
     /**
      * @var IApiScopeRepository
@@ -58,64 +52,26 @@ final class ApiScopeService implements IApiScopeService
         IApiRepository $api_repository
     )
     {
-        $this->tx_service     = $tx_service;
+        parent::__construct($tx_service);
         $this->repository     = $repository;
         $this->api_repository = $api_repository;
     }
 
     /**
      * @param array $scopes_names
-     * @return mixed
+     * @return array
      */
-    public function getFriendlyScopesByName(array $scopes_names)
+    public function getAudienceByScopeNames(array $scopes_names):array
     {
-        return DB::table('oauth2_api_scope')->where('active', '=', true)->whereIn('name',
-            $scopes_names)->pluck('short_description')->all();
-    }
-
-    /**
-     * @param bool $system
-     * @param bool $assigned_by_groups
-     * @return array|mixed
-     */
-    public function getAvailableScopes($system = false, $assigned_by_groups = false)
-    {
-        $res    = [];
-        $scopes = $this->repository->getActives();
-
-        foreach ($scopes as $scope)
-        {
-            $api = $scope->api()->first();
-            if (!is_null($api) && $api->resource_server()->first()->active && $api->active) {
-                if ($scope->system && !$system) {
-                    continue;
-                }
-                if ($scope->assigned_by_groups && !$assigned_by_groups) {
-                    continue;
-                }
-                $res[] = $scope;
-            }
-        }
-
-        return $res;
-    }
-
-    /**
-     * @param array $scopes_names
-     * @return array|mixed
-     */
-    public function getAudienceByScopeNames(array $scopes_names)
-    {
-        $scopes   = $this->repository->getByName($scopes_names);
+        $scopes   = $this->repository->getByNames($scopes_names);
         $audience = [];
         foreach ($scopes as $scope) {
             $api = $scope->getApi();
             $resource_server = !is_null($api) ? $api->getResourceServer() : null;
-            if (!is_null($resource_server) && !array_key_exists($resource_server->host, $audience)) {
-                $audience[$resource_server->host] = $resource_server->ip;
+            if (!is_null($resource_server) && !array_key_exists($resource_server->getHost(), $audience)) {
+                $audience[$resource_server->getHost()] = $resource_server->getId();
             }
         }
-
         return $audience;
     }
 
@@ -123,10 +79,10 @@ final class ApiScopeService implements IApiScopeService
      * @param array $scopes_names
      * @return string
      */
-    public function getStrAudienceByScopeNames(array $scopes_names)
+    public function getStrAudienceByScopeNames(array $scopes_names):string
     {
         $audiences = $this->getAudienceByScopeNames($scopes_names);
-        $audience = '';
+        $audience  = '';
         foreach ($audiences as $resource_server_host => $ip) {
             $audience = $audience . $resource_server_host . ' ';
         }
@@ -137,159 +93,72 @@ final class ApiScopeService implements IApiScopeService
 
     /**
      * @param $id
-     * @param array $params
-     * @return bool
-     * @throws InvalidApiScope
+     * @param array $payload
+     * @return IEntity
+     * @throws ValidationException
      * @throws EntityNotFoundException
      */
-    public function update($id, array $params)
+    public function update(int $id, array $payload):IEntity
     {
 
-        return $this->tx_service->transaction(function () use ($id, $params) {
-
+        return $this->tx_service->transaction(function () use ($id, $payload) {
             //check that scope exists...
-            $scope = $this->repository->get($id);
+            $scope = $this->repository->getById($id);
             if (is_null($scope)) {
                 throw new EntityNotFoundException(sprintf('scope id %s does not exists!', $id));
             }
 
-            $allowed_update_params = array('name', 'description', 'short_description', 'active', 'system', 'default', 'assigned_by_groups');
-
-            foreach ($allowed_update_params as $param) {
-                if (array_key_exists($param, $params)) {
-
-                    if ($param == 'name') {
-                        //check if we have a former scope with selected name
-                        $former_scope = $this->repository->getFirstByName($params[$param]);
-
-                        if (!is_null($former_scope) && $former_scope->id != $id) {
-                            throw new InvalidApiScope(sprintf('scope name %s already exists!', $params[$param]));
-                        }
-                    }
-
-                    $scope->{$param} = $params[$param];
-                }
-            }
-
-            $this->repository->add($scope);
-            return true;
+            return ApiScopeFactory::populate($scope, $payload);
         });
 
     }
 
     /**
      * @param int $id
-     * @param bool $active
-     * @return bool
      * @throws EntityNotFoundException
      */
-    public function setStatus($id, $active)
+    public function delete(int $id):void
     {
-        return $this->tx_service->transaction(function() use($id, $active){
-            //check that scope exists...
-            $scope = $this->repository->get($id);
-            if (is_null($scope)) {
-                throw new EntityNotFoundException(sprintf('scope id %s does not exists!', $id));
-            }
-            $scope->active = $active;
-            $this->repository->add($scope);
-            return true;
-        });
-
-    }
-
-    /**
-     * @param int $id
-     * @return bool
-     * @throws EntityNotFoundException
-     */
-    public function delete($id)
-    {
-        return $this->tx_service->transaction(function () use ($id) {
-            $scope = $this->repository->get($id);
+        $this->tx_service->transaction(function () use ($id) {
+            $scope = $this->repository->getById($id);
             if (is_null($scope)) {
                 throw new EntityNotFoundException(sprintf('scope id %s does not exists!', $id));
             }
             $this->repository->delete($scope);
-            return true;
         });
     }
 
     /**
-     * Creates a new api scope instance
-     * @param $name
-     * @param $short_description
-     * @param $description
-     * @param $active
-     * @param $default
-     * @param $system
-     * @param $api_id
-     * @param $assigned_by_groups
-     * @throws InvalidApi
-     * @return IApiScope
+     * @param array $payload
+     * @return ApiScope
+     * @throws ValidationException
+     * @throws EntityNotFoundException
      */
-    public function add($name, $short_description, $description, $active, $default, $system, $api_id, $assigned_by_groups)
+    public function create(array $payload):IEntity
     {
-        $instance = null;
-        $this->tx_service->transaction(function () use (
-            $name,
-            $short_description,
-            $description,
-            $active,
-            $default,
-            $system,
-            $api_id,
-            $assigned_by_groups,
-            &$instance
-        ) {
 
-            $api = $this->api_repository->get($api_id);
+        return $this->tx_service->transaction(function () use ($payload) {
+
+            $api_id = intval($payload['api_id']);
+            $name = trim($payload['name']);
+
+            $api = $this->api_repository->getById($api_id);
             // check if api exists...
-            if (is_null($api)) {
-                throw new InvalidApi(sprintf('api id %s does not exists!.', $api_id));
+            if (is_null($api) || !$api instanceof Api) {
+                throw new EntityNotFoundException(sprintf('api id %s does not exists!.', $api_id));
             }
 
-            $former_scopes = $this->repository->getByName([$name]);
+            $former_scope = $this->repository->getFirstByName($name);
             //check if we have a former scope with selected name
-            if ($former_scopes->count() > 0) {
-                throw new InvalidApiScope(sprintf('scope name %s not allowed.', $name));
+            if (!is_null($former_scope)) {
+                throw new ValidationException(sprintf('scope name %s already exists.', $name));
             }
-            // todo : move to factory
-            $instance = new ApiScope
-            (
-                array
-                (
-                    'name'               => $name,
-                    'description'        => $description,
-                    'short_description'  => $short_description,
-                    'active'             => $active,
-                    'default'            => $default,
-                    'system'             => $system,
-                    'api_id'             => $api_id,
-                    'assigned_by_groups' => $assigned_by_groups
-                )
-            );
 
-            $this->repository->add($instance);
+            $scope = ApiScopeFactory::build($payload);
+            $api->addScope($scope);
+            $this->repository->add($scope);
+            return $scope;
         });
-
-        return $instance;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getAssignedByGroups()
-    {
-        $res = [];
-        foreach ($this->repository->getAssignableByGroups() as $scope)
-        {
-            $api = $scope->api()->first();
-            if (!is_null($api) && $api->resource_server()->first()->active && $api->active) {
-                $res[] = $scope;
-            }
-        }
-
-        return $res;
-    }
 }

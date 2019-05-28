@@ -140,4 +140,59 @@ abstract class StandardClaims
      * seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time.
      */
     const UpdatedAt = 'updated_at';
+
+    /**
+     * List of user groups
+     */
+    const Groups = 'groups';
+
+    /**
+     * Bio
+     */
+    const Bio = 'bio';
+
+    /**
+     * StatementOfInterest
+     */
+    const StatementOfInterest = 'statement_of_interest';
+
+    /**
+     * SecondEmail
+     */
+    const SecondEmail = 'second_email';
+
+    /**
+     * ThirdEmail
+     */
+    const ThirdEmail = 'third_email';
+
+    /**
+     * Language
+     */
+    const Language = 'language';
+
+    /**
+     * Irc
+     */
+    const Irc = 'irc';
+
+    /**
+     * LinkedInProfile
+     */
+    const LinkedInProfile = 'linked_in_profile';
+
+    /**
+     * TwitterName
+     */
+    const TwitterName = 'twitter_name';
+
+    /**
+     * GitHubUser
+     */
+    const GitHubUser = 'github_user';
+
+    /**
+     * WeChatUser
+     */
+    const WeChatUser = 'wechat_user';
 }

@@ -46,9 +46,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $response = $this->action("GET", "Api\\ApiResourceServerController@get",
             $parameters = array('id' => $resource_server->id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
         $response_resource_server = json_decode($content);
@@ -62,9 +62,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $response = $this->action("GET", "Api\\ApiResourceServerController@getByPage",
             $parameters = array('page_nbr' => 1, 'page_size' => 10),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
         $content = $response->getContent();
@@ -85,9 +85,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $response = $this->action("POST", "Api\\ApiResourceServerController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
         $this->assertResponseStatus(201);
         $content = $response->getContent();
         $json_response = json_decode($content);
@@ -109,9 +109,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $response = $this->action("POST", "Api\\ApiResourceServerController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -120,9 +120,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $new_id = $json_response->resource_server_id;
 
         $response = $this->action("GET", "Api\\ApiResourceServerController@get", $parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -133,9 +133,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $response = $this->action("PUT", "Api\\ApiResourceServerController@regenerateClientSecret",
             $parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
 
         $content = $response->getContent();
@@ -164,9 +164,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $response = $this->action("POST", "Api\\ApiResourceServerController@create",
             $parameters = $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -175,17 +175,17 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $new_id = $json_response->resource_server_id;
 
         $response = $this->action("DELETE", "Api\\ApiResourceServerController@delete", $parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(204);
 
 
         $response = $this->action("GET", "Api\\ApiResourceServerController@get", $parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -204,18 +204,18 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $new_id = $resource_server->id;
 
         $response = $this->action("DELETE", "Api\\ApiResourceServerController@delete", $parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
 
         $this->assertResponseStatus(204);
 
 
         $response = $this->action("GET", "Api\\ApiResourceServerController@get", $parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(404);
 
@@ -232,9 +232,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         );
 
         $response = $this->action("POST", "Api\\ApiResourceServerController@create", $parameters = $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -249,9 +249,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
             'friendly_name' => 'Resource Server 6',
         );
 
-        $response = $this->action("PUT", "Api\\ApiResourceServerController@update", $parameters = $data_update, array(),
-            array(),
-            array());
+        $response = $this->action("PUT", "Api\\ApiResourceServerController@update", $parameters = $data_update, [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -260,9 +260,9 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $this->assertResponseStatus(200);
 
         $response = $this->action("GET", "Api\\ApiResourceServerController@get", $parameters = array('id' => $new_id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
 

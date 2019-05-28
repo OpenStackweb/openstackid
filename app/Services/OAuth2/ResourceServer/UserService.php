@@ -11,7 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
+use Auth\User;
 use Exception;
 use jwt\impl\JWTClaimSet;
 use jwt\JWTClaim;
@@ -20,22 +22,21 @@ use OAuth2\IResourceServerContext;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\ResourceServer\IUserService;
 use OAuth2\ResourceServer\OAuth2ProtectedService;
-use OAuth2\Services\IClientService;
 use OAuth2\StandardClaims;
 use OpenId\Services\IUserService as IAPIUserService;
-use Utils\Exceptions\EntityNotFoundException;
+use models\exceptions\EntityNotFoundException;
+use utils\json_types\JsonArray;
 use utils\json_types\JsonValue;
 use utils\json_types\StringOrURI;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
 use Utils\Services\IServerConfigurationService;
-
 /**
  * Class UserService
  * OAUTH2 Protected Endpoint
  * @package Services\OAuth2\ResourceServer
  */
-class UserService extends OAuth2ProtectedService implements IUserService
+final class UserService extends OAuth2ProtectedService implements IUserService
 {
     /**
      * @var IAPIUserService
@@ -98,7 +99,7 @@ class UserService extends OAuth2ProtectedService implements IUserService
      */
     public function getCurrentUserInfo()
     {
-        $data = array();
+        $data = [];
         try
         {
 
@@ -108,8 +109,10 @@ class UserService extends OAuth2ProtectedService implements IUserService
                 throw new Exception('me is no set!.');
             }
 
-            $current_user = $this->user_repository->get($current_user_id);
+            $current_user = $this->user_repository->getById($current_user_id);
             if(is_null($current_user)) throw new EntityNotFoundException();
+
+            if(!$current_user instanceof User) throw new EntityNotFoundException();
 
             $scopes       = $this->resource_server_context->getCurrentScope();
 
@@ -123,22 +126,36 @@ class UserService extends OAuth2ProtectedService implements IUserService
             }
             if (in_array(self::UserProfileScope_Profile, $scopes)) {
                 // Profile Claims
-                $assets_url = $this->configuration_service->getConfigValue('Assets.Url');
-                $pic_url    = $current_user->getPic();
-                $pic_url    = str_contains($pic_url, 'http') ? $pic_url : $assets_url . $pic_url;
-
                 $data[StandardClaims::Name]                = $current_user->getFullName();
                 $data[StandardClaims::GivenName]           = $current_user->getFirstName();
                 $data[StandardClaims::FamilyName]          = $current_user->getLastName();
                 $data[StandardClaims::NickName]            = $current_user->getIdentifier();
                 $data[StandardClaims::SubjectIdentifier]   = $current_user->getAuthIdentifier();
-                $data[StandardClaims::Picture]             = $pic_url;
+                $data[StandardClaims::Picture]             = $current_user->getPic();
                 $data[StandardClaims::Birthdate]           = $current_user->getDateOfBirth();
                 $data[StandardClaims::Gender]              = $current_user->getGender();
+                $data[StandardClaims::Locale]              = $current_user->getLanguage();
+                $data[StandardClaims::Bio]                 = $current_user->getBio();
+                $data[StandardClaims::StatementOfInterest] = $current_user->getStatementOfInterest();
+                $data[StandardClaims::Irc]                 = $current_user->getIrc();
+                $data[StandardClaims::LinkedInProfile]     = $current_user->getLinkedInProfile();
+                $data[StandardClaims::GitHubUser]          = $current_user->getGithubUser();
+                $data[StandardClaims::WeChatUser]          = $current_user->getWechatUser();
+                $data[StandardClaims::TwitterName]         = $current_user->getTwitterName();
+
+                $user_groups = [];
+
+                foreach ($current_user->getGroups() as $group){
+                    $user_groups[] = SerializerRegistry::getInstance()->getSerializer($group)->serialize();
+                }
+
+                $data[StandardClaims::Groups] = $user_groups;
             }
             if (in_array(self::UserProfileScope_Email, $scopes)) {
                 // Email Claim
                 $data[StandardClaims::Email]         = $current_user->getEmail();
+                $data[StandardClaims::SecondEmail]   = $current_user->getSecondEmail();
+                $data[StandardClaims::ThirdEmail]    = $current_user->getThirdEmail();
                 $data[StandardClaims::EmailVerified] = $current_user->isEmailVerified();
             }
         } catch (Exception $ex) {
@@ -147,6 +164,76 @@ class UserService extends OAuth2ProtectedService implements IUserService
         }
 
         return $data;
+    }
+
+    /**
+     * @param JWTClaimSet $claim_set
+     * @param User $user
+     * @return JWTClaimSet
+     * @throws \jwt\exceptions\ClaimAlreadyExistsException
+     */
+    public static function populateProfileClaims(JWTClaimSet $claim_set, User $user):JWTClaimSet{
+        // Profile Claims
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Name, new StringOrURI($user->getFullName())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::GivenName, new StringOrURI($user->getFirstName())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::FamilyName, new StringOrURI($user->getLastName())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::NickName, new StringOrURI($user->getNickName())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Picture, new StringOrURI($user->getPic())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Birthdate, new StringOrURI($user->getDateOfBirthNice())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Gender, new StringOrURI($user->getGender())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Locale, new StringOrURI($user->getLanguage())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Bio, new StringOrURI($user->getBio())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::StatementOfInterest, new StringOrURI($user->getStatementOfInterest())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Irc, new StringOrURI($user->getIrc())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::GitHubUser, new StringOrURI($user->getGithubUser())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::WeChatUser, new StringOrURI($user->getWechatUser())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::TwitterName, new StringOrURI($user->getTwitterName())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::LinkedInProfile, new StringOrURI($user->getLinkedInProfile())));
+
+        $user_groups = [];
+
+        foreach ($user->getGroups() as $group){
+            $user_groups[] = SerializerRegistry::getInstance()->getSerializer($group)->serialize();
+        }
+
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Groups, new JsonValue($user_groups)));
+
+        return $claim_set;
+    }
+
+    /**
+     * @param JWTClaimSet $claim_set
+     * @param User $user
+     * @return JWTClaimSet
+     * @throws \jwt\exceptions\ClaimAlreadyExistsException
+     */
+    public static function populateEmailClaims(JWTClaimSet $claim_set, User $user):JWTClaimSet{
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Email, new StringOrURI($user->getEmail())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::SecondEmail, new StringOrURI($user->getSecondEmail())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::ThirdEmail, new StringOrURI($user->getThirdEmail())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::EmailVerified, new JsonValue($user->isEmailVerified())));
+        return $claim_set;
+    }
+
+    /**
+     * @param JWTClaimSet $claim_set
+     * @param User $user
+     * @return JWTClaimSet
+     * @throws \jwt\exceptions\ClaimAlreadyExistsException
+     */
+    public static function populateAddressClaims(JWTClaimSet $claim_set, User $user):JWTClaimSet{
+        // Address Claims
+        $address = [];
+        $address[AddressClaim::Country]       = $user->getCountry();
+        $address[AddressClaim::StreetAddress] = $user->getStreetAddress();
+        $address[AddressClaim::PostalCode]    = $user->getPostalCode();
+        $address[AddressClaim::Region]        = $user->getRegion();
+        $address[AddressClaim::Locality]      = $user->getLocality();
+        $address[AddressClaim::Formatted]     = $user->getFormattedAddress();
+
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Address, new JsonValue($address)));
+
+        return $claim_set;
     }
 
     /**
@@ -167,9 +254,10 @@ class UserService extends OAuth2ProtectedService implements IUserService
                 throw new Exception('me is no set!.');
             }
 
-            $current_user = $this->user_repository->get($current_user_id);
+            $current_user = $this->user_repository->getById($current_user_id);
             if(is_null($current_user)) throw new EntityNotFoundException();
-            $scopes       = $this->resource_server_context->getCurrentScope();
+            if(!$current_user instanceof User) throw new EntityNotFoundException();
+            $scopes = $this->resource_server_context->getCurrentScope();
 
             $claim_set = new JWTClaimSet
             (
@@ -178,7 +266,7 @@ class UserService extends OAuth2ProtectedService implements IUserService
                 (
                     $this->auth_service->wrapUserId
                     (
-                        $current_user->getExternalIdentifier(),
+                        $current_user->getId(),
                         $client
                     )
                 ),
@@ -187,39 +275,16 @@ class UserService extends OAuth2ProtectedService implements IUserService
             );
 
             if (in_array(self::UserProfileScope_Address, $scopes)) {
-                // Address Claims
-                $address = array();
-                $address[AddressClaim::Country]       = $current_user->getCountry();
-                $address[AddressClaim::StreetAddress] = $current_user->getStreetAddress();
-                $address[AddressClaim::PostalCode]    = $current_user->getPostalCode();
-                $address[AddressClaim::Region]        = $current_user->getRegion();
-                $address[AddressClaim::Locality]      = $current_user->getLocality();
-                $address[AddressClaim::Formatted]     = $current_user->getFormattedAddress();
-
-                $claim_set->addClaim(new JWTClaim(StandardClaims::Address, new JsonValue($address)));
-
+               self::populateAddressClaims($claim_set, $current_user);
             }
             if (in_array(self::UserProfileScope_Profile, $scopes))
             {
-                // Profile Claims
-                $assets_url = $this->configuration_service->getConfigValue('Assets.Url');
-                $pic_url    = $current_user->getPic();
-                $pic_url    = str_contains($pic_url, 'http') ? $pic_url : $assets_url . $pic_url;
-
-                $claim_set->addClaim(new JWTClaim(StandardClaims::Name, new StringOrURI($current_user->getFullName())));
-                $claim_set->addClaim(new JWTClaim(StandardClaims::GivenName, new StringOrURI($current_user->getFirstName())));
-                $claim_set->addClaim(new JWTClaim(StandardClaims::FamilyName, new StringOrURI($current_user->getLastName())));
-                $claim_set->addClaim(new JWTClaim(StandardClaims::NickName, new StringOrURI($current_user->getNickName())));
-                $claim_set->addClaim(new JWTClaim(StandardClaims::Picture, new StringOrURI($pic_url)));
-                $claim_set->addClaim(new JWTClaim(StandardClaims::Birthdate, new StringOrURI($current_user->getDateOfBirth())));
-                $claim_set->addClaim(new JWTClaim(StandardClaims::Gender, new StringOrURI($current_user->getGender())));
-                $claim_set->addClaim(new JWTClaim(StandardClaims::Locale, new StringOrURI($current_user->getLanguage())));
+                self::populateProfileClaims($claim_set, $current_user);
             }
             if (in_array(self::UserProfileScope_Email, $scopes))
             {
-                // Address Claim
-                $claim_set->addClaim(new JWTClaim(StandardClaims::Email, new StringOrURI($current_user->getEmail())));
-                $claim_set->addClaim(new JWTClaim(StandardClaims::EmailVerified, new JsonValue($current_user->isEmailVerified())));
+                // Email Address Claim
+               self::populateEmailClaims($claim_set, $current_user);
             }
         } catch (Exception $ex) {
             $this->log_service->error($ex);

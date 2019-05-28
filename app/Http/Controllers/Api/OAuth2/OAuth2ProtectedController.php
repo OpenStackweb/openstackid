@@ -11,11 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\IResourceServerContext;
 use Utils\Services\ILogService;
 use App\Http\Controllers\Api\JsonController;
-
 /**
  * Class OAuth2ProtectedController
  * @package App\Http\Controllers\Api\OAuth2

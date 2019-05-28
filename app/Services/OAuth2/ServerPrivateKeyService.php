@@ -11,16 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Models\IAsymmetricKey;
+use models\utils\IEntity;
 use OAuth2\Services\IServerPrivateKeyService;
 use OAuth2\Repositories\IServerPrivateKeyRepository;
 use Utils\Db\ITransactionService;
 use Models\OAuth2\ServerPrivateKey;
 use DateTime;
 use phpseclib\Crypt\RSA;
-use Services\Exceptions\ValidationException;
-
+use models\exceptions\ValidationException;
 /**
  * Class ServerPrivateKeyService
  * @package Services\OAuth2
@@ -50,32 +48,32 @@ final class ServerPrivateKeyService extends AsymmetricKeyService implements ISer
 
     /**
      * @param array $params
-     * @return IAsymmetricKey
+     * @return IEntity
      * @throws ValidationException
      */
-    public function register(array $params)
+    public function create(array $params):IEntity
     {
-        $rsa = $this->rsa;
-        $repository = $this->repository;
-
-        return $this->tx_service->transaction(function() use($params, $rsa, $repository)
+        return $this->tx_service->transaction(function() use($params)
         {
             $pem      = isset($params['pem_content']) ? trim($params['pem_content']) : '';
             $password = isset($params['password'])? trim($params['password']) : '';
 
-            $old_active_key = $repository->getByValidityRange
+            $old_active_key = $this->repository->getByValidityRange
             (
                 $params['type'],
                 $params['usage'],
                 $params['alg'],
                 new DateTime($params['valid_from']),
                 new DateTime($params['valid_to'])
-            )->first();
+            );
+
+            if(count($old_active_key) > 0 )
+                $old_active_key = $old_active_key[0];
 
             if(empty($pem))
             {
                 if(!empty($password))
-                    $rsa->setPassword($password);
+                    $this->rsa->setPassword($password);
                 /**
                  * array(
                  *    'privatekey' => $privatekey,
@@ -83,7 +81,7 @@ final class ServerPrivateKeyService extends AsymmetricKeyService implements ISer
                  *   'partialkey' => false
                  *   );
                  */
-                $res = $rsa->createKey(2048);
+                $res = $this->rsa->createKey(2048);
                 $pem = $res['privatekey'];
             }
 
@@ -100,7 +98,7 @@ final class ServerPrivateKeyService extends AsymmetricKeyService implements ISer
                 $password
             );
 
-            $repository->add($key);
+            $this->repository->add($key);
 
             return $key;
         });

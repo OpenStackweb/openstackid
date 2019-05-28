@@ -11,31 +11,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Repositories\IApiScopeRepository;
-use Utils\Services\ILogService;
-use OAuth2\Services\IApiScopeService;
-use OAuth2\Exceptions\InvalidApi;
-use OAuth2\Exceptions\InvalidApiScope;
-use App\Http\Controllers\ICRUDController;
+use App\Http\Controllers\APICRUDController;
+use App\ModelSerializers\SerializerRegistry;
 use Exception;
-use Illuminate\Support\Facades\Input;
-use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Support\Facades\Log;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
+use OAuth2\Repositories\IApiScopeRepository;
+use OAuth2\Services\IApiScopeService;
+use Utils\Services\ILogService;
 /**
  * Class ApiScopeController
  */
-class ApiScopeController extends AbstractRESTController implements ICRUDController {
-
-    /**
-     * @var IApiScopeService
-     */
-    private $api_scope_service;
-
-    /**
-     * @var IApiScopeRepository
-     */
-    private $scope_repository;
+final class ApiScopeController extends APICRUDController
+{
 
     public function __construct
     (
@@ -44,187 +33,108 @@ class ApiScopeController extends AbstractRESTController implements ICRUDControll
         ILogService $log_service
     )
     {
-        parent::__construct($log_service);
-        $this->scope_repository  = $scope_repository;
-        $this->api_scope_service = $api_scope_service;
-        //set filters allowed values
-        $this->allowed_filter_fields     = array('api_id');
-        $this->allowed_projection_fields = array('*');
+        parent::__construct($scope_repository, $api_scope_service, $log_service);
     }
 
-    public function get($id)
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function activate($id)
     {
         try {
-            $scope     = $this->scope_repository->get($id);
-            if(is_null($scope)){
-                return $this->error404(array('error' => 'scope not found'));
-            }
-            $data = $scope->toArray();
-            return $this->ok($data);
+            $scope = $this->service->update($id, ['active' => true]);
+
+            return $this->updated(SerializerRegistry::getInstance()->getSerializer($scope)->serialize());
+        } catch (ValidationException $ex1) {
+            Log::warning($ex1);
+            return $this->error412(array($ex1->getMessage()));
+        } catch (EntityNotFoundException $ex2) {
+            Log::warning($ex2);
+            return $this->error404(array('message' => $ex2->getMessage()));
         } catch (Exception $ex) {
-            $this->log_service->error($ex);
+            Log::error($ex);
             return $this->error500($ex);
         }
     }
 
-    public function getByPage()
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function deactivate($id)
     {
         try {
-            //check for optional filters param on querystring
-            $fields    =  $this->getProjection(Input::get('fields',null));
-            $filters   = $this->getFilters(Input::except('fields','limit','offset'));
-            $page_nbr  = intval(Input::get('offset',1));
-            $page_size = intval(Input::get('limit',10));
+            $scope = $this->service->update($id, ['active' => false]);
 
-            $list  = $this->scope_repository->getAll($page_nbr, $page_size, $filters,$fields);
-            $items = array();
-
-            foreach ($list->items() as $scope)
-            {
-                array_push($items, $scope->toArray());
-            }
-
-            return $this->ok
-            (
-                array
-                (
-                    'page'        => $items,
-                    'total_items' => $list->total()
-                )
-            );
+            return $this->updated(SerializerRegistry::getInstance()->getSerializer($scope)->serialize());
+        } catch (ValidationException $ex1) {
+            Log::warning($ex1);
+            return $this->error412(array($ex1->getMessage()));
+        } catch (EntityNotFoundException $ex2) {
+            Log::warning($ex2);
+            return $this->error404(array('message' => $ex2->getMessage()));
         } catch (Exception $ex) {
-            $this->log_service->error($ex);
+            Log::error($ex);
             return $this->error500($ex);
         }
     }
 
-    public function create()
+    /**
+     * @return array
+     */
+    protected function getUpdatePayloadValidationRules(): array
     {
-        try {
-
-            $values = Input::all();
-
-            $rules = array(
-                'name'               => 'required|scopename|max:512',
-                'short_description'  => 'required|freetext|max:512',
-                'description'        => 'required|freetext',
-                'active'             => 'required|boolean',
-                'default'            => 'required|boolean',
-                'system'             => 'required|boolean',
-                'api_id'             => 'required|integer',
-                'assigned_by_groups' => 'required|boolean',
-            );
-
-            // Creates a Validator instance and validates the data.
-            $validation = Validator::make($values, $rules);
-
-            if ($validation->fails()) {
-                $messages = $validation->messages()->toArray();
-                return $this->error400(array('error'=>'validation','messages' => $messages));
-            }
-
-            $new_scope = $this->api_scope_service->add(
-                $values['name'],
-                $values['short_description'],
-                $values['description'],
-                $values['active'],
-                $values['default'],
-                $values['system'],
-                $values['api_id'],
-                $values['assigned_by_groups']
-            );
-
-            return $this->created(array('scope_id' => $new_scope->id));
-        }
-        catch(InvalidApi $ex1){
-            $this->log_service->error($ex1);
-            return $this->error404(array('error' => $ex1->getMessage()));
-        }
-        catch(InvalidApiScope $ex2){
-            $this->log_service->error($ex2);
-            return $this->error400(array('error' => $ex2->getMessage()));
-        }
-        catch (Exception $ex) {
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
+        return [
+            'id' => 'required|integer',
+            'name' => 'sometimes|required|scopename|max:512',
+            'description' => 'sometimes|required|freetext',
+            'short_description' => 'sometimes|required|freetext|max:512',
+            'active' => 'sometimes|required|boolean',
+            'system' => 'sometimes|required|boolean',
+            'default' => 'sometimes|required|boolean',
+            'assigned_by_groups' => 'sometimes|boolean',
+        ];
     }
 
-    public function delete($id)
+    /**
+     * @return array
+     */
+    protected function getCreatePayloadValidationRules(): array
     {
-        try {
-            $res = $this->api_scope_service->delete($id);
-            return $res?$this->deleted():$this->error404(array('error'=>'operation failed'));
-        }
-        catch(InvalidApiScope $ex1){
-            $this->log_service->error($ex1);
-            return $this->error404(array('error'=>$ex1->getMessage()));
-        }
-        catch (Exception $ex) {
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
+        return [
+            'name' => 'required|scopename|max:512',
+            'short_description' => 'required|freetext|max:512',
+            'description' => 'required|freetext',
+            'active' => 'required|boolean',
+            'default' => 'required|boolean',
+            'system' => 'required|boolean',
+            'api_id' => 'required|integer',
+            'assigned_by_groups' => 'required|boolean',
+        ];
     }
 
-    public function update()
+    /**
+     * @return array
+     */
+    protected function getFilterRules():array
     {
-        try {
-
-            $values = Input::all();
-
-            $rules = array(
-                'id'                 => 'required|integer',
-                'name'               => 'sometimes|required|scopename|max:512',
-                'description'        => 'sometimes|required|freetext',
-                'short_description'  => 'sometimes|required|freetext|max:512',
-                'active'             => 'sometimes|required|boolean',
-                'system'             => 'sometimes|required|boolean',
-                'default'            => 'sometimes|required|boolean',
-                'assigned_by_groups' => 'sometimes|boolean',
-            );
-
-            // Creates a Validator instance and validates the data.
-            $validation = Validator::make($values, $rules);
-
-            if ($validation->fails()) {
-                $messages = $validation->messages()->toArray();
-                return $this->error400(array('error'=>'validation','messages' => $messages));
-            }
-
-            $res = $this->api_scope_service->update(intval($values['id']),$values);
-
-            return $res?$this->ok():$this->error400(array('error'=>'operation failed'));
-
-        }
-        catch(InvalidApiScope $ex1){
-            $this->log_service->error($ex1);
-            return $this->error404(array('error'=>$ex1->getMessage()));
-        }
-        catch (Exception $ex) {
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
+        return [
+            'name'                  => ['=@', '=='],
+            'is_assigned_by_groups' => ['=='],
+            'api_id'                => ['=='],
+        ];
     }
 
-
-    public function activate($id){
-        try {
-            $res    = $this->api_scope_service->setStatus($id,true);
-            return $res?$this->ok():$this->error400(array('error'=>'operation failed'));
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
-            return $this->error500($ex);
-        }
+    /**
+     * @return array
+     */
+    protected function getFilterValidatorRules():array{
+        return [
+            'name'                  => 'sometimes|required|string',
+            'is_assigned_by_groups' => 'sometimes|required|boolean',
+            'api_id'                => 'sometimes|required|integer',
+        ];
     }
-
-	public function deactivate($id){
-		try {
-			$res    = $this->api_scope_service->setStatus($id,false);
-			return $res?$this->ok():$this->error400(array('error'=>'operation failed'));
-		} catch (Exception $ex) {
-			$this->log_service->error($ex);
-			return $this->error500($ex);
-		}
-	}
 
 }

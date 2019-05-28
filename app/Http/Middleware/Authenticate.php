@@ -33,13 +33,13 @@ class Authenticate
     public function handle($request, Closure $next, $guard = null)
     {
        if (Auth::guard($guard)->guest()) {
-            Session::put('url.intended', URL::full());
+            Session::put('backurl', URL::full());
             Session::save();
-            return Redirect::action('HomeController@index');
+            return Redirect::action('UserController@getLogin');
         }
-        $redirect = Session::get('url.intended');
+        $redirect = Session::get('backurl');
         if (!empty($redirect)) {
-            Session::forget('url.intended');
+            Session::forget('backurl');
             Session::save();
             return Redirect::to($redirect);
         }

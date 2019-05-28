@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use Models\UserAction;
 /**
  * Interface IUserActionService
  * @package Services
@@ -29,7 +29,7 @@ interface IUserActionService
      * @param string $ip
      * @param string $action
      * @param null|string $realm
-     * @return bool
+     * @return UserAction
      */
-    public function addUserAction($user_id, $ip, $action, $realm = null);
+    public function addUserAction($user_id, $ip, $action, $realm = null):UserAction;
 } 

@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
 use OpenId\Exceptions\InvalidOpenIdMessageException;
 use OpenId\OpenIdMessage;
 use OpenId\Requests\OpenIdRequest;
 use Utils\Http\HttpMessage;
-
 /**
  * Class OpenIdSREGRequest_1_0
  * Implements @see http://openid.net/specs/openid-simple-registration-extension-1_0.html
@@ -45,8 +43,8 @@ class OpenIdSREGRequest_1_0 extends OpenIdRequest
     public function __construct(OpenIdMessage $message)
     {
         parent::__construct($message);
-        $this->attributes          = array();
-        $this->optional_attributes = array();
+        $this->attributes          = [];
+        $this->optional_attributes = [];
     }
 
     /**

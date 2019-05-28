@@ -1,6 +1,5 @@
 /vendor
 composer.phar
-composer.lock
 .idea/*
 .tox
 AUTHORS
@@ -15,7 +14,7 @@ Homestead.yaml
 Homestead.json
 .env
 .env.testing
-
+storage/proxies
 /public/assets/jquery-cookie/
 /public/assets/crypto-js/
 /public/assets/bootstrap-tagsinput/
@@ -34,3 +33,5 @@ public/assets/css/index.css
 /public/assets/urijs
 /public/assets/uri.js
 _intellij_phpdebug_validator.php
+/public/assets/chosen-js
+/public/assets/moment

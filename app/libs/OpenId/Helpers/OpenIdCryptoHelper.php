@@ -15,7 +15,6 @@ use OpenId\Exceptions\OpenIdCryptoException;
 use OpenId\OpenIdProtocol;
 use Zend\Crypt\PublicKey\DiffieHellman;
 use Zend\Math\Rand;
-use Zend\Math;
 use Zend\Math\BigInteger\BigInteger;
 use Exception;
 /**

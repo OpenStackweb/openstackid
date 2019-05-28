@@ -22,7 +22,7 @@ interface IServerConfigurationService {
      * @param $value
      * @return mixed
      */
-    public function saveConfigValue($key,$value);
+    public function saveConfigValue(string $key, $value);
 
     /**
      * @return string

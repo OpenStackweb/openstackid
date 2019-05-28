@@ -1,6 +1,6 @@
 @extends('layout')
 @section('title')
-    <title>Welcome to OpenStackId - OpenStack ID Check Session Frame</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - Check Session Frame</title>
 @stop
 @section('content')
     <div class="container">

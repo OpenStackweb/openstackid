@@ -18,19 +18,21 @@ use OAuth2\Models\IServerPrivateKey;
 use DateTime;
 use phpseclib\Crypt\RSA;
 use Illuminate\Support\Facades\Crypt;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineServerPrivateKeyRepository")
  * Class ServerPrivateKey
  * @package Models\OAuth2
  */
-final class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
+class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
 {
+
     /**
-     * @param array $attributes
+     * @ORM\Column(name="password", type="string")
+     * @var string
      */
-    public function __construct(array $attributes = array())
-    {
-        parent::__construct($attributes);
-    }
+    protected $password;
 
     /**
      * @param string $value
@@ -39,6 +41,14 @@ final class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
     private function encrypt($value)
     {
         return base64_encode(Crypt::encrypt($value));
+    }
+
+    /**
+     * @param string $password
+     */
+    public function setPassword(string $password): void
+    {
+        $this->password = $password;
     }
 
     /**
@@ -51,28 +61,6 @@ final class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
         return Crypt::decrypt($value);
     }
 
-
-    public function getPemContentAttribute()
-    {
-        return $this->decrypt($this->attributes['pem_content']);
-    }
-
-    public function setPemContentAttribute($value)
-    {
-
-        $this->attributes['pem_content'] = $this->encrypt($value);
-    }
-
-    public function getPasswordAttribute()
-    {
-        return $this->decrypt($this->attributes['password']);
-    }
-
-    public function setPasswordAttribute($value)
-    {
-        $this->attributes['password'] = $this->encrypt($value);
-    }
-
     /**
      * @return string
      */
@@ -80,6 +68,8 @@ final class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
     {
         return $this->password;
     }
+
+
 
     /**
      * @param string $kid
@@ -153,5 +143,13 @@ final class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
         $jwk->setKeyUse($this->usage);
 
         return $jwk;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
     }
 }

@@ -40,9 +40,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $response = $this->action("GET", "Api\ApiEndpointController@get",
             $parameters = array('id' =>$api_endpoint->id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content      = $response->getContent();
         $response_api = json_decode($content);
@@ -58,9 +58,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
     public function testGetByPage(){
         $response = $this->action("GET", "Api\ApiEndpointController@getByPage",
             $parameters = array('offset' => 1,'limit'=>10),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content         = $response->getContent();
         $list            = json_decode($content);
@@ -86,9 +86,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $response = $this->action("POST", "Api\ApiEndpointController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
         $json_response = json_decode($content);
@@ -115,9 +115,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $response = $this->action("POST", "Api\ApiEndpointController@create",
             $data,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content = $response->getContent();
         $json_response = json_decode($content);
@@ -132,9 +132,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
             'name'               => 'test-api-endpoint-update',
         );
 
-        $response = $this->action("PUT", "Api\ApiEndpointController@update",$parameters = $data_updated, array(),
-            array(),
-            array());
+        $response = $this->action("PUT", "Api\ApiEndpointController@update",$parameters = $data_updated, [],
+            [],
+            []);
 
         $content = $response->getContent();
 
@@ -189,17 +189,17 @@ final class ApiEndpointTest extends BrowserKitTestCase {
         $id = $api_endpoint->id;
 
         $response = $this->action("DELETE", "Api\ApiEndpointController@delete",$parameters = array('id' => $id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(204);
 
         $response = $this->action("GET", "Api\ApiEndpointController@get",
             $parameters = array('id' => $id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content      = $response->getContent();
 
@@ -215,9 +215,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $response = $this->action("PUT", "Api\ApiEndpointController@addRequiredScope",array(
             'id'       => $api_endpoint->id,
-            'scope_id' => $scope->id), array(),
-            array(),
-            array());
+            'scope_id' => $scope->id), [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
         $content = $response->getContent();
@@ -225,9 +225,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $response = $this->action("GET", "Api\ApiEndpointController@get",
             $parameters = array('id' =>$api_endpoint->id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content      = $response->getContent();
         $response_api_endpoint = json_decode($content);
@@ -244,9 +244,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $response = $this->action("DELETE", "Api\ApiEndpointController@removeRequiredScope",array(
             'id'       => $api_endpoint->id,
-            'scope_id' => $scope->id), array(),
-            array(),
-            array());
+            'scope_id' => $scope->id), [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
         $content = $response->getContent();
@@ -255,9 +255,9 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $response = $this->action("GET", "Api\ApiEndpointController@get",
             $parameters = array('id' =>$api_endpoint->id),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $content      = $response->getContent();
         $response_api_endpoint = json_decode($content);

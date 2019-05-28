@@ -11,9 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Models\IClient;
-
+use Models\OAuth2\Client;
 /**
  * Interface IClientCredentialGenerator
  * @package oauth2\services
@@ -23,9 +21,9 @@ interface IClientCredentialGenerator
     const ClientSuffix = '.openstack.client';
 
     /**
-     * @param IClient $client
+     * @param Client $client
      * @param bool|false $only_secret
-     * @return IClient
+     * @return Client
      */
-    public function generate(IClient $client, $only_secret = false);
+    public function generate(Client $client, $only_secret = false);
 }

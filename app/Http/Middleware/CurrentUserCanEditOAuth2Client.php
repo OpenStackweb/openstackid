@@ -69,7 +69,7 @@ final class CurrentUserCanEditOAuth2Client
             $client                 = $this->client_repository->getClientByIdentifier($client_id);
             $user                   = $this->auth_service->getCurrentUser();
 
-            if (is_null($client) || !$client->candEdit($user))
+            if (is_null($client) || !$client->canEdit($user))
                 throw new Exception('invalid client id for current user');
 
         } catch (Exception $ex) {

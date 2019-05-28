@@ -12,7 +12,10 @@
  * limitations under the License.
  **/
 use Exception;
-
+/**
+ * Class OpenIdBaseException
+ * @package OpenId\Exceptions
+ */
 class OpenIdBaseException extends Exception
 {
 

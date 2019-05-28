@@ -12,33 +12,42 @@
  * limitations under the License.
  **/
 
+use App\Http\Utils\IUserIPHelperProvider;
+use App\libs\Auth\Repositories\IBannedIPRepository;
+use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
+use Auth\Exceptions\AuthenticationException;
 use DateTime;
 use Exception;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
-use Models\BannedIP;
-use Models\IWhiteListedIPRepository;
-use Models\UserExceptionTrail;
+use App\libs\Auth\Repositories\IWhiteListedIPRepository;
+use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
+use OAuth2\Exceptions\InvalidAuthorizationCodeException;
 use OAuth2\Repositories\IResourceServerRepository;
+use OpenId\Exceptions\InvalidAssociation;
+use OpenId\Exceptions\InvalidNonce;
+use OpenId\Exceptions\InvalidOpenIdAuthenticationRequestMode;
+use OpenId\Exceptions\InvalidOpenIdMessageException;
+use OpenId\Exceptions\InvalidOpenIdMessageMode;
+use OpenId\Exceptions\OpenIdInvalidRealmException;
+use OpenId\Exceptions\ReplayAttackException;
 use Utils\Db\ITransactionService;
 use Utils\Exceptions\UnacquiredLockException;
-use Utils\IPHelper;
 use Utils\Services\ICacheService;
 use Utils\Services\ILockManagerService;
 use Utils\Services\IServerConfigurationService;
-
 /**
  * Class BlacklistSecurityPolicy
  * implements check point security pattern
  * @package Services\SecurityPolicies
  */
-class BlacklistSecurityPolicy extends AbstractBlacklistSecurityPolicy
+final class BlacklistSecurityPolicy extends AbstractBlacklistSecurityPolicy
 {
 
     /**
      * @var array
      */
-    private $exception_dictionary = array();
+    private $exception_dictionary = [];
 
     /**
      * @var IResourceServerRepository
@@ -51,74 +60,96 @@ class BlacklistSecurityPolicy extends AbstractBlacklistSecurityPolicy
     private $white_listed_ip_repository;
 
     /**
+     * @var IUserExceptionTrailRepository
+     */
+    private $user_exception_trail_repository;
+
+    /**
      * BlacklistSecurityPolicy constructor.
      * @param IWhiteListedIPRepository $white_listed_ip_repository
      * @param IServerConfigurationService $server_configuration_service
      * @param ILockManagerService $lock_manager_service
      * @param ICacheService $cache_service
      * @param IResourceServerRepository $resource_server_repository
+     * @param IBannedIPRepository $banned_ip_repository
+     * @param IUserExceptionTrailRepository $user_exception_trail_repository
+     * @param IUserIPHelperProvider $ip_helper
      * @param ITransactionService $tx_service
      */
     public function __construct
     (
-        IWhiteListedIPRepository    $white_listed_ip_repository,
-        IServerConfigurationService $server_configuration_service,
-        ILockManagerService         $lock_manager_service,
-        ICacheService               $cache_service,
-        IResourceServerRepository   $resource_server_repository,
-        ITransactionService         $tx_service
+        IWhiteListedIPRepository      $white_listed_ip_repository,
+        IServerConfigurationService   $server_configuration_service,
+        ILockManagerService           $lock_manager_service,
+        ICacheService                 $cache_service,
+        IResourceServerRepository     $resource_server_repository,
+        IBannedIPRepository           $banned_ip_repository,
+        IUserExceptionTrailRepository $user_exception_trail_repository,
+        IUserIPHelperProvider         $ip_helper,
+        ITransactionService           $tx_service
     )
     {
-        parent::__construct($server_configuration_service, $lock_manager_service, $cache_service, $tx_service);
+        parent::__construct
+        (
+            $banned_ip_repository,
+            $server_configuration_service,
+            $lock_manager_service,
+            $cache_service,
+            $ip_helper,
+            $tx_service
+        );
+
         $this->resource_server_repository = $resource_server_repository;
+
+        $this->user_exception_trail_repository = $user_exception_trail_repository;
         // here we configure on which exceptions are we interested and the max occurrence attempts and initial delay on tar pit for
         // offending IP address
-        $this->exception_dictionary = array(
-            'openid\exceptions\ReplayAttackException' => array(
+        $this->exception_dictionary = [
+            ReplayAttackException::class => array(
                 'BlacklistSecurityPolicy.MaxReplayAttackExceptionAttempts',
                 'BlacklistSecurityPolicy.ReplayAttackExceptionInitialDelay'
             ),
-            'openid\exceptions\InvalidNonce' => array(
+            InvalidNonce::class => array(
                 'BlacklistSecurityPolicy.MaxInvalidNonceAttempts',
                 'BlacklistSecurityPolicy.InvalidNonceInitialDelay'
             ),
-            'openid\exceptions\InvalidOpenIdMessageException' => array(
+            InvalidOpenIdMessageException::class => array(
                 'BlacklistSecurityPolicy.MaxInvalidOpenIdMessageExceptionAttempts',
                 'BlacklistSecurityPolicy.InvalidOpenIdMessageExceptionInitialDelay'
             ),
-            'openid\exceptions\OpenIdInvalidRealmException' => array(
+            OpenIdInvalidRealmException::class => array(
                 'BlacklistSecurityPolicy.MaxOpenIdInvalidRealmExceptionAttempts',
                 'BlacklistSecurityPolicy.OpenIdInvalidRealmExceptionInitialDelay'
             ),
-            'openid\exceptions\InvalidOpenIdMessageMode' => array(
+            InvalidOpenIdMessageMode::class => array(
                 'BlacklistSecurityPolicy.MaxInvalidOpenIdMessageModeAttempts',
                 'BlacklistSecurityPolicy.InvalidOpenIdMessageModeInitialDelay'
             ),
-            'openid\exceptions\InvalidOpenIdAuthenticationRequestMode' => array(
+            InvalidOpenIdAuthenticationRequestMode::class => array(
                 'BlacklistSecurityPolicy.MaxInvalidOpenIdAuthenticationRequestModeAttempts',
                 'BlacklistSecurityPolicy.InvalidOpenIdAuthenticationRequestModeInitialDelay'
             ),
-            'openid\exceptions\InvalidAssociation' => array(
+            InvalidAssociation::class => array(
                 'BlacklistSecurityPolicy.MaxInvalidAssociationAttempts',
                 'BlacklistSecurityPolicy.InvalidAssociationInitialDelay'
             ),
-            'auth\exceptions\AuthenticationException' => array(
+            AuthenticationException::class => array(
                 'BlacklistSecurityPolicy.MaxAuthenticationExceptionAttempts',
                 'BlacklistSecurityPolicy.AuthenticationExceptionInitialDelay'
             ),
-            'oauth2\exceptions\ReplayAttackException' => array(
+            \OAuth2\Exceptions\ReplayAttackException::class => [
                 'BlacklistSecurityPolicy.OAuth2.MaxAuthCodeReplayAttackAttempts',
                 'BlacklistSecurityPolicy.OAuth2.AuthCodeReplayAttackInitialDelay'
-            ),
-            'oauth2\exceptions\InvalidAuthorizationCodeException' => array(
+            ],
+            InvalidAuthorizationCodeException::class => [
                 'BlacklistSecurityPolicy.OAuth2.MaxInvalidAuthorizationCodeAttempts',
                 'BlacklistSecurityPolicy.OAuth2.InvalidAuthorizationCodeInitialDelay'
-            ),
-            'oauth2\exceptions\BearerTokenDisclosureAttemptException' => array(
+            ],
+            BearerTokenDisclosureAttemptException::class => [
                 'BlacklistSecurityPolicy.OAuth2.MaxInvalidBearerTokenDisclosureAttempt',
                 'BlacklistSecurityPolicy.OAuth2.BearerTokenDisclosureAttemptInitialDelay'
-            ),
-        );
+            ],
+        ];
         $this->white_listed_ip_repository = $white_listed_ip_repository;
     }
 
@@ -128,57 +159,59 @@ class BlacklistSecurityPolicy extends AbstractBlacklistSecurityPolicy
      */
     public function check()
     {
-        $res            = true;
-        $remote_address = IPHelper::getUserIp();
-        try {
 
-            if($this->isIPAddressWhitelisted($remote_address)) return true;
+        return $this->tx_service->transaction(function(){
+            $res            = true;
+            $remote_address = $this->ip_helper->getCurrentUserIpAddress();
+            try {
 
-            //check if banned ip is on cache ...
-            if ($this->cache_service->incCounterIfExists($remote_address)) {
-                $this->counter_measure->trigger();
-                return false;
-            }
-            //check on db
-            if (!is_null($banned_ip = BannedIP::where("ip", "=", $remote_address)->first())) {
-                // banned ip exists on DB, set lock
-                $this->lock_manager_service->acquireLock("lock.ip." . $remote_address);
-                try {
-                    //check lifetime
-                    $issued = $banned_ip->created_at;
-                    $utc_now = gmdate("Y-m-d H:i:s", time());
-                    $utc_now = DateTime::createFromFormat("Y-m-d H:i:s", $utc_now);
-                    //get time lived on seconds
-                    $time_lived_seconds = abs($utc_now->getTimestamp() - $issued->getTimestamp());
-                    if ($time_lived_seconds >= intval($this->server_configuration_service->getConfigValue("BlacklistSecurityPolicy.BannedIpLifeTimeSeconds"))) {
-                        //void banned ip
-                        $banned_ip->delete();
+                if($this->isIPAddressWhitelisted($remote_address)) return true;
 
-                        return true;
-                    }
-
-                    $banned_ip->hits = $banned_ip->hits + 1;
-                    $banned_ip->Save();
-                    //save ip on cache
-                    $this->cache_service->addSingleValue($banned_ip->ip, $banned_ip->hits,
-                        intval($this->server_configuration_service->getConfigValue("BlacklistSecurityPolicy.BannedIpLifeTimeSeconds") - $time_lived_seconds));
-                } catch (Exception $ex) {
-                    Log::error($ex);
+                //check if banned ip is on cache ...
+                if ($this->cache_service->incCounterIfExists($remote_address)) {
+                    $this->counter_measure->trigger();
+                    return false;
                 }
-                //release lock
-                $this->lock_manager_service->releaseLock("lock.ip." . $remote_address);
-                $this->counter_measure->trigger();
+                //check on db
+                if (!is_null($banned_ip = $this->banned_ip_repository->getByIp($remote_address))) {
+                    // banned ip exists on DB, set lock
+                    $this->lock_manager_service->acquireLock("lock.ip." . $remote_address);
+                    try {
+                        //check lifetime
+                        $issued = $banned_ip->getCreatedAt();
+                        $utc_now = gmdate("Y-m-d H:i:s", time());
+                        $utc_now = DateTime::createFromFormat("Y-m-d H:i:s", $utc_now);
+                        //get time lived on seconds
+                        $time_lived_seconds = abs($utc_now->getTimestamp() - $issued->getTimestamp());
+                        if ($time_lived_seconds >= intval($this->server_configuration_service->getConfigValue("BlacklistSecurityPolicy.BannedIpLifeTimeSeconds"))) {
+                            //void banned ip
+                            $this->banned_ip_repository->delete($banned_ip);
+                            return true;
+                        }
 
-                return false;
+                        $banned_ip->updateHits();
+                        //save ip on cache
+                        $this->cache_service->addSingleValue($banned_ip->getIp(), $banned_ip->getHits(),
+                            intval($this->server_configuration_service->getConfigValue("BlacklistSecurityPolicy.BannedIpLifeTimeSeconds") - $time_lived_seconds));
+                    } catch (Exception $ex) {
+                        Log::error($ex);
+                    }
+                    //release lock
+                    $this->lock_manager_service->releaseLock("lock.ip." . $remote_address);
+                    $this->counter_measure->trigger();
+
+                    return false;
+                }
+            } catch (UnacquiredLockException $ex1) {
+                Log::error($ex1);
+                $res = false;
+            } catch (Exception $ex) {
+                Log::error($ex);
+                $res = false;
             }
-        } catch (UnacquiredLockException $ex1) {
-            Log::error($ex1);
-            $res = false;
-        } catch (Exception $ex) {
-            Log::error($ex);
-            $res = false;
-        }
-        return $res;
+            return $res;
+        });
+
     }
 
     /**
@@ -188,43 +221,30 @@ class BlacklistSecurityPolicy extends AbstractBlacklistSecurityPolicy
      */
     public function apply(Exception $ex)
     {
-        try
-        {
-            $remote_ip       = IPHelper::getUserIp();
-            $exception_class = get_class($ex);
-
-            //check exception count by type on last "MinutesWithoutExceptions" minutes...
-            $exception_count = intval(UserExceptionTrail::where('from_ip', '=', $remote_ip)
-                ->where('exception_type', '=', $exception_class)
-                ->where('created_at', '>',
-                    DB::raw('( UTC_TIMESTAMP() - INTERVAL ' . $this->server_configuration_service->getConfigValue("BlacklistSecurityPolicy.MinutesWithoutExceptions") . ' MINUTE )'))
-                ->count());
-
-            if (array_key_exists($exception_class, $this->exception_dictionary))
+        return $this->tx_service->transaction(function() use($ex){
+            try
             {
-                $params = $this->exception_dictionary[$exception_class];
-                $max_attempts = !is_null($params[0]) && !empty($params[0]) ? intval($this->server_configuration_service->getConfigValue($params[0])) : 0;
+                $remote_ip       = $this->ip_helper->getCurrentUserIpAddress();
+                $exception_class = get_class($ex);
 
-                Log::info
+                //check exception count by type on last "MinutesWithoutExceptions" minutes...
+                $exception_count = $this->user_exception_trail_repository->getCountByIPTypeOfLatestUserExceptions
                 (
-                    sprintf
-                    (
-                        'IP %s, - exception_class %s - exception_count %s - max allowed attempts %s',
-                        $remote_ip,
-                        $exception_class,
-                        $exception_count,
-                        $max_attempts
-                    )
+                    $remote_ip,
+                    $exception_class,
+                    $this->server_configuration_service->getConfigValue("BlacklistSecurityPolicy.MinutesWithoutExceptions")
                 );
 
-                $initial_delay_on_tar_pit = intval($this->server_configuration_service->getConfigValue($params[1]));
-                if (!$this->isIPAddressWhiteListed($remote_ip) && $exception_count >= $max_attempts)
+                if (array_key_exists($exception_class, $this->exception_dictionary))
                 {
-                    Log::warning
+                    $params = $this->exception_dictionary[$exception_class];
+                    $max_attempts = !is_null($params[0]) && !empty($params[0]) ? intval($this->server_configuration_service->getConfigValue($params[0])) : 0;
+
+                    Log::info
                     (
                         sprintf
                         (
-                            'banning IP %s, - exception_class %s - exception_count %s - max allowed attempts %s',
+                            'IP %s, - exception_class %s - exception_count %s - max allowed attempts %s',
                             $remote_ip,
                             $exception_class,
                             $exception_count,
@@ -232,24 +252,42 @@ class BlacklistSecurityPolicy extends AbstractBlacklistSecurityPolicy
                         )
                     );
 
-                    $this->createBannedIP($initial_delay_on_tar_pit, $exception_class);
+                    $initial_delay_on_tar_pit = intval($this->server_configuration_service->getConfigValue($params[1]));
+                    if (!$this->isIPAddressWhiteListed($remote_ip) && $exception_count >= $max_attempts)
+                    {
+                        Log::warning
+                        (
+                            sprintf
+                            (
+                                'banning IP %s, - exception_class %s - exception_count %s - max allowed attempts %s',
+                                $remote_ip,
+                                $exception_class,
+                                $exception_count,
+                                $max_attempts
+                            )
+                        );
+
+                        $this->createBannedIP($initial_delay_on_tar_pit, $exception_class);
+                    }
                 }
             }
-        }
-        catch (Exception $ex)
-        {
-            Log::error($ex);
-            throw $ex;
-        }
-        return $this;
+            catch (Exception $ex)
+            {
+                Log::error($ex);
+                throw $ex;
+            }
+            return $this;
+        });
     }
 
     /**
      * @param string $ip
      * @return bool
      */
-    private function isIPAddressWhiteListed($ip)
+    private function isIPAddressWhiteListed(string $ip): bool
     {
+        $banning_enable = boolval(Config::get("server.banning_enable", true));
+        if(!$banning_enable) return true;
         $cache_value = $this->cache_service->getSingleValue($ip.".whitelisted");
         if(!empty($cache_value)) return true;
 

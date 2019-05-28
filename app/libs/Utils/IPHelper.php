@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Request;
+use Illuminate\Support\Facades\Request;
 /**
  * Class IPHelper
  * @package Utils

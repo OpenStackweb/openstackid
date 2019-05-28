@@ -21,7 +21,7 @@ final class DiscoveryDocumentBuilder
     /**
      * @var array
      */
-    private $set = array();
+    private $set = [];
 
     /**
      * @param string $issuer
@@ -121,7 +121,7 @@ final class DiscoveryDocumentBuilder
     {
 
         if( !isset($this->set[$key]))
-            $this->set[$key] = array();
+            $this->set[$key] = [];
 
         array_push($this->set[$key], $value);
     }

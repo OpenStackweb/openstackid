@@ -33,11 +33,11 @@ final class CurrentUserIsOAuth2ServerAdmin
     {
         if (Auth::guard($guard)->guest())
         {
-            return Response::view('errors.404', array(), 404);
+            return Response::view('errors.404', [], 404);
         }
         if(!Auth::user()->isOAuth2ServerAdmin())
         {
-            return Response::view('errors.404', array(), 404);
+            return Response::view('errors.404', [], 404);
         }
         return $next($request);
     }

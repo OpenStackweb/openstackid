@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use Auth\Exceptions\UnverifiedEmailMemberException;
-use Auth\Repositories\IMemberRepository;
 use Auth\Repositories\IUserRepository;
 use Exception;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -21,11 +20,9 @@ use Illuminate\Support\Facades\Log;
 use OpenId\Services\IUserService;
 use Utils\Db\ITransactionService;
 use Utils\Services\ICheckPointService;
-use Utils\Services\ILogService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\AuthenticationInvalidPasswordAttemptException;
 use Auth\Exceptions\AuthenticationLockedUserLoginAttempt;
-
 /**
  * Class CustomAuthProvider
  * Custom Authentication Provider against SS DB
@@ -47,48 +44,36 @@ class CustomAuthProvider implements UserProvider
      */
     private $checkpoint_service;
     /**
-     * @var IUserService
+     * @var IUserRepository
      */
     private $user_repository;
-    /**
-     * @var IMemberRepository
-     */
-    private $member_repository;
+
     /**
      * @var ITransactionService
      */
     private $tx_service;
-    /**
-     * @var ILogService
-     */
-    private $log_service;
 
     /**
      * @param IUserRepository $user_repository
-     * @param IMemberRepository $member_repository
      * @param IAuthenticationExtensionService $auth_extension_service
      * @param IUserService $user_service
      * @param ICheckPointService $checkpoint_service
      * @param ITransactionService $tx_service
-     * @param ILogService $log_service
      */
-    public function __construct(
+    public function __construct
+    (
         IUserRepository $user_repository,
-        IMemberRepository $member_repository,
         IAuthenticationExtensionService $auth_extension_service,
         IUserService $user_service,
         ICheckPointService $checkpoint_service,
-        ITransactionService $tx_service,
-        ILogService $log_service
+        ITransactionService $tx_service
     ) {
 
         $this->auth_extension_service = $auth_extension_service;
         $this->user_service = $user_service;
         $this->checkpoint_service = $checkpoint_service;
         $this->user_repository = $user_repository;
-        $this->member_repository = $member_repository;
         $this->tx_service = $tx_service;
-        $this->log_service = $log_service;
     }
 
     /**
@@ -99,16 +84,13 @@ class CustomAuthProvider implements UserProvider
     public function retrieveById($identifier)
     {
         try {
-            //here we do the manuel join between 2 DB, (openid and SS db)
-            $user   = $this->user_repository->getByExternalId($identifier);
-            $member = $this->member_repository->get($identifier);
-            if (!is_null($member) && $member->canLogin() && !is_null($user)) {
-                $user->setMember($member);
+            $user = $this->user_repository->getById($identifier);
+            if (!is_null($user)) {
                 return $user;
             }
 
         } catch (Exception $ex) {
-            $this->log_service->warning($ex);
+            Log::warning($ex);
             return null;
         }
 
@@ -122,22 +104,7 @@ class CustomAuthProvider implements UserProvider
      */
     public function retrieveByCredentials(array $credentials)
     {
-        $user_service           = $this->user_service;
-        $auth_extension_service = $this->auth_extension_service;
-        $user_repository        = $this->user_repository;
-        $member_repository      = $this->member_repository;
-        $log_service            = $this->log_service;
-        $checkpoint_service     = $this->checkpoint_service;
-
-        return $this->tx_service->transaction(function () use (
-            $credentials,
-            $user_repository,
-            $member_repository,
-            $user_service,
-            $auth_extension_service,
-            $log_service,
-            $checkpoint_service
-        ) {
+        return $this->tx_service->transaction(function () use ($credentials) {
 
             $user = null;
 
@@ -151,69 +118,57 @@ class CustomAuthProvider implements UserProvider
 
                 $email    = $credentials['username'];
                 $password = $credentials['password'];
+                $user     = $this->user_repository->getByEmailOrName(trim($email));
 
-                //get SS member
-
-                $member = $member_repository->getByEmail($email);
-
-                if (is_null($member)) //member must exists
+                if (is_null($user)) //user must exists
                 {
-                    throw new AuthenticationException(sprintf("member %s does not exists!", $email));
+                    throw new AuthenticationException(sprintf("user %s does not exists!", $email));
                 }
 
-                if(!$member->canLogin())
+                if(!$user->canLogin())
                 {
-                    if(!$member->isEmailVerified())
-                        throw new UnverifiedEmailMemberException(sprintf("member %s is not verified yet!", $email));
-                    throw new AuthenticationException(sprintf("member %s does not exists!", $email));
+                    if(!$user->isEmailVerified())
+                        throw new UnverifiedEmailMemberException(sprintf("user %s is not verified yet!", $email));
+                    throw new AuthenticationException(sprintf("user %s does not exists!", $email));
                 }
 
-                $valid_password = $member->checkPassword($password);
+                $valid_password = $user->checkPassword($password);
 
                 if (!$valid_password)
                 {
-                    throw new AuthenticationInvalidPasswordAttemptException($member->ID,
+                    throw new AuthenticationInvalidPasswordAttemptException($user->getId(),
                         sprintf("invalid login attempt for user %s ", $email));
                 }
 
-                $user = $user_repository->getByExternalId($member->ID);
-
-                if (!$user) {
-                    $user = $user_service->buildUser($member);
-                }
-
                 //check user status...
-                if ($user->lock || !$user->active) {
+                if (!$user->isActive()) {
                     Log::warning(sprintf("user %s is on lock state", $email));
                     throw new AuthenticationLockedUserLoginAttempt($email,
                         sprintf("user %s is on lock state", $email));
                 }
 
                 //update user fields
-                $user->last_login_date      = gmdate("Y-m-d H:i:s", time());
-                $user->login_failed_attempt = 0;
-                $user->active               = true;
-                $user->lock                 = false;
+                $user->setLastLoginDate(new \DateTime('now', new \DateTimeZone('UTC')));
+                $user->setLoginFailedAttempt(0);
+                $user->setActive(true);
 
-                $user_repository->update($user);
-                $user->setMember($member);
-
-                $auth_extensions = $auth_extension_service->getExtensions();
+                $auth_extensions = $this->auth_extension_service->getExtensions();
 
                 foreach ($auth_extensions as $auth_extension)
                 {
+                    if(!$auth_extension instanceof IAuthenticationExtension) continue;
                     $auth_extension->process($user);
                 }
             }
-            catch(UnverifiedEmailMemberException $ex1){
-                $checkpoint_service->trackException($ex1);
-                $log_service->warning($ex1);
-                throw $ex1;
+            catch(UnverifiedEmailMemberException $ex){
+                $this->checkpoint_service->trackException($ex);
+                Log::warning($ex);
+                throw $ex;
             }
             catch (Exception $ex)
             {
-                $checkpoint_service->trackException($ex);
-                $log_service->warning($ex);
+                $this->checkpoint_service->trackException($ex);
+                Log::warning($ex);
                 $user = null;
             }
 
@@ -221,7 +176,6 @@ class CustomAuthProvider implements UserProvider
         });
 
     }
-
 
     /**
      * @param Authenticatable $user
@@ -238,19 +192,17 @@ class CustomAuthProvider implements UserProvider
             $email = $credentials['username'];
             $password = $credentials['password'];
 
-            $member = $this->member_repository->getByEmail($email);
+            $user = $this->user_repository->getByEmailOrName(trim($email));
 
-            if (!$member || !$member->canLogin() || !$member->checkPassword($password)) {
+            if (!$user || !$user->canLogin() || !$user->checkPassword($password)) {
                 return false;
             }
 
-            $user = $this->user_repository->getByExternalId($member->ID);
-
-            if (is_null($user) || $user->lock || !$user->active) {
+            if (is_null($user) || !$user->isActive()) {
                 return false;
             }
         } catch (Exception $ex) {
-            $this->log_service->warning($ex);
+            Log::warning($ex);
             return false;
         }
         return true;
@@ -264,19 +216,20 @@ class CustomAuthProvider implements UserProvider
      */
     public function retrieveByToken($identifier, $token)
     {
-        return $this->user_repository->getByToken($identifier, $token);
+        return $this->user_repository->getByToken($token);
     }
 
     /**
-     * Update the "remember me" token for the given user in storage.
-     * @param  Authenticatable $user
-     * @param  string $token
-     * @return void
+     * @param Authenticatable $user
+     * @param string $token
+     * @throws Exception
      */
     public function updateRememberToken(Authenticatable $user, $token)
     {
-        $user->setAttribute($user->getRememberTokenName(), $token);
-
-        $user->save();
+        $this->tx_service->transaction(function () use ($user, $token) {
+            $dbUser = $this->user_repository->getById($user->getAuthIdentifier());
+            if(is_null($dbUser)) return;
+            $dbUser->setRememberToken($user->getRememberToken());
+        });
     }
 }

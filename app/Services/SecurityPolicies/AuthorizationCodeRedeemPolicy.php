@@ -11,7 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Illuminate\Support\Facades\DB;
+use App\Http\Utils\IUserIPHelperProvider;
+use App\libs\Auth\Repositories\IBannedIPRepository;
 use Illuminate\Support\Facades\Log;
 use Exception;
 use OAuth2\Exceptions\ReplayAttackAuthCodeException;
@@ -19,7 +20,6 @@ use Utils\Db\ITransactionService;
 use Utils\Services\ICacheService;
 use Utils\Services\ILockManagerService;
 use Utils\Services\IServerConfigurationService;
-
 /**
  * Class AuthorizationCodeRedeemPolicy
  * @package Services\SecurityPolicies
@@ -27,19 +27,33 @@ use Utils\Services\IServerConfigurationService;
 final class AuthorizationCodeRedeemPolicy extends AbstractBlacklistSecurityPolicy
 {
 
+
     /**
+     * AuthorizationCodeRedeemPolicy constructor.
+     * @param IBannedIPRepository $banned_ip_repository
      * @param IServerConfigurationService $server_configuration_service
      * @param ILockManagerService $lock_manager_service
      * @param ICacheService $cache_service
+     * @param IUserIPHelperProvider $ip_helper
      * @param ITransactionService $tx_service
      */
     public function __construct(
+        IBannedIPRepository  $banned_ip_repository,
         IServerConfigurationService $server_configuration_service,
         ILockManagerService $lock_manager_service,
         ICacheService $cache_service,
+        IUserIPHelperProvider $ip_helper,
         ITransactionService $tx_service
     ) {
-        parent::__construct($server_configuration_service, $lock_manager_service, $cache_service, $tx_service);
+        parent::__construct
+        (
+            $banned_ip_repository,
+            $server_configuration_service,
+            $lock_manager_service,
+            $cache_service,
+            $ip_helper,
+            $tx_service
+        );
     }
 
     /**
@@ -65,10 +79,9 @@ final class AuthorizationCodeRedeemPolicy extends AbstractBlacklistSecurityPolic
                 Log::error(sprintf("AuthorizationCodeRedeemPolicy : auth code %s - message %s", $auth_code, $ex->getMessage()));
                 $this->counter_measure->trigger
                 (
-                    array
-                    (
+                    [
                         'auth_code' => $auth_code
-                    )
+                    ]
                 );
             }
         } catch (Exception $ex) {

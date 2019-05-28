@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
 use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
 use OAuth2\Exceptions\ExpiredAccessTokenException;
@@ -31,7 +30,6 @@ use OAuth2\Responses\OAuth2Response;
 use OAuth2\Responses\OAuth2TokenRevocationResponse;
 use OAuth2\Services\IClientService;
 use Utils\Services\ILogService;
-
 /**
  * Class RevokeTokenGrantType
  * @see http://tools.ietf.org/html/rfc7009

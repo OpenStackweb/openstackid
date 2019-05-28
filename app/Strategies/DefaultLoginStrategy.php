@@ -41,10 +41,10 @@ class DefaultLoginStrategy implements ILoginStrategy
         $this->auth_service        = $auth_service;
     }
 
-    public function  getLogin()
+    public function getLogin()
     {
         if (Auth::guest())
-            return View::make("login");
+            return View::make("auth.login");
         return Redirect::action("UserController@getProfile");
     }
 

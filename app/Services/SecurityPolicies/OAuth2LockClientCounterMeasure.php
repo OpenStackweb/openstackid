@@ -11,12 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
 use Illuminate\Support\Facades\Log;
 use OAuth2\Services\IClientService;
 use Utils\Services\ISecurityPolicyCounterMeasure;
-
 /**
  * Class OAuth2LockClientCounterMeasure
  * @package Services\SecurityPolicies
@@ -40,7 +38,7 @@ class OAuth2LockClientCounterMeasure implements ISecurityPolicyCounterMeasure{
      * @param array $params
      * @return $this
      */
-    public function trigger(array $params = array())
+    public function trigger(array $params = [])
     {
         try{
 

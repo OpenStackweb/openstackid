@@ -22,16 +22,16 @@ interface IDisplayResponseStrategy
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getConsentResponse(array $data = array());
+    public function getConsentResponse(array $data = []);
 
     /**
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getLoginResponse(array $data = array());
+    public function getLoginResponse(array $data = []);
     /**
      * @param array $data
      * @return SymfonyResponse
      */
-    public function getLoginErrorResponse(array $data = array());
+    public function getLoginErrorResponse(array $data = []);
 }

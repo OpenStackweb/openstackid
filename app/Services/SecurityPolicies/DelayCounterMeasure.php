@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Utils\IPHelper;
 use Utils\Services\ICacheService;
 use Utils\Services\ISecurityPolicyCounterMeasure;
-
 /**
  * Class DelayCounterMeasure
  * @package Services\SecurityPolicies
@@ -41,7 +39,7 @@ class DelayCounterMeasure implements ISecurityPolicyCounterMeasure
      * @param array $params
      * @return $this
      */
-    public function trigger(array $params = array())
+    public function trigger(array $params = [])
     {
         try {
             $remote_address = IPHelper::getUserIp();

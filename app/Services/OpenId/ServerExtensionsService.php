@@ -11,48 +11,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\Repositories\IServerExtensionRepository;
+use App\Services\AbstractService;
 use OpenId\Services\IServerExtensionsService;
+use Utils\Db\ITransactionService;
 use Utils\Services\ServiceLocator;
-use Models\OpenId\ServerExtension;
 use ReflectionClass;
-
 /**
  * Class ServerExtensionsService
  * @package Services\OpenId
  */
-class ServerExtensionsService implements IServerExtensionsService
+final class ServerExtensionsService extends AbstractService implements IServerExtensionsService
 {
+    /**
+     * @var IServerExtensionRepository
+     */
+    private $server_extensions_repository;
 
-	/**
+    public function __construct(
+        IServerExtensionRepository $server_extensions_repository,
+        ITransactionService $tx_service)
+    {
+        parent::__construct($tx_service);
+        $this->server_extensions_repository = $server_extensions_repository;
+    }
+
+    /**
 	 * @return array
 	 */
 	public function getAllActiveExtensions()
     {
-        $extensions = ServerExtension::where('active', '=', true)->get();
-        $res        = [];
-        foreach ($extensions as $extension) {
-            $class_name = $extension->extension_class;
-            if (empty($class_name)) continue;
+        return $this->tx_service->transaction(function(){
+            $extensions = $this->server_extensions_repository->getAllActives();
+            $res        = [];
+            foreach ($extensions as $extension) {
+                $class_name = $extension->getExtensionClass();
+                if (empty($class_name)) continue;
 
-	        $class              = new ReflectionClass($class_name);
-	        $constructor        = $class->getConstructor();
-	        $constructor_params = $constructor->getParameters();
+                $class              = new ReflectionClass($class_name);
+                $constructor        = $class->getConstructor();
+                $constructor_params = $constructor->getParameters();
 
-	        $deps = [];
+                $deps = [];
 
-	        foreach($constructor_params as $constructor_param){
-				$param_class  = $constructor_param->getClass();
-				$name         = $constructor_param->getName();
-				if(is_null($param_class)){
-					$deps[] = $extension->$name;
-				}
-		        else{
-			        $deps [] = ServiceLocator::getInstance()->getService($param_class->getName());
-		        }
-			}
+                foreach($constructor_params as $constructor_param){
+                    $param_class  = $constructor_param->getClass();
+                    if(is_null($param_class)){
+                        $property = $constructor_param->getName();
+                        $deps[] = $extension->{$property};
+                        continue;
+                    }
+                    $deps [] = ServiceLocator::getInstance()->getService($param_class->getName());
+                }
 
-            $res[] = $class->newInstanceArgs($deps);;
-        }
-        return $res;
+                $res[] = $class->newInstanceArgs($deps);
+            }
+            return $res;
+        });
+
     }
 }

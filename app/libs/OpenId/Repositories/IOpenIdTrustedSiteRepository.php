@@ -1,5 +1,4 @@
 <?php namespace OpenId\Repositories;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Db\IBaseRepository;
+use models\utils\IBaseRepository;
 /**
  * Interface IOpenIdTrustedSiteRepository
  * @package OpenId\Repositories
@@ -21,17 +20,11 @@ interface IOpenIdTrustedSiteRepository extends IBaseRepository
 {
 
     /**
-     * @param int $id
-     * @return bool
-     */
-    public function deleteById($id);
-
-    /**
      * @param int $user_id
      * @param array $sub_domains
      * @param array $data
      * @return array
      */
-    public function getMatchingOnesByUserId($user_id, array $sub_domains, array $data);
+    public function getMatchingOnesByUserId(int $user_id, array $sub_domains, array $data);
 
 } 

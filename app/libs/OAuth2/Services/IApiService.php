@@ -11,46 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\Models\IApi;
-use OAuth2\Exceptions\InvalidApi;
-use Utils\Exceptions\EntityNotFoundException;
+use App\Services\IBaseService;
 /**
  * Interface IApiService
  * @package OAuth2\Services
  */
-interface IApiService {
+interface IApiService extends IBaseService {
 
-    /**
-     * @param int $id
-     * @return bool
-     * @throws EntityNotFoundException
-     */
-    public function delete($id);
-
-    /**
-     * @param $name
-     * @param $description
-     * @param $active
-     * @param $resource_server_id
-     * @return IApi
-     */
-    public function add($name, $description, $active, $resource_server_id);
-
-    /**
-     * @param $id
-     * @param array $params
-     * @return bool
-     * @throws EntityNotFoundException
-     * @throws InvalidApi
-     */
-    public function update($id, array $params);
-
-    /**
-     * @param int $id
-     * @param bool $active
-     * @return bool
-     * @throws EntityNotFoundException
-     */
-    public function setStatus($id, $active);
 
 } 

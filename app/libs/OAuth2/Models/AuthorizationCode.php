@@ -39,6 +39,7 @@ class AuthorizationCode extends Token
      * @var bool
      */
     private $has_previous_user_consent;
+
     /**
      * @var string
      */
@@ -250,7 +251,7 @@ class AuthorizationCode extends Token
     }
 
     /**
-     * @return string
+     * @return bool
      */
     public function getHasPreviousUserConsent()
     {

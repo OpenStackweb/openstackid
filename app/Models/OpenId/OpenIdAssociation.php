@@ -12,106 +12,213 @@
  * limitations under the License.
  **/
 use OpenId\Models\IAssociation;
-use Utils\Model\BaseModelEloquent;
 use DateTime;
 use DateTimeZone;
 use DateInterval;
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOpenIdAssociationRepository")
+ * @ORM\Table(name="openid_associations")
  * Class OpenIdAssociation
  * @package Models\OpenId
  */
-class OpenIdAssociation extends BaseModelEloquent implements IAssociation
+class OpenIdAssociation extends BaseEntity implements IAssociation
 {
 
-    public $timestamps = false;
+    /**
+     * @ORM\Column(name="identifier", type="string")
+     * @var string
+     */
+    private $identifier;
 
-    protected $table = 'openid_associations';
+    /**
+     * @ORM\Column(name="mac_function", type="string")
+     * @var string
+     */
+    private $mac_function;
+
+    /**
+     * @ORM\Column(name="secret", type="blob")
+     * @var string
+     */
+    private $secret;
+
+    /**
+     * @ORM\Column(name="realm", type="string")
+     * @var string
+     */
+    private $realm;
+
+    /**
+     * @ORM\Column(name="type", type="integer")
+     * @var int
+     */
+    private $type;
+
+    /**
+     * @ORM\Column(name="lifetime", type="integer")
+     * @var int
+     */
+    private $lifetime;
+
+    /**
+     * @ORM\Column(name="issued", type="datetime")
+     * @var DateTime
+     */
+    private $issued;
+
+    /**
+     * @return int
+     * @throws \Exception
+     */
+    public function getRemainingLifetime():int
+    {
+        $void_date = clone $this->issued;
+        $void_date->add(new DateInterval('PT' . intval($this->lifetime) . 'S'));
+        $now        = new DateTime('now', new DateTimeZone("UTC"));
+        //check validity...
+        if ($now > $void_date)
+            return -1;
+        $seconds = abs($void_date->getTimestamp() - $now->getTimestamp());;
+        return intval($seconds);
+    }
 
     /**
      * @return string
      */
-    public function getMacFunction()
+	public function getHandle():string
+	{
+		return $this->identifier;
+	}
+
+    /**
+     * @return string
+     */
+    public function getIdentifier(): string
+    {
+        return $this->identifier;
+    }
+
+    /**
+     * @param string $identifier
+     */
+    public function setIdentifier(string $identifier): void
+    {
+        $this->identifier = $identifier;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMacFunction(): string
     {
         return $this->mac_function;
     }
 
-    public function setMacFunction($mac_function)
+    /**
+     * @param string $mac_function
+     */
+    public function setMacFunction(string $mac_function): void
     {
-        // TODO: Implement setMacFunction() method.
+        $this->mac_function = $mac_function;
     }
 
     /**
      * @return string
      */
-    public function getSecret()
+    public function getSecret(): string
     {
         return $this->secret;
     }
 
-    public function setSecret($secret)
+    /**
+     * @param string $secret
+     */
+    public function setSecret(string $secret): void
     {
-        // TODO: Implement setSecret() method.
+        $this->secret = $secret;
     }
 
-    public function getLifetime()
-    {
-        return intval($this->lifetime);
-    }
-
-    public function setLifetime($lifetime)
-    {
-        // TODO: Implement setLifetime() method.
-    }
-
-    public function getIssued()
-    {
-        return $this->issued;
-    }
-
-    public function setIssued($issued)
-    {
-        // TODO: Implement setIssued() method.
-    }
-
-    public function getType()
-    {
-        return $this->type;
-    }
-
-    public function setType($type)
-    {
-        // TODO: Implement setType() method.
-    }
-
-    public function IsExpired()
-    {
-        // TODO: Implement IsExpired() method.
-    }
-
-    public function getRealm()
+    /**
+     * @return string|null
+     */
+    public function getRealm(): ?string
     {
         return $this->realm;
     }
 
-    public function setRealm($realm)
+    /**
+     * @param string $realm
+     */
+    public function setRealm(string $realm): void
     {
-        // TODO: Implement setRealm() method.
+        $this->realm = $realm;
     }
 
-    public function getRemainingLifetime()
+    /**
+     * @return int
+     */
+    public function getType(): int
     {
-        $created_at = new DateTime($this->issued, new DateTimeZone("UTC"));
-        $created_at->add(new DateInterval('PT' . intval($this->lifetime) . 'S'));
-        $now        = new DateTime(gmdate("Y-m-d H:i:s", time()), new DateTimeZone("UTC"));
-        //check validity...
-        if ($now > $created_at)
-            return -1;
-        $seconds = abs($created_at->getTimestamp() - $now->getTimestamp());;
-        return $seconds;
+        return $this->type;
     }
 
-	public function getHandle()
-	{
-		return $this->identifier;
-	}
+    /**
+     * @param int $type
+     */
+    public function setType(int $type): void
+    {
+        $this->type = $type;
+    }
+
+    /**
+     * @return int
+     */
+    public function getLifetime(): int
+    {
+        return $this->lifetime;
+    }
+
+    /**
+     * @param int $lifetime
+     */
+    public function setLifetime(int $lifetime): void
+    {
+        $this->lifetime = $lifetime;
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function getIssued(): DateTime
+    {
+        return $this->issued;
+    }
+
+    /**
+     * @param DateTime $issued
+     */
+    public function setIssued(DateTime $issued): void
+    {
+        $this->issued = $issued;
+    }
+
+    /**
+     * @return bool
+     * @throws \Exception
+     */
+    public function IsExpired(): bool
+    {
+        return $this->getRemainingLifetime() <= 0 ;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
+    }
 }

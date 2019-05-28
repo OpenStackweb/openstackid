@@ -11,35 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\Models\IApiScopeGroup;
-use OAuth2\Exceptions\InvalidApiScopeGroup;
+use App\Services\IBaseService;
 /**
  * Interface IApiScopeGroupService
  * @package OAuth2\Services
  */
-interface IApiScopeGroupService
+interface IApiScopeGroupService extends IBaseService
 {
-    /**
-     * @param $id
-     * @param array $params
-     * @return bool
-     * @throws InvalidApiScopeGroup
-     */
-    public function update($id, array $params);
 
-    /**
-     * @param int $id
-     * @param bool $status status (active/non active)
-     * @return void
-     */
-    public function setStatus($id, $status);
-
-    /**
-     * @param string $name
-     * @param bool $active
-     * @param string $scopes
-     * @param string $users
-     * @return IApiScopeGroup
-     */
-    public function register($name, $active, $scopes, $users);
 }

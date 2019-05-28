@@ -11,91 +11,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Models\IResourceServer;
-use Utils\Model\BaseModelEloquent;
-
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineResourceServerRepository")
+ * @ORM\Table(name="oauth2_resource_server")
  * Class ResourceServer
  * @package Models\OAuth2
  */
-class ResourceServer extends BaseModelEloquent implements IResourceServer
+class ResourceServer extends BaseEntity
 {
 
-    protected $fillable = array('host', 'ips', 'active', 'friendly_name');
-
-    protected $table = 'oauth2_resource_server';
-
-
-    public function getActiveAttribute()
-    {
-        return (bool)$this->attributes['active'];
-    }
-
-    public function getIdAttribute()
-    {
-        return (int)$this->attributes['id'];
-    }
-
-    public function apis()
-    {
-        return $this->hasMany('Models\OAuth2\Api', 'resource_server_id');
-    }
-
-    public function client()
-    {
-        return $this->hasOne('Models\OAuth2\Client');
-    }
+    /**
+     * @ORM\Column(name="friendly_name", type="string")
+     * @var string
+     */
+    private $friendly_name;
 
     /**
-     * get resource server host
-     * @return string
+     * @ORM\Column(name="host", type="string")
+     * @var string
      */
-    public function getHost()
-    {
-        return $this->host;
-    }
+    private $host;
 
     /**
-     * tells if resource server is active or not
-     * @return bool
+     * @ORM\Column(name="ips", type="string")
+     * @var string
      */
-    public function isActive()
-    {
-        return $this->active;
-    }
+    private $ips;
 
     /**
-     * get resource server friendly name
-     * @return mixed
+     * @ORM\Column(name="active", type="boolean")
+     * @var bool
      */
-    public function getFriendlyName()
-    {
-        return $this->friendly_name;
-    }
+    private $active;
 
     /**
-     * @return \oauth2\models\IClient
+     * @ORM\OneToMany(targetEntity="Api", mappedBy="resource_server", cascade={"persist"})
+     * @var Api[]
      */
-    public function getClient()
-    {
-        return $this->client()->first();
-    }
+    private $apis;
 
-    public function setHost($host)
-    {
-        $this->host = $host;
-    }
-
-    public function setActive($active)
-    {
-        $this->active = $active;
-    }
-
-    public function setFriendlyName($friendly_name)
-    {
-        $this->friendly_name = $friendly_name;
-    }
+    /**
+     * @ORM\OneToOne(targetEntity="Models\OAuth2\Client", mappedBy="resource_server", cascade={"persist", "remove"})
+     * @var Client
+     */
+    private $client;
 
     /**
      * @param string $ip
@@ -113,5 +75,141 @@ class ResourceServer extends BaseModelEloquent implements IResourceServer
     public function getIPAddresses()
     {
        return $this->ips;
+    }
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->active = false;
+        $this->apis = new ArrayCollection();
+    }
+
+    /**
+     * @return string
+     */
+    public function getFriendlyName(): string
+    {
+        return $this->friendly_name;
+    }
+
+    /**
+     * @param string $friendly_name
+     */
+    public function setFriendlyName(string $friendly_name): void
+    {
+        $this->friendly_name = $friendly_name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getHost(): string
+    {
+        return $this->host;
+    }
+
+    /**
+     * @param string $host
+     */
+    public function setHost(string $host): void
+    {
+        $this->host = $host;
+    }
+
+    /**
+     * @return string
+     */
+    public function getIps(): string
+    {
+        return $this->ips;
+    }
+
+    /**
+     * @param string $ips
+     */
+    public function setIps(string $ips): void
+    {
+        $this->ips = $ips;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    /**
+     * @param bool $active
+     */
+    public function setActive(bool $active): void
+    {
+        $this->active = $active;
+    }
+
+    /**
+     * @return Api[]
+     */
+    public function getApis()
+    {
+        return $this->apis;
+    }
+
+    /**
+     * @param Api $api
+     */
+    public function addApi(Api $api){
+        if($this->apis->contains($api)) return;
+        $this->apis->add($api);
+        $api->setResourceServer($this);
+    }
+
+    /**
+     * @param Api $api
+     */
+    public function removeApi(Api $api){
+        if(!$this->apis->contains($api)) return;
+        $this->apis->removeElement($api);
+    }
+
+    public function setClient(Client $client){
+        $this->client = $client;
+        $client->setResourceServer($this);
+    }
+
+    /**
+     * @return Client|null
+     */
+    public function getClient():?Client
+    {
+        return $this->client;
+    }
+
+    /**
+     * @return int
+     */
+    public function getClientId(): int{
+        try {
+            return is_null($this->client) ? 0 : $this->client->getId();
+        }
+        catch(\Exception $ex){
+            return 0;
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasClient():bool{
+        return $this->getClientId() > 0;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
     }
 }

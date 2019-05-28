@@ -11,75 +11,64 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\BaseModelEloquent;
-use OAuth2\Models\IApi;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
-
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineApiRepository")
+ * @ORM\Table(name="oauth2_api")
  * Class Api
  * @package Models\OAuth2
  */
-class Api extends BaseModelEloquent implements IApi
+class Api extends BaseEntity
 {
 
-    protected $fillable = array('name', 'description', 'active', 'resource_server_id', 'logo');
-
-    protected $table = 'oauth2_api';
-
-    public function getActiveAttribute()
-    {
-        return (bool)$this->attributes['active'];
-    }
-
-    public function getIdAttribute()
-    {
-        return (int)$this->attributes['id'];
-    }
-
-    public function getLogoAttribute()
-    {
-       return $this->getLogo();
-    }
-
-    public function getResourceServerIdAttribute()
-    {
-        return (int)$this->attributes['resource_server_id'];
-    }
-
-    public function scopes()
-    {
-        return $this->hasMany('Models\OAuth2\ApiScope', 'api_id');
-    }
-
-    public function resource_server()
-    {
-        return $this->belongsTo('Models\OAuth2\ResourceServer');
-    }
-
-    public function endpoints()
-    {
-        return $this->hasMany('Models\OAuth2\ApiEndpoint', 'api_id');
-    }
+    /**
+     * @ORM\Column(name="name", type="string")
+     * @var string
+     */
+    private $name;
 
     /**
-     * @return \oauth2\models\IResourceServer
+     * @ORM\Column(name="description", type="string")
+     * @var string
      */
-    public function getResourceServer()
-    {
-        return Cache::remember
-        (
-            'resource_server_'.$this->resource_server_id,
-            Config::get("cache_regions.region_resource_server_lifetime", 60),
-            function() {
-                return $this->resource_server()->first();
-            }
-        );
-    }
+    private $description;
 
-    public function getName()
+    /**
+     * @ORM\Column(name="active", type="boolean")
+     * @var bool
+     */
+    private $active;
+
+    /**
+     * @ORM\OneToMany(targetEntity="ApiScope", mappedBy="api", cascade={"persist"}, orphanRemoval=true)
+     * @var ArrayCollection
+     */
+    private $scopes;
+
+    /**
+     * @ORM\OneToMany(targetEntity="ApiEndpoint", mappedBy="api", cascade={"persist"},orphanRemoval=true)
+     * @var ArrayCollection
+     *
+     */
+    private $endpoints;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="ResourceServer", cascade={"persist"}, inversedBy="apis")
+     * @ORM\JoinColumn(name="resource_server_id", referencedColumnName="id")
+     * @var ResourceServer
+     */
+    private $resource_server;
+
+    /**
+     * Api constructor.
+     */
+    public function __construct()
     {
-        return $this->name;
+        parent::__construct();
+        $this->scopes    = new ArrayCollection();
+        $this->endpoints = new ArrayCollection();
     }
 
     public function getLogo()
@@ -88,58 +77,141 @@ class Api extends BaseModelEloquent implements IApi
         return $url;
     }
 
-    public function getDescription()
-    {
-        return $this->description;
-    }
-
-    public function getScope()
+    public function getScopesStr():string
     {
         $scope = '';
-        foreach ($this->scopes()->get() as $s) {
-            if (!$s->active) {
+        foreach ($this->scopes as $s) {
+            if (!$s->isActive()) {
                 continue;
             }
-            $scope = $scope . $s->name . ' ';
+            $scope = $scope . $s->getName() . ' ';
         }
         $scope = trim($scope);
 
         return $scope;
     }
 
-    public function isActive()
+    /**
+     * @return ArrayCollection
+     */
+    public function getScopes()
     {
-        return $this->active;
+        return $this->scopes;
+    }
+
+    public function addScope(ApiScope $scope){
+        if($this->scopes->contains($scope)) return;
+        $this->scopes->add($scope);
+        $scope->setApi($this);
+    }
+
+    /**
+     * @return ArrayCollection
+     */
+    public function getEndpoints()
+    {
+        return $this->endpoints;
+    }
+
+    /**
+     * @param ApiEndpoint $endpoint
+     */
+    public function addEndpoint(ApiEndpoint $endpoint){
+
+        if($this->endpoints->contains($endpoint)) return;
+        $this->endpoints->add($endpoint);
+        $endpoint->setApi($this);
     }
 
 
-    public function setName($name)
+    /**
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @param string $name
+     */
+    public function setName(string $name): void
     {
         $this->name = $name;
     }
 
-    public function setDescription($description)
+    /**
+     * @return string
+     */
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    /**
+     * @param string $description
+     */
+    public function setDescription(string $description): void
     {
         $this->description = $description;
     }
 
-    public function setStatus($active)
+    /**
+     * @return bool
+     */
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    /**
+     * @param bool $active
+     */
+    public function setActive(bool $active): void
     {
         $this->active = $active;
     }
 
-    public function delete()
+    /**
+     * @return ResourceServer
+     */
+    public function getResourceServer(): ResourceServer
     {
-        $endpoints = ApiEndpoint::where('api_id', '=', $this->id)->get();
-        foreach ($endpoints as $endpoint) {
-            $endpoint->delete();
-        }
-
-        $scopes = ApiScope::where('api_id', '=', $this->id)->get();
-        foreach ($scopes as $scope) {
-            $scope->delete();
-        }
-
-        return parent::delete();
+        return $this->resource_server;
     }
+
+    /**
+     * @param ResourceServer $resource_server
+     */
+    public function setResourceServer(ResourceServer $resource_server): void
+    {
+        $this->resource_server = $resource_server;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasResourceServer():bool{
+        return $this->getResourceServerId() > 0;
+    }
+
+    public function getResourceServerId():int{
+        try {
+            return !is_null($this->resource_server) ? $this->resource_server->getId() : 0;
+        } catch (\Exception $ex) {
+            return 0;
+        }
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        if($name == 'resource_server_id'){
+            return $this->getResourceServerId();
+        }
+        return $this->{$name};
+    }
+
 }

@@ -80,6 +80,9 @@
                     <div class="form-group">
                         <label class="control-label" for="admin_users">Admin Users&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title="Choose which users would be administrator of this application"></span></label>
                         <input type="text" class="form-control" name="admin_users" id="admin_users" @if (!$client->isOwner(Auth::user()))disabled @endif>
+                        @if (!$client->isOwner(Auth::user()))
+                        <p>** you can not edit admin users because your are not the application owner.</p>
+                        @endif
                     </div>
                     <div class="form-group">
                         <label for="website">Application Web Site Url (optional)&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true"

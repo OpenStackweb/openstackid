@@ -19,7 +19,7 @@ use OpenId\OpenIdMessage;
 use OpenId\Requests\OpenIdAuthenticationRequest;
 use OpenId\Services\IMementoOpenIdSerializerService;
 use OpenId\Services\IServerConfigurationService;
-use Log;
+use Illuminate\Support\Facades\Log;
 /**
  * Class OpenIdAuthenticationExtension
  * @package OpenId\Extensions

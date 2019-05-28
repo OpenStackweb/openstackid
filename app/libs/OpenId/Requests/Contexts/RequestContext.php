@@ -16,8 +16,8 @@ class RequestContext
 
     public function __construct()
     {
-        $this->partial_views = array();
-        $this->trusted_data  = array();
+        $this->partial_views = [];
+        $this->trusted_data  = [];
     }
 
     /**
@@ -51,7 +51,7 @@ class RequestContext
      * @return $this
      */
     public function cleanTrustedData(){
-        $this->trusted_data = array();
+        $this->trusted_data = [];
         return $this;
     }
 

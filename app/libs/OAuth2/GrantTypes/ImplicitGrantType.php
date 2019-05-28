@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Exceptions\InvalidApplicationType;
 use OAuth2\Exceptions\InvalidClientType;
 use OAuth2\Exceptions\InvalidOAuth2Request;
@@ -35,7 +34,6 @@ use OAuth2\Services\IUserConsentService;
 use OAuth2\Strategies\IOAuth2AuthenticationStrategy;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
-
 /**
  * Class ImplicitGrantType
  * @see http://tools.ietf.org/html/rfc6749#section-4.2

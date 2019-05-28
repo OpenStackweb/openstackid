@@ -67,13 +67,12 @@ final class AssociationFactory
      * @param string $realm
      * @return IAssociation
      */
-    private function buildAssociation($type, $mac_function, $lifetime, $realm)
+    private function buildAssociation(string $type, string $mac_function, int $lifetime, ?string $realm)
     {
         $new_secret = OpenIdCryptoHelper::generateSecret($mac_function);
         $new_handle = AssocHandleGenerator::generate();
         $expires_in = intval($lifetime);
-        $issued     = gmdate("Y-m-d H:i:s", time());
-
+        $issued     = new \DateTime('now', new \DateTimeZone('UTC'));
         return new Association($new_handle, $new_secret, $mac_function, $expires_in, $issued, $type, $realm);
     }
 

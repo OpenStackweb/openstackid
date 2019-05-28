@@ -11,14 +11,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 **/
-
 use Auth\CustomAuthProvider;
 use Utils\Services\UtilsServiceCatalog;
 use OpenId\Services\OpenIdServiceCatalog;
 use Auth\Repositories\IUserRepository;
-use Auth\Repositories\IMemberRepository;
 use Auth\IAuthenticationExtensionService;
 use Tests\TestCase;
+use Illuminate\Support\Facades\App;
 /**
  * Class CustomAuthProviderTest
  */
@@ -31,12 +30,10 @@ final class CustomAuthProviderTest extends TestCase {
 
         $provider =  new CustomAuthProvider(
             App::make(IUserRepository::class),
-            App::make(IMemberRepository::class),
             App::make(IAuthenticationExtensionService::class),
             App::make(OpenIdServiceCatalog::UserService),
             App::make(UtilsServiceCatalog::CheckPointService),
-            App::make(UtilsServiceCatalog::TransactionService),
-            App::make(UtilsServiceCatalog::LogService)
+            App::make(UtilsServiceCatalog::TransactionService)
         );
 
         $this->assertTrue(!is_null($provider));

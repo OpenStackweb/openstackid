@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Endpoints;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
 use OAuth2\Exceptions\ExpiredAccessTokenException;
 use OAuth2\Exceptions\InvalidOAuth2Request;
@@ -26,7 +24,6 @@ use OAuth2\Services\ITokenService;
 use Utils\Services\ILogService;
 use OAuth2\GrantTypes\RevokeBearerTokenGrantType;
 use Exception;
-
 /**
  * Class TokenRevocationEndpoint
  * @package OAuth2\Endpoints

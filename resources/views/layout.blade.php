@@ -3,11 +3,7 @@
 <head>
     @yield('title')
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
-    <link rel="icon" type="image/png" href="/favicon/favicon-32x32.png" sizes="32x32">
-    <link rel="icon" type="image/png" href="/favicon/favicon-16x16.png" sizes="16x16">
-    <link rel="manifest" href="/favicon/manifest.json">
-    <link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <link rel="shortcut icon" href="{!! Config::get('app.tenant_favicon') !!}" />
     @yield('meta')
     {!! HTML::style('assets/css/index.css') !!}
     {!! HTML::style('assets/css/main.css') !!}
@@ -15,12 +11,18 @@
     {!! HTML::style('assets/bootstrap-tagsinput/bootstrap-tagsinput.css') !!}
     {!! HTML::style('assets/sweetalert2/sweetalert2.css') !!}
     @yield('css')
+    <style type="text/css">
+        #logo a {
+            background: url("{!!  Config::get('app.logo_url') !!}") no-repeat scroll left center rgba(0, 0, 0, 0);
+        }
+    </style>
 </head>
 <body>
+
     <div class="container">
         <header class="row header">
             <div class="col-md-5">
-                <h1 id="logo"><a href="/">Open Stack</a></h1>
+                <h1 id="logo"><a href="/">{!! Config::get('app.tenant_name') !!}</a></h1>
             </div>
             <div class="col-md-7">
                 @yield('header_right')
@@ -41,6 +43,7 @@
     {!! HTML::script('assets/bootstrap-tagsinput/bootstrap-tagsinput.js')!!}
     {!! HTML::script('assets/sweetalert2/sweetalert2.js')!!}
     {!! HTML::script('assets/urijs/URI.min.js')!!}
+    {!! HTML::script('assets/js/jquery-ajax-loader.js')!!}
     @yield('scripts')
     <span class="version hidden">{!! Config::get('app.version') !!}</span>
 </body>

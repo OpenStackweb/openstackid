@@ -32,6 +32,8 @@ use utils\json_types\StringOrURI;
 use Utils\Services\IAuthService;
 use Utils\Services\UtilsServiceCatalog;
 use jwt\impl\UnsecuredJWT;
+use LaravelDoctrine\ORM\Facades\EntityManager;
+use Illuminate\Support\Facades\Session;
 /**
  * Class OIDCProtocolTest
  * http://openid.net/wordpress-content/uploads/2015/02/OpenID-Connect-Conformance-Profiles.pdf
@@ -56,20 +58,20 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
-        $params = array(
+        $params = [
             'client_id' => $client_id,
             'redirect_uri' => 'https://www.test.com/oauth2',
             'response_type' => 'code',
             'scope' => 'openid profile email',
             OAuth2Protocol::OAuth2Protocol_LoginHint => 'sebastian@tipit.net',
             OAuth2Protocol::OAuth2Protocol_Prompt => OAuth2Protocol::OAuth2Protocol_Prompt_None
-        );
+        ];
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -77,7 +79,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('error', $output));
@@ -103,9 +105,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -145,9 +147,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -173,10 +175,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -189,17 +191,17 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         ));
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
         $url = $response->getTargetUrl();
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('error', $output));
@@ -211,7 +213,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     public function testConsentLogin()
     {
         //already logged user
-        $user = User::where('identifier', '=', 'sebastian.marcet')->first();
+        $user_repository = EntityManager::getRepository(User::class);
+        $user = $user_repository->findOneBy(["identifier" => 'sebastian.marcet']);
         $this->be($user, 'web');
 
         $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
@@ -229,9 +232,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -257,10 +260,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -273,17 +276,17 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         ));
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
         $url = $response->getTargetUrl();
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('error', $output));
@@ -309,9 +312,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -337,10 +340,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -357,10 +360,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -368,7 +371,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -393,9 +396,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -425,9 +428,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -450,10 +453,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -470,10 +473,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -481,7 +484,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -505,9 +508,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -535,10 +538,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         sleep(2);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -567,9 +570,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -595,10 +598,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -616,10 +619,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -627,7 +630,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -641,9 +644,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -679,7 +682,6 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             );
 
             $recipient_key->setKeyUse(JSONWebKeyPublicKeyUseValues::Encryption)->setId('recipient_public_key');
-
 
             $jwt->setRecipientKey($recipient_key);
 
@@ -728,9 +730,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -756,10 +758,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -777,10 +779,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -788,7 +790,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -802,9 +804,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -874,9 +876,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -902,10 +904,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -923,10 +925,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -934,7 +936,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -948,9 +950,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -1018,9 +1020,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1043,10 +1045,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1066,10 +1068,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1077,7 +1079,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -1091,9 +1093,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -1133,9 +1135,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params_auth_code,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1161,10 +1163,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1182,10 +1184,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1193,7 +1195,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -1207,9 +1209,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -1234,9 +1236,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         do {
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
                 $params_auth_code,
-                array(),
-                array(),
-                array());
+                [],
+                [],
+                []);
 
 
             $this->assertResponseStatus(302);
@@ -1256,10 +1258,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             // get auth code
 
             $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-                array(),
-                array(),
-                array(),
-                array());
+                [],
+                [],
+                [],
+                []);
 
             $this->assertResponseStatus(302);
 
@@ -1270,7 +1272,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
             $comps = @parse_url($url);
             $query = $comps['query'];
-            $output = array();
+            $output = [];
             parse_str($query, $output);
 
             $this->assertTrue(array_key_exists('code', $output));
@@ -1284,9 +1286,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -1330,9 +1332,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1358,10 +1360,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1379,16 +1381,16 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
         $content = $response->getContent();
         $this->assertEquals('application/x-www-form-urlencoded', $response->headers->get('Content-Type'));
 
-        $output = array();
+        $output = [];
         parse_str($content, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -1404,9 +1406,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -1476,9 +1478,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1504,10 +1506,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1525,16 +1527,16 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
         $content = $response->getContent();
         $this->assertEquals('application/x-www-form-urlencoded', $response->headers->get('Content-Type'));
 
-        $output = array();
+        $output = [];
         parse_str($content, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -1550,9 +1552,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -1590,9 +1592,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
     }
 
     public function testClientAuthenticationClientSecretJwt()
@@ -1614,9 +1616,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1642,10 +1644,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1663,10 +1665,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1674,7 +1676,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -1731,9 +1733,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             "POST",
             "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array()
+            [],
+            [],
+            []
         );
 
         $this->assertResponseStatus(200);
@@ -1792,9 +1794,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1820,10 +1822,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1841,10 +1843,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1852,7 +1854,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -1912,9 +1914,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             "POST",
             "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array()
+            [],
+            [],
+            []
         );
 
         $this->assertResponseStatus(200);
@@ -1950,9 +1952,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
 
         $this->assertResponseStatus(302);
@@ -1971,10 +1973,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
 
         $response = $this->action('POST', 'UserController@getConsent', array(
@@ -1987,10 +1989,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get response
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -1999,7 +2001,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('access_token', $output));
@@ -2030,9 +2032,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
 
         $this->assertResponseStatus(302);
@@ -2052,10 +2054,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
 
         $response = $this->action('POST', 'UserController@getConsent', array(
@@ -2068,10 +2070,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get response
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2080,7 +2082,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(!array_key_exists('access_token', $output));
@@ -2114,9 +2116,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
 
         $this->assertResponseStatus(302);
@@ -2135,10 +2137,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
 
         $response = $this->action('POST', 'UserController@getConsent', array(
@@ -2151,10 +2153,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get response
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2163,7 +2165,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(!array_key_exists('access_token', $output));
@@ -2182,9 +2184,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2193,7 +2195,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output2 = array();
+        $output2 = [];
         parse_str($fragment, $output2);
 
         $this->assertTrue(!array_key_exists('access_token', $output2));
@@ -2223,9 +2225,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
 
         $this->assertResponseStatus(302);
@@ -2245,10 +2247,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
 
         $response = $this->action('POST', 'UserController@getConsent', array(
@@ -2261,10 +2263,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get response
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2273,7 +2275,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('access_token', $output));
@@ -2286,21 +2288,23 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     public function testImplicitFlowAccessTokenAbsentUserError()
     {
         // use a public client
-
         //already logged user
-        $user = User::where('identifier', '=', 'sebastian.marcet')->first();
+        $user_repository = EntityManager::getRepository(User::class);
+        $user = $user_repository->findOneBy(["identifier" => 'sebastian.marcet']);
         $this->be($user, 'web');
 
         $client_id = '1234/Vcvr6fvQbH4HyNgwKlfSyQ3x.openstack.client';
         $scopes = sprintf('%s profile email', OAuth2Protocol::OpenIdConnect_Scope);
 
-        $client = \Models\OAuth2\Client::where('client_id', '=', $client_id)->first();
+        $client_repository = EntityManager::getRepository(\Models\OAuth2\Client::class);
+        $client = $client_repository->findOneBy(["client_id" => $client_id]);
 
         $former_consent = new \Models\OAuth2\UserConsent();
-        $former_consent->client_id = $client->id;
-        $former_consent->user_id   = $user->id;
-        $former_consent->scopes    = $scopes;
-        $former_consent->Save();
+        $former_consent->setClient($client);
+        $former_consent->setScope($scopes);
+        $user->addConsent($former_consent);
+        EntityManager::persist($user);
+        EntityManager::flush();
 
         $params = array
         (
@@ -2313,9 +2317,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2325,7 +2329,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('access_token', $output));
@@ -2357,9 +2361,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
 
         $this->assertResponseStatus(302);
@@ -2378,10 +2382,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
 
         $response = $this->action('POST', 'UserController@getConsent', array(
@@ -2394,17 +2398,17 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get response
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
 
         $this->assertEquals('application/x-www-form-urlencoded', $response->headers->get('Content-Type'));
         $content = $response->getContent();
         $this->assertTrue(!empty($content));
-        $output = array();
+        $output = [];
         parse_str($content, $output);
 
         $this->assertTrue(array_key_exists('access_token', $output));
@@ -2420,10 +2424,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $response = $this->action(
             "GET",
             "Api\OAuth2\OAuth2UserApiController@userInfo",
-            array(),
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
+            [],
             array("HTTP_Authorization" => " Bearer " . $access_token));
 
         $this->assertResponseStatus(200);
@@ -2438,10 +2442,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     {
         $access_token = $this->testToken();
         $response = $this->action("POST", "Api\OAuth2\OAuth2UserApiController@userInfo",
-            array(),
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
+            [],
             array("HTTP_Authorization" => " Bearer " . $access_token));
 
         $this->assertResponseStatus(200);
@@ -2456,13 +2460,13 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     {
         $access_token = $this->testToken();
         $response = $this->action("POST", "Api\OAuth2\OAuth2UserApiController@userInfo",
-            array(),
+            [],
             array
             (
                 'access_token' => $access_token
             ),
-            array(),
-            array());
+            [],
+            []);
 
         $this->assertResponseStatus(200);
         $content = $response->getContent();
@@ -2482,13 +2486,13 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         );
 
         $response = $this->action("POST", "Api\OAuth2\OAuth2UserApiController@userInfo",
-            array(),
+            [],
             array
             (
                 'access_token' => $access_token
             ),
-            array(),
-            array());
+            [],
+            []);
 
         $this->assertResponseStatus(200);
         $user_info_response = $response->getContent();
@@ -2519,9 +2523,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2547,10 +2551,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2567,10 +2571,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2579,7 +2583,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -2598,9 +2602,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -2625,9 +2629,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2653,10 +2657,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2673,10 +2677,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2685,7 +2689,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -2752,9 +2756,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2763,7 +2767,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -2806,9 +2810,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2817,7 +2821,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('error', $output));
@@ -2847,9 +2851,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2875,10 +2879,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2895,10 +2899,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2907,7 +2911,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -2926,9 +2930,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -2964,9 +2968,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -2992,10 +2996,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -3012,10 +3016,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -3024,7 +3028,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
-        $output = array();
+        $output = [];
         parse_str($fragment, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -3044,9 +3048,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -3071,9 +3075,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -3099,10 +3103,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -3119,10 +3123,10 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // get auth code
 
         $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -3130,7 +3134,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -3146,9 +3150,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         // 1st
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -3165,9 +3169,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 

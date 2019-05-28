@@ -42,9 +42,9 @@ final class RevokeAuthorizationCodeRelatedTokens implements ISecurityPolicyCount
 
     /**
      * @param array $params
-     * @return $this|void
+     * @return $this
      */
-    public function trigger(array $params = array())
+    public function trigger(array $params = [])
     {
         try {
             if (isset($params["auth_code"])) {

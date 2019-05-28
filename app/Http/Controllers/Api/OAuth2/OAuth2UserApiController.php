@@ -11,21 +11,58 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Controllers\GetAllTrait;
+use App\ModelSerializers\SerializerRegistry;
+use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Response;
 use OAuth2\Builders\IdTokenBuilder;
 use OAuth2\IResourceServerContext;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\ResourceServer\IUserService;
-use OAuth2\Services\IClientService;
 use Utils\Http\HttpContentType;
 use Utils\Services\ILogService;
-
+use Exception;
 /**
  * Class OAuth2UserApiController
  * @package App\Http\Controllers\Api\OAuth2
  */
-class OAuth2UserApiController extends OAuth2ProtectedController
+final class OAuth2UserApiController extends OAuth2ProtectedController
 {
+    use GetAllTrait;
+
+    protected function getAllSerializerType():string{
+        return SerializerRegistry::SerializerType_Private;
+    }
+
+    /**
+     * @return array
+     */
+    protected function getFilterRules():array
+    {
+        return [
+            'first_name' => ['=@', '=='],
+            'last_name'  => ['=@', '=='],
+            'email'      => ['=@', '=='],
+        ];
+    }
+
+    public function getOrderRules():array{
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    protected function getFilterValidatorRules():array
+    {
+        return [
+            'first_name'  => 'sometimes|required|string',
+            'last_name'   => 'sometimes|required|string',
+            'email'       => 'sometimes|required|string',
+        ];
+    }
+
     /**
      * @var IUserService
      */
@@ -42,6 +79,7 @@ class OAuth2UserApiController extends OAuth2ProtectedController
     private $id_token_builder;
 
     /**
+     * @param IUserRepository $repository
      * @param IUserService $user_service
      * @param IResourceServerContext $resource_server_context
      * @param ILogService $log_service
@@ -50,6 +88,7 @@ class OAuth2UserApiController extends OAuth2ProtectedController
      */
     public function __construct
     (
+        IUserRepository $repository,
         IUserService $user_service,
         IResourceServerContext $resource_server_context,
         ILogService $log_service,
@@ -58,7 +97,7 @@ class OAuth2UserApiController extends OAuth2ProtectedController
     )
     {
         parent::__construct($resource_server_context, $log_service);
-
+        $this->repository        = $repository;
         $this->user_service      = $user_service;
         $this->client_repository = $client_repository;
         $this->id_token_builder  = $id_token_builder;

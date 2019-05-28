@@ -205,11 +205,11 @@ class OpenIdProtocol implements IOpenIdProtocol
     public function getXRDSDiscovery($mode, $canonical_id = null)
     {
         $active_extensions = $this->server_extension_service->getAllActiveExtensions();
-        $extensions = array();
+        $extensions = [];
         foreach ($active_extensions as $ext) {
             array_push($extensions, $ext->getNamespace());
         }
-        $services = array();
+        $services = [];
         array_push($services, new XRDSService(0, $mode == IOpenIdProtocol::OpenIdXRDSModeUser ? self::ClaimedIdentifierType : self::OPIdentifierType, $this->server_config_service->getOPEndpointURL(), $extensions, $canonical_id));
         $builder = new XRDSDocumentBuilder($services, $canonical_id);
         $xrds = $builder->render();

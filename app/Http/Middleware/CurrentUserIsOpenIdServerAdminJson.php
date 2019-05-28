@@ -33,11 +33,11 @@ class CurrentUserIsOpenIdServerAdminJson
     {
         if (Auth::guard($guard)->guest())
         {
-            return Response::json(array('error' => 'you are not allowed to perform this operation'));
+            return Response::json(['error' => 'you are not allowed to perform this operation']);
         }
-        if(!Auth::user()->isOpenstackIdAdmin())
+        if(!Auth::user()->isOpenIdServerAdmin())
         {
-            return Response::json(array('error' => 'you are not allowed to perform this operation'));
+            return Response::json(['error' => 'you are not allowed to perform this operation']);
         }
         return $next($request);
     }

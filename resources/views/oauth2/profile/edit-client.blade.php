@@ -1,25 +1,25 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - OAUTH2 Console - Edit Client</title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - OAUTH2 Console - Edit Client</title>
 @stop
 @section('css')
     {!! HTML::style('assets/css/edit-client.css') !!}
 @append
 @section('scripts')
-
+    {!! HTML::script("assets/moment/min/moment.min.js") !!}
     <script type="application/javascript">
 
         var dataClientUrls =
         {
-            refresh: '{!!URL::action("Api\\ClientApiController@setRefreshTokenClient",array("id"=>$client->id))!!}',
-            rotate: '{!!URL::action("Api\\ClientApiController@setRotateRefreshTokenPolicy",array("id"=>$client->id))!!}',
-            update: '{!!URL::action("Api\\ClientApiController@update")!!}',
-            add_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@create",array("id"=>$client->id))!!}',
-            get_public_keys: '{!!URL::action("Api\\ClientPublicKeyApiController@getByPage",array("id"=>$client->id))!!}',
-            delete_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@delete",array("id" => $client->id, 'public_key_id'=> '@public_key_id'))!!}',
-            update_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@update",array("id" => $client->id, 'public_key_id'=> '@public_key_id'))!!}',
-            fetchUsers: '{!!URL::action("Api\\UserApiController@fetch")!!}',
+            refresh: '{!!URL::action("Api\\ClientApiController@setRefreshTokenClient",array("id"=>$client->id, "use_refresh_token" => "@use_refresh_token"))!!}',
+            rotate: '{!!URL::action("Api\\ClientApiController@setRotateRefreshTokenPolicy",array("id"=>$client->id, 'use_refresh_token'=>'@rotate_refresh_token'))!!}',
+            update: '{!!URL::action("Api\\ClientApiController@update",array("id"=>$client->id))!!}',
+            add_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@_create",array("id"=>$client->id))!!}',
+            get_public_keys: '{!!URL::action("Api\\ClientPublicKeyApiController@getAll",array("id"=>$client->id))!!}',
+            delete_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@_delete",array("id" => $client->id, 'public_key_id'=> '@public_key_id'))!!}',
+            update_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@_update",array("id" => $client->id, 'public_key_id'=> '@public_key_id'))!!}',
+            fetchUsers: '{!!URL::action("Api\\UserApiController@getAll")!!}',
         };
 
         var oauth2_supported_algorithms =
@@ -34,9 +34,15 @@
         };
 
         var current_admin_users  = [];
+        var is_mine = {!! $client->isOwner(Auth::user())? 1:0 !!}
 
-        @foreach($client->admin_users()->get() as $user)
-        current_admin_users.push({ "id": {!!$user->id!!} , "value": "{!! $user->getFullName() !!}" });
+        @foreach($client->getAdminUsers() as $user)
+        current_admin_users.push({
+            "id": {!!$user->getId()!!} ,
+            "value": "{!! $user->getFullName() !!}",
+            "first_name": "{!! $user->first_name !!}",
+            "last_name": "{!! $user->last_name !!}"
+        });
         @endforeach
 
         $(document).ready(function () {
@@ -51,7 +57,7 @@
     </script>
 @append
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 <legend>
     <span aria-hidden="true" class="glyphicon glyphicon-info-sign pointable"
           title="OAuth 2.0 allows users to share specific data with you (for example, contact lists) while keeping their usernames, passwords, and other information private.">

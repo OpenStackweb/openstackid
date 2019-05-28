@@ -11,154 +11,105 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Models\IApi;
+use App\Models\OAuth2\Factories\ApiFactory;
+use App\Services\AbstractService;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
 use Models\OAuth2\Api;
+use Models\OAuth2\ResourceServer;
+use models\utils\IEntity;
 use OAuth2\Repositories\IApiRepository;
+use OAuth2\Repositories\IResourceServerRepository;
 use OAuth2\Services\IApiService;
-use OAuth2\Exceptions\InvalidApi;
 use Utils\Db\ITransactionService;
-use Utils\Exceptions\EntityNotFoundException;
-
 /**
  * Class ApiService
  * @package Services\OAuth2
  */
-class ApiService implements IApiService {
-
-    /**
-     * @var ITransactionService
-     */
-	private $tx_service;
+final class ApiService extends AbstractService implements IApiService {
 
     /**
      * @var IApiRepository
      */
-    private $repository;
+    private $api_repository;
+
+    /**
+     * @var IResourceServerRepository 
+     */
+    private $resource_server_repository;
 
     /**
      * ApiService constructor.
-     * @param IApiRepository $repository
+     * @param IResourceServerRepository $resource_server_repository
+     * @param IApiRepository $api_repository
      * @param ITransactionService $tx_service
      */
 	public function __construct
     (
-        IApiRepository $repository,
+        IResourceServerRepository $resource_server_repository,
+        IApiRepository $api_repository,
         ITransactionService $tx_service
     ){
-        $this->repository = $repository;
-		$this->tx_service = $tx_service;
+	    parent::__construct($tx_service);
+	    $this->resource_server_repository = $resource_server_repository;
+        $this->api_repository = $api_repository;
 	}
 
     /**
      * @param int $id
-     * @return bool
      * @throws EntityNotFoundException
      */
-    public function delete($id)
+    public function delete(int $id):void
     {
 
-	    return $this->tx_service->transaction(function () use ($id) {
-            $api = $this->repository->get($id);
+        $this->tx_service->transaction(function () use ($id) {
+            $api = $this->api_repository->getById($id);
             if(is_null($api)) throw new EntityNotFoundException();
-            $this->repository->delete($api);
-            return true;
+            $this->api_repository->delete($api);
         });
-
     }
 
-    /**
-     * @param $name
-     * @param $description
-     * @param $active
-     * @param $resource_server_id
-     * @return null|IApi
-     */
-    public function add($name, $description, $active, $resource_server_id)
+
+    public function create(array $payload):IEntity
     {
+	    return $this->tx_service->transaction(function () use ($payload) {
 
-        if(is_string($active)){
-            $active = strtoupper($active) == 'TRUE' ? true : false;
-        }
-
-	    return $this->tx_service->transaction(function () use ($name, $description, $active, $resource_server_id ) {
-
-            $former_api = $this->repository->getByNameAndResourceServer($name, $resource_server_id);
+	        $name = trim($payload['name']);
+            $resource_server_id = intval($payload['resource_server_id']);
+            $resource_server = $this->resource_server_repository->getById($resource_server_id);
+            if(is_null($resource_server) || !$resource_server instanceof ResourceServer)
+                throw new EntityNotFoundException();
+            $former_api = $this->api_repository->getByNameAndResourceServer($name, $resource_server_id);
             if(!is_null($former_api))
-                throw new InvalidApi(sprintf('api name %s already exists!',$name));
-            // todo : move to factory
-            $instance = new Api(
-                [
-                    'name'               => $name,
-                    'description'        => $description,
-                    'active'             => $active,
-                    'resource_server_id' => $resource_server_id
-                ]
-            );
+                throw new ValidationException(sprintf('api name %s already exists!', $name));
 
-            $this->repository->add($instance);
+            $api = ApiFactory::build($payload);
 
-            return $instance;
-        });
+            $resource_server->addApi($api);
 
-    }
-
-    /**
-     * @param $id
-     * @param array $params
-     * @return bool
-     * @throws EntityNotFoundException
-     * @throws InvalidApi
-     */
-    public function update($id, array $params){
-
-
-	    return $this->tx_service->transaction(function () use ($id,$params) {
-
-            $api = $this->repository->get($id);
-            if(is_null($api))
-                throw new EntityNotFoundException(sprintf('api id %s does not exists!', $id));
-
-            $allowed_update_params = ['name','description','active'];
-            foreach($allowed_update_params as $param){
-                if(array_key_exists($param,$params)){
-
-                    if($param=='name'){
-                        $former_api = $this->repository->getByNameAndResourceServer($params[$param], $api->resource_server_id);
-                        if(!is_null($former_api) && $former_api->id != $id )
-                            throw new InvalidApi(sprintf('api name %s already exists!', $params[$param]));
-                    }
-
-                    $api->{$param} = $params[$param];
-                }
-            }
-
-            $this->repository->add($api);
-            return true;
+            return $api;
         });
 
     }
 
     /**
      * @param int $id
-     * @param bool $active
-     * @return bool
-     * @throws EntityNotFoundException
+     * @param array $payload
+     * @return IEntity
+     * @throws \Exception
      */
-    public function setStatus($id, $active)
-    {
-        return $this->tx_service->transaction(function() use($id, $active){
+    public function update(int $id, array $payload): IEntity {
 
-            $api = $this->repository->get($id);
 
-            if(is_null($api))
+	    return $this->tx_service->transaction(function () use ($id, $payload) {
+
+            $api = $this->api_repository->getById($id);
+            if(is_null($api) || !$api instanceof Api)
                 throw new EntityNotFoundException(sprintf('api id %s does not exists!', $id));
 
-            $api->active = $active;
-
-            $this->repository->add($api);
-
-            return true;
+            return ApiFactory::populate($api, $payload);
         });
+
     }
+
 }

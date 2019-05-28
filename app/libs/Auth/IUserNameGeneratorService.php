@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Models\Member;
+
 /**
  * Interface IUserNameGeneratorService
  * @package Auth
@@ -19,10 +19,10 @@ use Models\Member;
 interface IUserNameGeneratorService
 {
     /**
-     * @param Member $member
+     * @param User $user
      * @return string
      */
-    public function generate(Member $member);
+    public function generate(User $user):User;
 
     const USER_NAME_INVALID_CHAR_REPLACEMENT = '.';
 

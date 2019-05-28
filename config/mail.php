@@ -55,7 +55,7 @@ return [
     |
     */
 
-    'from' => ['address' => null, 'name' => null],
+    'from' => ['address' => env('MAIL_FROM_EMAIL'), 'name' => env('MAIL_FROM_NAME')],
 
     /*
     |--------------------------------------------------------------------------
@@ -108,5 +108,8 @@ return [
     */
 
     'sendmail' => '/usr/sbin/sendmail -bs',
-
+    'verification_email_subject' => env('MAIL_USER_VERIFICATION_EMAIL_SUBJECT'),
+    'reset_password_email_subject' => env('MAIL_USER_RESET_PASSWORD_EMAIL_SUBJECT'),
+    'locked_user_email_subject' => env("MAIL_LOCKED_USER_EMAIL_SUBJECT"),
+    'support_email' => env("MAIL_SUPPORT_ADDRESS"),
 ];

@@ -38,9 +38,8 @@ interface IAssociationService
 	public function addAssociation(IAssociation $association);
 
     /**
-     * @param $handle
-     * @return bool
+     * @param string $handle
      */
-    public function deleteAssociation($handle);
+    public function deleteAssociation(string $handle);
 
 }

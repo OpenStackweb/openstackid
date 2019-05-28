@@ -13,7 +13,6 @@
  **/
 use Utils\Model\Identifier;
 use Zend\Crypt\Hash;
-
 /**
  * Class UniqueIdentifierGenerator
  * @package Utils\Services

@@ -12,14 +12,13 @@
  * limitations under the License.
  **/
 
+use App\Http\Utils\UserIPHelperProvider;
 use OAuth2\Models\AccessToken;
 use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
 use OAuth2\Exceptions\InvalidApplicationType;
 use OAuth2\Exceptions\LockedClientException;
 use OAuth2\Models\IClient;
 use OAuth2\Services\ITokenService;
-use Utils\IPHelper;
-
 /**
  * Class ValidateBearerTokenResourceServerStrategy
  * @package OAuth2\GrantTypes\Strategies
@@ -32,12 +31,23 @@ final class ValidateBearerTokenResourceServerStrategy implements IValidateBearer
     private $token_service;
 
     /**
+     * @var UserIPHelperProvider
+     */
+    private $ip_helper;
+
+    /**
      * ValidateBearerTokenResourceServerStrategy constructor.
      * @param ITokenService $token_service
+     * @param UserIPHelperProvider $ip_helper
      */
-    public function __construct(ITokenService $token_service)
+    public function __construct
+    (
+        ITokenService $token_service,
+        UserIPHelperProvider $ip_helper
+    )
     {
         $this->token_service = $token_service;
+        $this->ip_helper = $ip_helper;
     }
 
     /**
@@ -58,7 +68,7 @@ final class ValidateBearerTokenResourceServerStrategy implements IValidateBearer
             );
         }
         //validate resource server IP address
-        $current_ip       = IPHelper::getUserIp();
+        $current_ip       = $this->ip_helper->getCurrentUserIpAddress();
         $resource_server  = $client->getResourceServer();
         //check if resource server is active
         if (!$resource_server->isActive())

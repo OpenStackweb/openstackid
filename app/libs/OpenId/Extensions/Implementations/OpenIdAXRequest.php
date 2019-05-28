@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OpenId\Exceptions\InvalidOpenIdMessageException;
 use OpenId\Helpers\OpenIdErrorMessages;
 use OpenId\OpenIdMessage;
 use OpenId\Requests\OpenIdRequest;
 use Utils\Http\HttpMessage;
-
 /**
  * Class OpenIdAXRequest
  * Implements http://openid.net/specs/openid-attribute-exchange-1_0.html
@@ -37,7 +35,7 @@ class OpenIdAXRequest extends OpenIdRequest
     public function __construct(OpenIdMessage $message)
     {
         parent::__construct($message);
-        $this->attributes = array();
+        $this->attributes = [];
     }
 
     /**
@@ -81,7 +79,7 @@ class OpenIdAXRequest extends OpenIdRequest
                 if ($ns != OpenIdAXExtension::$available_properties[$attr])
                     throw new InvalidOpenIdMessageException(sprintf(OpenIdErrorMessages::AXInvalidNamespaceMessage, $ns, $attr));
 
-                array_push($this->attributes, $attr);
+                $this->attributes[] = $attr;
             }
             return true;
         }

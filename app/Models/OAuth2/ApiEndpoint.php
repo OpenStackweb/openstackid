@@ -11,47 +11,111 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\Model\BaseModelEloquent;
-use OAuth2\Models\IApiEndpoint;
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineApiEndpointRepository")
+ * @ORM\Table(name="oauth2_api_endpoint")
  * Class ApiEndpoint
  * @package Models\OAuth2
  */
-class ApiEndpoint extends BaseModelEloquent implements IApiEndpoint {
+class ApiEndpoint extends BaseEntity {
 
-    protected $table = 'oauth2_api_endpoint';
+    /**
+     * attributes
+     */
+    /**
+     * @ORM\Column(name="name", type="string")
+     * @var string
+     */
+    private $name;
 
-    protected $fillable = array( 'description','active','allow_cors', 'name','route', 'http_method', 'api_id', 'rate_limit');
+    /**
+     * @ORM\Column(name="description", type="string")
+     * @var string
+     */
+    private $description;
 
-	public function getActiveAttribute(){
-		return (bool) $this->attributes['active'];
-	}
+    /**
+     * @ORM\Column(name="active", type="boolean")
+     * @var bool
+     */
+    private $active;
 
-	public function getAllowCorsAttribute(){
-		return (bool) $this->attributes['allow_cors'];
-	}
+    /**
+     * @ORM\Column(name="allow_cors", type="boolean")
+     * @var bool
+     */
+    private $allow_cors;
 
-	public function getApiIdAttribute(){
-		return (int) $this->attributes['api_id'];
-	}
+    /**
+     * @ORM\Column(name="allow_credentials", type="boolean")
+     * @var bool
+     */
+    private $allow_credentials;
 
-	public function getIdAttribute(){
-		return (int) $this->attributes['id'];
-	}
+    /**
+     * @ORM\Column(name="route", type="string")
+     * @var string
+     */
+    private $route;
 
-	public function api()
+    /**
+     * @ORM\Column(name="http_method", type="string")
+     * @var string
+     */
+    private $http_method;
+
+    /**
+     * @ORM\Column(name="rate_limit", type="integer")
+     * @var int
+     */
+    private $rate_limit;
+
+    /**
+     * @ORM\Column(name="rate_limit_decay", type="integer")
+     * @var int
+     */
+    private $rate_limit_decay;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="Api", cascade={"persist"}, inversedBy="endpoints")
+     * @ORM\JoinColumn(name="api_id", referencedColumnName="id")
+     * @var Api
+     */
+    private $api;
+
+    /**
+     * @ORM\ManyToMany(targetEntity="ApiScope")
+     * @ORM\JoinTable(name="oauth2_api_endpoint_api_scope",
+     *      joinColumns={@ORM\JoinColumn(name="api_endpoint_id", referencedColumnName="id")},
+     *      inverseJoinColumns={@ORM\JoinColumn(name="scope_id", referencedColumnName="id")}
+     * )
+     * @var ApiScope[]
+     */
+    private $scopes;
+
+    /**
+     * ApiEndpoint constructor.
+     */
+    public function __construct()
     {
-        return $this->belongsTo('Models\OAuth2\Api');
+        parent::__construct();
+        $this->rate_limit       = 0;
+        $this->rate_limit_decay = 0;
+        $this->active = false;
+        $this->allow_cors = false;
+        $this->allow_credentials = false;
+        $this->scopes = new ArrayCollection();
     }
 
-    public function getRoute()
+    /**
+     * @return string
+     */
+    public function getRoute():string
     {
         return $this->route;
-    }
-
-    public function scopes()
-    {
-        return $this->belongsToMany('Models\OAuth2\ApiScope','oauth2_api_endpoint_api_scope','api_endpoint_id','scope_id');
     }
 
     public function getHttpMethod(){
@@ -68,20 +132,12 @@ class ApiEndpoint extends BaseModelEloquent implements IApiEndpoint {
         $this->http_method = $http_method;
     }
 
-    /**
-     * @return \oauth2\models\IApi
-     */
-    public function getApi()
-    {
-        return $this->api()->first();
-    }
-
-    public function getScope()
+    public function getScope():string
     {
         $scope = '';
-        foreach($this->scopes()->get() as $s){
-            if(!$s->active) continue;
-            $scope = $scope .$s->name.' ';
+        foreach($this->scopes as $s){
+            if(!$s->isActive()) continue;
+            $scope = $scope .$s->getName().' ';
         }
         $scope = trim($scope);
         return $scope;
@@ -107,10 +163,8 @@ class ApiEndpoint extends BaseModelEloquent implements IApiEndpoint {
         $this->name= $name;
     }
 
-    /**
-     * @return \oauth2\models\booll
-     */
-    public function supportCORS()
+
+    public function supportCORS():bool
     {
         return $this->allow_cors;
     }
@@ -118,9 +172,171 @@ class ApiEndpoint extends BaseModelEloquent implements IApiEndpoint {
     /**
      * @return bool
      */
-    public function supportCredentials()
+    public function supportCredentials():bool
     {
-        // TODO: Implement supportCredentials() method.
-        return false;
+        return $this->allow_credentials;
+    }
+
+    /**
+     * @param ApiScope $scope
+     */
+    public function addScope(ApiScope $scope){
+        if($this->scopes->contains($scope)) return;
+        $this->scopes->add($scope);
+    }
+
+    /**
+     * @param ApiScope $scope
+     */
+    public function removeScope(ApiScope $scope){
+        if(!$this->scopes->contains($scope)) return;
+        $this->scopes->removeElement($scope);
+    }
+
+    /**
+     * @return Api
+     */
+    public function getApi()
+    {
+        return $this->api;
+    }
+
+    /**
+     * @param Api $api
+     */
+    public function setApi($api)
+    {
+        $this->api = $api;
+    }
+
+    /**
+     * @return ApiScope[]
+     */
+    public function getScopes()
+    {
+        return $this->scopes;
+    }
+
+    /**
+     * @param ApiScope[] $scopes
+     */
+    public function setScopes($scopes)
+    {
+        $this->scopes = $scopes;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    /**
+     * @param string $description
+     */
+    public function setDescription(string $description): void
+    {
+        $this->description = $description;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAllowCors(): bool
+    {
+        return $this->allow_cors;
+    }
+
+    /**
+     * @param bool $allow_cors
+     */
+    public function setAllowCors(bool $allow_cors): void
+    {
+        $this->allow_cors = $allow_cors;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAllowCredentials(): bool
+    {
+        return $this->allow_credentials;
+    }
+
+    /**
+     * @param bool $allow_credentials
+     */
+    public function setAllowCredentials(bool $allow_credentials): void
+    {
+        $this->allow_credentials = $allow_credentials;
+    }
+
+    /**
+     * @return int
+     */
+    public function getRateLimit(): int
+    {
+        return $this->rate_limit;
+    }
+
+    /**
+     * @param int $rate_limit
+     */
+    public function setRateLimit(int $rate_limit): void
+    {
+        $this->rate_limit = $rate_limit;
+    }
+
+    /**
+     * @return int
+     */
+    public function getRateLimitDecay(): int
+    {
+        return $this->rate_limit_decay;
+    }
+
+    /**
+     * @param int $rate_limit_decay
+     */
+    public function setRateLimitDecay(int $rate_limit_decay): void
+    {
+        $this->rate_limit_decay = $rate_limit_decay;
+    }
+
+    /**
+     * @param ApiScope $scope
+     * @return bool
+     */
+    public function hasScope(ApiScope $scope):bool{
+        return $this->scopes->contains($scope);
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasApi():bool{
+        return $this->getApiId() > 0;
+    }
+
+    public function getApiId():int{
+        try {
+            return !is_null($this->api) ? $this->api->getId() : 0;
+        } catch (\Exception $ex) {
+            return 0;
+        }
+    }
+
+    /**
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        if($name == "api_id"){
+            return $this->getApiId();
+        }
+        return $this->{$name};
     }
 }

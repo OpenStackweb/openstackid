@@ -11,85 +11,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Models\IApiEndpoint;
-use OAuth2\Exceptions\InvalidApiScope;
-use OAuth2\Exceptions\InvalidApiEndpoint;
-use Utils\Exceptions\EntityNotFoundException;
-
+use App\Services\IBaseService;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
+use Models\OAuth2\ApiEndpoint;
 /**
  * Interface IApiEndpointService
  * @package OAuth2\Services
  */
-interface IApiEndpointService {
-
-    /**
-     * Adds a new api endpoint to an existent api
-     * @param string $name
-     * @param string $description
-     * @param boolean $active
-     * @param boolean $allow_cors
-     * @param string $route
-     * @param string $http_method
-     * @param int $api_id
-     * @param int $rate_limit
-     * @return IApiEndpoint
-     */
-    public function add($name, $description, $active, $allow_cors, $route, $http_method, $api_id, $rate_limit);
+interface IApiEndpointService extends IBaseService {
 
     /**
      * Adds a new required scope to a given api endpoint,
      * given scope must belongs to owner api of the given endpoint
      * @param int $api_endpoint_id
      * @param int $scope_id
-     * @return boolean
-     * @throws InvalidApiScope
-     * @throws InvalidApiEndpoint
+     * @return ApiEndpoint
+     * @throws ValidationException
      * @throws EntityNotFoundException
      */
-    public function addRequiredScope($api_endpoint_id, $scope_id);
+    public function addRequiredScope(int $api_endpoint_id, int $scope_id):ApiEndpoint;
 
     /**
      * Remove a required scope to a given api endpoint,
      * given scope must belongs to owner api of the given endpoint
      * @param int $api_endpoint_id
      * @param int $scope_id
-     * @return boolean
-     * @throws InvalidApiScope
-     * @throws InvalidApiEndpoint
+     * @return ApiEndpoint
+     * @throws ValidationException
      * @throws EntityNotFoundException
      */
-    public function removeRequiredScope($api_endpoint_id, $scope_id);
-
-    /**
-     * deletes a given api endpoint
-     * @param int $id
-     * @return boolean
-     * @throws EntityNotFoundException
-     */
-    public function delete($id);
-
-    /**
-     * @param int $id
-     * @return mixed
-     */
-    public function get($id);
-
-    /**
-     * @param int $id
-     * @param array $params
-     * @return bool
-     * @throws EntityNotFoundException
-     * @throws InvalidApiEndpoint
-     */
-    public function update($id, array $params);
-
-    /**
-     * @param int $id
-     * @param boolean $active
-     * @throws EntityNotFoundException
-     * @return boolean
-     */
-    public function setStatus($id, $active);
+    public function removeRequiredScope(int $api_endpoint_id, int $scope_id):ApiEndpoint;
 
 } 

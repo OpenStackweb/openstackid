@@ -34,7 +34,7 @@ jQuery(document).ready(function($){
             $.ajax(
                 {
                     type: "PUT",
-                    url: dataClientUrls.update + '?client_id=' + application_data.id,
+                    url: dataClientUrls.update,
                     data: JSON.stringify(application_data),
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",

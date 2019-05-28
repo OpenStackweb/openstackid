@@ -8,7 +8,7 @@ use Behat\Gherkin\Node\TableNode;
  */
 class FeatureContext extends LaravelContext
 {
-    private $params = array();
+    private $params = [];
 
     private $response;
 
@@ -46,9 +46,9 @@ class FeatureContext extends LaravelContext
     {
         $this->response = $this->action($method, $action,
             $this->params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
     }
 
     /**
@@ -100,7 +100,7 @@ class FeatureContext extends LaravelContext
         $response_url = $this->response->getTargetUrl();
         $comps = @parse_url($response_url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
         $this->assertTrue(array_key_exists('code', $output) );
         $this->assertTrue(!empty($output['code']) );

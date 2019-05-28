@@ -43,12 +43,13 @@ abstract class JsonController extends Controller  {
         return $res;
     }
 
-    protected function updated($data='ok')
+    protected function updated($data = 'ok', $has_content = true)
     {
-        $res =  Response::json($data, 204);
+        $res = Response::json($data, $has_content ? 201 : 204);
         //jsonp
-        if(Input::has('callback'))
+        if (Input::has('callback')) {
             $res->setCallback(Input::get('callback'));
+        }
         return $res;
     }
 
@@ -68,7 +69,7 @@ abstract class JsonController extends Controller  {
         return $res;
     }
 
-    protected function error400($data){
+    protected function error400($data = ['message' => 'Bad Request']){
         return Response::json($data, 400);
     }
 

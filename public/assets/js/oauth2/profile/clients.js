@@ -6,9 +6,9 @@ function loadClients(){
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             timeout:60000,
-            success: function (data,textStatus,jqXHR) {
+            success: function (page,textStatus,jqXHR) {
                 //load data...
-                var clients = data.page;
+                var clients = page.data;
                 var template = $('<tbody><tr><td class="admin-app"></td><td class="app-name"></td><td class="client-type"></td><td class="client-active"><input type="checkbox" class="app-active-checkbox"></td><td class="client-locked"><input type="checkbox" disabled="disabled" class="app-locked-checkbox"></td><td class="client-modified"></td><td class="client-modified-by"></td><td class="client-actions">&nbsp;<a class="btn btn-default btn-md active edit-client" title="Edits a Registered Application">Edit</a>&nbsp;<a class="btn btn-default btn-md active del-client" title="Deletes a Registered Application">Delete</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
@@ -17,7 +17,7 @@ function loadClients(){
                                 return arg.item.is_own?'':'<i title="you have admin rights on this application" class="fa fa-user"></i>';
                             },
                             'td.app-name':'client.app_name',
-                            'td.client-type':'client.application_type',
+                            'td.client-type':'client.friendly_application_type',
                             'td.client-modified':'client.updated_at',
                             'td.client-modified-by':'client.modified_by',
                             '.app-active-checkbox@value':'client.id',
@@ -87,27 +87,45 @@ jQuery(document).ready(function($){
         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
         queryTokenizer: Bloodhound.tokenizers.whitespace,
         remote: {
-            url: clientsUrls.fetchUsers+'?t=%QUERY',
-            wildcard: '%QUERY'
+            url: clientsUrls.fetchUsers,
+            wildcard: '%QUERY%',
+            prepare: function (query, settings) {
+                settings.url = clientsUrls.fetchUsers+'?filter=first_name=@'+query+',last_name=@'+query+',email=@'+query;
+                return settings;
+            },
+            transform: function(input){
+                var page = input.data;
+                return page;
+            }
         }
     });
 
     $('#admin_users').tagsinput({
-        itemValue: 'id',
-        itemText: 'value',
+        itemValue: function(item) {
+            return item.id;
+        },
+        itemText: function(item) {
+            return item.first_name + ' ' + item.last_name;
+        },
         freeInput: false,
         allowDuplicates: false,
-        trimValue: true,
         typeaheadjs: [
             {
-                hint: true,
                 highlight: true,
                 minLength: 1
             },
             {
                 name: 'users',
-                displayKey: 'value',
-                source: users
+                display: function(item) {
+                    return item.first_name + ' ' + item.last_name;
+                },
+                templates: {
+                    suggestion: function (item) {
+                        return '<p>' + item.first_name + ' ' + item.last_name + '</p>';
+                    }
+                },
+                source: users,
+                limit: 10
             }
         ]
     });
@@ -134,8 +152,14 @@ jQuery(document).ready(function($){
         var is_valid        = application_form.valid();
         if (is_valid){
             $('#save-application').attr('disabled','disabled');
-            var application     = application_form.serializeForm();
-            application.user_id = userId;
+            var application         = application_form.serializeForm();
+            application.user_id     = userId;
+            if( application.admin_users) {
+                application.admin_users = application.admin_users.split(",");
+                for (var i = 0; i < application.admin_users.length; i++) {
+                    application.admin_users[i] = parseInt(application.admin_users[i], 10);
+                }
+            }
             var link = $(this).attr('href');
             $.ajax({
                 type: "POST",

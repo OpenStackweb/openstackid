@@ -11,12 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\App;
 use OAuth2\Strategies\ClientAuthContextValidatorFactory;
-
 /**
  * Class ClientAuthContextValidatorFactoryProvider
  * @package Providers\OAuth2

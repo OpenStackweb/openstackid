@@ -11,61 +11,144 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use Auth\User;
 use OpenId\Models\ITrustedSite;
-use Utils\Model\BaseModelEloquent;
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOpenIdTrustedSiteRepository")
+ * @ORM\Table(name="openid_trusted_sites")
  * Class OpenIdTrustedSite
  * @package Models\OpenId
  */
-class OpenIdTrustedSite extends BaseModelEloquent implements ITrustedSite
+class OpenIdTrustedSite extends BaseEntity implements ITrustedSite
 {
 
-	protected $fillable = array('realm','user_id', 'policy', 'data');
+    /**
+     * @ORM\Column(name="realm", type="string")
+     * @var string
+     */
+    private $realm;
 
-    public $timestamps = false;
+    /**
+     * @ORM\Column(name="data", type="string")
+     * @var string
+     */
+    private $data;
 
-    protected $table = 'openid_trusted_sites';
+    /**
+     * @ORM\Column(name="policy", type="string")
+     * @var string
+     */
+    private $policy;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="trusted_sites")
+     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
+     * @var User
+     */
+    private $owner;
 
     /**
      * @return string
      */
-    public function getRealm()
-    {
-        return $this->realm;
-    }
-
-    public function getUITrustedData()
+    public function getUITrustedData():string
     {
         $data = $this->getData();
-        $str = '';
+        $str  = '';
         foreach ($data as $val) {
             $str .= $val . ', ';
         }
         return trim($str, ', ');
     }
 
+    /**
+     * @return mixed|string
+     */
     public function getData()
     {
         $res = is_null($this->data)?'[]':$this->data;
         return json_decode($res);
     }
 
-    public function getUser()
-    {
-        return $this->user();
+    /**
+     * @param string $data
+     */
+    public function setData(string $data){
+        $this->data = $data;
     }
 
-    public function user()
+    /**
+     * @return User
+     */
+    public function getUser():User
     {
-        return $this->belongsTo('Auth\User');
+        return $this->owner;
     }
 
     /**
      * @return string
      */
-    public function getAuthorizationPolicy()
+    public function getAuthorizationPolicy():string
     {
         return $this->policy;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRealm(): string
+    {
+        return $this->realm;
+    }
+
+    /**
+     * @param string $realm
+     */
+    public function setRealm(string $realm): void
+    {
+        $this->realm = $realm;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPolicy(): string
+    {
+        return $this->policy;
+    }
+
+    /**
+     * @param string $policy
+     */
+    public function setPolicy(string $policy): void
+    {
+        $this->policy = $policy;
+    }
+
+    /**
+     * @return User
+     */
+    public function getOwner(): User
+    {
+        return $this->owner;
+    }
+
+    /**
+     * @param User $owner
+     */
+    public function setOwner(User $owner): void
+    {
+        $this->owner = $owner;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
     }
 
 }

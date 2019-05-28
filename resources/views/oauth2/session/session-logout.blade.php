@@ -1,7 +1,7 @@
 @extends('layout')
 
 @section('title')
-    <title>Welcome to OpenStackId - OpenStack ID Logout</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - Logout</title>
 @stop
 
 @section('content')
@@ -12,7 +12,7 @@
                 <p>
                     <ul>
                     @foreach ($clients as $client)
-                        <li><b>{!!$client->app_name!!}</b></li>
+                        <li><b>{!!$client->getApplicationName()!!}</b></li>
                     @endforeach
                     </ul>
                  </p>

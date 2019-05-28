@@ -22,8 +22,11 @@ class AuthenticationExtensionService implements IAuthenticationExtensionService 
      */
     private $extensions;
 
+    /**
+     * AuthenticationExtensionService constructor.
+     */
     public function __construct(){
-        $this->extensions = array();
+        $this->extensions = [];
     }
     /**
      * @return array
@@ -39,7 +42,7 @@ class AuthenticationExtensionService implements IAuthenticationExtensionService 
      */
     public function addExtension(IAuthenticationExtension $extension)
     {
-        array_push($this->extensions, $extension);
+        $this->extensions[] = $extension;
         return $this;
     }
 }

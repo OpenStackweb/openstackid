@@ -11,8 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\App;
+use Auth\CustomAuthProvider as AuthProvider;
+use OpenId\Services\OpenIdServiceCatalog;
+use Utils\Services\UtilsServiceCatalog;
+use Auth\IAuthenticationExtensionService;
+use Auth\Repositories\IUserRepository;
 /**
  * Class AuthServiceProvider
  * @package App\Providers
@@ -37,6 +43,15 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
-        //
+        Auth::provider('custom', function($app, array $config) {
+            // Return an instance of Illuminate\Contracts\Auth\UserProvider...
+            return new AuthProvider(
+                App::make(IUserRepository::class),
+                App::make(IAuthenticationExtensionService::class),
+                App::make(OpenIdServiceCatalog::UserService),
+                App::make(UtilsServiceCatalog::CheckPointService),
+                App::make(UtilsServiceCatalog::TransactionService)
+            );
+        });
     }
 }

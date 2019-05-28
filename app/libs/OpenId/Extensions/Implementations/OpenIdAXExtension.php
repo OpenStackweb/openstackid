@@ -45,7 +45,7 @@ class OpenIdAXExtension extends OpenIdExtension
     /**
      * @var array
      */
-    public static $available_properties = array();
+    public static $available_properties = [];
 
     /**
      * @var IAuthService
@@ -86,7 +86,7 @@ class OpenIdAXExtension extends OpenIdExtension
             $ax_request = new OpenIdAXRequest($request->getMessage());
             if (!$ax_request->isValid()) return;
             $attributes = $ax_request->getRequiredAttributes();
-            $data = array();
+            $data = [];
             foreach ($attributes as $attr) {
                 array_push($data, $attr);
             }
@@ -166,7 +166,7 @@ class OpenIdAXExtension extends OpenIdExtension
      */
     public function getTrustedData(OpenIdRequest $request)
     {
-        $data = array();
+        $data = [];
         try {
             $ax_request = new OpenIdAXRequest($request->getMessage());
             if ($ax_request->isValid()) {

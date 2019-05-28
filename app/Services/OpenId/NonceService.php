@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
 use Illuminate\Support\Facades\Log;
 use OpenId\Exceptions\ReplayAttackException;
@@ -24,7 +23,6 @@ use Utils\Services\ICacheService;
 use Utils\Services\IdentifierGenerator;
 use Utils\Services\ILockManagerService;
 use Utils\Services\IServerConfigurationService;
-
 /**
  * Class NonceService
  * @package Services\OpenId

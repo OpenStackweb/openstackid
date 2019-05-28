@@ -11,9 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OpenId\OpenIdMessage;
-
 /**
  * Class OpenIdSREGRequest
  * Implements @see http://openid.net/specs/openid-simple-registration-extension-1_1-01.html

@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
-use Auth\Repositories\IMemberRepository;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -55,13 +54,7 @@ final class AuthService implements IAuthService
     private $user_repository;
 
     /**
-     * @var IMemberRepository
-     */
-    private $member_repository;
-
-    /**
      * AuthService constructor.
-     * @param IMemberRepository $member_repository
      * @param IUserRepository $user_repository
      * @param IPrincipalService $principal_service
      * @param IUserService $user_service
@@ -69,14 +62,12 @@ final class AuthService implements IAuthService
      */
     public function __construct
     (
-        IMemberRepository $member_repository,
         IUserRepository $user_repository,
         IPrincipalService $principal_service,
         IUserService $user_service,
         ICacheService $cache_service
     )
     {
-        $this->member_repository = $member_repository;
         $this->user_repository   = $user_repository;
         $this->principal_service = $principal_service;
         $this->user_service      = $user_service;
@@ -92,9 +83,9 @@ final class AuthService implements IAuthService
     }
 
     /**
-     * @return IOpenIdUser
+     * @return User|null
      */
-    public function getCurrentUser()
+    public function getCurrentUser():?User
     {
         return Auth::user();
     }
@@ -108,7 +99,7 @@ final class AuthService implements IAuthService
     public function login($username, $password, $remember_me)
     {
         Log::debug("AuthService::login");
-        $res = Auth::attempt(array('username' => $username, 'password' => $password), $remember_me);
+        $res = Auth::attempt(['username' => $username, 'password' => $password], $remember_me);
 
         if ($res)
         {
@@ -165,43 +156,29 @@ final class AuthService implements IAuthService
 
     /**
      * @param string $openid
-     * @return IOpenIdUser
+     * @return User|null
      */
-    public function getUserByOpenId($openid)
+    public function getUserByOpenId(string $openid):?User
     {
         return $this->user_repository->getByIdentifier($openid);
     }
 
     /**
      * @param string $username
-     * @return bool|IOpenIdUser
+     * @return null|User
      */
-    public function getUserByUsername($username)
+    public function getUserByUsername(string $username):?User
     {
-        $member =  $this->member_repository->getByEmail($username);
-
-        if (!is_null($member))
-        {
-            $user = $this->user_repository->getByExternalId($member->ID);
-
-            if(!$user)
-            {
-                $user = $this->user_service->buildUser($member);
-            }
-
-            return $user;
-        }
-
-        return false;
+        return $this->user_repository->getByEmailOrName($username);
     }
 
     /**
      * @param int $id
-     * @return IOpenIdUsergetUserAuthorizationResponse
+     * @return null|User
      */
-    public function getUserById($id)
+    public function getUserById(int $id):?User
     {
-        return $this->user_repository->get($id);
+        return $this->user_repository->getById($id);
     }
 
     // Authentication
@@ -231,12 +208,12 @@ final class AuthService implements IAuthService
     }
 
     /**
-     * @param int $user_id
+     * @param  string $user_id
      * @return string
      */
-    public function unwrapUserId($user_id)
+    public function unwrapUserId(string $user_id):string
     {
-        $user = $this->getUserByExternalId($user_id);
+        $user = $this->getUserById(intval($user_id));
 
         if(!is_null($user))
             return $user_id;
@@ -251,7 +228,7 @@ final class AuthService implements IAuthService
      * @param IClient $client
      * @return string
      */
-    public function wrapUserId($user_id, IClient $client)
+    public function wrapUserId(int $user_id, IClient $client):string
     {
        if($client->getSubjectType() === IClient::SubjectType_Public)
            return $user_id;
@@ -264,7 +241,7 @@ final class AuthService implements IAuthService
      * @param string $value
      * @return String
      */
-    private function encrypt($value)
+    private function encrypt(string $value):string
     {
         return base64_encode(Crypt::encrypt($value));
     }
@@ -273,39 +250,16 @@ final class AuthService implements IAuthService
      * @param string $value
      * @return String
      */
-    private function decrypt($value)
+    private function decrypt(string $value):string
     {
         $value = base64_decode($value);
         return Crypt::decrypt($value);
     }
 
     /**
-     * @param int $external_id
-     * @return IOpenIdUser
-     */
-    public function getUserByExternalId($external_id)
-    {
-        $member = $this->member_repository->get($external_id);
-
-        if (!is_null($member))
-        {
-            $user = $this->user_repository->getByExternalId($member->ID);
-
-            if(!$user)
-            {
-                $user = $this->user_service->buildUser($member);
-            }
-
-            return $user;
-        }
-
-        return false;
-    }
-
-    /**
      * @return string
      */
-    public function getSessionId()
+    public function getSessionId():string
     {
        return Session::getId();
     }
@@ -314,7 +268,7 @@ final class AuthService implements IAuthService
      * @param $client_id
      * @return void
      */
-    public function registerRPLogin($client_id)
+    public function registerRPLogin(string $client_id):void
     {
 
         try {
@@ -344,7 +298,7 @@ final class AuthService implements IAuthService
     /**
      * @return string[]
      */
-    public function getLoggedRPs()
+    public function getLoggedRPs():array
     {
         $rps  = Cookie::get(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME);
         $zlib = CompressionAlgorithms_Registry::getInstance()->get(CompressionAlgorithmsNames::ZLib);
@@ -362,7 +316,7 @@ final class AuthService implements IAuthService
      * @param string $jti
      * @throws Exception
      */
-    public function reloadSession($jti)
+    public function reloadSession(string $jti):void
     {
         Log::debug(sprintf("AuthService::reloadSession jti %s", $jti ));
         $session_id = $this->cache_service->getSingleValue($jti);
@@ -381,7 +335,6 @@ final class AuthService implements IAuthService
         Session::start();
         if(!Auth::check())
         {
-
             $user_id      = $this->principal_service->get()->getUserId();
             Log::debug(sprintf("AuthService::reloadSession user_id %s", $user_id ));
             $user         = $this->getUserById($user_id);
@@ -396,7 +349,7 @@ final class AuthService implements IAuthService
      * @param int $id_token_lifetime
      * @return string
      */
-    public function generateJTI($client_id, $id_token_lifetime){
+    public function generateJTI(string $client_id, int $id_token_lifetime):string {
         $session_id  = Crypt::encrypt(Session::getId());
         $encoder     = new Base64UrlRepresentation();
         $jti         = $encoder->encode(hash('sha512', $session_id.$client_id, true));
@@ -407,7 +360,7 @@ final class AuthService implements IAuthService
     }
 
 
-    public function invalidateSession(){
+    public function invalidateSession():void {
         $session_id  = Crypt::encrypt(Session::getId());
         $this->cache_service->addSingleValue($session_id."invalid", $session_id);
     }

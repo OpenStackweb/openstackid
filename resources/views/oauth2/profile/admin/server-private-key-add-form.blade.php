@@ -6,9 +6,9 @@
     <div class="form-group">
         <label class="control-label" for="datepicker">Key validity range&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>
         <div class="input-daterange input-group" id="datepicker">
-            <input type="text" class="input-sm form-control" name="valid_from" id=="valid_from" autocomplete="off" />
+            <input type="text" class="input-sm form-control" name="valid_from" id=="valid_from" autocomplete="new" />
             <span class="input-group-addon">to</span>
-            <input type="text" class="input-sm form-control" name="valid_to" id="valid_to" autocomplete="off" />
+            <input type="text" class="input-sm form-control" name="valid_to" id="valid_to" autocomplete="new" />
         </div>
     </div>
     <div class="checkbox">
@@ -27,11 +27,11 @@
     </div>
     <div class="form-group">
         <label class="control-label" for="password">Key Password&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>
-        <input type="password" class="form-control" name="password" id="password" maxlength="255" autocomplete="off"/>
+        <input type="password" class="form-control" name="password" id="password" maxlength="255" autocomplete="new-password"/>
     </div>
     <div class="form-group">
         <label class="control-label" for="password-confirmation">Key Confirmation Password&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>
-        <input type="password" class="form-control" name="password-confirmation" id="password-confirmation" maxlength="255" autocomplete="off"/>
+        <input type="password" class="form-control" name="password-confirmation" id="password-confirmation" maxlength="255" autocomplete="new-password"/>
     </div>
     <div class="checkbox">
         <label>

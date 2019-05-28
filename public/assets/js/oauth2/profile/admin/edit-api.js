@@ -4,9 +4,9 @@ function loadScopes(){
         url: scopesUrls.get,
         contentType: "application/json; charset=utf-8",
         timeout:60000,
-        success: function (data,textStatus,jqXHR) {
-            var scopes = data.page;
-            if(scopes.length > 0){
+        success: function (page,textStatus,jqXHR) {
+            var items = page.data;
+            if(items.length > 0){
                 $('#info-scopes').hide();
                 $('#table-scopes').show();
                 var template = $('<tbody><tr>' +
@@ -66,7 +66,7 @@ function loadScopes(){
                         }
                     }
                 };
-                var html = template.render(scopes, directives);
+                var html = template.render(items, directives);
                 $('#body-scopes').html(html.html());
             }
             else{
@@ -86,9 +86,9 @@ function loadEndpoints(){
         url: endpointUrls.get,
         contentType: "application/json; charset=utf-8",
         timeout:60000,
-        success: function (data,textStatus,jqXHR) {
-            var endpoints = data.page;
-            if(endpoints.length>0){
+        success: function (page,textStatus,jqXHR) {
+            var items = page.data;
+            if(items.length>0){
                 $('#info-endpoints').hide();
                 $('#table-endpoints').show();
                 var template = $('<tbody><tr>' +
@@ -130,7 +130,7 @@ function loadEndpoints(){
                         }
                     }
                 };
-                var html = template.render(endpoints, directives);
+                var html = template.render(items, directives);
                 $('#body-endpoints').html(html.html());
             }
             else{

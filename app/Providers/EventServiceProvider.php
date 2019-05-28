@@ -11,13 +11,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
+use App\Events\OAuth2ClientLocked;
+use App\Events\UserLocked;
+use App\Events\UserPasswordResetRequestCreated;
+use App\Events\UserPasswordResetSuccessful;
+use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
+use App\Mail\UserLockedEmail;
+use App\Mail\UserPasswordResetMail;
+use App\Mail\WelcomeNewUserEmail;
+use Auth\User;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use App\Mail\UserEmailVerificationSuccess;
+use App\Services\Auth\IUserService;
+use Auth\Repositories\IUserRepository;
+use Illuminate\Support\Facades\App;
+use App\Events\UserCreated;
+use App\Events\UserEmailVerified;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Config;
+use Models\OAuth2\Client;
+use OAuth2\Repositories\IClientRepository;
 /**
  * Class EventServiceProvider
  * @package App\Providers
  */
-class EventServiceProvider extends ServiceProvider
+final class EventServiceProvider extends ServiceProvider
 {
     /**
      * The event listener mappings for the application.
@@ -26,7 +45,6 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $listen = [
         'Illuminate\Database\Events\QueryExecuted' => [
-            'App\Listeners\QueryExecutedListener',
         ],
     ];
 
@@ -39,5 +57,62 @@ class EventServiceProvider extends ServiceProvider
     public function boot()
     {
         parent::boot();
-   }
+
+        Event::listen(UserEmailVerified::class, function($event)
+        {
+            $repository   = App::make(IUserRepository::class);
+            $user         = $repository->getById($event->getUserId());
+            if(is_null($user)) return;
+            Mail::queue(new UserEmailVerificationSuccess($user));
+        });
+
+        Event::listen(UserCreated::class, function($event)
+        {
+            $repository   = App::make(IUserRepository::class);
+            $user         = $repository->getById($event->getUserId());
+            if(is_null($user)) return;
+            if(! $user instanceof User) return;
+            $user_service = App::make(IUserService::class);
+            $user_service->generateIdentifier($user);
+
+            Mail::queue(new WelcomeNewUserEmail($user));
+            if(!$user->isEmailVerified() && !$user->hasCreator())
+                $user_service->sendVerificationEmail($user);
+
+        });
+
+        Event::listen(UserPasswordResetRequestCreated::class, function($event){
+            $repository   = App::make(IUserPasswordResetRequestRepository::class);
+            $request      = $repository->find($event->getId());
+            if(is_null($request)) return;
+
+        });
+
+        Event::listen(UserLocked::class, function($event){
+            $repository   = App::make(IUserRepository::class);
+            $user         = $repository->getById($event->getUserId());
+            if(is_null($user)) return;
+            if(!$user instanceof User) return;
+
+            $support_email = Config::get("mail.support_email");
+            $attempts = $user->getLoginFailedAttempt();
+            Mail::queue(new UserLockedEmail($user, $support_email, $attempts));
+        });
+
+        Event::listen(UserPasswordResetSuccessful::class, function($event){
+            $repository   = App::make(IUserRepository::class);
+            $user         = $repository->getById($event->getUserId());
+            if(is_null($user)) return;
+            if(!$user instanceof User) return;
+            Mail::queue(new UserPasswordResetMail($user));
+        });
+
+        Event::listen(OAuth2ClientLocked::class, function($event){
+            $repository   = App::make(IClientRepository::class);
+            $client       = $repository->getClientById($event->getClientId());
+            if(is_null($client)) return;
+            if(!$client instanceof Client) return;
+            Mail::queue(new \App\Mail\OAuth2ClientLocked($client));
+        });
+    }
 }

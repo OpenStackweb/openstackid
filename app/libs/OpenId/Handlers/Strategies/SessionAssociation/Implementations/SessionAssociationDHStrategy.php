@@ -26,7 +26,6 @@ use OpenId\Helpers\AssociationFactory;
 use OpenId\Exceptions\InvalidDHParam;
 use Zend\Crypt\Exception\InvalidArgumentException;
 use Zend\Crypt\Exception\RuntimeException;
-
 /**
  * Class SessionAssociationDHStrategy
  * @package OpenId\Handlers\Strategies\Implementations
@@ -69,7 +68,8 @@ class SessionAssociationDHStrategy implements ISessionAssociationStrategy
     }
 
     /**
-     * @return OpenIdResponse
+     * @return null|\OpenId\Responses\OpenIdAssociationSessionResponse|OpenIdDiffieHellmanAssociationSessionResponse|OpenIdDirectGenericErrorResponse
+     * @throws \OpenId\Exceptions\ReplayAttackException
      */
     public function handle()
     {

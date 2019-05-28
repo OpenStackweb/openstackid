@@ -1,11 +1,11 @@
 @extends('layout')
 
 @section('title')
-<title>Welcome to OpenStackId - Server Admin - OAUTH2 - Clients</title>
+<title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - OAUTH2 - Clients</title>
 @stop
 
 @section('content')
-@include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+@include('menu')
 <legend>Locked OAUTH2 Clients</legend>
 <div class="row-fluid">
     <div class="span12">
@@ -18,7 +18,7 @@
             </tr>
             </thead>
             <tbody id="body-locked-clients">
-              @foreach($clients as $client)
+              @foreach($clients->getItems() as $client)
               <tr id="{!!$client->id!!}">
                   <td>
                       <div style="min-width: 500px">
@@ -26,7 +26,7 @@
                       </div>
                   </td>
                   <td>
-                      {!! HTML::link(URL::action("Api\ClientApiController@unlock",array("id"=>$client->id)),'Unlock',array('class'=>'btn unlock-client','data-client-id'=>$client->id,'title'=>'Unlocks given client')) !!}
+                      {!! HTML::link(URL::action("Api\ClientApiController@unlock",array("id"=>$client->id)),'Unlock',array('class'=>'btn btn-primary unlock-client','data-client-id'=>$client->id,'title'=>'Unlocks given client')) !!}
                   </td>
               </tr>
               @endforeach

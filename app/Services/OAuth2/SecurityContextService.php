@@ -11,11 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Models\SecurityContext;
 use OAuth2\Services\ISecurityContextService;
 use Illuminate\Support\Facades\Session;
-
 /**
  * Class SecurityContextService
  * @package Services\OAuth2

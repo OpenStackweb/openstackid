@@ -16,19 +16,30 @@ use Exception;
  * Class AuthenticationInvalidPasswordAttemptException
  * @package Auth\Exceptions
  */
-class AuthenticationInvalidPasswordAttemptException extends Exception
+final class AuthenticationInvalidPasswordAttemptException extends Exception
 {
 
-    private $identifier;
+    /**
+     * @var int
+     */
+    private $user_id;
 
-    public function __construct($identifier,$message = "")
+    /**
+     * AuthenticationInvalidPasswordAttemptException constructor.
+     * @param int $user_id
+     * @param string $message
+     */
+    public function __construct(int $user_id, string $message = "")
     {
         $message = "Invalid Password Attempt: " . $message;
-        $this->identifier = $identifier;
+        $this->user_id = $user_id;
         parent::__construct($message, 0, null);
     }
 
-    public function getIdentifier(){
-        return $this->identifier;
+    /**
+     * @return int
+     */
+    public function getUserId(): int{
+        return $this->user_id;
     }
 }

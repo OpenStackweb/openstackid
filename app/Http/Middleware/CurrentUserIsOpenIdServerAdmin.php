@@ -33,11 +33,11 @@ final class CurrentUserIsOpenIdServerAdmin
     {
         if (Auth::guard($guard)->guest())
         {
-            return Response::view('errors.404', array(), 404);
+            return Response::view('errors.404', [], 404);
         }
-        if(!Auth::user()->isOpenstackIdAdmin())
+        if(!Auth::user()->isOpenIdServerAdmin())
         {
-            return Response::view('errors.404', array(), 404);
+            return Response::view('errors.404', [], 404);
         }
         return $next($request);
     }

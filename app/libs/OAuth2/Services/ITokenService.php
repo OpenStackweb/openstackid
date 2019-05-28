@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Auth\User;
 use jwt\IBasicJWT;
 use OAuth2\Exceptions\InvalidAuthorizationCodeException;
 use OAuth2\Exceptions\ReplayAttackException;
@@ -155,9 +157,10 @@ interface ITokenService {
      * Revokes a given access token
      * @param $value
      * @param bool $is_hashed
+     * @param User $current_user
      * @return bool
      */
-    public function revokeAccessToken($value, $is_hashed = false);
+    public function revokeAccessToken($value, $is_hashed = false, ?User $current_user = null);
 
     /**
      * @param $value
@@ -175,19 +178,21 @@ interface ITokenService {
 
     /**
      * Mark a given refresh token as void
-     * @param $value
+     * @param string $value
      * @param bool $is_hashed
+     * @param User $current_user
      * @return bool
      */
-    public function invalidateRefreshToken($value, $is_hashed = false);
+    public function invalidateRefreshToken(string $value, bool $is_hashed = false, ?User $current_user = null);
 
     /**
      * Revokes a give refresh token and all related access tokens
-     * @param $value
+     * @param string $value
      * @param bool $is_hashed
+     * @param User $current_user
      * @return mixed
      */
-    public function revokeRefreshToken($value, $is_hashed = false);
+    public function revokeRefreshToken(string $value, bool $is_hashed = false, ?User $current_user = null);
 
 
     /**

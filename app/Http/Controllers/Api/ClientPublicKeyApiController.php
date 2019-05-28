@@ -12,14 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Services\IClientPublicKeyService;
 use Utils\Services\ILogService;
 use OAuth2\Repositories\IClientPublicKeyRepository;
-use Exception;
 use Illuminate\Support\Facades\Input;
-use Illuminate\Support\Facades\Validator;
-use Services\Exceptions\ValidationException;
 /**
  * Class ClientPublicKeyApiController
  * @package App\Http\Controllers\Api
@@ -41,29 +37,50 @@ final class ClientPublicKeyApiController extends AsymmetricKeyApiController
         parent::__construct($repository, $service, $log_service);
     }
 
-
     /**
-     * @param int $id
-     * @return mixed
+     * @return array
      */
-    public function get($id)
-    {
-        return $this->error404();
+    protected function getCreatePayload():array{
+        $payload =  Input::All();
+        return array_merge($payload, $this->extra_create_payload_params);
     }
 
+    private $extra_create_payload_params = [];
     /**
      * @param int $client_id
      * @return mixed
      */
-    public function create($client_id)
+    public function _create($client_id)
     {
-        try
-        {
+        $this->extra_create_payload_params['client_id'] = $client_id;
+        return $this->create();
+    }
 
-            $values = Input::All();
-            $values['client_id'] = $client_id;
-            // Build the validation constraint set.
-            $rules = array(
+    /**
+     * @param int $client_id
+     * @param int $public_key_id
+     * @return mixed
+     */
+    public function _update($client_id, $public_key_id)
+    {
+        return $this->update($public_key_id);
+    }
+
+    /**
+     * @param int $client_id
+     * @param int $public_key_id
+     * @return mixed
+     */
+    public function _delete($client_id, $public_key_id){
+        return $this->delete($public_key_id);
+    }
+
+    /**
+     * @return array
+     */
+    protected function getCreatePayloadValidationRules(): array
+    {
+            return [
                 'client_id'   => 'required|integer',
                 'kid'         => 'required|text|max:255',
                 'active'      => 'required|boolean',
@@ -73,89 +90,6 @@ final class ClientPublicKeyApiController extends AsymmetricKeyApiController
                 'usage'       => 'required|public_key_usage',
                 'type'        => 'required|public_key_type',
                 'alg'         => 'required|key_alg:usage',
-            );
-
-            // Create a new validator instance.
-            $validation = Validator::make($values, $rules);
-
-            if ($validation->fails())
-            {
-                $messages   = $validation->messages()->toArray();
-                return $this->error400(array('error' => 'validation', 'messages' => $messages));
-            }
-
-            $public_key = $this->service->register($values);
-
-            return $this->created(array('id' => $public_key->getId()));
-
-        }
-        catch(ValidationException $ex1)
-        {
-            return $this->error400(array('error' => $ex1->getMessage()));
-        }
-        catch (Exception $ex)
-        {
-            $this->log_service->error($ex);
-
-            return $this->error500($ex);
-        }
+            ];
     }
-
-
-    /**
-     * @return mixed
-     */
-    public function getByPage($client_id)
-    {
-        try {
-            //check for optional filters param on querystring
-            $fields    = $this->getProjection(Input::get('fields', null));
-            $filters   = $this->getFilters(Input::except('fields', 'limit', 'offset'));
-            $page_nbr  = intval(Input::get('offset', 1));
-            $page_size = intval(Input::get('limit', 10));
-            array_push($filters, array
-                (
-                    'name'  => 'oauth2_client_id',
-                    'op'    => '=',
-                    'value' => $client_id
-                )
-            );
-            $list = $this->repository->getAll($page_nbr, $page_size, $filters, $fields);
-            $items = array();
-            foreach ($list->items() as $private_key) {
-                $data = $private_key->toArray();
-                $data['sha_256'] = $private_key->getSHA_256_Thumbprint();
-                array_push($items, $data);
-            }
-
-            return $this->ok(array(
-                'page' => $items,
-                'total_items' => $list->total()
-            ));
-        } catch (Exception $ex) {
-            $this->log_service->error($ex);
-
-            return $this->error500($ex);
-        }
-    }
-
-    /**
-     * @param int $client_id
-     * @param int $public_key_id
-     * @return mixed
-     */
-    public function update($client_id, $public_key_id)
-    {
-        return $this->_update($public_key_id);
-    }
-
-    /**
-     * @param int $client_id
-     * @param int $public_key_id
-     * @return mixed
-     */
-    public function delete($client_id, $public_key_id){
-        return $this->_delete($public_key_id);
-    }
-
 }

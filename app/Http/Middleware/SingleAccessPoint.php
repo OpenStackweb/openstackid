@@ -34,11 +34,11 @@ final class SingleAccessPoint
                 //checkpoint security pattern entry point
                 $checkpoint_service = ServiceLocator::getInstance()->getService(UtilsServiceCatalog::CheckPointService);
                 if ($checkpoint_service instanceof ICheckPointService && !$checkpoint_service->check()) {
-                    return Response::view('errors.404', array(), 404);
+                    return Response::view('errors.404', [], 404);
                 }
             } catch (Exception $ex) {
                 Log::error($ex);
-                return Response::view('errors.404', array(), 404);
+                return Response::view('errors.404', [], 404);
             }
         }
         return $next($request);

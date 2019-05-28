@@ -11,8 +11,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 **/
-use OAuth2\Models\IClient;
-use Utils\Db\IBaseRepository;
+use Models\OAuth2\Client;
+use models\utils\IBaseRepository;
 /**
  * Interface IClientRepository
  * @package OAuth2\Repositories
@@ -21,25 +21,32 @@ interface IClientRepository extends IBaseRepository
 {
     /**
      * @param string $app_name
-     * @return IClient
+     * @return Client|null
      */
-    public function getByApplicationName($app_name);
+    public function getByApplicationName(string $app_name):?Client;
 
     /**
      * @param string $client_id
-     * @return IClient
+     * @return Client|null
      */
-    public function getClientById($client_id);
+    public function getClientById(string $client_id):?Client;
 
     /**
      * @param int $id
-     * @return IClient
+     * @return Client|null
      */
-    public function getClientByIdentifier($id);
+    public function getClientByIdentifier(int $id):?Client;
 
     /**
      * @param string $origin
-     * @return IClient
+     * @return Client|null
      */
-    public function getByOrigin($origin);
+    public function getByOrigin(string $origin):?Client;
+
+    /**
+     * @param int $id
+     * @param string $custom_scheme
+     * @return bool
+     */
+    public function hasCustomSchemeRegisteredForRedirectUrisOnAnotherClientThan(int $id, string $custom_scheme):bool;
 }

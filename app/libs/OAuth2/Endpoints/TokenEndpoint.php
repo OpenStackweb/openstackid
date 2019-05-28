@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Endpoints;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Exceptions\InvalidGrantTypeException;
+use OAuth2\GrantTypes\IGrantType;
 use OAuth2\IOAuth2Protocol;
 use OAuth2\Requests\OAuth2Request;
 use OAuth2\Responses\OAuth2Response;
-
 /**
  * Class TokenEndpoint
  * Token Endpoint Implementation
@@ -52,6 +50,7 @@ class TokenEndpoint implements IOAuth2Endpoint
     public function handle(OAuth2Request $request)
     {
         foreach ($this->protocol->getAvailableGrants() as $key => $grant) {
+            if(!$grant instanceof IGrantType) continue;
             if ($grant->canHandle($request)) {
                 $request = $grant->buildTokenRequest($request);
                 if (is_null($request))

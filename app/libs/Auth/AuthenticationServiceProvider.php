@@ -30,16 +30,16 @@ final class AuthenticationServiceProvider extends ServiceProvider
     public function register()
     {
         App::singleton(UtilsServiceCatalog::AuthenticationService, 'Auth\\AuthService');
-        App::singleton(\Auth\IAuthenticationExtensionService::class, 'Auth\\AuthenticationExtensionService');
-        App::singleton(\Auth\IUserNameGeneratorService::class, 'Auth\\UserNameGeneratorService');
+        App::singleton(IAuthenticationExtensionService::class, 'Auth\\AuthenticationExtensionService');
+        App::singleton(IUserNameGeneratorService::class, 'Auth\\UserNameGeneratorService');
     }
 
     public function provides()
     {
         return [
             UtilsServiceCatalog::AuthenticationService,
-            \Auth\IAuthenticationExtensionService::class,
-            \Auth\IUserNameGeneratorService::class,
+            IAuthenticationExtensionService::class,
+            IUserNameGeneratorService::class,
         ];
     }
 }

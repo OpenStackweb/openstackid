@@ -6,9 +6,9 @@ function loadGroups(){
             url: link,
             dataType: "json",
             timeout:60000,
-            success: function (data,textStatus,jqXHR) {
+            success: function (page,textStatus,jqXHR) {
                 //load data...
-                var groups     = data.page;
+                var groups     = page.data;
 
                 if(groups.length > 0) {
                     var template = $('<tbody><tr><td class="name"></td><td class="group-active"><input type="checkbox" class="api-scope-group-active-checkbox"></td><td>&nbsp;<a class="btn btn-default active edit-api-scope-group" title="Edit a Registered Group">Edit</a>&nbsp;<a class="btn btn-default btn-delete active delete-api-scope-group" title="Deletes a Registered Group">Delete</a></td></tr></tbody>');
@@ -100,7 +100,7 @@ $(document).ready(function() {
         var group_id = $(this).attr('data-group-id');
         var url      = active? ApiScopeGroupUrls.activate : ApiScopeGroupUrls.deactivate;
         url          = url.replace('@id',group_id);
-        var verb     = active?'PUT':'DELETE';
+        var verb     = active ? 'PUT':'DELETE';
         $.ajax(
             {
                 type: verb,
@@ -164,51 +164,100 @@ $(document).ready(function() {
 
     // modal controls
 
+    // scopes
+
     var scopes = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
         queryTokenizer: Bloodhound.tokenizers.whitespace,
-        local: all_scopes
+        remote: {
+            url: ApiScopeGroupUrls.fetchScopes,
+            wildcard: '%QUERY%',
+            prepare: function (query, settings) {
+                settings.url = ApiScopeGroupUrls.fetchScopes+'?filter[]=name=@'+query+'&filter[]=is_assigned_by_groups==1';
+                return settings;
+            },
+            transform: function(input){
+                var page = input.data;
+                return page;
+            }
+        }
     });
 
     $('#scopes').tagsinput({
-        itemValue: 'id',
-        itemText: 'value',
+        itemValue: function(item) {
+            return item.id;
+        },
+        itemText: function(item) {
+            return item.name
+        },
+        freeInput: false,
+        allowDuplicates: false,
         typeaheadjs: [
             {
-                hint: true,
                 highlight: true,
                 minLength: 1
             },
             {
                 name: 'scopes',
-                displayKey: 'value',
-                source: scopes
+                display: function(item) {
+                    return item.name;
+                },
+                templates: {
+                    suggestion: function (item) {
+                        return '<p>' + item.name + '</p>';
+                    }
+                },
+                source: scopes,
+                limit: 10
             }
         ]
     });
+
+    // users
 
     var users = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
         queryTokenizer: Bloodhound.tokenizers.whitespace,
         remote: {
-            url: ApiScopeGroupUrls.fetchUsers+'?t=%QUERY',
-            wildcard: '%QUERY'
+            url: ApiScopeGroupUrls.fetchUsers,
+            wildcard: '%QUERY%',
+            prepare: function (query, settings) {
+                settings.url = ApiScopeGroupUrls.fetchUsers+'?filter=first_name=@'+query+',last_name=@'+query+',email=@'+query;
+                return settings;
+            },
+            transform: function(input){
+                var page = input.data;
+                return page;
+            }
         }
     });
 
     $('#users').tagsinput({
-        itemValue: 'id',
-        itemText: 'value',
+        itemValue: function(item) {
+            return item.id;
+        },
+        itemText: function(item) {
+            return item.first_name + ' ' + item.last_name;
+        },
+        freeInput: false,
+        allowDuplicates: false,
         typeaheadjs: [
             {
-                hint: true,
                 highlight: true,
                 minLength: 1
             },
             {
                 name: 'users',
-                displayKey: 'value',
-                source: users
+                display: function(item) {
+                    return item.first_name + ' ' + item.last_name;
+                },
+                templates: {
+                    suggestion: function (item) {
+                        return '<p>' + item.first_name + ' ' + item.last_name + '</p>';
+                    }
+                },
+                source: users,
+                limit: 10
             }
         ]
     });

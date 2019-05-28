@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
 use Models\OpenId\OpenIdTrustedSite;
 use OpenId\Extensions\Implementations\OpenIdSREGExtension_1_0;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class OpenIdProtocolTest
  * Test Suite for OpenId Protocol
@@ -35,6 +36,9 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
     private $mod;
     private $oauth2_client_id;
     private $oauth2_client_secret;
+    /**
+     * @var User
+     */
     private $user;
 
     public function __construct($name = null, array $data = [], $dataName = '')
@@ -53,9 +57,10 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
     {
         parent::prepareForTests();
         $this->current_realm = Config::get('app.url');
-        $this->user          = User::where('identifier', '=', 'sebastian.marcet')->first();
-        $this->be($this->user);
+        $user_repository = EntityManager::getRepository(User::class);
+        $this->user      = $user_repository->findOneBy(['email' => 'sebastian@tipit.net']);
         Session::start();
+        $this->be($this->user);
     }
 
     /**
@@ -66,7 +71,7 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
     private function parseOpenIdResponse($url)
     {
         $url_parts = @parse_url($url);
-        $openid_response = array();
+        $openid_response = [];
         $query_params = explode('&', $url_parts['query']);
         foreach ($query_params as $param) {
             $aux = explode('=', $param, 2);
@@ -79,7 +84,7 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
     private function getOpenIdResponseLineBreak($content)
     {
         $params = explode("\n", $content);
-        $res = array();
+        $res = [];
         foreach ($params as $param) {
             if (empty($param)) {
                 continue;
@@ -130,13 +135,13 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
 
         $this->assertTrue($b64_public === 'AIUmVPMheb/hEupD5m6veEEstnBVteyZPy+mlYX7ygxygLG/XuHFa8q4lZERJ9u1DNFOpXHRDq5RbjsaUYRDOtyrbkGbeKo5tPqjsynjXtoMAItxkxCU4jpQLvH85P+u7DeA0h3kKNHFa90ijZTIGSSDRF5wW9N+QPCUCt4G4xWZ');
 
-        $params = array(
+        $params = [
             OpenIdProtocol::param(OpenIdProtocol::OpenIDProtocol_NS) => OpenIdProtocol::OpenID2MessageType,
             OpenIdProtocol::param(OpenIdProtocol::OpenIDProtocol_Mode) => OpenIdProtocol::AssociateMode,
             OpenIdProtocol::param(OpenIdProtocol::OpenIDProtocol_AssocType) => OpenIdProtocol::SignatureAlgorithmHMAC_SHA1,
             OpenIdProtocol::param(OpenIdProtocol::OpenIDProtocol_SessionType) => OpenIdProtocol::AssociationSessionTypeDHSHA1,
             OpenIdProtocol::param(OpenIdProtocol::OpenIdProtocol_DHConsumerPublic) => $b64_public,
-        );
+        ];
 
         $response = $this->action("POST", "OpenId\OpenIdProviderController@endpoint", $params);
 
@@ -253,10 +258,10 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $auth_response = $this->action("GET", "OpenId\OpenIdProviderController@endpoint",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -555,11 +560,11 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
 
         //add trusted site
         $site = new OpenIdTrustedSite;
-        $site->realm = 'https://www.test.com/';
-        $site->policy = IAuthService::AuthorizationResponse_AllowForever;
-        $site->user_id = $this->user->getId();
-        $site->data = json_encode(array());
-        $site->Save();
+        $site->setRealm('https://www.test.com/');
+        $site->setPolicy(IAuthService::AuthorizationResponse_AllowForever);
+        $this->user->addTrustedSite($site);
+        $site->setData(json_encode([]));
+        EntityManager::flush();
 
         $params = array(
             OpenIdProtocol::param(OpenIdProtocol::OpenIDProtocol_NS) => OpenIdProtocol::OpenID2MessageType,
@@ -611,7 +616,7 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
     {
         //set login info
         Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
-        $this->user->trusted_sites()->delete();
+        $this->user->clearTrustedSites();
         $params = array(
             OpenIdProtocol::param(OpenIdProtocol::OpenIDProtocol_NS) => OpenIdProtocol::OpenID2MessageType,
             OpenIdProtocol::param(OpenIdProtocol::OpenIDProtocol_Mode) => OpenIdProtocol::ImmediateMode,
@@ -917,9 +922,9 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
 
         $consent_html_content = $response->getContent();
 
-        $this->assertTrue(str_contains($consent_html_content, 'Welcome to OpenStackId - consent'));
+        $this->assertTrue(str_contains($consent_html_content, sprintf('Welcome to %s - Consent', Config::get("app.app_name"))));
         $this->assertTrue(str_contains($consent_html_content, 'The site has also requested some personal information'));
-        $this->assertTrue(str_contains($consent_html_content, 'The site has also requested some permissions for following OAuth2 application'));
+        $this->assertTrue(str_contains($consent_html_content, 'The site has also requested some permissions for following OAuth2 Application'));
 
 
         $response = $this->call('POST', $url, array(
@@ -1153,11 +1158,11 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $this->assertTrue($openid_response['is_valid'] === 'true');
     }
 
-    public function testCheckSetupOAuth2ExtensionSubView()
+    public function testCheckSetupOAuth2ExtensionSubView($identifier = 'sebastian.marcet')
     {
-
         //set login info
-        $user = User::where('identifier', '=', 'sebastian.marcet')->first();
+        $repo = EntityManager::getRepository(User::class);
+        $user = $repo->getByIdentifier($identifier);
         Auth::login($user);
 
         $scope = array(
@@ -1194,10 +1199,10 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
     public function testDiscovery()
     {
         $response = $this->action("GET", "HomeController@index",
-            array(),
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array('HTTP_Accept' => 'text/html; q=0.3, application/xhtml+xml; q=0.5, application/xrds+xml'));
         $this->assertResponseStatus(200);
@@ -1252,10 +1257,10 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $auth_response = $this->action("GET", "OpenId\OpenIdProviderController@endpoint",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 

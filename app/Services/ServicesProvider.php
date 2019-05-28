@@ -11,11 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
+use App\Services\Auth\GroupService;
+use App\Services\Auth\IGroupService;
+use App\Services\Auth\IUserService;
+use App\Services\Auth\UserService;
 use Illuminate\Support\ServiceProvider;
+use Services\SecurityPolicies\AuthorizationCodeRedeemPolicy;
+use Services\SecurityPolicies\OAuth2SecurityPolicy;
+use Utils\Db\ITransactionService;
 use Utils\Services\UtilsServiceCatalog;
 use Services\Utils\CheckPointService;
 use Illuminate\Support\Facades\App;
-
 /**
  * Class ServicesProvider
  * @package Services
@@ -61,13 +69,21 @@ final class ServicesProvider extends ServiceProvider
                 $oauth2_security_policy             = App::make(\Services\SecurityPolicies\OAuth2SecurityPolicy::class);
                 $oauth2_security_policy->setCounterMeasure($oauth2_lock_client_counter_measure);
 
-                $checkpoint_service = new CheckPointService($blacklist_security_policy);
+                $checkpoint_service = new CheckPointService
+                (
+                    App::make(IUserExceptionTrailRepository::class),
+                    App::make(ITransactionService::class)
+                );
+
+                $checkpoint_service->addPolicy($blacklist_security_policy);
                 $checkpoint_service->addPolicy($lock_user_security_policy);
                 $checkpoint_service->addPolicy($authorization_code_redeem_Policy);
                 $checkpoint_service->addPolicy($oauth2_security_policy);
                 return $checkpoint_service;
             });
 
+        App::singleton(IUserService::class, UserService::class);
+        App::singleton(IGroupService::class, GroupService::class);
     }
 
     public function provides()
@@ -80,9 +96,10 @@ final class ServicesProvider extends ServiceProvider
             \Services\SecurityPolicies\BlacklistSecurityPolicy::class,
             \Services\SecurityPolicies\LockUserSecurityPolicy::class,
             \Services\SecurityPolicies\OAuth2LockClientCounterMeasure::class,
-            \Services\SecurityPolicies\OAuth2SecurityPolicy::class,
-            \Services\SecurityPolicies\AuthorizationCodeRedeemPolicy::class,
+            OAuth2SecurityPolicy::class,
+            AuthorizationCodeRedeemPolicy::class,
             UtilsServiceCatalog::CheckPointService,
+            IUserService::class,
         ];
     }
 }

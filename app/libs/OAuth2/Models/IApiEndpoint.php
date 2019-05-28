@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use Models\OAuth2\Api;
 /**
  * Interface IApiEndpoint
  * @package OAuth2\Models
@@ -72,7 +73,7 @@ interface IApiEndpoint {
     public function supportCORS();
 
     /**
-     * @return IApi
+     * @return Api
      */
     public function getApi();
 

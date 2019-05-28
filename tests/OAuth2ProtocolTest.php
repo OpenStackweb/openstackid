@@ -18,6 +18,7 @@ use Utils\Services\IAuthService;
 use Utils\Services\UtilsServiceCatalog;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class OAuth2ProtocolTest
  * Test Suite for OAuth2 Protocol
@@ -30,11 +31,19 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     protected function prepareForTests()
     {
         parent::prepareForTests();
-        App::singleton(UtilsServiceCatalog::ServerConfigurationService, 'StubServerConfigurationService');
         $this->current_realm = Config::get('app.url');
-        $user = User::where('identifier', '=', 'sebastian.marcet')->first();
-        $this->be($user);
+        $user_repository = EntityManager::getRepository(User::class);
+        $this->user      = $user_repository->findOneBy(['email' => 'sebastian@tipit.net']);
         Session::start();
+        $this->be($this->user);
+    }
+
+
+    public function createApplication()
+    {
+        $app = parent::createApplication();
+        $app->singleton(UtilsServiceCatalog::ServerConfigurationService, StubServerConfigurationService::class);
+        return $app;
     }
 
     /**
@@ -45,18 +54,18 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
-        $params = array(
+        $params = [
             'client_id' => $client_id,
             'redirect_uri' => 'https://www.test.com/oauth2',
             'response_type' => 'code',
             'scope' => sprintf('%s/resource-server/read', $this->current_realm),
-        );
+        ];
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -70,10 +79,10 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(302);
 
         $auth_response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
-            array(),
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -81,7 +90,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $this->assertTrue(array_key_exists('code', $output));
@@ -106,9 +115,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(400);
 
@@ -132,9 +141,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 
@@ -162,9 +171,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(400);
 
@@ -195,9 +204,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array()
+            [],
+            [],
+            []
         );
 
         $status = $response->getStatusCode();
@@ -206,7 +215,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $params = array(
@@ -221,9 +230,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             "POST",
             "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony internally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret))
         );
@@ -275,9 +284,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $status = $response->getStatusCode();
         $url = $response->getTargetUrl();
@@ -285,7 +294,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $comps = @parse_url($url);
         $query = $comps['query'];
-        $output = array();
+        $output = [];
         parse_str($query, $output);
 
         $params = array(
@@ -297,9 +306,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -318,14 +327,13 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
         $this->assertResponseStatus(400);
-
     }
 
     /** test validate token grant
@@ -353,9 +361,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
                 $params,
-                array(),
-                array(),
-                array());
+                [],
+                [],
+                []);
 
             $status = $response->getStatusCode();
             $url = $response->getTargetUrl();
@@ -364,7 +372,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             // get auth code ...
             $comps = @parse_url($url);
             $query = $comps['query'];
-            $output = array();
+            $output = [];
             parse_str($query, $output);
 
 
@@ -377,9 +385,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -402,9 +410,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@introspection",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -436,9 +444,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@introspection",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -466,9 +474,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@introspection",
             $params,
-            array(),
-            array(),
-            array(),
+            [],
+            [],
+            [],
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -505,9 +513,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
                 $params,
-                array(),
-                array(),
-                array());
+                [],
+                [],
+                []);
 
             $status = $response->getStatusCode();
             $url = $response->getTargetUrl();
@@ -516,7 +524,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             // get auth code ...
             $comps = @parse_url($url);
             $query = $comps['query'];
-            $output = array();
+            $output = [];
             parse_str($query, $output);
 
 
@@ -529,9 +537,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -554,9 +562,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@introspection",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -568,9 +576,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@introspection",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -610,9 +618,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
                 $params,
-                array(),
-                array(),
-                array());
+                [],
+                [],
+                []);
 
             $status = $response->getStatusCode();
             $url = $response->getTargetUrl();
@@ -621,7 +629,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             // get auth code ...
             $comps = @parse_url($url);
             $query = $comps['query'];
-            $output = array();
+            $output = [];
             parse_str($query, $output);
 
             //do get auth token...
@@ -633,9 +641,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -658,9 +666,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -685,9 +693,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@introspection",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -723,9 +731,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
                 $params,
-                array(),
-                array(),
-                array());
+                [],
+                [],
+                []);
 
             $status  = $response->getStatusCode();
             $url     = $response->getTargetUrl();
@@ -734,24 +742,22 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             // get auth code ...
             $comps  = @parse_url($url);
             $query  = $comps['query'];
-            $output = array();
+            $output = [];
 
             parse_str($query, $output);
 
-
             //do get auth token...
-            $params = array(
+            $params = [
                 'code'         => $output['code'],
                 'redirect_uri' => 'https://www.test.com/oauth2',
                 'grant_type'   => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
-            );
-
+            ];
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -767,17 +773,16 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             $this->assertTrue(!empty($access_token));
             $this->assertTrue(!empty($refresh_token));
 
-
-            $params = array(
+            $params = [
                 'refresh_token' => $refresh_token,
                 'grant_type'    => OAuth2Protocol::OAuth2Protocol_GrantType_RefreshToken,
-            );
+            ];
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -797,9 +802,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             //do re refresh and we will get a 400 http error ...
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -835,9 +840,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
                 $params,
-                array(),
-                array(),
-                array());
+                [],
+                [],
+                []);
 
             $status = $response->getStatusCode();
             $url = $response->getTargetUrl();
@@ -846,7 +851,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             // get auth code ...
             $comps = @parse_url($url);
             $query = $comps['query'];
-            $output = array();
+            $output = [];
             parse_str($query, $output);
 
 
@@ -860,9 +865,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
             $this->assertResponseStatus(200);
@@ -888,9 +893,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -918,16 +923,16 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
         $url = $response->getTargetUrl();
         // get auth code ...
         $comps = @parse_url($url);
         $fragment = $comps['fragment'];
-        $response = array();
+        $response = [];
         parse_str($fragment, $response);
 
         $this->assertTrue(isset($response['access_token']) && !empty($response['access_token']));
@@ -957,16 +962,16 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
         $url = $response->getTargetUrl();
         // get auth code ...
         $comps = @parse_url($url);
         $fragment = $comps['fragment'];
-        $response = array();
+        $response = [];
         parse_str($fragment, $response);
 
         $this->assertTrue(isset($response['access_token']) && !empty($response['access_token']));
@@ -986,9 +991,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@revoke",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
 
@@ -1011,16 +1016,16 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
         $url = $response->getTargetUrl();
         // get auth code ...
         $comps = @parse_url($url);
         $fragment = $comps['fragment'];
-        $response = array();
+        $response = [];
         parse_str($fragment, $response);
 
         $this->assertTrue(isset($response['access_token']) && !empty($response['access_token']));
@@ -1041,9 +1046,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@revoke",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
     }
@@ -1066,16 +1071,16 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
         $url = $response->getTargetUrl();
         // get auth code ...
         $comps = @parse_url($url);
         $fragment = $comps['fragment'];
-        $response = array();
+        $response = [];
         parse_str($fragment, $response);
 
         $this->assertTrue(isset($response['access_token']) && !empty($response['access_token']));
@@ -1095,9 +1100,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@revoke",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
 
@@ -1121,16 +1126,16 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
         $url = $response->getTargetUrl();
         // get auth code ...
         $comps = @parse_url($url);
         $fragment = $comps['fragment'];
-        $response = array();
+        $response = [];
         parse_str($fragment, $response);
 
         $this->assertTrue(isset($response['access_token']) && !empty($response['access_token']));
@@ -1149,9 +1154,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@revoke",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(200);
     }
@@ -1171,9 +1176,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
                 $params,
-                array(),
-                array(),
-                array(),
+                [],
+                [],
+                [],
                 // Symfony interally prefixes headers with "HTTP", so
                 array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
 
@@ -1204,9 +1209,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,
-            array(),
-            array(),
-            array());
+            [],
+            [],
+            []);
 
         $this->assertResponseStatus(302);
 

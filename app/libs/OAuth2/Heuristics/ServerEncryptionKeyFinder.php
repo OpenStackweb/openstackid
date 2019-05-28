@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use jwa\cryptographic_algorithms\ICryptoAlgorithm;
 use jwa\cryptographic_algorithms\key_management\modes\DirectEncryption;
 use jwk\exceptions\InvalidJWKAlgorithm;
@@ -25,7 +24,6 @@ use OAuth2\Exceptions\InvalidClientType;
 use OAuth2\Exceptions\ServerKeyNotFoundException;
 use OAuth2\Models\IClient;
 use OAuth2\Repositories\IServerPrivateKeyRepository;
-
 /**
  * Class ServerEncryptionKeyFinder
  * @package OAuth2\Heuristics
@@ -55,7 +53,7 @@ final class ServerEncryptionKeyFinder implements IKeyFinder
      * @throws InvalidJWKAlgorithm
      * @throws JWKInvalidSpecException
      */
-    public function find(IClient $client, ICryptoAlgorithm $alg, $kid_hint = null)
+    public function find(IClient $client, ICryptoAlgorithm $alg, ?string $kid_hint = null)
     {
         if($alg instanceof DirectEncryption)
         {
@@ -81,9 +79,15 @@ final class ServerEncryptionKeyFinder implements IKeyFinder
 
         if(!is_null($kid_hint))
         {
-            $key = $this->server_private_key_repository->get($kid_hint);
-            if(!$key->isActive()) $key = null;
-            if($key->getAlg()->getName() !== $alg->getName()) $key = null;
+            $key = $this->server_private_key_repository->getByKeyIdentifier($kid_hint);
+            if (!is_null($key) && !$key->isActive())
+            {
+                $key = null;
+            }
+            if (!is_null($key) && $key->getAlg()->getName() !== $alg->getName())
+            {
+                $key = null;
+            }
         }
 
         if(is_null($key))

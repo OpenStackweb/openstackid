@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Endpoints;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\Http\Utils\UserIPHelperProvider;
 use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
 use OAuth2\Exceptions\ExpiredAccessTokenException;
 use OAuth2\Exceptions\InvalidApplicationType;
@@ -27,7 +26,6 @@ use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
 use OAuth2\GrantTypes\ValidateBearerTokenGrantType;
 use OAuth2\Exceptions\InvalidOAuth2Request;
-
 /**
  * Class TokenIntrospectionEndpoint
  * @package OAuth2\Endpoints
@@ -52,6 +50,7 @@ class TokenIntrospectionEndpoint implements IOAuth2Endpoint
      * @param ITokenService $token_service
      * @param IAuthService $auth_service
      * @param ILogService $log_service
+     * @param UserIPHelperProvider $ip_helper
      */
     public function __construct
     (
@@ -60,11 +59,20 @@ class TokenIntrospectionEndpoint implements IOAuth2Endpoint
         IClientRepository $client_repository,
         ITokenService $token_service,
         IAuthService $auth_service,
-        ILogService $log_service
+        ILogService $log_service,
+        UserIPHelperProvider $ip_helper
     )
     {
         $this->protocol   = $protocol;
-        $this->grant_type = new ValidateBearerTokenGrantType($client_service, $client_repository, $token_service, $auth_service, $log_service);
+        $this->grant_type = new ValidateBearerTokenGrantType
+        (
+            $client_service,
+            $client_repository,
+            $token_service,
+            $auth_service,
+            $log_service,
+            $ip_helper
+        );
     }
 
 

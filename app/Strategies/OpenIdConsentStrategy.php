@@ -88,7 +88,7 @@ final class OpenIdConsentStrategy implements IConsentStrategy
             throw new InvalidRequestContextException();
 
         $partial_views      = $context->getPartials();
-        $data               = array();
+        $data               = [];
         $request            = OpenIdMessage::buildFromMemento( $this->memento_service->load());
         $user               = $this->auth_service->getCurrentUser();
         $data['realm']      = $request->getParam(OpenIdProtocol::OpenIDProtocol_Realm);

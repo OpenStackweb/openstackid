@@ -11,8 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\Models\IApiEndpoint;
-use Utils\Db\IBaseRepository;
+use Models\OAuth2\Api;
+use Models\OAuth2\ApiEndpoint;
+use models\utils\IBaseRepository;
 /**
  * Interface IApiEndpointRepository
  * @package OAuth2\Repositories
@@ -22,22 +23,22 @@ interface IApiEndpointRepository extends IBaseRepository
     /**
      * @param string $url
      * @param string $http_method
-     * @return IApiEndpoint
+     * @return ApiEndpoint
      */
-    public function getApiEndpointByUrlAndMethod($url, $http_method);
+    public function getApiEndpointByUrlAndMethod(string $url, string $http_method):?ApiEndpoint;
 
     /**
      * @param string $url
      * @param string $http_method
-     * @param int $api_id
-     * @return IApiEndpoint
+     * @param Api $api
+     * @return ApiEndpoint
      */
-    public function getApiEndpointByUrlAndMethodAndApi($url, $http_method, $api_id);
+    public function getApiEndpointByUrlAndMethodAndApi(string $url, string $http_method, Api $api):?ApiEndpoint;
 
     /**
      * @param string $url
-     * @return IApiEndpoint
+     * @return ApiEndpoint
      */
-    public function getApiEndpointByUrl($url);
+    public function getApiEndpointByUrl(string $url):?ApiEndpoint;
 
 }

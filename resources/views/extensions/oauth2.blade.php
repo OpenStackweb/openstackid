@@ -1,6 +1,6 @@
 @if(count($requested_scopes)>0)
 <label>
-    <b>The site has also requested some permissions for following OAuth2 application</b>
+    <b>The site has also requested some permissions for following OAuth2 Application</b>
 </label>
 <div class="container">
     <div class="row">
@@ -16,11 +16,11 @@
             <legend>This app would like to:</legend>
             <ul class="unstyled list-inline">
                 @foreach ($requested_scopes as $scope)
-                <li> {!!$scope->short_description!!}&nbsp;<span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true" data-content="{!!$scope->description!!}" title="Scope Info"></span></li>
+                <li> {!!$scope->getShortDescription()!!}&nbsp;<span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true" data-content="{!!$scope->getDescription()!!}" title="Scope Info"></span></li>
                 @endforeach
             </ul>
             <p class="privacy-policy">
-                ** <b>{!!$app_name!!}</b> Application and <b>Openstack</b> will use this information in accordance with their respective terms of service and privacy policies.
+                ** <b>{!!$app_name!!}</b> Application and <b>{!! Config::get('app.app_name') !!}</b> will use this information in accordance with their respective terms of service and privacy policies.
             </p>
         </div>
     </div>

@@ -12,48 +12,100 @@
  * limitations under the License.
  **/
 use OAuth2\Models\IUserConsent;
-use Utils\Model\BaseModelEloquent;
-use OAuth2\Models\IClient;
 use Auth\User;
+use App\Models\Utils\BaseEntity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping AS ORM;
 /**
+ * @ORM\Entity
+ * @ORM\Table(name="oauth2_user_consents")
  * Class UserConsent
  * @package Models\OAuth2
  */
-class UserConsent extends BaseModelEloquent implements IUserConsent {
+class UserConsent extends BaseEntity implements IUserConsent {
 
-    protected $table = 'oauth2_user_consents';
+    /**
+     * @ORM\Column(name="scopes", type="string")
+     * @var string
+     */
+    private $scopes;
 
-    public function user()
-    {
-        return $this->belongsTo('Auth\User');
-    }
+    /**
+     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="consents")
+     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
+     * @var User
+     */
+    private $owner;
 
-    public function client()
-    {
-        return $this->belongsTo('Models\OAuth2\Client');
-    }
+    /**
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"})
+     * @ORM\JoinColumn(name="client_id", referencedColumnName="id")
+     * @var Client
+     */
+    private $client;
 
     /**
      * @return string
      */
-    public function getScope()
+    public function getScope():string
     {
-        return $this->scope;
+        return $this->scopes;
     }
 
     /**
-     * @return IClient
+     * @return Client
      */
-    public function getClient()
+    public function getClient():Client
     {
-        return $this->client()->first();
+        return $this->client;
     }
 
     /**
      * @return User
      */
-    public function getUser()
+    public function getUser():User
     {
-        return $this->user()->first();
+        return $this->owner;
     }
+
+    /**
+     * @return User
+     */
+    public function getOwner(): User
+    {
+        return $this->owner;
+    }
+
+    /**
+     * @param User $owner
+     */
+    public function setOwner(User $owner): void
+    {
+        $this->owner = $owner;
+    }
+
+    /**
+     * @param string $scope
+     */
+    public function setScope(string $scope): void
+    {
+        $this->scopes = $scope;
+    }
+
+    /**
+     * @param Client $client
+     */
+    public function setClient(Client $client): void
+    {
+        $this->client = $client;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public function __get($name) {
+        return $this->{$name};
+    }
+
 }

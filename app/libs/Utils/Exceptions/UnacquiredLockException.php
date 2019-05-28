@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use Exception;
-
 /**
  * Class UnacquiredLockException
  * @package Utils\Exceptions

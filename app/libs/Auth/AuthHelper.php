@@ -14,6 +14,7 @@
 use Zend\Crypt\Hash;
 use Zend\Math\Rand;
 use Exception;
+use Illuminate\Support\Facades\Hash as HashFacade;
 /**
  * Class PasswordEncryptorStrategy
  * @package Auth
@@ -31,7 +32,19 @@ abstract class PasswordEncryptorStrategy {
      * @param $hash2
      * @return bool
      */
-    abstract public function compare($hash1, $hash2);
+    public function compare($hash1, $hash2)
+    {
+        return hash_equals($hash1 , $hash2);
+    }
+
+    /**
+     * @param string $raw
+     * @param string $hash
+     * @param string $salt
+     * @return bool
+     */
+    abstract public function check(string $raw, string $hash, string $salt = null):bool;
+
 }
 
 /**
@@ -42,13 +55,13 @@ final class PasswordEncryptor_Legacy extends PasswordEncryptorStrategy {
 
     private $algorithm;
 
-    private static $algorithms = array(
-        "none" => "none",
-        "md5" => "md5",
-        "sha1" => "sha1",
-        "md5_v2.4" => "md5",
-        "sha1_v2.4" => "sha1",
-    );
+    private static $algorithms = [
+        "none"       => "none",
+        "md5"        => "md5",
+        "sha1"       => "sha1",
+        "md5_v2.4"   => "md5",
+        "sha1_v2.4"  => "sha1",
+    ];
 
     public function __construct($algorithm){
         $this->algorithm = $algorithm;
@@ -70,7 +83,19 @@ final class PasswordEncryptor_Legacy extends PasswordEncryptorStrategy {
     {
         // Due to flawed base_convert() floating poing precision,
         // only the first 10 characters are consistently useful for comparisons.
-        return (substr($hash1, 0, 10) == substr($hash2, 0, 10));
+        return hash_equals(substr($hash1, 0, 10) ,substr($hash2, 0, 10));
+    }
+
+    /**
+     * @param string $raw
+     * @param string $hash
+     * @param string $salt
+     * @return bool
+     */
+    public function check(string $raw, string $hash, string $salt = null): bool
+    {
+        $output = $this->encrypt($raw, $salt);
+        return $this->compare($output, $hash);
     }
 }
 
@@ -217,20 +242,47 @@ final class PasswordEncryptor_Blowfish extends PasswordEncryptorStrategy {
     /**
      * self::$cost param is forced to be two digits with leading zeroes for ints 4-9
      */
-    public function salt($password) {
+    public static function salt() {
         $generator =  Hash::compute('sha1',Rand::getString(128, null, true));
         return sprintf('%02d', self::$cost) . '$' . substr($generator, 0, 22);
     }
 
-    public function check($hash, $password, $salt = null) {
+    /**
+     * @param string $raw
+     * @param string $hash
+     * @param string|null $salt
+     * @return bool
+     */
+    public function check(string $raw, string $hash, string $salt = null):bool {
         if(strpos($hash, '$2y$') === 0) {
-            return $hash === $this->encryptY($password, $salt);
-        } elseif(strpos($hash, '$2a$') === 0) {
-            return $hash === $this->encryptA($password, $salt);
-        } elseif(strpos($hash, '$2x$') === 0) {
-            return $hash === $this->encryptX($password, $salt);
+            return $this->compare($hash , $this->encryptY($raw, $salt));
+        }
+        if(strpos($hash, '$2a$') === 0) {
+            return $this->compare($hash , $this->encryptA($raw, $salt));
+        }
+        if(strpos($hash, '$2x$') === 0) {
+            return $this->compare($hash , $this->encryptX($raw, $salt));
         }
         return false;
+    }
+
+
+}
+
+/**
+ * Class PasswordEncryptor_Native
+ * @package Auth
+ */
+final class PasswordEncryptor_Native extends PasswordEncryptorStrategy {
+
+    /**
+     * @param      $password
+     * @param null $salt
+     * @return string
+     */
+    public function encrypt($password, $salt = null)
+    {
+        return HashFacade::make($password.$salt);
     }
 
     /**
@@ -240,7 +292,18 @@ final class PasswordEncryptor_Blowfish extends PasswordEncryptorStrategy {
      */
     public function compare($hash1, $hash2)
     {
-        return $hash1 === $hash2;
+        return HashFacade::check($hash1, $hash2);
+    }
+
+    /**
+     * @param string $raw
+     * @param string $hash
+     * @param string $salt
+     * @return bool
+     */
+    public function check(string $raw, string $hash, string $salt = null): bool
+    {
+        return $this->compare($raw.$salt, $hash);
     }
 }
 
@@ -248,17 +311,26 @@ final class PasswordEncryptor_Blowfish extends PasswordEncryptorStrategy {
  * Class AuthHelper
  * @package Auth
  */
-class AuthHelper
+final class AuthHelper
 {
 
-    private static $algorithms = array(
-        "none" => "auth\\PasswordEncryptor_Legacy",
-        "md5" => "auth\\PasswordEncryptor_Legacy",
-        "sha1" => "auth\\PasswordEncryptor_Legacy",
-        "md5_v2.4" => "auth\\PasswordEncryptor_Legacy",
-        "sha1_v2.4" => "auth\\PasswordEncryptor_Legacy",
-        "blowfish"  => "auth\\PasswordEncryptor_Blowfish",
-    );
+    const AlgNone      = 'none';
+    const AlgMD5       = 'md5';
+    const AlgSHA1      = 'sha1';
+    const AlgBlowFish  = 'blowfish';
+    const AlgSHA1_V2_4 = "sha1_v2.4";
+    const AlgNative    = 'native';
+    const AlgMD5_v_2_4 = 'md5_v2.4';
+
+    private static $algorithms = [
+        self::AlgNone      => "auth\\PasswordEncryptor_Legacy",
+        self::AlgMD5       => "auth\\PasswordEncryptor_Legacy",
+        self::AlgSHA1      => "auth\\PasswordEncryptor_Legacy",
+        self::AlgMD5_v_2_4 => "auth\\PasswordEncryptor_Legacy",
+        self::AlgSHA1_V2_4 => "auth\\PasswordEncryptor_Legacy",
+        self::AlgBlowFish  => "auth\\PasswordEncryptor_Blowfish",
+        self::AlgNative    => "auth\\PasswordEncryptor_Native",
+    ];
 
     /**
      * @param $password
@@ -267,32 +339,43 @@ class AuthHelper
      * @return string
      * @throws Exception
      */
-    public static function encrypt_password($password, $salt, $algorithm = "sha1")
+    public static function encrypt_password($password, $salt, $algorithm = self::AlgSHA1)
     {
         if (!isset(self::$algorithms[$algorithm]))
             throw new Exception(sprintf("non supported algorithm %s", $algorithm));
 
-        $class = self::$algorithms[$algorithm];
-
+        $class    = self::$algorithms[$algorithm];
         $strategy = new $class($algorithm);
 
         return $strategy->encrypt($password, $salt);
     }
 
     /**
-     * @param string $hash1
-     * @param string $hash2
+     * @param string $raw
+     * @param string $hash
      * @param string $algorithm
-     * @return bool
+     * @param string $salt
+     * @return mixed
      * @throws Exception
      */
-    public static function compare($hash1, $hash2, $algorithm = "sha1")
+    public static function check(string $raw, string $hash, $algorithm = self::AlgSHA1, $salt = "")
     {
         if (!isset(self::$algorithms[$algorithm]))
             throw new Exception(sprintf("non supported algorithm %s", $algorithm));
-        $class = self::$algorithms[$algorithm];
-
+        $class    = self::$algorithms[$algorithm];
         $strategy = new $class($algorithm);
-        return $strategy->compare($hash1, $hash2);
+        return $strategy->check($raw, $hash, $salt);
+    }
+
+    /**
+     * @param int $n
+     * @param string $alg
+     * @return string
+     */
+    public static function generateSalt(int $n = 255, string $alg = self::AlgNative):string {
+        if(!empty($alg) && $alg == self::AlgBlowFish){
+            return PasswordEncryptor_Blowfish::salt();
+        }
+        return str_random($n);
     }
 }

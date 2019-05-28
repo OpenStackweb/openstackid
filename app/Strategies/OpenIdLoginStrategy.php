@@ -63,7 +63,7 @@ final class OpenIdLoginStrategy extends DefaultLoginStrategy
                 $params['identity_select'] = true;
             }
 
-            return View::make("login", $params);
+            return View::make("auth.login", $params);
         }
         return Redirect::action("UserController@getProfile");
     }

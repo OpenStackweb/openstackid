@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OpenId\IOpenIdProtocol;
 use OpenId\Services\IServerConfigurationService;
 use Utils\Services\IAuthService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Response;
-
 /**
  * Class DiscoveryController
  * @package App\Http\Controllers\OpenId

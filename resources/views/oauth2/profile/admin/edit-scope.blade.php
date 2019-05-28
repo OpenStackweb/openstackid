@@ -1,14 +1,14 @@
 @extends('layout')
 @section('title')
-    <title>Welcome to OpenStackId - Server Admin - Edit API Scope</title>
+    <title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Edit API Scope</title>
 @stop
 @section('content')
-    @include('menu',array('is_oauth2_admin' => $is_oauth2_admin, 'is_openstackid_admin' => $is_openstackid_admin))
+    @include('menu')
     <a href='{!!  URL::action("AdminController@editApi",array("id"=>$scope->api_id)) !!}'>Go Back</a>
     <legend>Edit API Scope - Id {!! $scope->id !!}</legend>
     <div class="row">
         <div class="col-md-6">
-            <form id="scope-form" name="scope-form" action='{!!URL::action("Api\\ApiScopeController@update",null)!!}'>
+            <form id="scope-form" name="scope-form" action='{!!URL::action("Api\\ApiScopeController@update", array("id"=>$scope->id))!!}'>
                 <div class="form-group">
                     <label for="name">Name</label>
                     <input class="form-control" type="text" name="name" id="name" value="{!! $scope->name !!}">
