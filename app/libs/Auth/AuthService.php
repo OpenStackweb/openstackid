@@ -15,6 +15,7 @@ use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use Auth\Repositories\IMemberRepository;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
@@ -336,7 +337,9 @@ final class AuthService implements IAuthService
             Log::warning($ex);
             $rps = "";
         }
-        Cookie::queue(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME, $rps, $minutes = config("session.op_browser_state_lifetime"), $path = '/', $domain = null, $secure = false, $httpOnly = false);
+        $minutes = Config::get("session.lifetime", 120);
+        $minutes = $minutes * 3;
+        Cookie::queue(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME, $rps, $minutes , $path = '/', $domain = null, $secure = false, $httpOnly = false);
     }
 
     /**

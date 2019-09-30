@@ -178,10 +178,4 @@ return [
 
     'same_site' => null,
 
-    /*
-     * http://openid.net/specs/openid-connect-session-1_0.html#OPiframe
-     * OP Browser state lifetime
-     */
-    'op_browser_state_lifetime' => env('SESSION_OP_BROWSER_STATE_LIFETIME', 120)
-
 ];

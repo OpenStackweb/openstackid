@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Config;
 use phpseclib\Crypt\Random;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
@@ -37,17 +39,22 @@ final class PrincipalService implements IPrincipalService
         $principal = new Principal;
 
         $user_id   = Session::get(self::UserIdParam);
+        if(empty($user_id))
+            throw new \InvalidArgumentException("user_id param is not set");
         $auth_time = Session::get(self::AuthTimeParam);
+        if(empty($auth_time))
+            throw new \InvalidArgumentException("auth_time param is not set");
         $ops       = Session::get(self::OPBrowserState);
+        if(empty($ops))
+            throw new \InvalidArgumentException("opbs param is not set");
 
         $principal->setState
         (
-            array
-            (
+            [
                 $user_id,
                 $auth_time,
                 $ops
-            )
+            ]
         );
 
         return $principal;
@@ -79,7 +86,10 @@ final class PrincipalService implements IPrincipalService
         Session::put(self::UserIdParam, $user_id);
         Session::put(self::AuthTimeParam, $auth_time);
         $opbs = bin2hex(Random::string(16));
-        Cookie::queue(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME, $opbs, $minutes = config("session.op_browser_state_lifetime"), $path = '/', $domain = null, $secure = false, $httpOnly = false);
+        $minutes = Config::get("session.lifetime", 120);
+        $minutes = $minutes * 3;
+
+        Cookie::queue(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME, $opbs, $minutes, $path = '/', $domain = null, $secure = false, $httpOnly = false);
         Log::debug(sprintf("PrincipalService::register opbs %s", $opbs));
         Session::put(self::OPBrowserState, $opbs);
         Session::save();
