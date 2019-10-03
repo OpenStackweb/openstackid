@@ -337,9 +337,8 @@ final class AuthService implements IAuthService
             Log::warning($ex);
             $rps = "";
         }
-        $minutes = Config::get("session.lifetime", 120);
-        $minutes = $minutes * 3;
-        Cookie::queue(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME, $rps, $minutes , $path = '/', $domain = null, $secure = false, $httpOnly = false);
+
+        Cookie::queue(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME, $rps, Config::get("session.lifetime", 120) , $path = '/', $domain = null, $secure = false, $httpOnly = false);
     }
 
     /**

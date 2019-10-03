@@ -38,16 +38,16 @@ final class PrincipalService implements IPrincipalService
     {
         $principal = new Principal;
 
-        $user_id   = Session::get(self::UserIdParam);
-        $auth_time = Session::get(self::AuthTimeParam);
-        $ops       = Session::get(self::OPBrowserState);
+        $user_id          = Session::get(self::UserIdParam);
+        $auth_time        = Session::get(self::AuthTimeParam);
+        $op_browser_state = Session::get(self::OPBrowserState);
 
         $principal->setState
         (
             [
                 $user_id,
                 $auth_time,
-                $ops
+                $op_browser_state
             ]
         );
 
@@ -70,6 +70,13 @@ final class PrincipalService implements IPrincipalService
     }
 
     /**
+     * @return string
+     */
+    private function calculateBrowserState():string{
+        return hash('sha256', Session::getId());
+    }
+
+    /**
      * @param int $user_id
      * @param int $auth_time
      * @return mixed
@@ -79,13 +86,12 @@ final class PrincipalService implements IPrincipalService
         Log::debug(sprintf("PrincipalService::register user_id %s auth_time %s", $user_id, $auth_time));
         Session::put(self::UserIdParam, $user_id);
         Session::put(self::AuthTimeParam, $auth_time);
-        $opbs = bin2hex(Random::string(16));
-        $minutes = Config::get("session.lifetime", 120);
-        $minutes = $minutes * 3;
-
-        Cookie::queue(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME, $opbs, $minutes, $path = '/', $domain = null, $secure = false, $httpOnly = false);
-        Log::debug(sprintf("PrincipalService::register opbs %s", $opbs));
-        Session::put(self::OPBrowserState, $opbs);
+        // Maintain a `op_browser_state` cookie along with the `sessionid` cookie that
+        // represents the End-User's login state at the OP. If the user is not logged
+        $op_browser_state  = $this->calculateBrowserState();
+        Cookie::queue(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME, $op_browser_state, Config::get("session.lifetime", 120), $path = '/', $domain = null, $secure = false, $httpOnly = false);
+        Log::debug(sprintf("PrincipalService::register op_browser_state %s", $op_browser_state));
+        Session::put(self::OPBrowserState, $op_browser_state);
         Session::save();
     }
 
