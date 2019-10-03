@@ -39,14 +39,8 @@ final class PrincipalService implements IPrincipalService
         $principal = new Principal;
 
         $user_id   = Session::get(self::UserIdParam);
-        if(empty($user_id))
-            throw new \InvalidArgumentException("user_id param is not set");
         $auth_time = Session::get(self::AuthTimeParam);
-        if(empty($auth_time))
-            throw new \InvalidArgumentException("auth_time param is not set");
         $ops       = Session::get(self::OPBrowserState);
-        if(empty($ops))
-            throw new \InvalidArgumentException("opbs param is not set");
 
         $principal->setState
         (
