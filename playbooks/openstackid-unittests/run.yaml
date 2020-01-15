@@ -1,0 +1,99 @@
+- hosts: all
+  name: Autoconverted job legacy-openstackid-unittests from old job gate-openstackid-unittests
+
+  tasks:
+
+    - name: Ensure legacy workspace directory
+      file:
+        path: '{{ ansible_user_dir }}/workspace'
+        state: directory
+
+    - shell:
+        cmd: |
+          set -e
+          set -x
+          CLONEMAP=`mktemp`
+          function cleanup {
+              # In cases where zuul-cloner is aborted during a git
+              # clone operation, git will remove the git work tree in
+              # its cleanup. The work tree in these jobs is the
+              # workspace directory, which means that subsequent
+              # jenkins post-build actions can not run because the
+              # workspace has been removed.
+              # To reduce the likelihood of this having an impact,
+              # recreate the workspace directory if needed
+              mkdir -p $WORKSPACE
+              rm -f $CLONEMAP
+          }
+          trap cleanup EXIT
+          cat > $CLONEMAP << EOF
+          clonemap:
+            - name: $ZUUL_PROJECT
+              dest: .
+          EOF
+          /usr/zuul-env/bin/zuul-cloner -m $CLONEMAP --cache-dir /opt/git \
+              https://opendev.org $ZUUL_PROJECT
+        executable: /bin/bash
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'
+
+    - shell:
+        cmd: |
+          set -e
+          set -x
+          sudo add-apt-repository ppa:ondrej/php
+          sudo apt-get update
+          sudo apt-get -y install mysql-server redis zip unzip
+          sudo service mysql start
+          sudo mysql -e "CREATE USER 'openstackid_test_user'@'%' IDENTIFIED BY '1qaz2wsx'"
+          sudo mysql -e "CREATE DATABASE IF NOT EXISTS openstackid_test"
+          sudo mysql -e "GRANT ALL ON openstackid_test.* TO 'openstackid_test_user'@'%';"
+          sudo mysql -e "FLUSH PRIVILEGES"
+          cat >.env <<EOF
+          APP_ENV=local
+          APP_DEBUG=true
+          DB_HOST=localhost
+          DB_DATABASE=openstackid_test
+          DB_USERNAME=openstackid_test_user
+          DB_PASSWORD=1qaz2wsx
+          REDIS_HOST=127.0.0.1
+          REDIS_PORT=6379
+          REDIS_DB=0
+          EOF
+          cat >.env.testing <<EOF
+          APP_ENV=testing
+          APP_DEBUG=true
+          DB_HOST=localhost
+          DB_DATABASE=openstackid_test
+          DB_USERNAME=openstackid_test_user
+          DB_PASSWORD=1qaz2wsx
+          REDIS_HOST=127.0.0.1
+          REDIS_PORT=6379
+          REDIS_DB=0
+          EOF
+        executable: /bin/bash
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'
+
+    - include_role:
+        name: bindep
+
+    - shell:
+        cmd: |
+          set -x
+          sudo rm -f /etc/sudoers.d/zuul
+          # Prove that general sudo access is actually revoked
+          ! sudo -n true
+        executable: /bin/bash
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'
+
+    - shell:
+        cmd: |
+          set -e
+          set -x
+          /usr/bin/php --version
+          curl -s https://getcomposer.org/installer | /usr/bin/php
+          /usr/bin/php composer.phar install --prefer-dist --ignore-platform-reqs
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'

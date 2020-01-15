@@ -1,0 +1,39 @@
+- job:
+    name: openstackid-release-branch
+    parent: publish-openstack-artifacts
+    run: playbooks/openstackid-release-branch/run.yaml
+    post-run: playbooks/openstackid-release-branch/post.yaml
+    timeout: 1800
+
+- job:
+    name: openstackid-release-master
+    parent: legacy-publish-openstack-artifacts
+    run: playbooks/openstackid-release-master/run.yaml
+    post-run: playbooks/openstackid-release-master/post.yaml
+    timeout: 1800
+
+- job:
+    name: openstackid-unittests
+    parent: legacy-base
+    run: playbooks/openstackid-unittests/run.yaml
+    post-run: playbooks/openstackid-unittests/post.yaml
+    timeout: 1800
+
+- project:
+      name: osf/openstackid
+      check:
+          jobs:
+          - openstackid-unittests
+          - tox-docs:
+                nodeset: ubuntu-bionic
+      gate:
+          jobs:
+          - openstackid-unittests
+          - tox-docs:
+                nodeset: ubuntu-bionic
+      post:
+          jobs:
+          - openstackid-release-branch
+      promote:
+          jobs:
+          - promote-tox-docs-infra
