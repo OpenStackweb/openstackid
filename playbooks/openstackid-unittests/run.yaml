@@ -92,7 +92,6 @@
         cmd: |
           set -e
           set -x
-          /usr/bin/php --version
           curl -s https://getcomposer.org/installer | /usr/bin/php
           /usr/bin/php composer.phar install --prefer-dist --ignore-platform-reqs
         chdir: '{{ ansible_user_dir }}/workspace'
