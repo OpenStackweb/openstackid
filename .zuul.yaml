@@ -24,12 +24,12 @@
       check:
           jobs:
           - openstackid-unittests
-          - tox-docs:
+          - opendev-tox-docs:
                 nodeset: ubuntu-bionic
       gate:
           jobs:
           - openstackid-unittests
-          - tox-docs:
+          - opendev-tox-docs:
                 nodeset: ubuntu-bionic
       post:
           jobs:
