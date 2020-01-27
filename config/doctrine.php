@@ -22,7 +22,7 @@ return [
     */
     'managers'                  => [
         'model' => [
-            'dev'        => env('APP_DEBUG'),
+            'dev'        => env('APP_DEBUG', false),
             'meta'       => env('DOCTRINE_METADATA', 'annotations'),
             'connection' => 'openstackid',
             'namespaces' => [
