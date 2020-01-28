@@ -21,6 +21,14 @@ if($use_ssl){
         PDO::MYSQL_ATTR_SSL_CERT  =>  env('DB_MYSQL_ATTR_SSL_CERT','/etc/client-ssl/client-cert.pem'),
         PDO::MYSQL_ATTR_SSL_CIPHER =>  env('DB_MYSQL_ATTR_SSL_CIPHER', 'DHE-RSA-AES256-SHA'),
     ];
+
+    // for doctrine ...
+    $idp_db_config['driverOptions'] =  [
+        PDO::MYSQL_ATTR_SSL_CA => env('DB_MYSQL_ATTR_SSL_CA','/etc/client-ssl/ca-cert.pem'),
+        PDO::MYSQL_ATTR_SSL_KEY =>  env('DB_MYSQL_ATTR_SSL_KEY','/etc/client-ssl/client-key.pem'),
+        PDO::MYSQL_ATTR_SSL_CERT  =>  env('DB_MYSQL_ATTR_SSL_CERT','/etc/client-ssl/client-cert.pem'),
+        PDO::MYSQL_ATTR_SSL_CIPHER =>  env('DB_MYSQL_ATTR_SSL_CIPHER', 'DHE-RSA-AES256-SHA'),
+    ];
 }
 
 return [
