@@ -1,0 +1,61 @@
+- name: Set Laravel Test Env
+  shell:
+      cmd: |
+        set -e
+        set -x
+        sudo add-apt-repository ppa:ondrej/php
+        sudo apt-get update
+        sudo apt-get -y install mysql-server redis zip unzip
+        echo "max_connections = {{ db_max_connections }}" >> /etc/mysql/mysql.conf.d/mysqld.cnf;
+        sudo service mysql start
+        sudo mysql -e "CREATE USER '{{ db_user }}'@'%' IDENTIFIED BY '{{ db_password }}'"
+        sudo mysql -e "CREATE DATABASE IF NOT EXISTS {{ db_name }}"
+        sudo mysql -e "GRANT ALL ON {{ db_name }}.* TO '{{ db_user }}'@'%';"
+        sudo mysql -e "FLUSH PRIVILEGES"
+
+        cat >.env <<EOF
+        APP_ENV=local
+        APP_DEBUG={{ app_debug }}
+        APP_KEY={{ app_key }}
+        DB_HOST=localhost
+        DB_DATABASE={{ db_name }}
+        DB_USERNAME={{ db_user }}
+        DB_PASSWORD={{ db_password }}
+        REDIS_HOST=127.0.0.1
+        REDIS_PORT={{ redis_port }}
+        REDIS_DB=0
+        EOF
+        cat >.env.testing <<EOF
+        APP_ENV=testing
+        APP_KEY={{ app_key }}
+        APP_DEBUG={{ app_debug }}
+        REMOTE_ADDR=192.1.1.1
+        APP_URL=https://{{ server_name }}
+        DB_HOST=localhost
+        DB_DATABASE={{ db_name }}
+        DB_USERNAME={{ db_user }}
+        DB_PASSWORD={{ db_password }}
+        REDIS_HOST=127.0.0.1
+        REDIS_PORT={{ redis_port }}
+        REDIS_DB=0
+        MAIL_DRIVER=log
+        CORS_ALLOWED_HEADERS="origin, content-type, accept, authorization, x-requested-with"
+        CORS_ALLOWED_METHODS="GET, POST, OPTIONS, PUT, DELETE"
+        CORS_USE_PRE_FLIGHT_CACHING=false
+        CORS_MAX_AGE=3200
+        CORS_EXPOSED_HEADERS=
+        CURL_TIMEOUT=3600
+        CURL_ALLOWS_REDIRECT=false
+        CURL_VERIFY_SSL_CERT=false
+        SSL_ENABLED=true
+        DB_LOG_ENABLED=true
+        ACCESS_TOKEN_CACHE_LIFETIME=300
+        API_RESPONSE_CACHE_LIFETIME=600
+        LOG_LEVEL=debug
+        APP_LOG=daily
+        SERVER_NAME={{ server_name }}
+        EOF
+      executable: /bin/bash
+      chdir: '{{ ansible_user_dir }}/workspace'
+  environment: '{{ zuul | zuul_legacy_vars }}'
+  become: yes

@@ -104,6 +104,12 @@ class Client extends BaseEntity implements IClient
     private $max_access_token_issuance_basis;
 
     /**
+     * @ORM\Column(name="max_auth_codes_issuance_basis", type="integer")
+     * @var int
+     */
+    private $max_auth_codes_issuance_basis;
+
+    /**
      * @ORM\Column(name="max_refresh_token_issuance_qty", type="integer")
      * @var int
      */
@@ -375,6 +381,7 @@ class Client extends BaseEntity implements IClient
         $this->require_auth_time = false;
         $this->default_max_age = 0;
         $this->max_auth_codes_issuance_qty = 0;
+        $this->max_auth_codes_issuance_basis = 0;
         $this->max_access_token_issuance_basis = 0;
         $this->max_access_token_issuance_qty = 0;
         $this->max_refresh_token_issuance_basis = 0;

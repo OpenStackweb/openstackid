@@ -229,11 +229,11 @@ PPK;
     private function createTestUsers(){
         $group_repository = EntityManager::getRepository(Group::class);
 
-        $oauth2_admin_group = $group_repository->findOneBy(['slug' => IOAuth2User::OAuth2ServerAdminGroup]);
-        $opendid_admin_group = $group_repository->findOneBy(['slug' => IOpenIdUser::OpenIdServerAdminGroup,]);
+        $oauth2_admin_group        = $group_repository->findOneBy(['slug' => IOAuth2User::OAuth2ServerAdminGroup]);
+        $opendid_admin_group       = $group_repository->findOneBy(['slug' => IOpenIdUser::OpenIdServerAdminGroup,]);
         $system_scopes_admin_group = $group_repository->findOneBy(['slug' => IOAuth2User::OAuth2SystemScopeAdminGroup]);
-        $super_admin_group = $group_repository->findOneBy(['slug' => IGroupSlugs::SuperAdminGroup]);
-        $raw_users_group = $group_repository->findOneBy(['slug' => IGroupSlugs::RawUsersGroup]);
+        $super_admin_group         = $group_repository->findOneBy(['slug' => IGroupSlugs::SuperAdminGroup]);
+        $raw_users_group           = $group_repository->findOneBy(['slug' => IGroupSlugs::RawUsersGroup]);
 
         $user_payloads = [
            [
@@ -254,7 +254,113 @@ PPK;
                 'email_verified' => true,
                 'groups' => [
                     $super_admin_group
-                ]
+                ],
+               'identifier' => '1',
+            ],
+            [
+                'first_name' => 'Márton',
+                'last_name' => 'Kiss',
+                'email' => 'mkiss@tipit.net',
+                'password' => '1qaz2wsx',
+                'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
+                'gender' => 'male',
+                'address1' => 'Av. Siempre Viva 111',
+                'address2' => 'Av. Siempre Viva 111',
+                'city' => 'Lanus Este',
+                'state' => 'Buenos Aires',
+                'post_code' => '1824',
+                'country' => 'AR',
+                'language' => 'ESP',
+                'active' => true,
+                'email_verified' => true,
+                'groups' => [
+                    $super_admin_group
+                ],
+                'identifier' => '2',
+            ],
+            [
+                'first_name' => '付',
+                'last_name' => '金刚',
+                'email' => 'fujg573@tipit.net',
+                'password' => '1qaz2wsx',
+                'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
+                'gender' => 'male',
+                'address1' => 'Av. Siempre Viva 111',
+                'address2' => 'Av. Siempre Viva 111',
+                'city' => 'Lanus Este',
+                'state' => 'Buenos Aires',
+                'post_code' => '1824',
+                'country' => 'AR',
+                'language' => 'ESP',
+                'active' => true,
+                'email_verified' => true,
+                'groups' => [
+                    $super_admin_group
+                ],
+                'identifier' => '3',
+            ],
+            [
+                'first_name' => 'Bharath',
+                'last_name' => 'Kumar M R',
+                'email' => 'mrbharathee@tipit.net',
+                'password' => '1qaz2wsx',
+                'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
+                'gender' => 'male',
+                'address1' => 'Av. Siempre Viva 111',
+                'address2' => 'Av. Siempre Viva 111',
+                'city' => 'Lanus Este',
+                'state' => 'Buenos Aires',
+                'post_code' => '1824',
+                'country' => 'AR',
+                'language' => 'ESP',
+                'active' => true,
+                'email_verified' => true,
+                'groups' => [
+                    $super_admin_group
+                ],
+                'identifier' => '4',
+            ],
+            [
+                'first_name' => '大塚',
+                'last_name' => '元央',
+                'email' => 'yuanying@tipit.net',
+                'password' => '1qaz2wsx',
+                'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
+                'gender' => 'male',
+                'address1' => 'Av. Siempre Viva 111',
+                'address2' => 'Av. Siempre Viva 111',
+                'city' => 'Lanus Este',
+                'state' => 'Buenos Aires',
+                'post_code' => '1824',
+                'country' => 'AR',
+                'language' => 'ESP',
+                'active' => true,
+                'email_verified' => true,
+                'groups' => [
+                    $super_admin_group
+                ],
+                'identifier' => '5',
+            ],
+            [
+                'first_name' => 'Ian Y.',
+                'last_name' => 'Choi',
+                'email' => 'ianyrchoi@gmail.com',
+                'password' => '1qaz2wsx',
+                'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
+                'gender' => 'male',
+                'address1' => 'Av. Siempre Viva 111',
+                'address2' => 'Av. Siempre Viva 111',
+                'city' => 'Lanus Este',
+                'state' => 'Buenos Aires',
+                'post_code' => '1824',
+                'country' => 'AR',
+                'language' => 'ESP',
+                'active' => true,
+                'email_verified' => true,
+                'groups' => [
+                    $super_admin_group
+                ],
+                'identifier' => '6',
             ]
         ];
 
@@ -301,188 +407,6 @@ PPK;
 
         $this->createTestUsers();
 
-        /*
-        $member = Member::find(1);
-
-        $member->groups()->attach([1,2,3]);
-
-        Member::create(
-            array(
-                'ID'   => 2,
-                'FirstName' => 'Sebastian',
-                'Surname' => 'Marcet',
-                'Email' => 'sebastian+1@tipit.net',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-
-        Member::create(
-            array(
-                'ID'   => 3,
-                'FirstName' => 'Sebastian',
-                'Surname' => 'Marcet',
-                'Email' => 'sebastian+2@tipit.net',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-
-        Member::create(
-            array(
-                'ID'   => 4,
-                'FirstName' => 'Márton',
-                'Surname' => 'Kiss',
-                'Email' => 'mkiss@tipit.net',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-
-        Member::create(
-            array(
-                'ID'   => 5,
-                'FirstName' => '付',
-                'Surname' => '金刚',
-                'Email' => 'fujg573@tipit.net',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-
-        Member::create(
-            array(
-                'ID'   => 6,
-                'FirstName' => 'Bharath',
-                'Surname' => 'Kumar M R',
-                'Email' => 'mrbharathee@tipit.com',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-
-        Member::create(
-            array(
-                'ID'   => 7,
-                'FirstName' => '大塚',
-                'Surname' => '元央',
-                'Email' => 'yuanying@tipit.com',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-
-        Member::create(
-            array(
-                'ID'   => 8,
-                'FirstName' => ' Sebastian German ',
-                'Surname' => 'Marcet Gomez ',
-                'Email' => 'smarcet@gmail.com',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-
-        Member::create(
-            array(
-                'ID'   => 9,
-                'FirstName' => 'Ian Y.',
-                'Surname' => 'Choi',
-                'Email' => 'ianyrchoi@gmail.com',
-                'Password' => '1qaz2wsx',
-                'PasswordEncryption' => 'none',
-                'Salt' => 'none',
-                'Gender' => 'male',
-                'Address' => 'Av. Siempre Viva 111',
-                'Suburb' => 'Lanus Este',
-                'State' => 'Buenos Aires',
-                'City' => 'Lanus',
-                'Postcode' => '1824',
-                'Country' => 'AR',
-                'Locale' => 'ESP',
-                'Active' => 1,
-                'EmailVerified' => 1,
-            )
-        );
-        */
-
         $this->seedServerConfiguration();
         $this->seedServerExtensions();
         $this->seedTestResourceServers();
@@ -497,19 +421,19 @@ PPK;
         $this->seedPublicCloudScopes();
         $this->seedPrivateCloudScopes();
         $this->seedConsultantScopes();
-        /*
+
         //endpoints
         $this->seedResourceServerEndpoints();
         $this->seedApiEndpoints();
+        $this->seedUsersEndpoints();
+        $this->seedUserRegistrationEndpoints();
+        /*
         $this->seedApiEndpointEndpoints();
         $this->seedScopeEndpoints();
-
         $this->seedPublicCloudsEndpoints();
         $this->seedPrivateCloudsEndpoints();
         $this->seedConsultantsEndpoints();
         */
-        $this->seedUsersEndpoints();
-        $this->seedUserRegistrationEndpoints();
         //clients
         $this->seedTestUsersAndClients();
     }
@@ -1559,221 +1483,213 @@ PPK;
     private function seedResourceServerEndpoints(){
 
         $current_realm  = Config::get('app.url');
-        $resource_server = Api::where('name','=','resource-server')->first();
 
-        ApiEndpoint::create(
+        SeedUtils::seedApiEndpoints('resource-server', [
             array(
                 'name'            => 'create-resource-server',
-                'active'          =>  true,
-                'api_id'          => $resource_server->id,
                 'route'           => '/api/v1/resource-servers',
-                'http_method'     => 'POST'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'POST',
+                'scopes'      => [
+                    sprintf('%s/resource-server/write', $current_realm)
+                ],
+            ),
             array(
                 'name'            => 'get-resource-server',
-                'active'          =>  true,
-                'api_id'          => $resource_server->id,
                 'route'           => '/api/v1/resource-servers/{id}',
-                'http_method'     => 'GET'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'GET',
+                'scopes' => [
+                    sprintf('%s/resource-server/read',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'resource-server-regenerate-secret',
-                'active'          =>  true,
-                'api_id'          => $resource_server->id,
                 'route'           => '/api/v1/resource-servers/{id}/client-secret',
-                'http_method'     => 'PUT'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'PUT',
+                'scopes' => [
+                    sprintf('%s/resource-server/write',$current_realm),
+                    sprintf('%s/resource-server/regenerate.secret',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'resource-server-get-page',
-                'active'          =>  true,
-                'api_id'          => $resource_server->id,
                 'route'           => '/api/v1/resource-servers',
-                'http_method'     => 'GET'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'GET',
+                'scopes' => [
+                    sprintf('%s/resource-server/read',$current_realm),
+                    sprintf('%s/resource-server/read.page',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'resource-server-delete',
-                'active'          =>  true,
-                'api_id'          => $resource_server->id,
                 'route'           => '/api/v1/resource-servers/{id}',
-                'http_method'     => 'DELETE'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'DELETE',
+                'scopes' => [
+                    sprintf('%s/resource-server/delete',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'resource-server-update',
-                'active'          =>  true,
-                'api_id'          => $resource_server->id,
                 'route'           => '/api/v1/resource-servers',
-                'http_method'     => 'PUT'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'PUT',
+                'scopes' => [
+                    sprintf('%s/resource-server/write',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'resource-server-update-status',
-                'active'          =>  true,
-                'api_id'          => $resource_server->id,
                 'route'           => '/api/v1/resource-servers/{id}/status/{active}',
-                'http_method'     => 'PUT'
+                'http_method'     => 'PUT',
+                'scopes' => [
+                    sprintf('%s/resource-server/write',$current_realm)
+                ]
             )
-        );
-
-        //attach scopes to endpoints
-
-        //resource server api scopes
-
-        $resource_server_read_scope               = ApiScope::where('name','=',sprintf('%s/resource-server/read',$current_realm))->first();
-        $resource_server_write_scope              = ApiScope::where('name','=',sprintf('%s/resource-server/write',$current_realm))->first();
-        $resource_server_read_page_scope          = ApiScope::where('name','=',sprintf('%s/resource-server/read.page',$current_realm))->first();
-        $resource_server_regenerate_secret_scope  = ApiScope::where('name','=',sprintf('%s/resource-server/regenerate.secret',$current_realm))->first();
-        $resource_server_delete_scope             = ApiScope::where('name','=',sprintf('%s/resource-server/delete',$current_realm))->first();
-        $resource_server_update_scope             = ApiScope::where('name','=',sprintf('%s/resource-server/update',$current_realm))->first();
-        $resource_server_update_status_scope      = ApiScope::where('name','=',sprintf('%s/resource-server/update.status',$current_realm))->first();
-
-
-        // create needs write access
-        $resource_server_api_create = ApiEndpoint::where('name','=','create-resource-server')->first();
-        $resource_server_api_create->scopes()->attach($resource_server_write_scope->id);
-
-        //get needs read access
-        $resource_server_api_get = ApiEndpoint::where('name','=','get-resource-server')->first();
-        $resource_server_api_get->scopes()->attach($resource_server_read_scope->id);
-
-        // get page needs read access or read page access
-        $resource_server_api_get_page = ApiEndpoint::where('name','=','resource-server-get-page')->first();
-        $resource_server_api_get_page->scopes()->attach($resource_server_read_scope->id);
-        $resource_server_api_get_page->scopes()->attach($resource_server_read_page_scope->id);
-
-        //regenerate secret needs write access or specific access
-        $resource_server_api_regenerate = ApiEndpoint::where('name','=','resource-server-regenerate-secret')->first();
-        $resource_server_api_regenerate->scopes()->attach($resource_server_write_scope->id);
-        $resource_server_api_regenerate->scopes()->attach($resource_server_regenerate_secret_scope->id);
-
-        //deletes needs delete access
-        $resource_server_api_delete = ApiEndpoint::where('name','=','resource-server-delete')->first();
-        $resource_server_api_delete->scopes()->attach($resource_server_delete_scope->id);
-
-        //update needs update access
-        $resource_server_api_update = ApiEndpoint::where('name','=','resource-server-update')->first();
-        $resource_server_api_update->scopes()->attach($resource_server_update_scope->id);
-
-        //update status needs update access or specific access
-        $resource_server_api_update_status = ApiEndpoint::where('name','=','resource-server-update-status')->first();
-        $resource_server_api_update_status->scopes()->attach($resource_server_update_scope->id);
-        $resource_server_api_update_status->scopes()->attach($resource_server_update_status_scope->id);
-
+        ]);
 
     }
 
     private function seedApiEndpoints(){
 
         $current_realm  = Config::get('app.url');
-        $api_api = Api::where('name','=','api')->first();
 
-        ApiEndpoint::create(
+        SeedUtils::seedApiEndpoints('api', [
             array(
                 'name'            => 'get-api',
-                'active'          =>  true,
-                'api_id'          => $api_api->id,
                 'route'           => '/api/v1/api/{id}',
-                'http_method'     => 'GET'
-            )
-        );
-
-
-        ApiEndpoint::create(
+                'http_method'     => 'GET',
+                'scopes' => [
+                    sprintf('%s/api/read', $current_realm)
+                ]
+            ),
             array(
                 'name'            => 'delete-api',
-                'active'          =>  true,
-                'api_id'          => $api_api->id,
                 'route'           => '/api/v1/api/{id}',
-                'http_method'     => 'DELETE'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'DELETE',
+                'scopes' => [
+                    sprintf('%s/api/delete',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'create-api',
-                'active'          =>  true,
-                'api_id'          => $api_api->id,
                 'route'           => '/api/v1/api',
-                'http_method'     => 'POST'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'POST',
+                'scopes' => [
+                    sprintf('%s/api/write',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'update-api',
-                'active'          =>  true,
-                'api_id'          => $api_api->id,
                 'route'           => '/api/v1/api',
-                'http_method'     => 'PUT'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'PUT',
+                'scopes' => [
+                    sprintf('%s/api/update',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'update-api-status',
-                'active'          =>  true,
-                'api_id'          => $api_api->id,
                 'route'           => '/api/v1/api/status/{id}/{active}',
-                'http_method'     => 'GET'
-            )
-        );
-
-        ApiEndpoint::create(
+                'http_method'     => 'GET',
+                'scopes' => [
+                    sprintf('%s/api/update.status',$current_realm)
+                ]
+            ),
             array(
                 'name'            => 'api-get-page',
-                'active'          =>  true,
-                'api_id'          => $api_api->id,
                 'route'           => '/api/v1/api/{page_nbr}/{page_size}',
-                'http_method'     => 'GET'
+                'http_method'     => 'GET',
+                'scopes' => [
+                    sprintf('%s/api/read', $current_realm),
+                    sprintf('%s/api/read.page',$current_realm)
+                ]
             )
-        );
+        ]);
 
-        //endpoint api scopes
-
-        $api_read_scope               = ApiScope::where('name','=',sprintf('%s/api/read',$current_realm))->first();
-        $api_write_scope              = ApiScope::where('name','=',sprintf('%s/api/write',$current_realm))->first();
-        $api_read_page_scope          = ApiScope::where('name','=',sprintf('%s/api/read.page',$current_realm))->first();
-        $api_delete_scope             = ApiScope::where('name','=',sprintf('%s/api/delete',$current_realm))->first();
-        $api_update_scope             = ApiScope::where('name','=',sprintf('%s/api/update',$current_realm))->first();
-        $api_update_status_scope      = ApiScope::where('name','=',sprintf('%s/api/update.status',$current_realm))->first();
-
-        $endpoint_api_get                  = ApiEndpoint::where('name','=','get-api')->first();
-        $endpoint_api_get->scopes()->attach($api_read_scope->id);
-
-        $endpoint_api_get_page             = ApiEndpoint::where('name','=','api-get-page')->first();
-        $endpoint_api_get_page->scopes()->attach($api_read_scope->id);
-        $endpoint_api_get_page->scopes()->attach($api_read_page_scope->id);
-
-        $endpoint_api_delete               = ApiEndpoint::where('name','=','delete-api')->first();
-        $endpoint_api_delete->scopes()->attach($api_delete_scope->id);
-
-        $endpoint_api_create               = ApiEndpoint::where('name','=','create-api')->first();
-        $endpoint_api_create->scopes()->attach($api_write_scope->id);
-
-        $endpoint_api_update               = ApiEndpoint::where('name','=','update-api')->first();
-        $endpoint_api_update->scopes()->attach($api_update_scope->id);
-
-        $endpoint_api_update_status        = ApiEndpoint::where('name','=','update-api-status')->first();
-        $endpoint_api_update_status->scopes()->attach($api_update_scope->id);
-        $endpoint_api_update_status->scopes()->attach($api_update_status_scope->id);
     }
 
+    private function seedUsersEndpoints(){
+        $api_repository = EntityManager::getRepository(Api::class);
+        $endpoint_repository = EntityManager::getRepository(ApiEndpoint::class);
+        $users = $api_repository->findOneBy(['name' => 'users']);
+
+        $api_scope_payloads = [
+            array(
+                'name'            => 'get-user-info',
+                'active'          =>  true,
+                'api'          => $users,
+                'route'           => '/api/v1/users/me',
+                'http_method'     => 'GET'
+            ),
+            array(
+                'name'            => 'get-user-claims-get',
+                'active'          =>  true,
+                'api'             => $users,
+                'route'           => '/api/v1/users/info',
+                'http_method'     => 'GET'
+            ),
+            array(
+                'name'            => 'get-user-claims-post',
+                'active'          =>  true,
+                'api'             => $users,
+                'route'           => '/api/v1/users/info',
+                'http_method'     => 'POST'
+            )
+
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiEndpointFactory::build($payload));
+        }
+        EntityManager::flush();
+
+        $api_scope_repository = EntityManager::getRepository(ApiScope::class);
+        $profile_scope = $api_scope_repository->findOneBy(['name' => 'profile']);
+        $email_scope   = $api_scope_repository->findOneBy(['name' => 'email']);
+        $address_scope = $api_scope_repository->findOneBy(['name' => 'address']);
+
+        foreach($api_scope_payloads as $payload) {
+            $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
+            $endpoint->addScope($address_scope);
+            $endpoint->addScope($email_scope);
+            $endpoint->addScope($profile_scope);
+            EntityManager::persist($endpoint);
+        }
+
+        EntityManager::flush();
+    }
+
+    private function seedUserRegistrationEndpoints(){
+        $api_repository = EntityManager::getRepository(Api::class);
+        $endpoint_repository = EntityManager::getRepository(ApiEndpoint::class);
+        $api = $api_repository->findOneBy(['name' => 'user-registration']);
+
+        $api_scope_payloads = [
+            array(
+                'name'            => 'request-user-registration',
+                'active'          =>  true,
+                'api'             => $api,
+                'route'           => '/api/v1/user-registration-requests',
+                'http_method'     => 'POST'
+            ),
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiEndpointFactory::build($payload));
+        }
+        EntityManager::flush();
+
+        $api_scope_repository = EntityManager::getRepository(ApiScope::class);
+        $scope = $api_scope_repository->findOneBy(['name' => IUserScopes::Registration]);
+
+        foreach($api_scope_payloads as $payload) {
+            $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
+            $endpoint->addScope($scope);
+            EntityManager::persist($endpoint);
+        }
+
+        EntityManager::flush();
+    }
+
+
+    /*
     private function seedApiEndpointEndpoints(){
 
         $current_realm  = Config::get('app.url');
@@ -1997,89 +1913,6 @@ PPK;
         $endpoint_api_scope_update_status->scopes()->attach($api_scope_update_status_scope->id);
     }
 
-    private function seedUsersEndpoints(){
-        $api_repository = EntityManager::getRepository(Api::class);
-        $endpoint_repository = EntityManager::getRepository(ApiEndpoint::class);
-        $users = $api_repository->findOneBy(['name' => 'users']);
-
-        $api_scope_payloads = [
-            array(
-                'name'            => 'get-user-info',
-                'active'          =>  true,
-                'api'          => $users,
-                'route'           => '/api/v1/users/me',
-                'http_method'     => 'GET'
-            ),
-            array(
-                'name'            => 'get-user-claims-get',
-                'active'          =>  true,
-                'api'             => $users,
-                'route'           => '/api/v1/users/info',
-                'http_method'     => 'GET'
-            ),
-            array(
-                'name'            => 'get-user-claims-post',
-                'active'          =>  true,
-                'api'             => $users,
-                'route'           => '/api/v1/users/info',
-                'http_method'     => 'POST'
-            )
-
-        ];
-
-        foreach($api_scope_payloads as $payload) {
-            EntityManager::persist(ApiEndpointFactory::build($payload));
-        }
-        EntityManager::flush();
-
-        $api_scope_repository = EntityManager::getRepository(ApiScope::class);
-        $profile_scope = $api_scope_repository->findOneBy(['name' => 'profile']);
-        $email_scope   = $api_scope_repository->findOneBy(['name' => 'email']);
-        $address_scope = $api_scope_repository->findOneBy(['name' => 'address']);
-
-        foreach($api_scope_payloads as $payload) {
-           $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
-           $endpoint->addScope($address_scope);
-           $endpoint->addScope($email_scope);
-           $endpoint->addScope($profile_scope);
-           EntityManager::persist($endpoint);
-        }
-
-        EntityManager::flush();
-    }
-
-    private function seedUserRegistrationEndpoints(){
-        $api_repository = EntityManager::getRepository(Api::class);
-        $endpoint_repository = EntityManager::getRepository(ApiEndpoint::class);
-        $api = $api_repository->findOneBy(['name' => 'user-registration']);
-
-        $api_scope_payloads = [
-            array(
-                'name'            => 'request-user-registration',
-                'active'          =>  true,
-                'api'             => $api,
-                'route'           => '/api/v1/user-registration-requests',
-                'http_method'     => 'POST'
-            ),
-        ];
-
-        foreach($api_scope_payloads as $payload) {
-            EntityManager::persist(ApiEndpointFactory::build($payload));
-        }
-        EntityManager::flush();
-
-        $api_scope_repository = EntityManager::getRepository(ApiScope::class);
-        $scope = $api_scope_repository->findOneBy(['name' => IUserScopes::Registration]);
-
-        foreach($api_scope_payloads as $payload) {
-            $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
-            $endpoint->addScope($scope);
-            EntityManager::persist($endpoint);
-        }
-
-        EntityManager::flush();
-    }
-
     private function seedPublicCloudsEndpoints(){
         $public_clouds  = Api::where('name','=','public-clouds')->first();
         $current_realm  = Config::get('app.url');
@@ -2222,5 +2055,7 @@ PPK;
         $endpoint              = ApiEndpoint::where('name','=','get-consultant-offices')->first();
         $endpoint->scopes()->attach($consultant_read_scope->id);
     }
+*/
+
 
 }

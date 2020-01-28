@@ -32,38 +32,10 @@ class ApiScopeSeeder extends Seeder {
         $this->seedRegistrationScopes();
     }
 
-    public static function seedScopes(array $scopes_definitions, string $api_name = null){
-
-        $api = null;
-        if(!is_null($api_name))
-            $api = EntityManager::getRepository(Api::class)->findOneBy(['name' => $api_name]);
-
-        foreach ($scopes_definitions as $scope_info) {
-            $scope = new ApiScope();
-            $scope->setName($scope_info['name']);
-            $scope->setShortDescription($scope_info['short_description']);
-            $scope->setDescription($scope_info['description']);
-            $scope->setActive(true);
-            if(isset($scope_info['system']))
-                $scope->setSystem($scope_info['system']);
-
-            if(isset($scope_info['default']))
-                $scope->setDefault($scope_info['default']);
-
-            if(isset($scope_info['groups']))
-                $scope->setAssignedByGroups($scope_info['groups']);
-
-            if(!is_null($api))
-                $scope->setApi($api);
-            EntityManager::persist($scope);
-        }
-
-        EntityManager::flush();
-    }
 
     private function seedUsersScopes(){
 
-        self::seedScopes([
+        SeedUtils::seedScopes([
             [
                 'name'               => IUserScopes::Profile,
                 'short_description'  => 'Allows access to your profile info.',
@@ -95,7 +67,7 @@ class ApiScopeSeeder extends Seeder {
             ]
         ], 'users');
 
-        self::seedScopes(
+        SeedUtils::seedScopes(
             [
                 [
                     'name'               => OAuth2Protocol::OpenIdConnect_Scope,
@@ -116,7 +88,7 @@ class ApiScopeSeeder extends Seeder {
     }
 
     private function seedRegistrationScopes(){
-        self::seedScopes([
+        SeedUtils::seedScopes([
             [
                 'name'               => IUserScopes::Registration,
                 'short_description'  => 'Allows to request user registrations.',

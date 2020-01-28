@@ -121,7 +121,6 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $this->assertResponseStatus(400);
 
-
     }
 
     /**

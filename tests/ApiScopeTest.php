@@ -14,6 +14,7 @@
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Api;
 use Tests\BrowserKitTestCase;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class ApiScopeTest
  */
@@ -34,7 +35,8 @@ final class ApiScopeTest extends BrowserKitTestCase {
      */
     public function testGetById(){
 
-        $scope = ApiScope::where('name','=', sprintf('%s/api-scope/read',$this->current_realm))->first();
+        $scope = EntityManager::getRepository(ApiScope::class)->findOneBy(['name' => sprintf('%s/api-scope/read',$this->current_realm)]);
+
         $this->assertTrue(!is_null($scope));
 
         $response = $this->action("GET", "Api\ApiScopeController@get",
@@ -73,7 +75,7 @@ final class ApiScopeTest extends BrowserKitTestCase {
      */
     public function testCreate(){
 
-        $api = Api::where('name','=','api-endpoint')->first();
+        $api = EntityManager::getRepository(Api::class)->findOneBy(['name' => 'api-endpoint']);
 
         $this->assertTrue(!is_null($api));
 
@@ -98,7 +100,7 @@ final class ApiScopeTest extends BrowserKitTestCase {
         $json_response = json_decode($content);
 
         $this->assertResponseStatus(201);
-        $this->assertTrue(isset($json_response->scope_id) && !empty($json_response->scope_id));
+        $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
     }
 
     /**
@@ -107,7 +109,7 @@ final class ApiScopeTest extends BrowserKitTestCase {
      */
     public function testDeleteExisting(){
 
-        $scope = ApiScope::where('name','=', sprintf('%s/api-scope/read',$this->current_realm))->first();
+        $scope = EntityManager::getRepository(ApiScope::class)->findOneBy(['name' => sprintf('%s/api-scope/read',$this->current_realm)]);
 
         $this->assertTrue(!is_null($scope));
 

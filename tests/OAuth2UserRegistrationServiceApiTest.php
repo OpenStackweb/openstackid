@@ -11,12 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use OAuth2ProtectedApiTest;
+use App\libs\OAuth2\IUserScopes;
 /**
  * Class OAuth2UserRegistrationServiceApiTest
  * @package Tests
  */
-final class OAuth2UserRegistrationServiceApiTest extends \OAuth2ProtectedApiTest
+final class OAuth2UserRegistrationServiceApiTest extends OAuth2ProtectedApiTest
 {
 
 
@@ -40,7 +41,7 @@ final class OAuth2UserRegistrationServiceApiTest extends \OAuth2ProtectedApiTest
         $response = $this->action
         (
             "POST",
-            "Api\OAuth2\OAuth2UserRegistrationRequestApiController@register",
+            "Api\\OAuth2\\OAuth2UserRegistrationRequestApiController@register",
             $params,
             [],
             [],
@@ -59,26 +60,12 @@ final class OAuth2UserRegistrationServiceApiTest extends \OAuth2ProtectedApiTest
             'redirect_uri' => 'https://www.test.com/oauth2'
             ];
 
-        $response = $this->action
-        (
-            "GET",
-            "Auth\PasswordSetController@showPasswordSetForm",
-            $params,
-            [],
-            [],
-            [],
-            [],
-            null
-        );
-
-        $this->assertResponseStatus(200);
-
     }
 
     protected function getScopes()
     {
         $scope = [
-            'request-user-registration'
+            IUserScopes::Registration,
         ];
 
         return $scope;

@@ -47,7 +47,7 @@ final class Version20190729150610 extends AbstractMigration
 
         EntityManager::flush();
 
-        ApiScopeSeeder::seedScopes([
+        \SeedUtils::seedScopes([
             [
                 'name'               => IUserScopes::Registration,
                 'short_description'  => 'Allows to request user registrations.',
@@ -59,7 +59,7 @@ final class Version20190729150610 extends AbstractMigration
 
         ], 'user-registration');
 
-        ApiEndpointSeeder::seedApiEndpoints('user-registration', [
+        \SeedUtils::seedApiEndpoints('user-registration', [
                 [
                     'name' => 'request-user-registration',
                     'active' => true,

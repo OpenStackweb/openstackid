@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Config;
 use Auth\User;
 use Illuminate\Support\Facades\Session;
 use Tests\BrowserKitTestCase;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class ResourceServerApiTest
  * Test ResourceServer REST API
@@ -34,7 +35,7 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $this->current_realm = Config::get('app.url');
         $parts = parse_url($this->current_realm);
         $this->current_host = $parts['host'];
-        $user = User::where('identifier', '=', 'sebastian.marcet')->first();
+        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
         $this->be($user);
         Session::start();
     }
@@ -42,7 +43,7 @@ final class ResourceServerApiTest extends BrowserKitTestCase
     public function testGetById()
     {
 
-        $resource_server = ResourceServer::where('host', '=', $this->current_host)->first();
+        $resource_server = EntityManager::getRepository(ResourceServer::class)->findOneBy(['host' => $this->current_host]);
 
         $response = $this->action("GET", "Api\\ApiResourceServerController@get",
             $parameters = array('id' => $resource_server->id),
@@ -60,8 +61,8 @@ final class ResourceServerApiTest extends BrowserKitTestCase
     public function testGetByPage()
     {
 
-        $response = $this->action("GET", "Api\\ApiResourceServerController@getByPage",
-            $parameters = array('page_nbr' => 1, 'page_size' => 10),
+        $response = $this->action("GET", "Api\\ApiResourceServerController@getAll",
+            $parameters = array('page' => 1, 'per_page' => 10),
             [],
             [],
             []);
@@ -69,8 +70,7 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $this->assertResponseStatus(200);
         $content = $response->getContent();
         $list = json_decode($content);
-        $this->assertTrue(isset($list->total_items) && intval($list->total_items) > 0);
-
+        $this->assertTrue(isset($list->total) && intval($list->total) > 0);
     }
 
     public function testCreate()
@@ -91,8 +91,8 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $this->assertResponseStatus(201);
         $content = $response->getContent();
         $json_response = json_decode($content);
-        $this->assertTrue(isset($json_response->resource_server_id));
-        $this->assertTrue(!empty($json_response->resource_server_id));
+        $this->assertTrue(isset($json_response->id));
+        $this->assertTrue(!empty($json_response->id));
 
     }
 
@@ -106,7 +106,6 @@ final class ResourceServerApiTest extends BrowserKitTestCase
             'active' => true,
         );
 
-
         $response = $this->action("POST", "Api\\ApiResourceServerController@create",
             $data,
             [],
@@ -117,9 +116,15 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $json_response = json_decode($content);
 
-        $new_id = $json_response->resource_server_id;
+        $new_id = $json_response->id;
 
-        $response = $this->action("GET", "Api\\ApiResourceServerController@get", $parameters = array('id' => $new_id),
+        $response = $this->action(
+            "GET",
+            "Api\\ApiResourceServerController@get",
+            $parameters = [
+                'id' => $new_id,
+                'expand' => 'client',
+            ],
             [],
             [],
             []);
@@ -129,7 +134,7 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $json_response = json_decode($content);
 
 
-        $client_secret = $json_response->client_secret;
+        $client_secret = $json_response->client->client_secret;
 
         $response = $this->action("PUT", "Api\\ApiResourceServerController@regenerateClientSecret",
             $parameters = array('id' => $new_id),
@@ -142,12 +147,12 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $json_response = json_decode($content);
 
-        $new_secret = $json_response->new_secret;
+        $new_secret = $json_response->client_secret;
 
         $this->assertTrue(!empty($new_secret));
         $this->assertTrue($new_secret !== $client_secret);
 
-        $this->assertResponseStatus(200);
+        $this->assertResponseStatus(201);
 
     }
 
@@ -172,7 +177,7 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $json_response = json_decode($content);
 
-        $new_id = $json_response->resource_server_id;
+        $new_id = $json_response->id;
 
         $response = $this->action("DELETE", "Api\\ApiResourceServerController@delete", $parameters = array('id' => $new_id),
             [],
@@ -193,13 +198,12 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $this->assertResponseStatus(404);
 
-        $this->assertTrue($json_response->error === 'resource server not found');
     }
 
     public function testDeleteExistingOne()
     {
 
-        $resource_server = ResourceServer::where('host', '=', $this->current_host)->first();
+        $resource_server = EntityManager::getRepository(ResourceServer::class)->findOneBy(['host' => $this->current_host]);
 
         $new_id = $resource_server->id;
 
@@ -240,7 +244,7 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $json_response = json_decode($content);
 
-        $new_id = $json_response->resource_server_id;
+        $new_id = $json_response->id;
 
         $data_update = array(
             'id' => $new_id,
@@ -257,7 +261,7 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
         $json_response = json_decode($content);
 
-        $this->assertResponseStatus(200);
+        $this->assertResponseStatus(201);
 
         $response = $this->action("GET", "Api\\ApiResourceServerController@get", $parameters = array('id' => $new_id),
             [],
@@ -287,12 +291,11 @@ final class ResourceServerApiTest extends BrowserKitTestCase
         $this->assertResponseStatus(201);
         $content = $response->getContent();
         $json_response = json_decode($content);
-        $new_id = $json_response->resource_server_id;
+        $new_id = $json_response->id;
         $response = $this->action("DELETE", "Api\\ApiResourceServerController@deactivate", array('id' => $new_id));
-        $this->assertResponseStatus(200);
+        $this->assertResponseStatus(201);
         $content = $response->getContent();
         $json_response = json_decode($content);
-        $this->assertTrue($json_response === 'ok');
         $response = $this->action("GET", "Api\\ApiResourceServerController@get", $parameters = array('id' => $new_id));
         $this->assertResponseStatus(200);
         $content = $response->getContent();

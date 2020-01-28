@@ -16,8 +16,8 @@ use Utils\Services\IAuthService;
 use OpenId\Repositories\IOpenIdTrustedSiteRepository;
 use OpenId\Models\IOpenIdUser;
 use Auth\User;
-use Repositories\EloquentOpenIdTrustedSiteRepository;
 use Tests\BrowserKitTestCase;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class TrustedSitesServiceTest
  */
@@ -35,13 +35,12 @@ final class TrustedSitesServiceTest extends BrowserKitTestCase {
 
 	public function testBehaviorAdd(){
 
-		$repo_mock = Mockery::mock(EloquentOpenIdTrustedSiteRepository::class);
+		$repo_mock = Mockery::mock(\App\Repositories\DoctrineOpenIdTrustedSiteRepository::class);
 
-		$repo_mock->shouldReceive('add')->andReturn(true)->once();
 	    $this->app->instance(IOpenIdTrustedSiteRepository::class, $repo_mock);
 
-		$mock_user = Mockery::mock(IOpenIdUser::class);
-		$mock_user->shouldReceive('getId')->andReturn(1);
+		$mock_user = Mockery::mock(User::class);
+		$mock_user->shouldReceive('addTrustedSite');
 
 		$service = $this->app[OpenIdServiceCatalog::TrustedSitesService];
 		$res = $service->addTrustedSite($mock_user,
@@ -54,8 +53,9 @@ final class TrustedSitesServiceTest extends BrowserKitTestCase {
 
 	public function testAdd(){
 		$service = $this->app[OpenIdServiceCatalog::TrustedSitesService];
-        $user = User::where('identifier','=','sebastian.marcet')->first();
-		$res = $service->addTrustedSite($user,
+        $user    = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
+
+        $res = $service->addTrustedSite($user,
 			$realm = 'https://www.test.com',
 			IAuthService::AuthorizationResponse_AllowForever,
 			$data = []);
@@ -69,9 +69,9 @@ final class TrustedSitesServiceTest extends BrowserKitTestCase {
 
 		$service = $this->app[OpenIdServiceCatalog::TrustedSitesService];
 
-        $user = User::where('identifier','=','sebastian.marcet')->first();
+        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
 
-		$res  = $service->addTrustedSite($user,	$realm, IAuthService::AuthorizationResponse_AllowForever, $data = array('email','profile','address'));
+        $res  = $service->addTrustedSite($user,	$realm, IAuthService::AuthorizationResponse_AllowForever, $data = array('email','profile','address'));
 
 		$this->assertTrue(!is_null($res));
 

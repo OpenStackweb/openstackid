@@ -1,8 +1,9 @@
 <?php
-
 use Behat\Behat\Tester\Exception\PendingException;
 use Behat\Gherkin\Node\TableNode;
-
+use LaravelDoctrine\ORM\Facades\EntityManager;
+use Models\OAuth2\Client;
+use Illuminate\Support\Facades\Session;
 /**
  * Defines application features from the specific context.
  */
@@ -34,7 +35,8 @@ class FeatureContext extends LaravelContext
      */
     public function exitsClientId($client_id)
     {
-        $client = Client::where('client_id', '=', $client_id)->first();
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['client_id' => $client_id]);
+
         if(is_null($client))
             throw new Exception(sprintf('client id %s does not exist', $client_id));
     }

@@ -1,0 +1,8 @@
+db_user: openstackid_test_user
+db_password: 1qaz2wsx
+db_name: openstackid_test
+db_max_connections : 200
+app_key: base64:4vh0op/S1dAsXKQ2bbdCfWRyCI9r8NNIdPXyZWt9PX4=
+app_debug: true
+redis_port: 6379
+server_name: local.openstackid.openstack.org
