@@ -57,18 +57,15 @@ class CreateSuperAdmin extends Command
         $email = trim($this->argument('email'));
         $password = trim($this->argument('password'));
 
-        $user = EntityManager::getRepository(User::class)->findOneBy(['email' =>$email]);
-        if(!is_null($user)) {
-            $this->error('email already exists on db !');
-            return;
+        $user = EntityManager::getRepository(User::class)->findOneBy(['email' => $email]);
+        if(is_null($user)) {
+            $user = new User();
+            $user->setEmail($email);
+            $user->verifyEmail();
+            $user->setPassword($password);
+            EntityManager::persist($user);
+            EntityManager::flush();
         }
-
-        $user = new User();
-        $user->setEmail($email);
-        $user->verifyEmail();
-        $user->setPassword($password);
-        EntityManager::persist($user);
-        EntityManager::flush();
 
         $group = EntityManager::getRepository(Group::class)->findOneBy(['name' => 'super admins']);
         if(is_null($group)){
