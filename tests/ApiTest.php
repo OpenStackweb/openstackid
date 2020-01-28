@@ -93,8 +93,7 @@ final class ApiTest extends BrowserKitTestCase {
 
     public function testDelete(){
 
-        $repository      = EntityManager::getRepository(ResourceServer::class);
-        $resource_server = $repository->findOneBy(['host'=> $this->current_host]);
+        $resource_server = EntityManager::getRepository(ResourceServer::class)->findOneBy(['host' => $this->current_host]);
 
         $data = array(
             'name'               => 'test-api',
@@ -113,9 +112,9 @@ final class ApiTest extends BrowserKitTestCase {
         $json_response = json_decode($content);
 
         $this->assertResponseStatus(201);
-        $this->assertTrue(isset($json_response->api_id) && !empty($json_response->api_id));
+        $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
 
-        $new_id = $json_response->api_id;
+        $new_id = $json_response->id;
         $response = $this->action("DELETE", "Api\ApiController@delete",$parameters = array('id' => $new_id),
             [],
             [],
@@ -136,7 +135,7 @@ final class ApiTest extends BrowserKitTestCase {
 
     public function testUpdate(){
 
-        $resource_server = ResourceServer::where('host','=',$this->current_host)->first();
+        $resource_server = EntityManager::getRepository(ResourceServer::class)->findOneBy(['host' => $this->current_host]);
 
         $data = array(
             'name'               => 'test-api',
@@ -155,9 +154,9 @@ final class ApiTest extends BrowserKitTestCase {
         $json_response = json_decode($content);
 
         $this->assertResponseStatus(201);
-        $this->assertTrue(isset($json_response->api_id) && !empty($json_response->api_id));
+        $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
 
-        $new_id = $json_response->api_id;
+        $new_id = $json_response->id;
         //update it
 
         $data_update = array(
@@ -174,7 +173,7 @@ final class ApiTest extends BrowserKitTestCase {
 
         $json_response = json_decode($content);
 
-        $this->assertResponseStatus(200);
+        $this->assertResponseStatus(201);
 
 
         $response = $this->action("GET", "Api\ApiController@get",
@@ -193,14 +192,14 @@ final class ApiTest extends BrowserKitTestCase {
 
     public function testUpdateStatus(){
 
-        $resource_server = ResourceServer::where('host','=',$this->current_host)->first();
+        $resource_server = EntityManager::getRepository(ResourceServer::class)->findOneBy(['host' => $this->current_host]);
 
-        $data = array(
+        $data = [
             'name'               => 'test-api',
             'description'        => 'test api',
             'active'             => true,
             'resource_server_id' => $resource_server->id,
-        );
+        ];
 
         $response = $this->action("POST", "Api\ApiController@create",$data);
 	    $this->assertResponseStatus(201);
@@ -208,19 +207,17 @@ final class ApiTest extends BrowserKitTestCase {
         $content = $response->getContent();
         $json_response = json_decode($content);
 
-        $this->assertTrue(isset($json_response->api_id) && !empty($json_response->api_id));
+        $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
 
-        $new_id = $json_response->api_id;
+        $new_id = $json_response->id;
         //update status
 
         $response = $this->action("PUT", "Api\ApiController@activate",array('id'     => $new_id));
-	    $this->assertResponseStatus(200);
+	    $this->assertResponseStatus(201);
 
         $content = $response->getContent();
 
         $json_response = json_decode($content);
-
-        $this->assertTrue($json_response==='ok');
 
 
         $response = $this->action("GET", "Api\ApiController@get",$parameters = array('id' => $new_id));
@@ -233,7 +230,7 @@ final class ApiTest extends BrowserKitTestCase {
 
     public function testDeleteExisting(){
 
-        $resource_server_api        = Api::where('name','=','resource-server')->first();
+        $resource_server_api = EntityManager::getRepository(Api::class)->findOneBy(['name'=>'resource-server']);
 
         $id = $resource_server_api->id;
 
@@ -241,7 +238,6 @@ final class ApiTest extends BrowserKitTestCase {
             [],
             [],
             []);
-
 
         $this->assertResponseStatus(204);
 

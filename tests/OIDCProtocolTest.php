@@ -2684,8 +2684,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $this->assertResponseStatus(302);
 
-        $url = $response->getTargetUrl();
-        $comps = @parse_url($url);
+        $url      = $response->getTargetUrl();
+        $comps    = @parse_url($url);
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
@@ -2721,7 +2721,6 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $jwt = BasicJWTFactory::build($payload);
         $this->assertTrue($jwt instanceof IJWS);
 
-
         $jwk = OctetSequenceJWKFactory::build
         (
             new OctetSequenceJWKSpecification
@@ -2743,8 +2742,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $id_token_hint = $jwt->toCompactSerialization();
 
-        $params = array
-        (
+        $params = [
             'client_id' => $client_id,
             'redirect_uri' => 'https://www.test.com/oauth2',
             'response_type' => 'id_token code',
@@ -2752,7 +2750,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             OAuth2Protocol::OAuth2Protocol_Prompt => OAuth2Protocol::OAuth2Protocol_Prompt_None,
             OAuth2Protocol::OAuth2Protocol_IDTokenHint => $id_token_hint,
             OAuth2Protocol::OAuth2Protocol_Nonce => 'ctqg5FeNoYnZ',
-        );
+        ];
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
             $params,

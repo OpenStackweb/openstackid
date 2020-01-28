@@ -12,8 +12,9 @@
  * limitations under the License.
  **/
 use Auth\UserNameGeneratorService;
-use Auth\Repositories\IMemberRepository;
 use Tests\BrowserKitTestCase;
+use LaravelDoctrine\ORM\Facades\EntityManager;
+use Auth\User;
 /**
  * Class UserGeneratorServiceTest
  */
@@ -27,25 +28,24 @@ final class UserGeneratorServiceTest extends BrowserKitTestCase {
     public function testBuildUsers()
     {
 
-        $member_repository           = App::make(IMemberRepository::class);
         $user_name_service_generator = new UserNameGeneratorService();
 
-        $member1 = $member_repository->getByEmail("mkiss@tipit.net");
-        $member2 = $member_repository->getByEmail("fujg573@tipit.net");
-        $member3 = $member_repository->getByEmail("mrbharathee@tipit.com");
-        $member4 = $member_repository->getByEmail("yuanying@tipit.com");
+        $member1 = EntityManager::getRepository(User::class)->findOneBy( ['email' => "mkiss@tipit.net"]);
+        $member2 = EntityManager::getRepository(User::class)->findOneBy( ['email' => "fujg573@tipit.net"]);
+        $member3 = EntityManager::getRepository(User::class)->findOneBy( ['email' => "mrbharathee@tipit.net"]);
+        $member4 = EntityManager::getRepository(User::class)->findOneBy( ['email' => "yuanying@tipit.net"]);
 
-        $user_name_1 = $user_name_service_generator->generate($member1);
-        $this->assertTrue($user_name_1 === 'marton.kiss');
+        $member1 = $user_name_service_generator->generate($member1);
+        $this->assertTrue($member1->getIdentifier() === 'marton.kiss');
 
-        $user_name_2 = $user_name_service_generator->generate($member2);
-        $this->assertTrue($user_name_2 === 'fujg573');
+        $member2 = $user_name_service_generator->generate($member2);
+        $this->assertTrue($member2->getIdentifier() === 'fujg573');
 
-        $user_name_3 = $user_name_service_generator->generate($member3);
-        $this->assertTrue($user_name_3 === 'bharath.kumar.m.r');
+        $member3 = $user_name_service_generator->generate($member3);
+        $this->assertTrue($member3->getIdentifier() === 'bharath.kumar.m.r');
 
-        $user_name_4 = $user_name_service_generator->generate($member4);
-        $this->assertTrue($user_name_4 === 'yuanying');
+        $member4 = $user_name_service_generator->generate($member4);
+        $this->assertTrue($member4->getIdentifier() === 'yuanying');
 
     }
 

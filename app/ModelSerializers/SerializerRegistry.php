@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use App\libs\Auth\Models\UserRegistrationRequest;
 use App\ModelSerializers\Auth\PrivateUserSerializer;
 use App\ModelSerializers\Auth\PublicGroupSerializer;
 use App\ModelSerializers\Auth\PublicUserSerializer;
@@ -25,20 +24,10 @@ use App\ModelSerializers\OAuth2\ClientSerializer;
 use App\ModelSerializers\OAuth2\RefreshTokenSerializer;
 use App\ModelSerializers\OAuth2\ResourceServerSerializer;
 use App\ModelSerializers\OAuth2\ServerPrivateKeySerializer;
-use Auth\Group;
-use Auth\User;
 use Illuminate\Support\Facades\App;
-use Models\OAuth2\AccessToken;
-use Models\OAuth2\Api;
-use Models\OAuth2\ApiEndpoint;
-use Models\OAuth2\ApiScope;
-use Models\OAuth2\ApiScopeGroup;
-use Models\OAuth2\Client;
-use Models\OAuth2\RefreshToken;
-use Models\OAuth2\ResourceServer;
-use Models\OAuth2\ServerPrivateKey;
 use OAuth2\IResourceServerContext;
 use ReflectionClass;
+use App\ModelSerializers\OAuth2\ClientPublicKeySerializer;
 /**
  * Class SerializerRegistry
  * @package App\ModelSerializers
@@ -107,6 +96,7 @@ final class SerializerRegistry
         $this->registry["RefreshToken"]     = RefreshTokenSerializer::class;
         $this->registry["ApiScopeGroup"]    = ApiScopeGroupSerializer::class;
         $this->registry["ServerPrivateKey"] = ServerPrivateKeySerializer::class;
+        $this->registry["ClientPublicKey"]  =  ClientPublicKeySerializer::class;
     }
 
     /**

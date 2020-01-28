@@ -37,43 +37,8 @@
         chdir: '{{ ansible_user_dir }}/workspace'
       environment: '{{ zuul | zuul_legacy_vars }}'
 
-    - shell:
-        cmd: |
-          set -e
-          set -x
-          sudo add-apt-repository ppa:ondrej/php
-          sudo apt-get update
-          sudo apt-get -y install mysql-server redis zip unzip
-          sudo service mysql start
-          sudo mysql -e "CREATE USER 'openstackid_test_user'@'%' IDENTIFIED BY '1qaz2wsx'"
-          sudo mysql -e "CREATE DATABASE IF NOT EXISTS openstackid_test"
-          sudo mysql -e "GRANT ALL ON openstackid_test.* TO 'openstackid_test_user'@'%';"
-          sudo mysql -e "FLUSH PRIVILEGES"
-          cat >.env <<EOF
-          APP_ENV=local
-          APP_DEBUG=true
-          DB_HOST=localhost
-          DB_DATABASE=openstackid_test
-          DB_USERNAME=openstackid_test_user
-          DB_PASSWORD=1qaz2wsx
-          REDIS_HOST=127.0.0.1
-          REDIS_PORT=6379
-          REDIS_DB=0
-          EOF
-          cat >.env.testing <<EOF
-          APP_ENV=testing
-          APP_DEBUG=true
-          DB_HOST=localhost
-          DB_DATABASE=openstackid_test
-          DB_USERNAME=openstackid_test_user
-          DB_PASSWORD=1qaz2wsx
-          REDIS_HOST=127.0.0.1
-          REDIS_PORT=6379
-          REDIS_DB=0
-          EOF
-        executable: /bin/bash
-        chdir: '{{ ansible_user_dir }}/workspace'
-      environment: '{{ zuul | zuul_legacy_vars }}'
+    - include_role:
+        name: setup-test-laravel-env
 
     - include_role:
         name: bindep
@@ -94,5 +59,12 @@
           set -x
           curl -s https://getcomposer.org/installer | /usr/bin/php
           /usr/bin/php composer.phar install --prefer-dist --ignore-platform-reqs
+          /usr/bin/php artisan doctrine:clear:metadata:cache;
+          /usr/bin/php artisan doctrine:clear:query:cache;
+          /usr/bin/php artisan doctrine:clear:result:cache;
+          /usr/bin/php artisan doctrine:generate:proxies;
+          /usr/bin/php artisan view:clear;
+          /usr/bin/php artisan view:cache;
+          ./vendor/bin/phpunit
         chdir: '{{ ansible_user_dir }}/workspace'
       environment: '{{ zuul | zuul_legacy_vars }}'

@@ -25,7 +25,7 @@ class Version20190829142736 extends AbstractMigration
      */
     public function up(Schema $schema)
     {
-        \ApiScopeSeeder::seedScopes([
+        \SeedUtils::seedScopes([
             [
                 'name'               => IUserScopes::ReadAll,
                 'short_description'  => 'Allows access to users info',
@@ -36,7 +36,7 @@ class Version20190829142736 extends AbstractMigration
             ],
         ], 'users');
 
-        \ApiEndpointSeeder::seedApiEndpoints('users', [
+        \SeedUtils::seedApiEndpoints('users', [
                 // get users
                 [
                     'name' => 'get-users',

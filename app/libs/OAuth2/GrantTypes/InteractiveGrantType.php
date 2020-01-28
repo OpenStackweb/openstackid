@@ -15,6 +15,8 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use jwe\IJWE;
 use jwk\exceptions\InvalidJWKAlgorithm;
+use jwk\exceptions\JWKInvalidSpecException;
+use jws\exceptions\JWSInvalidJWKException;
 use jws\IJWS;
 use OAuth2\Exceptions\AccessDeniedException;
 use OAuth2\Exceptions\ConsentRequiredException;
@@ -632,6 +634,14 @@ abstract class InteractiveGrantType extends AbstractGrantType
         {
             try {
                 $this->processUserHint($request);
+            }
+            catch (JWSInvalidJWKException $ex){
+                Log::warning($ex);
+                throw $ex;
+            }
+            catch (JWKInvalidSpecException $ex){
+                Log::warning($ex);
+                throw $ex;
             }
             catch (Exception $ex){
                 Log::warning($ex);

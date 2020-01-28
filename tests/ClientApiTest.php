@@ -16,6 +16,7 @@ use Auth\User;
 use Models\OAuth2\Client;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class ClientApiTest
  */
@@ -33,14 +34,16 @@ class ClientApiTest extends \Tests\BrowserKitTestCase {
         $parts               = parse_url($this->current_realm);
         $this->current_host  = $parts['host'];
 
-        $user = User::where('identifier', '=', 'sebastian.marcet')->first();
+        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
+
         $this->be($user);
         Session::start();
     }
 
     public function testGetById(){
 
-        $client   = Client::where('app_name','=','oauth2_test_app')->first();
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_test_app']);
+
         $response = $this->action("GET", "Api\\ClientApiController@get",
             $parameters = array('id' => $client->id),
             [],
@@ -56,8 +59,8 @@ class ClientApiTest extends \Tests\BrowserKitTestCase {
 
     public function testGetByPage(){
 
-        $response = $this->action("GET", "Api\\ClientApiController@getByPage",
-            $parameters = array('offset' => 1,'limit'=>10),
+        $response = $this->action("GET", "Api\\ClientApiController@getAll",
+            $parameters = array('page' => 1,'per_page'=>10),
             [],
             [],
             []);
@@ -65,12 +68,12 @@ class ClientApiTest extends \Tests\BrowserKitTestCase {
         $content         = $response->getContent();
         $this->assertResponseStatus(200);
         $list            = json_decode($content);
-        $this->assertTrue(isset($list->total_items) && intval($list->total_items)>0);
+        $this->assertTrue(isset($list->total) && intval($list->total)>0);
     }
 
     public function testCreate(){
 
-        $user =  User::where('identifier','=','sebastian.marcet')->first();
+        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
 
         $data = array(
             'user_id'            => $user->id,

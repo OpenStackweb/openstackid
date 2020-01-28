@@ -15,11 +15,13 @@ use jwk\JSONWebKeyTypes;
 use jwk\JSONWebKeyPublicKeyUseValues;
 use Models\OAuth2\Client;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
-use Tests\TestCase;
+use LaravelDoctrine\ORM\Facades\EntityManager;
+use Tests\BrowserKitTestCase;
+use Auth\User;
 /**
  * Class ClientPublicKeyApiTest
  */
-class ClientPublicKeyApiTest extends TestCase {
+class ClientPublicKeyApiTest extends BrowserKitTestCase {
 
     private $current_realm;
 
@@ -32,12 +34,16 @@ class ClientPublicKeyApiTest extends TestCase {
         $this->current_realm = Config::get('app.url');
         $parts = parse_url($this->current_realm);
         $this->current_host = $parts['host'];
+        //already logged user
+        $user_repository = EntityManager::getRepository(User::class);
+        $user = $user_repository->findOneBy(["identifier" => 'sebastian.marcet']);
+        $this->be($user, 'web');
     }
 
     public function testCreate(){
 
         $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
-        $client    =  Client::where('client_id','=', $client_id)->first();
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['client_id' => $client_id]);
 
         $data = array
         (
@@ -51,7 +57,7 @@ class ClientPublicKeyApiTest extends TestCase {
             'alg'         => JSONWebSignatureAndEncryptionAlgorithms::RS512
         );
 
-        $response = $this->action("POST", "Api\ClientPublicKeyApiController@create",
+        $response = $this->action("POST", "Api\\ClientPublicKeyApiController@_create",
             $wildcards = array('id' => $client->id),
             $data,
             [],

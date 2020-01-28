@@ -1274,7 +1274,6 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $params   = $this->prepareCheckAuthenticationParams($openid_response);
         $params['openid.assoc_handle'] = "FAKE";
         $response = $this->action("POST", "OpenId\OpenIdProviderController@endpoint", $params);
-        $openid_response = $this->getOpenIdResponseLineBreak($response->getContent());
         $this->assertResponseStatus(400);
     }
 }

@@ -63,7 +63,7 @@ abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
             'client_id'                               => $this->client_id,
             'redirect_uri'                            => 'https://www.test.com/oauth2',
             'response_type'                           => OAuth2Protocol::OAuth2Protocol_ResponseType_Code,
-            'scope'                                   => implode(' ',$scope),
+            'scope'                                   => implode(' ', $scope),
             OAuth2Protocol::OAuth2Protocol_AccessType => OAuth2Protocol::OAuth2Protocol_AccessType_Offline,
         );
 
@@ -84,12 +84,11 @@ abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
         $output = [];
         parse_str($query, $output);
 
-        $params = array
-        (
+        $params = [
             'code'         => $output['code'],
             'redirect_uri' => 'https://www.test.com/oauth2',
             'grant_type'   => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
-        );
+        ];
 
         $response = $this->action
         (

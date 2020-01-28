@@ -11,14 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Models\OpenId\ServerExtension;
 use Illuminate\Database\Seeder;
 use OpenId\Extensions\Implementations\OpenIdAXExtension;
 use OpenId\Extensions\Implementations\OpenIdSREGExtension;
 use OpenId\Extensions\Implementations\OpenIdOAuth2Extension;
 use OpenId\Extensions\Implementations\OpenIdSREGExtension_1_0;
 use Illuminate\Support\Facades\DB;
-use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class OpenIdExtensionsSeeder
  */
@@ -64,23 +62,10 @@ class OpenIdExtensionsSeeder extends Seeder {
         ];
 
         foreach ($extensions as $extension){
-            self::createServerExtension($extension);
+            SeedUtils::createServerExtension($extension);
         }
     }
 
-    public static function createServerExtension(array $payload){
 
-        $ext = new ServerExtension();
-        $ext->setName(trim($payload['name']));
-        $ext->setNamespace(trim($payload['namespace']));
-        $ext->setActive(boolval($payload['active']));
-        $ext->setExtensionClass(trim($payload['extension_class']));
-        $ext->setDescription(trim($payload['description']));
-        $ext->setViewName(trim($payload['view_name']));
-
-        EntityManager::persist($ext);
-
-        EntityManager::flush();
-    }
 
 }

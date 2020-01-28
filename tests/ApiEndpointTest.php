@@ -15,6 +15,7 @@ use Models\OAuth2\ApiEndpoint;
 use Models\OAuth2\Api;
 use Models\OAuth2\ApiScope;
 use Tests\BrowserKitTestCase;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class ApiEndpointTest
  */
@@ -35,10 +36,10 @@ final class ApiEndpointTest extends BrowserKitTestCase {
      */
     public function testGetById(){
 
-        $api_endpoint = ApiEndpoint::where('name','=','get-api')->first();
+        $api_endpoint = EntityManager::getRepository(ApiEndpoint::class)->findOneBy(['name' => 'get-api']);
         $this->assertTrue(!is_null($api_endpoint));
 
-        $response = $this->action("GET", "Api\ApiEndpointController@get",
+        $response = $this->action("GET", "Api\\ApiEndpointController@get",
             $parameters = array('id' =>$api_endpoint->id),
             [],
             [],
@@ -56,21 +57,21 @@ final class ApiEndpointTest extends BrowserKitTestCase {
      * @covers get api endpoint by list (paginated)
      */
     public function testGetByPage(){
-        $response = $this->action("GET", "Api\ApiEndpointController@getByPage",
-            $parameters = array('offset' => 1,'limit'=>10),
+        $response = $this->action("GET", "Api\ApiEndpointController@getAll",
+            $parameters = ['page' => 1,'per_page'=>10],
             [],
             [],
             []);
 
         $content         = $response->getContent();
         $list            = json_decode($content);
-        $this->assertTrue(isset($list->total_items) && intval($list->total_items)>0);
+        $this->assertTrue(isset($list->total) && intval($list->total)>0);
         $this->assertResponseStatus(200);
     }
 
     public function testCreate(){
 
-        $api = Api::where('name','=','api-endpoint')->first();
+        $api = EntityManager::getRepository(Api::class)->findOneBy(['name' => 'api-endpoint']);
         $this->assertTrue(!is_null($api));
 
         $data = array(
@@ -94,15 +95,15 @@ final class ApiEndpointTest extends BrowserKitTestCase {
         $json_response = json_decode($content);
 
         $this->assertResponseStatus(201);
-        $this->assertTrue(isset($json_response->api_endpoint_id) && !empty($json_response->api_endpoint_id));
+        $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
     }
 
     public function testUpdate(){
 
-        $api = Api::where('name','=','api-endpoint')->first();
+        $api = EntityManager::getRepository(Api::class)->findOneBy(['name' =>'api']);
         $this->assertTrue(!is_null($api));
 
-        $data = array(
+        $data = [
             'name'               => 'test-api-endpoint',
             'description'        => 'test api endpoint, allows test api endpoints.',
             'active'             => true,
@@ -111,7 +112,7 @@ final class ApiEndpointTest extends BrowserKitTestCase {
             'api_id'             => $api->id,
             'allow_cors'        => true,
             'rate_limit'        => 60,
-        );
+        ];
 
         $response = $this->action("POST", "Api\ApiEndpointController@create",
             $data,
@@ -123,30 +124,36 @@ final class ApiEndpointTest extends BrowserKitTestCase {
         $json_response = json_decode($content);
 
         $this->assertResponseStatus(201);
-        $this->assertTrue(isset($json_response->api_endpoint_id) && !empty($json_response->api_endpoint_id));
+        $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
 
         //update recently created
 
         $data_updated = array(
-            'id'                 => $json_response->api_endpoint_id,
+            'id'                 => $json_response->id,
             'name'               => 'test-api-endpoint-update',
+            'description'        => 'test api endpoint, allows test api endpoints.',
+            'active'             => true,
+            'route'              => '/api/v1/api-endpoint/test',
+            'http_method'        => 'POST',
+            'api_id'             => $api->id,
+            'allow_cors'        => true,
+            'rate_limit'        => 60,
         );
 
-        $response = $this->action("PUT", "Api\ApiEndpointController@update",$parameters = $data_updated, [],
+        $response = $this->action("PUT", "Api\ApiEndpointController@update", $parameters = $data_updated, [],
             [],
             []);
 
         $content = $response->getContent();
 
         $json_response = json_decode($content);
-        $this->assertTrue($json_response ==="ok");
-        $this->assertResponseStatus(200);
-
+        $this->assertResponseStatus(201);
     }
 
     public function testUpdateStatus(){
 
-        $api = Api::where('name','=','api-endpoint')->first();
+        $api = EntityManager::getRepository(Api::class)->findOneBy(['name' => 'api-endpoint']);
+
         $this->assertTrue(!is_null($api));
         $data = array(
             'name'               => 'test-api-endpoint',
@@ -163,15 +170,14 @@ final class ApiEndpointTest extends BrowserKitTestCase {
         $this->assertResponseStatus(201);
         $content = $response->getContent();
         $json_response = json_decode($content);
-        $this->assertTrue(isset($json_response->api_endpoint_id) && !empty($json_response->api_endpoint_id));
-        $new_id = $json_response->api_endpoint_id;
+        $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
+        $new_id = $json_response->id;
         //update status
 
         $response = $this->action('DELETE',"Api\ApiEndpointController@deactivate", array('id' => $new_id) );
-        $this->assertResponseStatus(200);
+        $this->assertResponseStatus(201);
         $content = $response->getContent();
         $json_response = json_decode($content);
-        $this->assertTrue($json_response==='ok');
 
         $response = $this->action("GET", "Api\ApiEndpointController@get",array('id' => $new_id));
         $this->assertResponseStatus(200);
@@ -182,7 +188,7 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
     public function testDeleteExisting(){
 
-        $api_endpoint        = ApiEndpoint::where('name','=','update-api-endpoint-status')->first();
+        $api_endpoint = EntityManager::getRepository(ApiEndpoint::class)->findOneBy(['name' => 'update-api-status']);
 
         $this->assertTrue(!is_null($api_endpoint));
 
@@ -208,9 +214,10 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
     public function testAddRequiredScope(){
 
-        $api_endpoint = ApiEndpoint::where('name','=','update-api-endpoint-status')->first();
+        $api_endpoint = EntityManager::getRepository(ApiEndpoint::class)->findOneBy(['name' => 'update-api-status']);
         $this->assertTrue(!is_null($api_endpoint));
-        $scope        = ApiScope::where('name','=',sprintf('%s/api-endpoint/read',$this->current_realm))->first();
+        $scope = EntityManager::getRepository(ApiScope::class)->findOneBy(['name' =>   sprintf('%s/api/read', $this->current_realm)]);
+
         $this->assertTrue(!is_null($scope));
 
         $response = $this->action("PUT", "Api\ApiEndpointController@addRequiredScope",array(
@@ -219,9 +226,8 @@ final class ApiEndpointTest extends BrowserKitTestCase {
             [],
             []);
 
-        $this->assertResponseStatus(200);
+        $this->assertResponseStatus(201);
         $content = $response->getContent();
-        $this->assertTrue(json_decode($content)==='ok');
 
         $response = $this->action("GET", "Api\ApiEndpointController@get",
             $parameters = array('id' =>$api_endpoint->id),
@@ -231,27 +237,27 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $content      = $response->getContent();
         $response_api_endpoint = json_decode($content);
-        $this->assertTrue(is_array($response_api_endpoint->scopes) && count($response_api_endpoint->scopes)>2);
+        $this->assertTrue(is_array($response_api_endpoint->scopes) && count($response_api_endpoint->scopes) > 1);
         $this->assertResponseStatus(200);
     }
 
     public function testRemoveRequiredScope(){
 
-        $api_endpoint = ApiEndpoint::where('name','=','update-api-endpoint-status')->first();
+        $api_endpoint = EntityManager::getRepository(ApiEndpoint::class)->findOneBy(['name' => 'update-api-status']);
         $this->assertTrue(!is_null($api_endpoint));
-        $scope        = ApiScope::where('name','=',sprintf('%s/api-endpoint/update',$this->current_realm))->first();
+        $scope = EntityManager::getRepository(ApiScope::class)->findOneBy(['name' =>     sprintf('%s/api/update.status', $this->current_realm)]);
+
         $this->assertTrue(!is_null($scope));
 
-        $response = $this->action("DELETE", "Api\ApiEndpointController@removeRequiredScope",array(
+        $response = $this->action("DELETE", "Api\ApiEndpointController@removeRequiredScope", array(
             'id'       => $api_endpoint->id,
             'scope_id' => $scope->id), [],
             [],
             []);
 
-        $this->assertResponseStatus(200);
+        $this->assertResponseStatus(201);
         $content = $response->getContent();
         $response = json_decode($content);
-        $this->assertTrue($response==='ok');
 
         $response = $this->action("GET", "Api\ApiEndpointController@get",
             $parameters = array('id' =>$api_endpoint->id),
@@ -261,7 +267,7 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
         $content      = $response->getContent();
         $response_api_endpoint = json_decode($content);
-        $this->assertTrue(is_array($response_api_endpoint->scopes) && count($response_api_endpoint->scopes)==1);
+        $this->assertTrue(is_array($response_api_endpoint->scopes) && count($response_api_endpoint->scopes) == 0);
         $this->assertResponseStatus(200);
     }
 
