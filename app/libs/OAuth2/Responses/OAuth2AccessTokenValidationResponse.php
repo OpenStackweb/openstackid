@@ -66,13 +66,13 @@ class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse {
             $this['user_last_name']                      = $user->getLastName();
             $this['user_language']                       = $user->getLanguage();
             $this['user_country']                        = $user->getCountry();
-
-            $user_groups = [];
+            // default empty value
+            $user_groups                                = [];
             foreach ($user->getGroups() as $group){
                 $user_groups[] = SerializerRegistry::getInstance()->getSerializer($group)->serialize();
             }
-            if(count($user_groups) > 0)
-                $this['user_groups'] = $user_groups;
+
+            $this['user_groups'] = $user_groups;
         }
 
         if(count($allowed_urls)){
