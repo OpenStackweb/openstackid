@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\Http\Middleware\CookiesSameSiteNoneKnownIncompatibleClients;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 /**
  * Class Kernel
@@ -38,6 +39,7 @@ class Kernel extends HttpKernel
     protected $middlewareGroups = [
         'web' => [
             \App\Http\Middleware\EncryptCookies::class,
+            CookiesSameSiteNoneKnownIncompatibleClients::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,

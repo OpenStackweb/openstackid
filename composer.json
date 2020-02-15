@@ -22,7 +22,7 @@
     "greggilbert/recaptcha": "2.1.*",
     "guzzlehttp/guzzle": "6.3.3",
     "ircmaxell/random-lib": "1.1.*",
-    "jenssegers/agent": "2.3.*",
+    "jenssegers/agent": "2.6.3",
     "doctrine/orm": "2.6.4",
     "doctrine/persistence": "1.1.1",
     "laravel-doctrine/extensions": "1.0.*",
