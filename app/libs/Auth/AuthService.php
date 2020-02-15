@@ -120,7 +120,18 @@ final class AuthService implements IAuthService
         $this->invalidateSession();
         Auth::logout();
         $this->principal_service->clear();
-        Cookie::queue(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME, null, $minutes = -2628000, $path = '/', $domain = null, $secure = false, $httpOnly = false);
+        // put in past
+        Cookie::queue
+        (
+            IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME,
+            null,
+            $minutes = -2628000,
+            $path = Config::get("session.path"),
+            $domain = Config::get("session.domain"),
+            $secure = true,
+            $httpOnly = true,
+            $sameSite = 'None'
+        );
     }
 
     /**
@@ -292,7 +303,17 @@ final class AuthService implements IAuthService
             $rps = "";
         }
 
-        Cookie::queue(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME, $rps, Config::get("session.lifetime", 120) , $path = '/', $domain = null, $secure = false, $httpOnly = false);
+        Cookie::queue
+        (
+            IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME,
+            $rps,
+            Config::get("session.lifetime", 120),
+            $path = Config::get("session.path"),
+            $domain = Config::get("session.domain"),
+            $secure = true,
+            $httpOnly = true,
+            $sameSite = 'None'
+        );
     }
 
     /**

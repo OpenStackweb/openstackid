@@ -42,7 +42,17 @@ final class PrincipalService implements IPrincipalService
         Log::debug(sprintf("PrincipalService::get - user_id %s auth_time %s op_browser_state %s", $user_id, $auth_time, $op_browser_state));
         if(!Cookie::has(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME)){
             Log::debug("PrincipalService::get cookie op_bs is missing trying to set it again ...");
-            Cookie::queue(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME, $op_browser_state, Config::get("session.lifetime", 120), $path = '/', $domain = null, $secure = false, $httpOnly = false);
+            Cookie::queue
+            (
+                IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME,
+                $op_browser_state,
+                Config::get("session.lifetime", 120),
+                $path = Config::get("session.path"),
+                $domain = Config::get("session.domain"),
+                $secure = true,
+                $httpOnly = false,
+                $sameSite = 'None'
+            );
         }
         $principal->setState
         (
@@ -91,7 +101,17 @@ final class PrincipalService implements IPrincipalService
         // Maintain a `op_browser_state` cookie along with the `sessionid` cookie that
         // represents the End-User's login state at the OP. If the user is not logged
         $op_browser_state  = $this->calculateBrowserState();
-        Cookie::queue(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME, $op_browser_state, Config::get("session.lifetime", 120), $path = '/', $domain = null, $secure = false, $httpOnly = false);
+        Cookie::queue
+        (
+            IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME,
+            $op_browser_state,
+            Config::get("session.lifetime", 120),
+            $path = Config::get("session.path"),
+            $domain = Config::get("session.domain"),
+            $secure = true,
+            $httpOnly = false,
+            $sameSite = 'None'
+        );
         Log::debug(sprintf("PrincipalService::register op_browser_state %s", $op_browser_state));
         Session::put(self::OPBrowserState, $op_browser_state);
         Session::save();
@@ -107,7 +127,17 @@ final class PrincipalService implements IPrincipalService
         Session::remove(self::AuthTimeParam);
         Session::remove(self::OPBrowserState);
         Session::save();
-        Cookie::queue(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME, null, $minutes = -2628000, $path = '/', $domain = null, $secure = false, $httpOnly = false);
+        Cookie::queue
+        (
+            IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME,
+            null,
+            $minutes = -2628000,
+            $path = Config::get("session.path"),
+            $domain = Config::get("session.domain"),
+            $secure = true,
+            $httpOnly = false,
+            $sameSite = 'None'
+        );
     }
 
 }
