@@ -51,7 +51,8 @@ final class PrincipalService implements IPrincipalService
                 $domain = Config::get("session.domain"),
                 $secure = true,
                 $httpOnly = false,
-                $sameSite = 'None'
+                $raw = false,
+                $sameSite = 'none'
             );
         }
         $principal->setState
@@ -110,7 +111,8 @@ final class PrincipalService implements IPrincipalService
             $domain = Config::get("session.domain"),
             $secure = true,
             $httpOnly = false,
-            $sameSite = 'None'
+            $raw = false,
+            $sameSite = 'none'
         );
         Log::debug(sprintf("PrincipalService::register op_browser_state %s", $op_browser_state));
         Session::put(self::OPBrowserState, $op_browser_state);
@@ -136,7 +138,8 @@ final class PrincipalService implements IPrincipalService
             $domain = Config::get("session.domain"),
             $secure = true,
             $httpOnly = false,
-            $sameSite = 'None'
+            $raw = false,
+            $sameSite = 'none'
         );
     }
 

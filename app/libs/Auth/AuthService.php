@@ -130,7 +130,8 @@ final class AuthService implements IAuthService
             $domain = Config::get("session.domain"),
             $secure = true,
             $httpOnly = true,
-            $sameSite = 'None'
+            $raw = false,
+            $sameSite = 'none'
         );
     }
 
@@ -312,7 +313,8 @@ final class AuthService implements IAuthService
             $domain = Config::get("session.domain"),
             $secure = true,
             $httpOnly = true,
-            $sameSite = 'None'
+            $raw = false,
+            $sameSite = 'none'
         );
     }
 
