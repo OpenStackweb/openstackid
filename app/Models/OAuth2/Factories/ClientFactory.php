@@ -11,14 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Illuminate\Support\Facades\App;
 use Models\OAuth2\Client;
 use Models\OAuth2\ResourceServer;
 use OAuth2\Models\IClient;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Repositories\IApiScopeRepository;
-use URL\Normalizer;
 /**
  * Class ClientFactory
  * @package App\Models\OAuth2\Factories
@@ -28,6 +26,7 @@ final class ClientFactory
     /**
      * @param array $payload
      * @return Client
+     * @throws \Exception
      */
     public static function build(array $payload):Client
     {
@@ -60,6 +59,7 @@ final class ClientFactory
      * @param Client $client
      * @param array $payload
      * @return Client
+     * @throws \Exception
      */
     public static function populate(Client $client, array $payload):Client
     {
@@ -78,19 +78,16 @@ final class ClientFactory
             if(!isset($payload[$field])) continue;
             $value = $payload[$field];
             if (empty($value)) continue;
-
             $urls = explode(',', $value);
             $normalized_uris = '';
             foreach ($urls as $url) {
-                $un = new Normalizer($url);
-                $url = $un->normalize();
+                $url = Client::normalizeUrl($url);
                 if (!empty($normalized_uris)) {
                     $normalized_uris .= ',';
                 }
                 $normalized_uris .= $url;
             }
             $payload[$field] = $normalized_uris;
-
         }
 
         if(isset($payload['owner']))

@@ -1,5 +1,4 @@
 <?php namespace OAuth2\GrantTypes;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Exception;
+use Models\OAuth2\Client;
 use OAuth2\Exceptions\ExpiredAuthorizationCodeException;
 use OAuth2\Exceptions\InvalidApplicationType;
 use OAuth2\Exceptions\InvalidAuthorizationCodeException;
@@ -47,7 +46,6 @@ use OAuth2\Services\IUserConsentService;
 use OAuth2\Strategies\IOAuth2AuthenticationStrategy;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
-
 /**
  * Class AuthorizationCodeGrantType
  * Authorization Code Grant Implementation
@@ -200,7 +198,7 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
                 );
             }
 
-            $code    = $request->getCode();
+            $code     = $request->getCode();
             // verify that the authorization code is valid
             // The client MUST NOT use the authorization code
             // more than once.  If an authorization code is used more than
@@ -245,7 +243,7 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
             // and if included ensure that their values are identical.
             $redirect_uri = $auth_code->getRedirectUri();
 
-            if (!empty($redirect_uri) && $redirect_uri !== $current_redirect_uri)
+            if (!empty($redirect_uri) && Client::normalizeUrl($redirect_uri) !== Client::normalizeUrl($current_redirect_uri))
             {
                 throw new UriNotAllowedException($current_redirect_uri);
             }

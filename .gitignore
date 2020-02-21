@@ -9,6 +9,7 @@ doc/build
 *.egg-info
 *.log
 /node_modules
+.idea/
 /public/storage
 Homestead.yaml
 Homestead.json

@@ -21,7 +21,7 @@ class UriNotAllowedException extends OAuth2BaseException
 
     public function __construct($redirect_url = "")
     {
-        $message = sprintf("The redirect URI in the request: %s did not match a registered redirect URI.",$redirect_url);
+        $message = sprintf("The redirect URI in the request: %s did not match a registered redirect URI.", $redirect_url);
         parent::__construct($message, 0, null);
     }
 

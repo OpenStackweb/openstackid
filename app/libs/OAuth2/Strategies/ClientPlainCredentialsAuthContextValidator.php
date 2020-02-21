@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Strategies;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Exceptions\InvalidClientAuthenticationContextException;
 use OAuth2\Exceptions\InvalidClientCredentials;
 use OAuth2\Models\ClientAuthenticationContext;
 use OAuth2\Models\ClientCredentialsAuthenticationContext;
 use OAuth2\Models\IClient;
-
+use Illuminate\Support\Facades\Log;
 /**
  * Class ClientPlainCredentialsAuthContextValidator
  * @package OAuth2\Strategies
@@ -46,8 +44,13 @@ final class ClientPlainCredentialsAuthContextValidator implements IClientAuthCon
         if($context->getClient()->getClientType() !== IClient::ClientType_Confidential)
             throw new InvalidClientCredentials(sprintf('invalid client type %s', $context->getClient()->getClientType()));
 
+        // decode client credentials just in case they are sent using GET request
+        $providedClientId     = urldecode($context->getId());
+        $providedClientSecret = urldecode($context->getSecret());
 
-        return $context->getClient()->getClientId()     === $context->getId() &&
-               $context->getClient()->getClientSecret() === $context->getSecret();
+        Log::debug(sprintf("ClientPlainCredentialsAuthContextValidator::validate client id %s - provide client id %s", $context->getClient()->getClientId(), $providedClientId));
+        Log::debug(sprintf("ClientPlainCredentialsAuthContextValidator::validate client secret %s - provide client secret %s", $context->getClient()->getClientSecret(), $providedClientSecret));
+        return $context->getClient()->getClientId()     ===  $providedClientId &&
+               $context->getClient()->getClientSecret() === $providedClientSecret;
     }
 }

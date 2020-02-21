@@ -125,8 +125,8 @@ final class ClientService extends AbstractService implements IClientService
 
         if
         (
-            Input::has( OAuth2Protocol::OAuth2Protocol_ClientAssertionType) &&
-            Input::has( OAuth2Protocol::OAuth2Protocol_ClientAssertion)
+            Input::has(OAuth2Protocol::OAuth2Protocol_ClientAssertionType) &&
+            Input::has(OAuth2Protocol::OAuth2Protocol_ClientAssertion)
         )
         {
             return new ClientAssertionAuthenticationContext
@@ -137,8 +137,8 @@ final class ClientService extends AbstractService implements IClientService
         }
         if
         (
-            Input::has( OAuth2Protocol::OAuth2Protocol_ClientId) &&
-            Input::has( OAuth2Protocol::OAuth2Protocol_ClientSecret)
+            Input::has(OAuth2Protocol::OAuth2Protocol_ClientId) &&
+            Input::has(OAuth2Protocol::OAuth2Protocol_ClientSecret)
         )
         {
             return new ClientCredentialsAuthenticationContext

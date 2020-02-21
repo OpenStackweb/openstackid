@@ -27,6 +27,7 @@ use Exception;
 use DateTime;
 use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
+use URL\Normalizer;
 use Doctrine\ORM\Mapping AS ORM;
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOAuth2ClientRepository")
@@ -570,20 +571,23 @@ class Client extends BaseEntity implements IClient
         {
             return false;
         }
-        if(($this->application_type !== IClient::ApplicationType_Native && $parts['scheme']!=='https') && (ServerConfigurationService::getConfigValue("SSL.Enable")))
-            return false;
-        //normalize uri
-        $normalized_uri = $parts['scheme'].'://'.strtolower($parts['host']);
-        if(isset($parts['port'])) {
-            $normalized_uri .= ':'.strtolower($parts['port']);
-        }
-        if(isset($parts['path'])) {
-            $normalized_uri .= strtolower($parts['path']);
-        }
-        // normalize url and remove trailing /
-        $normalized_uri = rtrim($normalized_uri, '/');
 
-        return str_contains(strtolower($this->redirect_uris), $normalized_uri);
+        if
+        (
+            ($this->application_type !== IClient::ApplicationType_Native && $parts['scheme'] !== 'https')
+            && (ServerConfigurationService::getConfigValue("SSL.Enable"))
+        )
+            return false;
+
+        return str_contains(strtolower($this->redirect_uris), self::normalizeUrl($uri));
+    }
+
+    /**
+     * @param string $url
+     * @return string|null
+     */
+    public static function normalizeUrl(string $url):?string{
+        return (new Normalizer($url))->normalize();
     }
 
     public function getApplicationName()

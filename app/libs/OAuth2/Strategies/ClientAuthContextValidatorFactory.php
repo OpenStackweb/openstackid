@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Strategies;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Exceptions\InvalidTokenEndpointAuthMethodException;
 use OAuth2\Models\ClientAuthenticationContext;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Services\IClientJWKSetReader;
-
+use Illuminate\Support\Facades\Log;
 /**
  * Class ClientAuthContextValidatorFactory
  * @package OAuth2\Strategies

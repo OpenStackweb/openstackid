@@ -35,10 +35,10 @@ final class ClientCredentialsAuthenticationContext extends ClientAuthenticationC
     {
 
         parent::__construct($client_id, $auth_type);
-        if(!in_array($auth_type, array (
+        if(!in_array($auth_type, [
             OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
             OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretPost
-        )))
+        ]))
             throw new InvalidTokenEndpointAuthMethodException($auth_type);
 
         $this->client_secret = $client_secret;
