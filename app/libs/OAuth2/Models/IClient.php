@@ -79,10 +79,10 @@ interface IClient extends IEntity
     public function getRedirectUris();
 
     /**
-     * @param $uri
+     * @param string $uri
      * @return bool
      */
-    public function isUriAllowed($uri);
+    public function isUriAllowed(string $uri):bool;
 
     /**
      * returns all registered allowed js origins for this client
@@ -94,7 +94,7 @@ interface IClient extends IEntity
      * @param string $origin
      * @return bool
      */
-    public function isOriginAllowed($origin);
+    public function isOriginAllowed(string $origin):bool;
 
     /**
      * gets application name

@@ -55,10 +55,10 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
         $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = [
-            'client_id' => $client_id,
-            'redirect_uri' => 'https://www.test.com/oauth2',
+            'client_id'     => $client_id,
+            'redirect_uri'  => 'https://www.test.com:443/oauth2?param=1&BackUrl=123344',
             'response_type' => 'code',
-            'scope' => sprintf('%s/resource-server/read', $this->current_realm),
+            'scope'         => sprintf('%s/resource-server/read', $this->current_realm),
         ];
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",

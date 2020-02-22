@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\URLUtils;
 use Auth\User;
 use Doctrine\Common\Collections\Criteria;
 use jwa\cryptographic_algorithms\ContentEncryptionAlgorithms_Registry;
@@ -563,31 +565,23 @@ class Client extends BaseEntity implements IClient
         return $res;
     }
 
-    public function isUriAllowed($uri)
+    /**
+     * @param string $uri
+     * @return bool
+     */
+    public function isUriAllowed(string $uri):bool
     {
-        if(!filter_var($uri, FILTER_VALIDATE_URL)) return false;
-        $parts = @parse_url($uri);
-        if ($parts == false)
-        {
-            return false;
-        }
+        $uri = URLUtils::canonicalUrl($uri);
+        if(empty($uri)) return false;
 
         if
         (
-            ($this->application_type !== IClient::ApplicationType_Native && $parts['scheme'] !== 'https')
+            ($this->application_type !== IClient::ApplicationType_Native && !URLUtils::isHTTPS($uri))
             && (ServerConfigurationService::getConfigValue("SSL.Enable"))
         )
             return false;
 
-        return str_contains(strtolower($this->redirect_uris), self::normalizeUrl($uri));
-    }
-
-    /**
-     * @param string $url
-     * @return string|null
-     */
-    public static function normalizeUrl(string $url):?string{
-        return (new Normalizer($url))->normalize();
+        return str_contains(strtolower($this->redirect_uris), URLUtils::normalizeUrl($uri));
     }
 
     public function getApplicationName()
@@ -730,23 +724,13 @@ class Client extends BaseEntity implements IClient
      * @param $origin
      * @return bool
      */
-    public function isOriginAllowed($origin)
+    public function isOriginAllowed(string $origin):bool
     {
-        if(!filter_var($origin, FILTER_VALIDATE_URL)) return false;
-        $parts = @parse_url($origin);
-        if ($parts == false) {
-            return false;
-        }
-        if($parts['scheme']!=='https')
-            return false;
-        $origin_without_port = $parts['scheme'].'://'.$parts['host'];
-
-        if(str_contains($this->allowed_origins,$origin_without_port )) return true;
-        if(isset($parts['port'])){
-            $origin_with_port    = $parts['scheme'].'://'.$parts['host'].':'.$parts['port'];
-            return str_contains($this->allowed_origins, $origin_with_port );
-        }
-        return false;
+        $originWithoutPort = URLUtils::canonicalUrl($origin, false);
+        if(empty($originWithoutPort)) return false;
+        if(str_contains($this->allowed_origins, URLUtils::normalizeUrl($originWithoutPort) )) return true;
+        $originWithPort = URLUtils::canonicalUrl($origin);
+        return str_contains($this->allowed_origins, URLUtils::normalizeUrl($originWithPort));
     }
 
     public function getWebsite()

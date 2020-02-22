@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\URLUtils;
 use Illuminate\Support\Facades\App;
 use Models\OAuth2\Client;
 use Models\OAuth2\ResourceServer;
@@ -81,7 +83,7 @@ final class ClientFactory
             $urls = explode(',', $value);
             $normalized_uris = '';
             foreach ($urls as $url) {
-                $url = Client::normalizeUrl($url);
+                $url = URLUtils::normalizeUrl($url);
                 if (!empty($normalized_uris)) {
                     $normalized_uris .= ',';
                 }

@@ -47,6 +47,7 @@ use App\Models\OpenId\Factories\OpenIdTrustedSiteFactory;
 use App\Models\OAuth2\Factories\ApiEndpointFactory;
 use App\libs\OAuth2\IUserScopes;
 use App\libs\Auth\Models\IGroupSlugs;
+use Illuminate\Support\Facades\DB;
 /**
  * Class OAuth2ApplicationSeeder
  * This seeder is only for testing purposes
@@ -372,7 +373,6 @@ PPK;
                 throw new Exception("password verification failed !!!");
         }
         EntityManager::flush();
-
     }
 
     public function run()

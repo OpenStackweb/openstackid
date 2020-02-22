@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\URLUtils;
 use Exception;
 use Models\OAuth2\Client;
 use OAuth2\Exceptions\ExpiredAuthorizationCodeException;
@@ -243,7 +245,7 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
             // and if included ensure that their values are identical.
             $redirect_uri = $auth_code->getRedirectUri();
 
-            if (!empty($redirect_uri) && Client::normalizeUrl($redirect_uri) !== Client::normalizeUrl($current_redirect_uri))
+            if (!empty($redirect_uri) && URLUtils::normalizeUrl($redirect_uri) !== URLUtils::normalizeUrl($current_redirect_uri))
             {
                 throw new UriNotAllowedException($current_redirect_uri);
             }
