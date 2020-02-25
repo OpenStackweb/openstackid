@@ -40,7 +40,7 @@ class UserExceptionTrail extends BaseEntity {
      */
     private $stack_trace;
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="consents")
+     * @ORM\ManyToOne(targetEntity="Auth\User")
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
@@ -95,9 +95,9 @@ class UserExceptionTrail extends BaseEntity {
     }
 
     /**
-     * @return User
+     * @return User|null
      */
-    public function getUser(): User
+    public function getUser(): ?User
     {
         return $this->user;
     }
