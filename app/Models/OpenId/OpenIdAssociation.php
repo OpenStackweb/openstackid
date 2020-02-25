@@ -41,7 +41,7 @@ class OpenIdAssociation extends BaseEntity implements IAssociation
 
     /**
      * @ORM\Column(name="secret", type="blob")
-     * @var string
+     * @var resource
      */
     private $secret;
 
@@ -126,11 +126,15 @@ class OpenIdAssociation extends BaseEntity implements IAssociation
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getSecret(): string
+    public function getSecret(): ?string
     {
-        return $this->secret;
+        if(is_string($this->secret))
+            return $this->secret;
+        if(is_resource($this->secret))
+            return stream_get_contents($this->secret);
+        return null;
     }
 
     /**

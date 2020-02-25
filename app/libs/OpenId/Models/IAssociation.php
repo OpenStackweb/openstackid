@@ -40,7 +40,7 @@ interface IAssociation extends IEntity {
     /**
      * @return string
      */
-    public function getSecret(): string;
+    public function getSecret(): ?string;
 
     /**
      * @return int
