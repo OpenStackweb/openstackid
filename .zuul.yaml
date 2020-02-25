@@ -1,6 +1,6 @@
 - job:
     name: openstackid-release-branch
-    parent: legacy-publish-openstack-artifacts
+    parent: publish-openstack-artifacts
     run: playbooks/openstackid-release-branch/run.yaml
     post-run: playbooks/openstackid-release-branch/post.yaml
     timeout: 1800
