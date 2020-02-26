@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request as LaravelRequest;
+use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 /**
  * Class EmailVerificationController
@@ -53,6 +54,12 @@ final class EmailVerificationController extends Controller
         try {
             $user = $this->user_service->verifyEmail($token);
             return view('auth.email_verification_success', ['user' => $user]);
+        }
+        catch (EntityNotFoundException $ex){
+            Log::warning($ex);
+        }
+        catch (ValidationException $ex){
+            Log::warning($ex);
         }
         catch (\Exception $ex){
             Log::error($ex);
