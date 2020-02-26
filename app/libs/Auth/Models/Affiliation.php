@@ -23,7 +23,7 @@ use App\Models\Utils\BaseEntity;
 class Affiliation extends BaseEntity
 {
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="actions")
+     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="affiliations")
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */

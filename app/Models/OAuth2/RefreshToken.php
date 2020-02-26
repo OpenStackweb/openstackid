@@ -75,14 +75,14 @@ class RefreshToken extends BaseEntity {
     private $access_tokens;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"}, inversedBy="refresh_tokens")
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", inversedBy="refresh_tokens", cascade={"persist"})
      * @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=true)
      * @var Client
      */
     private $client;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="access_tokens")
+     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="refresh_tokens", cascade={"persist"})
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id", nullable=true)
      * @var User
      */

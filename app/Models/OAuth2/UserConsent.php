@@ -31,14 +31,14 @@ class UserConsent extends BaseEntity implements IUserConsent {
     private $scopes;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="consents")
+     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="consents", cascade={"persist"})
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
     private $owner;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client")
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"})
      * @ORM\JoinColumn(name="client_id", referencedColumnName="id")
      * @var Client
      */

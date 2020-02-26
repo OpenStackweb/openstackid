@@ -44,7 +44,7 @@ class OpenIdTrustedSite extends BaseEntity implements ITrustedSite
     private $policy;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="trusted_sites")
+     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="trusted_sites", cascade={"persist"})
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */

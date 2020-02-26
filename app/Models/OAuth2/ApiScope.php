@@ -14,8 +14,6 @@
 use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineApiScopeRepository")
  * @ORM\Table(name="oauth2_api_scope")
@@ -73,7 +71,7 @@ class ApiScope extends BaseEntity
     private $scope_groups;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Api", inversedBy="scopes")
+     * @ORM\ManyToOne(targetEntity="Api", inversedBy="scopes", cascade={"persist"})
      * @ORM\JoinColumn(name="api_id", referencedColumnName="id")
      * @var Api
      */

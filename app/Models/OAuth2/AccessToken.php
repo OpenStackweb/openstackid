@@ -63,21 +63,21 @@ class AccessToken extends BaseEntity {
     private $audience;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\RefreshToken", cascade={"persist"}, inversedBy="access_tokens")
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\RefreshToken", inversedBy="access_tokens", cascade={"persist"})
      * @ORM\JoinColumn(name="refresh_token_id", referencedColumnName="id", nullable=true)
      * @var RefreshToken
      */
     private $refresh_token;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"}, inversedBy="access_tokens")
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", inversedBy="access_tokens", cascade={"persist"})
      * @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=true)
      * @var Client
      */
     private $client;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="access_tokens")
+     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="access_tokens", cascade={"persist"})
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id", nullable=true)
      * @var User
      */

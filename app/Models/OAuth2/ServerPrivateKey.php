@@ -69,8 +69,6 @@ class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
         return $this->password;
     }
 
-
-
     /**
      * @param string $kid
      * @param DateTime $valid_from

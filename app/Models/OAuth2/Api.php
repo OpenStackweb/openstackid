@@ -55,7 +55,7 @@ class Api extends BaseEntity
     private $endpoints;
 
     /**
-     * @ORM\ManyToOne(targetEntity="ResourceServer", cascade={"persist"}, inversedBy="apis")
+     * @ORM\ManyToOne(targetEntity="ResourceServer", inversedBy="apis", cascade={"persist"})
      * @ORM\JoinColumn(name="resource_server_id", referencedColumnName="id")
      * @var ResourceServer
      */

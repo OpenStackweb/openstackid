@@ -44,7 +44,7 @@ class ApiScopeGroup extends BaseEntity
     private $active;
 
     /**
-     * @ORM\ManyToMany(targetEntity="ApiScope", cascade={"persist"})
+     * @ORM\ManyToMany(targetEntity="ApiScope", cascade={"persist"}, inversedBy="scope_groups")
      * @ORM\JoinTable(name="oauth2_api_scope_group_scope",
      *      joinColumns={@ORM\JoinColumn(name="group_id", referencedColumnName="id")},
      *      inverseJoinColumns={@ORM\JoinColumn(name="scope_id", referencedColumnName="id")}
@@ -54,7 +54,7 @@ class ApiScopeGroup extends BaseEntity
     private $scopes;
 
     /**
-     * @ORM\ManyToMany(targetEntity="Auth\User", cascade={"persist"})
+     * @ORM\ManyToMany(targetEntity="Auth\User", cascade={"persist"}, inversedBy="scope_groups")
      * @ORM\JoinTable(name="oauth2_api_scope_group_users",
      *      joinColumns={@ORM\JoinColumn(name="group_id", referencedColumnName="id")},
      *      inverseJoinColumns={@ORM\JoinColumn(name="user_id", referencedColumnName="id")}
