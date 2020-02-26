@@ -1,41 +1,7 @@
 - hosts: all
-  name: Autoconverted job legacy-openstackid-unittests from old job gate-openstackid-unittests
+  name: Laravel unit test job for OpenStackID
 
   tasks:
-
-    - name: Ensure legacy workspace directory
-      file:
-        path: '{{ ansible_user_dir }}/workspace'
-        state: directory
-
-    - shell:
-        cmd: |
-          set -e
-          set -x
-          CLONEMAP=`mktemp`
-          function cleanup {
-              # In cases where zuul-cloner is aborted during a git
-              # clone operation, git will remove the git work tree in
-              # its cleanup. The work tree in these jobs is the
-              # workspace directory, which means that subsequent
-              # jenkins post-build actions can not run because the
-              # workspace has been removed.
-              # To reduce the likelihood of this having an impact,
-              # recreate the workspace directory if needed
-              mkdir -p $WORKSPACE
-              rm -f $CLONEMAP
-          }
-          trap cleanup EXIT
-          cat > $CLONEMAP << EOF
-          clonemap:
-            - name: $ZUUL_PROJECT
-              dest: .
-          EOF
-          /usr/zuul-env/bin/zuul-cloner -m $CLONEMAP --cache-dir /opt/git \
-              https://opendev.org $ZUUL_PROJECT
-        executable: /bin/bash
-        chdir: '{{ ansible_user_dir }}/workspace'
-      environment: '{{ zuul | zuul_legacy_vars }}'
 
     - include_role:
         name: setup-test-laravel-env
@@ -43,15 +9,8 @@
     - include_role:
         name: bindep
 
-    - shell:
-        cmd: |
-          set -x
-          sudo rm -f /etc/sudoers.d/zuul
-          # Prove that general sudo access is actually revoked
-          ! sudo -n true
-        executable: /bin/bash
-        chdir: '{{ ansible_user_dir }}/workspace'
-      environment: '{{ zuul | zuul_legacy_vars }}'
+    - include_role:
+        name: revoke-sudo
 
     - shell:
         cmd: |
@@ -59,12 +18,11 @@
           set -x
           curl -s https://getcomposer.org/installer | /usr/bin/php
           /usr/bin/php composer.phar install --prefer-dist --ignore-platform-reqs
-          /usr/bin/php artisan doctrine:clear:metadata:cache;
-          /usr/bin/php artisan doctrine:clear:query:cache;
-          /usr/bin/php artisan doctrine:clear:result:cache;
-          /usr/bin/php artisan doctrine:generate:proxies;
-          /usr/bin/php artisan view:clear;
-          /usr/bin/php artisan view:cache;
+          /usr/bin/php artisan doctrine:clear:metadata:cache
+          /usr/bin/php artisan doctrine:clear:query:cache
+          /usr/bin/php artisan doctrine:clear:result:cache
+          /usr/bin/php artisan doctrine:generate:proxies
+          /usr/bin/php artisan view:clear
+          /usr/bin/php artisan view:cache
           ./vendor/bin/phpunit
-        chdir: '{{ ansible_user_dir }}/workspace'
-      environment: '{{ zuul | zuul_legacy_vars }}'
+        chdir: '{{ zuul.project.src_dir }}'

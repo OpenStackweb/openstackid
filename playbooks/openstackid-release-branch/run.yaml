@@ -1,14 +1,16 @@
 - hosts: all
-  name: Autoconverted job legacy-openstackid-release-branch from old job openstackid-release-branch
+  name: Branch tarball job for OpenStackID
 
   tasks:
 
     - include_role:
         name: setup-test-laravel-env
-        chdir: '{{ zuul.project.src_dir }}'
 
     - include_role:
         name: bindep
+
+    - include_role:
+        name: revoke-sudo
 
     - shell:
         cmd: |
@@ -43,7 +45,7 @@
           rm -rf tarballs
           mkdir -p tarballs
           # Create an archive tarball.
-          tar -czf $ZUUL_SHORT_PROJECT_NAME-$PROJECT_VER.tar.gz dist/
+          tar -czf {{ zuul.project.short_name }}-$PROJECT_VER.tar.gz dist/
           cp {{ zuul.project.short_name }}-$PROJECT_VER.tar.gz \
               tarballs/{{ zuul.project.short_name }}-latest.tar.gz
           mv {{ zuul.project.short_name }}-$PROJECT_VER.tar.gz tarballs/

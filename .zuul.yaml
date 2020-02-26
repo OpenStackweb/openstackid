@@ -6,17 +6,17 @@
     timeout: 1800
 
 - job:
+    # This is included into the osf/openstackid release pipeline from the
+    # openstack/project-config .zuul.d/projects.yaml
     name: openstackid-release-master
-    parent: legacy-publish-openstack-artifacts
+    parent: publish-openstack-artifacts
     run: playbooks/openstackid-release-master/run.yaml
     post-run: playbooks/openstackid-release-master/post.yaml
     timeout: 1800
 
 - job:
     name: openstackid-unittests
-    parent: legacy-base
     run: playbooks/openstackid-unittests/run.yaml
-    post-run: playbooks/openstackid-unittests/post.yaml
     timeout: 1800
 
 - project:
@@ -32,9 +32,6 @@
           - opendev-tox-docs:
                 nodeset: ubuntu-bionic
       post:
-          jobs:
-          - openstackid-release-branch
-      release:
           jobs:
           - openstackid-release-branch
       promote:

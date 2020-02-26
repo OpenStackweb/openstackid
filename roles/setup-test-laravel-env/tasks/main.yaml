@@ -56,6 +56,5 @@
         SERVER_NAME={{ server_name }}
         EOF
       executable: /bin/bash
-      chdir: '{{ ansible_user_dir }}/workspace'
-  environment: '{{ zuul | zuul_legacy_vars }}'
+      chdir: '{{ zuul.project.src_dir }}'
   become: yes
