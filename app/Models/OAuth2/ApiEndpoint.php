@@ -80,7 +80,7 @@ class ApiEndpoint extends BaseEntity {
     private $rate_limit_decay;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Api", cascade={"persist"}, inversedBy="endpoints")
+     * @ORM\ManyToOne(targetEntity="Api", inversedBy="endpoints", cascade={"persist"})
      * @ORM\JoinColumn(name="api_id", referencedColumnName="id")
      * @var Api
      */

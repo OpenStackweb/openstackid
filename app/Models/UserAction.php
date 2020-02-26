@@ -42,7 +42,7 @@ class UserAction extends BaseEntity
     private $user_action;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="actions")
+     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="actions", cascade={"persist"})
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */

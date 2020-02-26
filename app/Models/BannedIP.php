@@ -42,7 +42,7 @@ class BannedIP extends BaseEntity
     private $hits;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="consents")
+     * @ORM\ManyToOne(targetEntity="Auth\User")
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
