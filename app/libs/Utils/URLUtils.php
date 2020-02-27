@@ -61,4 +61,57 @@ final class URLUtils
         }
         return $parts['scheme'] === 'https';
     }
+
+    /**
+     * Get all possible sub-domains for a given url
+     * @param string $url
+     * @return array
+     */
+    public static function getSubDomains(string $url):array
+    {
+        $res    = [];
+        $url    = strtolower($url);
+        $scheme = self::getScheme($url);
+        //add entire url as first domain
+        $res[] = $url;
+
+        $ends_with_slash = substr($url, -1) == '/';
+        $url             = parse_url($url);
+        $authority       = $url['host'];
+        $components      = explode('.', $authority);
+        $len             = count($components);
+
+        for ($i = 0; $i < $len; $i++) {
+            if ($components[$i] == '*') continue;
+            $str = '';
+            for ($j = $i; $j < $len; $j++)
+                $str .= $components[$j] . '.';
+            $str = trim($str, '.');
+            $str = $ends_with_slash ? $str . '/' : $str;
+            $newSubDomain =  $scheme . '*.' . $str;
+            if(!in_array($newSubDomain, $res))
+                $res[] = $newSubDomain;
+        }
+        // remove generic domain
+        if(count($res) > 0)
+        {
+            array_pop($res);
+        }
+        return $res;
+    }
+
+    /**
+     * @param string $url
+     * @return string|null
+     */
+    public static function getScheme(string $url):?string
+    {
+        $url    = parse_url(strtolower($url));
+        if(!$url) return null;
+        if (isset($url['scheme']) && !empty($url['scheme'])) {
+            return $url['scheme'] . '://';
+        }
+        return null;
+    }
+
 }

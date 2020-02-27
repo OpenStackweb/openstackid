@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\URLUtils;
 use App\Services\AbstractService;
 use Auth\User;
 use Exception;
@@ -120,7 +122,7 @@ final class TrustedSitesService extends AbstractService implements ITrustedSites
 			if (!OpenIdUriHelper::isValidRealm($realm))
 				throw new OpenIdInvalidRealmException(sprintf('realm %s is invalid', $realm));
 			//get all possible sub-domains
-			$sub_domains = $this->getSubDomains($realm);
+			$sub_domains = URLUtils::getSubDomains($realm);
 			$sites       = $this->repository->getMatchingOnesByUserId($user->getId(), $sub_domains, $data);
 			//iterate over all retrieved sites and check the set policies by user
 			foreach ($sites as $site) {
@@ -144,53 +146,6 @@ final class TrustedSitesService extends AbstractService implements ITrustedSites
 			throw $ex;
 		}
 		return $res;
-	}
-
-	/**
-	 * Get all possible sub-domains for a given url
-	 * @param string $url
-	 * @return array
-	 */
-	private function getSubDomains(string $url):array
-	{
-		$res    = [];
-		$url    = strtolower($url);
-		$scheme = $this->getScheme($url);
-		//add entire url as first domain
-		$res[] = $url;
-
-		$ends_with_slash = substr($url, -1) == '/';
-		$url             = parse_url($url);
-		$authority       = $url['host'];
-		$components      = explode('.', $authority);
-		$len             = count($components);
-
-		for ($i = 0; $i < $len; $i++) {
-			if ($components[$i] == '*') continue;
-			$str = '';
-			for ($j = $i; $j < $len; $j++)
-				$str .= $components[$j] . '.';
-			$str = trim($str, '.');
-			$str = $ends_with_slash ? $str . '/' : $str;
-			$res[] = $scheme . '*.' . $str;
-		}
-		return $res;
-	}
-
-	/**
-	 * @param string $url
-	 * @return string
-	 */
-	private function getScheme(string $url):string
-	{
-		$url    = strtolower($url);
-		$url    = parse_url($url);
-		$scheme = 'http://';
-
-		if (isset($url['scheme']) && !empty($url['scheme'])) {
-			$scheme = $url['scheme'] . '://';
-		}
-		return $scheme;
 	}
 
 }
