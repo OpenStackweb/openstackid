@@ -1184,7 +1184,7 @@ final class TokenService extends AbstractService implements ITokenService
 
             foreach($client->getRefreshTokens() as $rt)
             {
-                $this->markRefreshTokenAsRevoked($rt);
+                $this->markRefreshTokenAsRevoked($rt->getValue());
             }
 
             $client->removeAllAccessTokens();

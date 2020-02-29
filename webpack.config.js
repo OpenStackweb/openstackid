@@ -41,6 +41,7 @@ var plugins = [
             {from: './node_modules/urijs/src', to: 'urijs'},
             {from: './node_modules/chosen-js', to: 'chosen-js'},
             {from: './node_modules/moment', to: 'moment'},
+            {from: './node_modules/@github/clipboard-copy-element/dist', to: 'clipboard-copy-element'},
         ],
         {copyUnmodified: false}
     ),
