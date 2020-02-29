@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Events\UserCreated;
 use App\Events\UserLocked;
 use App\libs\Auth\Models\IGroupSlugs;
@@ -33,6 +34,7 @@ use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 use App\Models\Utils\BaseEntity;
 use Doctrine\ORM\Mapping AS ORM;
+
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineUserRepository")
  * @ORM\Table(name="users")
@@ -348,21 +350,21 @@ class User extends BaseEntity
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
         $this->public_profile_show_fullname = false;
-        $this->password       = "";
-        $this->identifier     = "";
+        $this->password = "";
+        $this->identifier = "";
         $this->gender_specify = "";
-        $this->password_enc   = AuthHelper::AlgNative;
-        $this->password_salt  = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);
+        $this->password_enc = AuthHelper::AlgNative;
+        $this->password_salt = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);
         $this->login_failed_attempt = 0;
-        $this->access_tokens  = new ArrayCollection();
+        $this->access_tokens = new ArrayCollection();
         $this->refresh_tokens = new ArrayCollection();
-        $this->clients        = new ArrayCollection();
-        $this->trusted_sites  = new ArrayCollection();
-        $this->consents       = new ArrayCollection();
-        $this->actions        = new ArrayCollection();
-        $this->groups         = new ArrayCollection();
-        $this->affiliations   = new ArrayCollection();
-        $this->scope_groups   = new ArrayCollection();
+        $this->clients = new ArrayCollection();
+        $this->trusted_sites = new ArrayCollection();
+        $this->consents = new ArrayCollection();
+        $this->actions = new ArrayCollection();
+        $this->groups = new ArrayCollection();
+        $this->affiliations = new ArrayCollection();
+        $this->scope_groups = new ArrayCollection();
         $this->reset_password_requests = new ArrayCollection();
     }
 
@@ -400,7 +402,7 @@ class User extends BaseEntity
     /**
      * @return string
      */
-    public function getIdentifier():?string
+    public function getIdentifier(): ?string
     {
         return $this->identifier;
     }
@@ -410,7 +412,7 @@ class User extends BaseEntity
         return $this->email;
     }
 
-    public function getFullName():?string
+    public function getFullName(): ?string
     {
         return $this->getFirstName() . " " . $this->getLastName();
     }
@@ -422,15 +424,15 @@ class User extends BaseEntity
 
     public function getLastName()
     {
-       return $this->last_name;
+        return $this->last_name;
     }
 
-    public function getNickName():?string
+    public function getNickName(): ?string
     {
         return $this->getIdentifier();
     }
 
-    public function getGender():?string
+    public function getGender(): ?string
     {
         return $this->gender;
     }
@@ -440,14 +442,14 @@ class User extends BaseEntity
         return $this->country_iso_code;
     }
 
-    public function getLanguage():?string
+    public function getLanguage(): ?string
     {
         return $this->language;
     }
 
-    public function getDateOfBirth():?\DateTime
+    public function getDateOfBirth(): ?\DateTime
     {
-       return $this->birthday;
+        return $this->birthday;
     }
 
     /**
@@ -455,7 +457,7 @@ class User extends BaseEntity
      */
     public function getDateOfBirthNice(): ?string
     {
-        if(is_null($this->birthday)) return null;
+        if (is_null($this->birthday)) return null;
         return $this->birthday->format("Y-m-d H:i:s");
     }
 
@@ -470,7 +472,7 @@ class User extends BaseEntity
      */
     public function getShowProfileFullName()
     {
-        return $this->public_profile_show_fullname > 0 ;
+        return $this->public_profile_show_fullname > 0;
     }
 
     /**
@@ -497,7 +499,7 @@ class User extends BaseEntity
         return $this->public_profile_show_email > 0;
     }
 
-    public function getBio():?string
+    public function getBio(): ?string
     {
         return $this->bio;
     }
@@ -505,13 +507,13 @@ class User extends BaseEntity
     /**
      * @return Client[]
      */
-    public function getAvailableClients():array
+    public function getAvailableClients(): array
     {
-        $own_clients = $this->clients->filter(function(Client $client){
+        $own_clients = $this->clients->filter(function (Client $client) {
             return !$client->hasResourceServer();
         })->toArray();
 
-        $managed_clients = $this->managed_clients->filter(function(Client $client){
+        $managed_clients = $this->managed_clients->filter(function (Client $client) {
             return !$client->hasResourceServer() && !$client->isOwner($this);
         })->toArray();
 
@@ -520,7 +522,7 @@ class User extends BaseEntity
 
     public function getManagedClients()
     {
-        return $this->managed_clients->filter(function(Client $client){
+        return $this->managed_clients->filter(function (Client $client) {
             return !$client->hasResourceServer() && !$client->isOwner($this);
         });
     }
@@ -529,9 +531,9 @@ class User extends BaseEntity
      * Could use system scopes on registered clients
      * @return bool
      */
-    public function canUseSystemScopes():bool
+    public function canUseSystemScopes(): bool
     {
-        if($this->isSuperAdmin()) return true;
+        if ($this->isSuperAdmin()) return true;
         return $this->belongToGroup(IOAuth2User::OAuth2SystemScopeAdminGroup);
     }
 
@@ -541,23 +543,24 @@ class User extends BaseEntity
      */
     public function isOAuth2ServerAdmin(): bool
     {
-        if($this->isSuperAdmin()) return true;
+        if ($this->isSuperAdmin()) return true;
         return $this->belongToGroup(IOAuth2User::OAuth2ServerAdminGroup);
     }
 
     /**
      * @return bool
      */
-    public function isOpenIdServerAdmin():bool
+    public function isOpenIdServerAdmin(): bool
     {
-        if($this->isSuperAdmin()) return true;
+        if ($this->isSuperAdmin()) return true;
         return $this->belongToGroup(IOpenIdUser::OpenIdServerAdminGroup);
     }
 
     /**
      * @return bool
      */
-    public function isSuperAdmin():bool{
+    public function isSuperAdmin(): bool
+    {
         return $this->belongToGroup(IGroupSlugs::SuperAdminGroup);
     }
 
@@ -565,7 +568,8 @@ class User extends BaseEntity
      * @param string $slug
      * @return bool
      */
-    public function belongToGroup(string $slug):bool{
+    public function belongToGroup(string $slug): bool
+    {
         $criteria = new Criteria();
         $criteria->where(Criteria::expr()->eq('slug', $slug));
         return $this->groups->matching($criteria)->count() > 0;
@@ -574,8 +578,9 @@ class User extends BaseEntity
     /**
      * @param Group $group
      */
-    public function addToGroup(Group $group){
-        if($this->groups->contains($group)) return;
+    public function addToGroup(Group $group)
+    {
+        if ($this->groups->contains($group)) return;
         $this->groups->add($group);
         $group->addUser($this);
     }
@@ -583,25 +588,27 @@ class User extends BaseEntity
     /**
      * @param Group $group
      */
-    public function removeFromGroup(Group $group){
-        if(!$this->groups->contains($group)) return;
+    public function removeFromGroup(Group $group)
+    {
+        if (!$this->groups->contains($group)) return;
         $this->groups->removeElement($group);
         $group->removeUser($this);
     }
 
-    public function clearGroups():void{
+    public function clearGroups(): void
+    {
         $this->groups->clear();
     }
 
     public function getStreetAddress()
     {
 
-        return $this->address1.' '.$this->address2;
+        return $this->address1 . ' ' . $this->address2;
     }
 
     public function getRegion()
     {
-       return $this->state;
+        return $this->state;
     }
 
     public function getLocality()
@@ -622,8 +629,9 @@ class User extends BaseEntity
     /**
      * @param OpenIdTrustedSite $site
      */
-    public function addTrustedSite(OpenIdTrustedSite $site) {
-        if($this->trusted_sites->contains($site)) return;
+    public function addTrustedSite(OpenIdTrustedSite $site)
+    {
+        if ($this->trusted_sites->contains($site)) return;
         $this->trusted_sites->add($site);
         $site->setOwner($this);
     }
@@ -656,25 +664,25 @@ class User extends BaseEntity
      */
     public function getFormattedAddress()
     {
-        $street   = $this->getStreetAddress();
-        $region   = $this->getRegion();
-        $city     = $this->getLocality();
+        $street = $this->getStreetAddress();
+        $region = $this->getRegion();
+        $city = $this->getLocality();
         $zip_code = $this->getPostalCode();
-        $country  = $this->getCountry();
+        $country = $this->getCountry();
 
         $complete = $street;
 
-        if(!empty($city))
-            $complete .= ', '.$city;
+        if (!empty($city))
+            $complete .= ', ' . $city;
 
-        if(!empty($region))
-            $complete .= ', '.$region;
+        if (!empty($region))
+            $complete .= ', ' . $region;
 
-        if(!empty($zip_code))
-            $complete .= ', '.$zip_code;
+        if (!empty($zip_code))
+            $complete .= ', ' . $zip_code;
 
-        if(!empty($country))
-            $complete .= ', '.$country;
+        if (!empty($country))
+            $complete .= ', ' . $country;
 
         return $complete;
     }
@@ -693,16 +701,15 @@ class User extends BaseEntity
     public function getGroupScopes()
     {
         $scopes = [];
-        $map    = [];
+        $map = [];
 
         $criteria = new Criteria();
         $criteria->where(Criteria::expr()->eq('active', true));
         $active_scope_groups = $this->scope_groups->matching($criteria);
 
-        foreach($active_scope_groups as $group){
-            foreach($group->getScopes() as $scope)
-            {
-                if(!isset($map[$scope->getId()]))
+        foreach ($active_scope_groups as $group) {
+            foreach ($group->getScopes() as $scope) {
+                if (!isset($map[$scope->getId()]))
                     $scopes[] = $scope;
             }
         }
@@ -715,17 +722,22 @@ class User extends BaseEntity
      * @return bool
      * @throws ValidationException
      */
-    public function isGroupScopeAllowed(ApiScope $scope):bool{
-        if(!$scope->isAssignedByGroups()) throw new ValidationException("scope is not assigned by groups!");
+    public function isGroupScopeAllowed(ApiScope $scope): bool
+    {
+        if (!$scope->isAssignedByGroups()) throw new ValidationException("scope is not assigned by groups!");
         $criteria = Criteria::create();
         $criteria->where(Criteria::expr()->eq('active', true));
         $active_scope_groups = $this->scope_groups->matching($criteria);
-        foreach($active_scope_groups as $group){
-            if($group->hasScope($scope)) return true;
+        foreach ($active_scope_groups as $group) {
+            if ($group->hasScope($scope)) return true;
         }
         return false;
     }
 
+    public function clearEmailVerification(){
+        $this->email_verified = false;
+        $this->email_verified_date = null;
+    }
 
     /**
      * @return bool
@@ -735,7 +747,8 @@ class User extends BaseEntity
         return $this->email_verified;
     }
 
-    public function clearTrustedSites():void{
+    public function clearTrustedSites(): void
+    {
         $this->trusted_sites->clear();
     }
 
@@ -752,7 +765,7 @@ class User extends BaseEntity
     /**
      * @return string
      */
-    public function getPic():string
+    public function getPic(): string
     {
         return $this->getGravatarUrl();
     }
@@ -760,22 +773,24 @@ class User extends BaseEntity
     /**
      * Get either a Gravatar URL or complete image tag for a specified email address.
      */
-    private function getGravatarUrl( ):string {
+    private function getGravatarUrl(): string
+    {
         $url = 'https://www.gravatar.com/avatar/';
-        $url .= md5( strtolower( trim( $this->email ) ) );
+        $url .= md5(strtolower(trim($this->email)));
         return $url;
     }
+
     /**
      * @param string $password
      * @return bool
      * @throws \Exception
      */
-    public function checkPassword(string $password):bool
+    public function checkPassword(string $password): bool
     {
         return AuthHelper::check($password, $this->password, $this->password_enc, $this->password_salt);
     }
 
-    public function canLogin():bool
+    public function canLogin(): bool
     {
         return $this->isEmailVerified() && $this->isActive();
     }
@@ -1118,7 +1133,7 @@ class User extends BaseEntity
     public function setPassword(string $password): void
     {
         $this->password_salt = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);
-        $this->password      = AuthHelper::encrypt_password($password, $this->password_salt, $this->password_enc);
+        $this->password = AuthHelper::encrypt_password($password, $this->password_salt, $this->password_enc);
     }
 
     /**
@@ -1236,8 +1251,9 @@ class User extends BaseEntity
     /**
      * @param UserAction $action
      */
-    public function addUserAction(UserAction $action){
-        if($this->actions->contains($action)) return;
+    public function addUserAction(UserAction $action)
+    {
+        if ($this->actions->contains($action)) return;
         $this->actions->add($action);
         $action->setOwner($this);
     }
@@ -1268,7 +1284,7 @@ class User extends BaseEntity
         $criteria = new Criteria();
         $criteria->where(Criteria::expr()->eq("client", $client));
         $consents = $this->consents->matching($criteria);
-        if($consents->count() == 0 ) return null;
+        if ($consents->count() == 0) return null;
 
         $scope_set = explode(' ', $scopes);
         sort($scope_set);
@@ -1289,12 +1305,12 @@ SQL;
         $query->setParameter("scopes", join(' ', $scope_set));
 
         $consent = $query->getOneOrNullResult();
-        if(!is_null($consent)) return $consent;
+        if (!is_null($consent)) return $consent;
 
-        foreach($consents as $consent){
+        foreach ($consents as $consent) {
             $former_scope_set = explode(' ', $consent->getScope());
             // check if the requested scopes are included on the former consent present
-            if(count(array_diff($scope_set, $former_scope_set)) == 0){
+            if (count(array_diff($scope_set, $former_scope_set)) == 0) {
                 return $consent;
             }
         }
@@ -1304,21 +1320,24 @@ SQL;
     /**
      * @param UserConsent $consent
      */
-    public function addConsent(UserConsent $consent){
-        if($this->consents->contains($consent)) return;
+    public function addConsent(UserConsent $consent)
+    {
+        if ($this->consents->contains($consent)) return;
         $this->consents->add($consent);
         $consent->setOwner($this);
     }
 
-    public function updateLastLoginDate():void{
+    public function updateLastLoginDate(): void
+    {
         $this->last_login_date = new \DateTime('now', new \DateTimeZone('UTC'));
     }
 
     /**
      * @return int
      */
-    public function updateLoginFailedAttempt():int {
-        $this->login_failed_attempt = $this->login_failed_attempt +1 ;
+    public function updateLoginFailedAttempt(): int
+    {
+        $this->login_failed_attempt = $this->login_failed_attempt + 1;
         return $this->login_failed_attempt;
     }
 
@@ -1343,6 +1362,10 @@ SQL;
      */
     public function setEmail(string $email): void
     {
+        if (!empty($this->email) && $email != $this->email) {
+            //we are setting a new email
+            $this->clearResetPasswordRequests();
+        }
         $this->email = $email;
     }
 
@@ -1365,8 +1388,9 @@ SQL;
     /**
      * @return $this
      */
-    public function verifyEmail(){
-        if(!$this->email_verified) {
+    public function verifyEmail()
+    {
+        if (!$this->email_verified) {
             $this->email_verified = true;
             $this->active = true;
             $this->lock = false;
@@ -1382,10 +1406,10 @@ SQL;
     /**
      * @return String
      */
-    public function generateEmailVerificationToken():string
+    public function generateEmailVerificationToken(): string
     {
-        $generator                       = new RandomGenerator();
-        $token                           = strval($this->id).$generator->randomToken();
+        $generator = new RandomGenerator();
+        $token = strval($this->id) . $generator->randomToken();
         $this->email_verified_token_hash = self::createConfirmationTokenHash($token);
         return $token;
     }
@@ -1394,7 +1418,7 @@ SQL;
      * @param string $token
      * @return string
      */
-    public static function createConfirmationTokenHash(string $token):string
+    public static function createConfirmationTokenHash(string $token): string
     {
         return md5($token);
     }
@@ -1403,7 +1427,7 @@ SQL;
      * @param string $token
      * @return bool
      */
-    public function checkConfirmationTokenHash(string $token):bool
+    public function checkConfirmationTokenHash(string $token): bool
     {
         return md5($token) == $this->email_verified_token_hash;
     }
@@ -1419,14 +1443,16 @@ SQL;
     /**
      * @param string $identifier
      */
-    public function setIdentifier(string $identifier){
+    public function setIdentifier(string $identifier)
+    {
         $this->identifier = $identifier;
     }
 
     /**
      * @ORM\PostPersist
      */
-    public function inserted($args){
+    public function inserted($args)
+    {
         Event::fire(new UserCreated($this->getId(), $args));
     }
 
@@ -1434,14 +1460,15 @@ SQL;
      * @param $name
      * @return mixed
      */
-    public function __get($name) {
-        if($name == "fullname")
+    public function __get($name)
+    {
+        if ($name == "fullname")
             return $this->getFullName();
 
-        if($name == "pic")
+        if ($name == "pic")
             return $this->getPic();
 
-        $res =  $this->{$name};
+        $res = $this->{$name};
         return $res;
     }
 
@@ -1464,8 +1491,9 @@ SQL;
     /**
      * @param UserPasswordResetRequest $request
      */
-    public function addPasswordResetRequest(UserPasswordResetRequest $request){
-        if($this->reset_password_requests->contains($request)) return;
+    public function addPasswordResetRequest(UserPasswordResetRequest $request)
+    {
+        if ($this->reset_password_requests->contains($request)) return;
         $this->reset_password_requests->add($request);
     }
 
@@ -1488,14 +1516,16 @@ SQL;
     /**
      * @return bool
      */
-    public function hasCreator():bool{
+    public function hasCreator(): bool
+    {
         return $this->getCreatedById() > 0;
     }
 
     /**
      * @return int
      */
-    public function getCreatedById():int{
+    public function getCreatedById(): int
+    {
         try {
             return !is_null($this->created_by) ? $this->created_by->getId() : 0;
         } catch (\Exception $ex) {
@@ -1517,6 +1547,11 @@ SQL;
     public function setTwitterName(string $twitter_name): void
     {
         $this->twitter_name = $twitter_name;
+    }
+
+    public function clearResetPasswordRequests(): void
+    {
+        $this->reset_password_requests->clear();
     }
 
 }

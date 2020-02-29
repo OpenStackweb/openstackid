@@ -20,6 +20,9 @@
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 {{ session('status') }}
             </div>
+            @if($redirect_uri)
+                <p>Now you will be redirected to <a id="redirect_url" name="redirect_url" href="{{$redirect_uri}}">{{$redirect_uri}}</a></p>
+            @endif
         @endif
         @if ($errors->any())
             <div class="alert alert-danger alert-dismissible" role="alert">
@@ -48,6 +51,12 @@
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary btn-lg btn-block">{{ __('Send Password Reset Link') }}</button>
                 </div>
+                @if($redirect_uri)
+                    <input type="hidden" id="redirect_uri" name="redirect_uri" value="{{$redirect_uri}}"/>
+                @endif
+                @if($client_id)
+                    <input type="hidden" id="client_id" name="client_id" value="{{$client_id}}"/>
+                @endif
             </form>
         </div>
     </div>
