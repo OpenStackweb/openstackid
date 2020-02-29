@@ -11,13 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Http\Controllers\Controller;
 use App\Services\Auth\IUserService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request as LaravelRequest;
 use models\exceptions\ValidationException;
+use OAuth2\Repositories\IClientRepository;
+
 /**
  * Class ForgotPasswordController
  * @package App\Http\Controllers\Auth
@@ -30,29 +33,63 @@ final class ForgotPasswordController extends Controller
     private $user_service;
 
     /**
+     * @var IClientRepository
+     */
+    private $client_repository;
+
+    /**
      * ForgotPasswordController constructor.
+     * @param IClientRepository $client_repository
      * @param IUserService $user_service
      */
-    public function __construct(IUserService $user_service)
+    public function __construct
+    (
+        IClientRepository $client_repository,
+        IUserService $user_service
+    )
     {
         $this->middleware('guest');
         $this->user_service = $user_service;
+        $this->client_repository = $client_repository;
     }
 
     /**
-     * Display the form to request a password reset link.
-     *
-     * @return \Illuminate\Http\Response
+     * @param LaravelRequest $request
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public function showLinkRequestForm()
+    public function showLinkRequestForm(LaravelRequest $request)
     {
-        return view('auth.passwords.email');
+        try {
+            $params = [
+                "redirect_uri" => '',
+                "client_id"    => '',
+            ];
+            // check if we have explicit params at query string
+            if ($request->has("redirect_uri") && $request->has("client_id")) {
+                $redirect_uri = $request->get("redirect_uri");
+                $client_id = $request->get("client_id");
+
+                $client = $this->client_repository->getClientById($client_id);
+                if (is_null($client))
+                    throw new ValidationException("client does not exists");
+
+                if (!$client->isUriAllowed($redirect_uri))
+                    throw new ValidationException(sprintf("redirect_uri %s is not allowed on associated client", $redirect_uri));
+
+                $params['redirect_uri'] = $redirect_uri;
+                $params['client_id'] = $client_id;
+            }
+            return view('auth.passwords.email', $params);
+        } catch (\Exception $ex) {
+            Log::warning($ex);
+        }
+        return view("auth.passwords.email_error");
     }
 
     /**
      * Send a reset link to the given user.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function sendResetLinkEmail(LaravelRequest $request)
@@ -63,24 +100,44 @@ final class ForgotPasswordController extends Controller
 
             if (!$validator->passes()) {
                 return back()
-                    ->withInput($request->only('email'))
+                    ->withInput($request->only('email', 'client_id', 'redirect_uri'))
                     ->withErrors($validator);
             }
 
             $this->user_service->requestPasswordReset($payload);
 
-            return $this->sendResetLinkResponse("Reset link sent");
-        }
-        catch (ValidationException $ex){
+            $params = [
+                'client_id'    => '',
+                'redirect_uri' => '',
+            ];
+            // check redirect uri with associated client
+            if($request->has("redirect_uri") && $request->has("client_id")){
+                $redirect_uri = $request->get("redirect_uri");
+                $client_id    = $request->get("client_id");
+                $client       = $this->client_repository->getClientById($client_id);
+
+                if(is_null($client))
+                    throw new ValidationException("client does not exists");
+
+                if(!$client->isUriAllowed($redirect_uri))
+                    throw new ValidationException(sprintf("redirect_uri %s is not allowed on associated client", $redirect_uri));
+
+                $params['client_id']    = $client_id;
+                $params['redirect_uri'] = $redirect_uri;
+            }
+
+            $params['status'] = 'Reset link sent';
+            return back()->with($params);
+
+        } catch (ValidationException $ex) {
             Log::warning($ex);
-            foreach ($ex->getMessages() as $message){
+            foreach ($ex->getMessages() as $message) {
                 $validator->getMessageBag()->add('validation', $message);
             }
             return back()
-                ->withInput($request->only('email'))
+                ->withInput($request->only(['email', 'client_id', 'redirect_uri']))
                 ->withErrors($validator);
-        }
-        catch(\Exception $ex){
+        } catch (\Exception $ex) {
             Log::warning($ex);
         }
         return view("auth.passwords.email_error");
@@ -89,7 +146,7 @@ final class ForgotPasswordController extends Controller
     /**
      * Get a validator for an incoming registration request.
      *
-     * @param  array  $data
+     * @param array $data
      * @return \Illuminate\Contracts\Validation\Validator
      */
     protected function validator(array $data)
@@ -102,25 +159,12 @@ final class ForgotPasswordController extends Controller
     /**
      * Get the response for a successful password reset link.
      *
-     * @param  string  $response
+     * @param string $response
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     protected function sendResetLinkResponse($response)
     {
-        return back()->with('status', trans($response));
+
     }
 
-    /**
-     * Get the response for a failed password reset link.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $response
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
-     */
-    protected function sendResetLinkFailedResponse(LaravelRequest $request, $response)
-    {
-        return back()
-            ->withInput($request->only('email'))
-            ->withErrors(['email' => trans($response)]);
-    }
 }

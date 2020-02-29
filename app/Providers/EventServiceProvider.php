@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use App\Events\OAuth2ClientLocked;
+use App\Events\UserEmailUpdated;
 use App\Events\UserLocked;
 use App\Events\UserPasswordResetRequestCreated;
 use App\Events\UserPasswordResetSuccessful;
@@ -78,14 +79,22 @@ final class EventServiceProvider extends ServiceProvider
             Mail::queue(new WelcomeNewUserEmail($user));
             if(!$user->isEmailVerified() && !$user->hasCreator())
                 $user_service->sendVerificationEmail($user);
+        });
 
+        Event::listen(UserEmailUpdated::class, function($event)
+        {
+            $repository   = App::make(IUserRepository::class);
+            $user         = $repository->getById($event->getUserId());
+            if(is_null($user)) return;
+            if(! $user instanceof User) return;
+            $user_service = App::make(IUserService::class);
+            $user_service->sendVerificationEmail($user);
         });
 
         Event::listen(UserPasswordResetRequestCreated::class, function($event){
             $repository   = App::make(IUserPasswordResetRequestRepository::class);
             $request      = $repository->find($event->getId());
             if(is_null($request)) return;
-
         });
 
         Event::listen(UserLocked::class, function($event){

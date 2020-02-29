@@ -11,17 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\Events\UserEmailUpdated;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\Services\AbstractService;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use models\utils\IEntity;
 use OpenId\Services\IUserService;
-use phpDocumentor\Reflection\Types\Parent_;
 use Utils\Db\ITransactionService;
 use Utils\Services\ILogService;
 use Utils\Services\IServerConfigurationService;
@@ -225,6 +227,7 @@ final class UserService extends AbstractService implements IUserService
             if(is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
 
+            $former_email = $user->getEmail();
             if(isset($payload["email"])){
                 $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
                 if(!is_null($former_user) && $former_user->getId() != $id)
@@ -247,6 +250,12 @@ final class UserService extends AbstractService implements IUserService
                         throw new EntityNotFoundException("group not found");
                     $user->addToGroup($group);
                 }
+            }
+
+            if($former_email != $user->getEmail()){
+                Log::debug(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email , $user->getEmail()));
+                $user->clearEmailVerification();
+                Event::fire(new UserEmailUpdated($user->getId()));
             }
 
             return $user;

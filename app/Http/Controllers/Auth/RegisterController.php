@@ -93,7 +93,6 @@ final class RegisterController extends Controller
 
                 if ($oauth_auth_request->isValid()) {
 
-
                     $redirect_uri = $oauth_auth_request->getRedirectUri();
                     $client_id = $oauth_auth_request->getClientId();
 
@@ -188,7 +187,6 @@ final class RegisterController extends Controller
                 'client_id'    => '',
                 'redirect_uri' => '',
             ];
-
 
             // check if we have a former oauth2 request
             if ($this->memento_service->exists()) {

@@ -230,11 +230,12 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function() use($payload) {
             $user = $this->user_repository->getByEmailOrName(trim($payload['email']));
-            if(is_null($user))
-                throw new EntityNotFoundException("user not found");
+            if(is_null($user) || !$user->isEmailVerified())
+                throw new EntityNotFoundException("User not found.");
 
             $request = new UserPasswordResetRequest();
             $request->setOwner($user);
+
             do{
                 $token = $request->generateToken();
                 $former_request = $this->request_reset_password_repository->getByToken($token);
