@@ -373,11 +373,17 @@ final class ClientService extends AbstractService implements IClientService
         return $this->tx_service->transaction(function() use ($id, $scope_id){
             $client = $this->client_repository->getById($id);
             if (is_null($client) || !$client instanceof Client) {
-                throw new EntityNotFoundException(sprintf("client id %s does not exists!", $id));
+                throw new EntityNotFoundException(sprintf("Client id %s does not exists.", $id));
             }
             $scope = $this->scope_repository->getById($scope_id);
             if (is_null($scope) || !$scope instanceof ApiScope) {
-                throw new EntityNotFoundException(sprintf("scope id %s does not exists!", $scope_id));
+                throw new EntityNotFoundException(sprintf("Scope id %s does not exists.", $scope_id));
+            }
+            if($scope->getName() == OAuth2Protocol::OpenIdConnect_Scope){
+                throw new ValidationException(sprintf("Scope %s can not be removed.",  OAuth2Protocol::OpenIdConnect_Scope));
+            }
+            if($scope->getName() == OAuth2Protocol::OfflineAccess_Scope && $client->canRequestRefreshTokens()){
+                throw new ValidationException(sprintf("Scope %s can not be removed.",  OAuth2Protocol::OfflineAccess_Scope));
             }
             $client->removeScope($scope);
             $client->setEditedBy($this->auth_service->getCurrentUser());

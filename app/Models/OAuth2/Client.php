@@ -427,6 +427,14 @@ class Client extends BaseEntity implements IClient
     }
 
     /**
+     * @return bool
+     */
+    public function canRequestRefreshTokens():bool{
+        return $this->getApplicationType() == IClient::ApplicationType_Native ||
+            $this->getApplicationType() == IClient::ApplicationType_Web_App;
+    }
+
+    /**
      * @param string $app_type
      * @return string
      */

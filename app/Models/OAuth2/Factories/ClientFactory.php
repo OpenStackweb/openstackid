@@ -39,11 +39,8 @@ final class ClientFactory
         foreach ($scope_repository->getDefaults() as $default_scope) {
             if
             (
-                $default_scope->getName() === OAuth2Protocol::OfflineAccess_Scope &&
-                !(
-                    $client->getApplicationType() == IClient::ApplicationType_Native ||
-                    $client->getApplicationType() == IClient::ApplicationType_Web_App
-                )
+                $default_scope->getName() === OAuth2Protocol::OfflineAccess_Scope
+                && !$client->canRequestRefreshTokens()
             ) {
                 continue;
             }
