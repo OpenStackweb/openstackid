@@ -123,7 +123,7 @@ jQuery(document).ready(function($){
                     timeout:60000,
                     success: function (data,textStatus,jqXHR) {
                         //load data...
-                        $('#client_secret').text(data.client_secret);
+                        $('#client_secret > :input').val(data.client_secret);
                         //$('#client_secret_expiration_date').text(data.new_expiration_date.date);
                         //clean token UI
                         $('#table-access-tokens').remove();
