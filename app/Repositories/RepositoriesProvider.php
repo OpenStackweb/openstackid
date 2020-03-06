@@ -11,10 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use App\libs\Auth\Models\SpamEstimatorFeed;
 use App\libs\Auth\Models\UserRegistrationRequest;
 use App\libs\Auth\Repositories\IBannedIPRepository;
 use App\libs\Auth\Repositories\IGroupRepository;
+use App\libs\Auth\Repositories\ISpamEstimatorFeedRepository;
 use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
@@ -216,6 +217,13 @@ final class RepositoriesProvider extends ServiceProvider
             }
         );
 
+        App::singleton(
+            ISpamEstimatorFeedRepository::class,
+            function(){
+                return EntityManager::getRepository(SpamEstimatorFeed::class);
+            }
+        );
+
     }
 
     public function provides()
@@ -237,6 +245,7 @@ final class RepositoriesProvider extends ServiceProvider
             IResourceServerRepository::class,
             IWhiteListedIPRepository::class,
             IUserRegistrationRequestRepository::class,
+            ISpamEstimatorFeedRepository::class,
         ];
     }
 }

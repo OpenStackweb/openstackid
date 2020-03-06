@@ -11,10 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use App\Events\UserCreated;
 use App\Events\UserLocked;
+use App\Events\UserSpamStateUpdated;
 use App\libs\Auth\Models\IGroupSlugs;
+use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Illuminate\Support\Facades\Event;
 use App\Events\UserEmailVerified;
 use Doctrine\Common\Collections\Criteria;
@@ -47,6 +48,16 @@ class User extends BaseEntity
 {
     use Authenticatable;
     use CanResetPasswordTrait;
+
+    const SpamTypeNone = 'None';
+    const SpamTypeSpam = 'Spam';
+    const SpamTypeHam  = 'Ham';
+
+    const ValidSpamTypes = [
+        self::SpamTypeNone,
+        self::SpamTypeSpam,
+        self::SpamTypeHam
+    ];
 
     /**
      * @ORM\Column(name="identifier", type="string")
@@ -262,6 +273,12 @@ class User extends BaseEntity
      * @var \Datetime
      */
     private $birthday;
+
+    /**
+     * @ORM\Column(name="spam_type", nullable=false, type="string")
+     * @var string
+     */
+    private $spam_type;
 
     // relations
 
@@ -804,20 +821,11 @@ class User extends BaseEntity
     }
 
     /**
-     * @param bool $active
-     */
-    public function setActive(bool $active): void
-    {
-        $this->active = $active;
-    }
-
-
-    /**
      * @return $this
      */
     public function lock()
     {
-        $this->active = false;
+        $this->deActivate();
         Event::fire(new UserLocked($this->getId()));
         return $this;
     }
@@ -827,7 +835,7 @@ class User extends BaseEntity
      */
     public function unlock()
     {
-        $this->active = true;
+        $this->activate();
         return $this;
     }
 
@@ -1385,8 +1393,31 @@ SQL;
         $this->bio = $bio;
     }
 
+    public function activate():void {
+        if(!$this->active) {
+            $this->active = true;
+            $this->spam_type = self::SpamTypeHam;
+            Event::fire(new UserSpamStateUpdated(
+                    $this->getId()
+                )
+            );
+        }
+    }
+
+    public function deActivate():void {
+        if( $this->active) {
+            $this->active = false;
+            $this->spam_type = self::SpamTypeSpam;
+            Event::fire(new UserSpamStateUpdated(
+                    $this->getId()
+                )
+            );
+        }
+    }
+
     /**
      * @return $this
+     * @throws \Exception
      */
     public function verifyEmail()
     {
@@ -1449,11 +1480,36 @@ SQL;
     }
 
     /**
-     * @ORM\PostPersist
+     * @ORM\postPersist
      */
-    public function inserted($args)
+    public function postPersist($args)
     {
-        Event::fire(new UserCreated($this->getId(), $args));
+        Event::fire(new UserCreated($this->getId()));
+    }
+
+    /**
+     * @ORM\preRemove
+     */
+    public function preRemove($args)
+    {
+    }
+
+    /**
+     * @ORM\preUpdate
+     * @param PreUpdateEventArgs $args
+     */
+    public function preUpdate(PreUpdateEventArgs $args)
+    {
+        if($this->spam_type != self::SpamTypeNone &&
+            !$args->hasChangedField("active")  &&
+            ($args->hasChangedField("bio") || $args->hasChangedField("email"))) {
+            // enqueue user for spam re checker
+            $this->resetSpamTypeClassification();
+            Event::fire(new UserSpamStateUpdated($this->getId()));
+        }
+        if($args->hasChangedField("email")) {
+            // record email change
+        }
     }
 
     /**
@@ -1553,5 +1609,44 @@ SQL;
     {
         $this->reset_password_requests->clear();
     }
+
+    /**
+     * @return string|null
+     */
+    public function getSpamType(): ?string
+    {
+        return $this->spam_type;
+    }
+
+    /**
+     * @param string $spam_type
+     * @throws ValidationException
+     */
+    public function setSpamType(string $spam_type): void
+    {
+        if(!in_array($spam_type, self::ValidSpamTypes))
+            throw new ValidationException(sprintf("Not valid %s spam type value.", $spam_type));
+        $this->spam_type = $spam_type;
+    }
+
+
+    public function resetSpamTypeClassification():void{
+        $this->spam_type = self::SpamTypeNone;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isHam():bool{
+        return $this->spam_type == self::SpamTypeHam;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSpam():bool{
+        return $this->spam_type == self::SpamTypeSpam;
+    }
+
 
 }

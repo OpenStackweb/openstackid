@@ -150,7 +150,7 @@ class CustomAuthProvider implements UserProvider
                 //update user fields
                 $user->setLastLoginDate(new \DateTime('now', new \DateTimeZone('UTC')));
                 $user->setLoginFailedAttempt(0);
-                $user->setActive(true);
+                $user->activate();
                 $user->clearResetPasswordRequests();
 
                 $auth_extensions = $this->auth_extension_service->getExtensions();

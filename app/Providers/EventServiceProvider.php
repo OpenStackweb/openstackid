@@ -12,10 +12,13 @@
  * limitations under the License.
  **/
 use App\Events\OAuth2ClientLocked;
+use App\Events\UserActivated;
+use App\Events\UserDeactivated;
 use App\Events\UserEmailUpdated;
 use App\Events\UserLocked;
 use App\Events\UserPasswordResetRequestCreated;
 use App\Events\UserPasswordResetSuccessful;
+use App\Events\UserSpamStateUpdated;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\Mail\UserLockedEmail;
 use App\Mail\UserPasswordResetMail;
@@ -81,6 +84,16 @@ final class EventServiceProvider extends ServiceProvider
                 $user_service->sendVerificationEmail($user);
         });
 
+        Event::listen(UserSpamStateUpdated::class, function($event)
+        {
+            $repository   = App::make(IUserRepository::class);
+            $user         = $repository->getById($event->getUserId());
+            if(is_null($user)) return;
+            if(! $user instanceof User) return;
+            $user_service = App::make(IUserService::class);
+            $user_service->recalculateUserSpamType($user);
+        });
+
         Event::listen(UserEmailUpdated::class, function($event)
         {
             $repository   = App::make(IUserRepository::class);
@@ -93,7 +106,7 @@ final class EventServiceProvider extends ServiceProvider
 
         Event::listen(UserPasswordResetRequestCreated::class, function($event){
             $repository   = App::make(IUserPasswordResetRequestRepository::class);
-            $request      = $repository->find($event->getId());
+            $request      = $repository->find($event->getUserId());
             if(is_null($request)) return;
         });
 
@@ -123,5 +136,14 @@ final class EventServiceProvider extends ServiceProvider
             if(!$client instanceof Client) return;
             Mail::queue(new \App\Mail\OAuth2ClientLocked($client));
         });
+
+        Event::listen(\Illuminate\Mail\Events\MessageSending::class, function($event){
+            $devEmail = env('DEV_EMAIL_TO', null);
+            if(in_array(App::environment(), ['local','dev','testing']) && !empty($devEmail)){
+                $event->message->setTo(explode(",", $devEmail));
+            }
+            return true;
+        });
+
     }
 }

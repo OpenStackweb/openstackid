@@ -141,7 +141,7 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
             Route::group(array('prefix' => 'users'), function () {
                 Route::get('', 'AdminController@listUsers');
                 Route::group(array('prefix' => '{user_id}'), function () {
-                    Route::get('', 'AdminController@editUser');
+                    Route::get('', 'AdminController@editUser')->name("edit_user");
                 });
             });
 

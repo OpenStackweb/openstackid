@@ -178,7 +178,10 @@
                         />&nbsp;Email Verified?
                     </label>
                 </div>
-
+                <div class="col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                    <label for="spam-type">Spam Type</label>
+                    <input type="text" readonly class="form-control" id="spam-type" name="spam-type" data-lpignore="true" value="{!! $user->spam_type !!}">
+                </div>
                 <button type="submit" class="btn btn-default btn-lg btn-primary">Save</button>
                 <input type="hidden" name="id" id="id" value="{!! $user->id !!}"/>
             </form>

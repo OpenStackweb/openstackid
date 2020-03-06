@@ -134,8 +134,13 @@ final class UserFactory
             }
         }
 
-        if(isset($payload['active']))
-            $user->setActive(boolval($payload['active']));
+        if(isset($payload['active'])) {
+            $active = boolval($payload['active']);
+            if($active)
+                $user->activate();
+            else
+                $user->deActivate();
+        }
 
         if(isset($payload['public_profile_show_photo']))
             $user->setPublicProfileShowPhoto(boolval($payload['public_profile_show_photo']));

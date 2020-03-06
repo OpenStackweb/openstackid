@@ -11,35 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Illuminate\Queue\SerializesModels;
 /**
  * Class UserPasswordResetSuccessful
  * @package App\Events
  */
-final class UserPasswordResetSuccessful
-{
-
-    use SerializesModels;
-
-    /**
-     * @var int
-     */
-    private $user_id;
-
-    /**
-     * UserEmailVerified constructor.
-     * @param int $user_id
-     */
-    public function __construct(int $user_id)
-    {
-        $this->user_id = $user_id;
-    }
-
-    /**
-     * @return int
-     */
-    public function getUserId(): int
-    {
-        return $this->user_id;
-    }
-}
+final class UserPasswordResetSuccessful extends UserEvent{}

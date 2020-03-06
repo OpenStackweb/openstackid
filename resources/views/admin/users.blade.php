@@ -30,6 +30,7 @@
                     <th>Email</th>
                     <th>Active</th>
                     <th>Last Login Date</th>
+                    <th>Spam Type</th>
                     <th>&nbsp;</th>
                 </tr>
                 </thead>

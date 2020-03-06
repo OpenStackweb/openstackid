@@ -11,6 +11,7 @@ function UsersCrud(urls, perPage) {
         '<td class="user-email"></td>' +
         '<td class="user-active"><input type="checkbox" class="user-active-checkbox"></td>' +
         '<td class="user-last-login"></td>' +
+        '<td class="user-spam-type"></td>' +
         '<td class="user-actions">&nbsp;' + actions + '</td>' +
         '</tr></tbody>');
 
@@ -21,6 +22,7 @@ function UsersCrud(urls, perPage) {
                 'td.user-fname': 'user.first_name',
                 'td.user-lname': 'user.last_name',
                 'td.user-email': 'user.email',
+                'td.user-spam-type': 'user.spam_type',
                 'td.user-last-login': function (arg) {
                     if (arg.item.last_login_date == null) return 'N/A';
                     return moment.unix(arg.item.last_login_date).format();
@@ -80,7 +82,7 @@ UsersCrud.prototype.init = function () {
                 url: url,
                 contentType: "application/json; charset=utf-8",
                 success: function (data, textStatus, jqXHR) {
-
+                    _this.loadPage();
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     ajaxError(jqXHR, textStatus, errorThrown);

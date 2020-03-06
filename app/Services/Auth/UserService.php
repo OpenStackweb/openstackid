@@ -14,8 +14,10 @@
 use App\Events\UserPasswordResetSuccessful;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Factories\UserRegistrationRequestFactory;
+use App\libs\Auth\Models\SpamEstimatorFeed;
 use App\libs\Auth\Models\UserRegistrationRequest;
 use App\libs\Auth\Repositories\IGroupRepository;
+use App\libs\Auth\Repositories\ISpamEstimatorFeedRepository;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
 use App\Mail\UserEmailVerificationRequest;
@@ -70,12 +72,18 @@ final class UserService extends AbstractService implements IUserService
     private $client_repository;
 
     /**
+     * @var ISpamEstimatorFeedRepository
+     */
+    private $spam_estimator_feed_repository;
+
+    /**
      * UserService constructor.
      * @param IUserRepository $user_repository
      * @param IGroupRepository $group_repository
      * @param IUserPasswordResetRequestRepository $request_reset_password_repository
      * @param IUserRegistrationRequestRepository $user_registration_request_repository
      * @param IClientRepository $client_repository
+     * @param ISpamEstimatorFeedRepository $spam_estimator_feed_repository
      * @param IUserNameGeneratorService $name_generator_service
      * @param ITransactionService $tx_service
      */
@@ -86,6 +94,7 @@ final class UserService extends AbstractService implements IUserService
         IUserPasswordResetRequestRepository $request_reset_password_repository,
         IUserRegistrationRequestRepository $user_registration_request_repository,
         IClientRepository $client_repository,
+        ISpamEstimatorFeedRepository $spam_estimator_feed_repository,
         IUserNameGeneratorService $name_generator_service,
         ITransactionService $tx_service
     )
@@ -96,6 +105,7 @@ final class UserService extends AbstractService implements IUserService
         $this->name_generator_service = $name_generator_service;
         $this->request_reset_password_repository = $request_reset_password_repository;
         $this->user_registration_request_repository = $user_registration_request_repository;
+        $this->spam_estimator_feed_repository = $spam_estimator_feed_repository;
         $this->client_repository = $client_repository;
     }
 
@@ -367,6 +377,26 @@ final class UserService extends AbstractService implements IUserService
             $this->user_repository->add($user);
             Event::fire(new UserPasswordResetSuccessful($user->getId()));
             return $request;
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function recalculateUserSpamType(User $user): void
+    {
+        $this->tx_service->transaction(function() use($user) {
+            $this->spam_estimator_feed_repository->deleteByEmail($user->getEmail());
+            switch($user->getSpamType()){
+                case User::SpamTypeSpam:
+                        $feed = SpamEstimatorFeed::buildFromUser($user, User::SpamTypeSpam);
+                        $this->spam_estimator_feed_repository->add($feed);
+                    break;
+                case User::SpamTypeHam:
+                    $feed = SpamEstimatorFeed::buildFromUser($user, User::SpamTypeHam);
+                    $this->spam_estimator_feed_repository->add($feed);
+                    break;
+            }
         });
     }
 }

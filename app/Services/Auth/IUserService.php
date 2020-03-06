@@ -92,4 +92,10 @@ interface IUserService
      * @throws EntityNotFoundException
      */
     public function createRegistrationRequest(string $client_id, array $payload):UserRegistrationRequest;
+
+    /**
+     * @param User $user
+     * @return void
+     */
+    public function recalculateUserSpamType(User $user):void;
 }

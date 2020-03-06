@@ -274,7 +274,6 @@ final class UserService extends AbstractService implements IUserService
             $user = $this->repository->getById($id);
             if(is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
-
             $this->repository->delete($user);
         });
     }

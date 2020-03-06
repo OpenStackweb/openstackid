@@ -17,35 +17,4 @@ use Doctrine\ORM\Event\LifecycleEventArgs;
  * Class UserCreated
  * @package App\Events
  */
-final class UserCreated
-{
-    use SerializesModels;
-
-    /**
-     * @var int
-     */
-    private $user_id;
-
-    /**
-     * @var LifecycleEventArgs
-     */
-    protected $args;
-
-    /**
-     * UserEmailVerified constructor.
-     * @param int $user_id
-     */
-    public function __construct(int $user_id, LifecycleEventArgs $args)
-    {
-        $this->user_id = $user_id;
-        $this->args = $args;
-    }
-
-    /**
-     * @return int
-     */
-    public function getUserId(): int
-    {
-        return $this->user_id;
-    }
-}
+final class UserCreated extends UserEvent {}

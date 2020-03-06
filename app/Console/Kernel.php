@@ -29,6 +29,8 @@ class Kernel extends ConsoleKernel
         Commands\CleanOAuth2StaleData::class,
         Commands\CleanOpenIdStaleData::class,
         Commands\CreateSuperAdmin::class,
+        Commands\SpammerProcess\RebuildUserSpammerEstimator::class,
+        Commands\SpammerProcess\UserSpammerProcessor::class,
     ];
 
     /**
@@ -41,5 +43,8 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('idp:oauth2-clean')->dailyAt("02:30")->withoutOverlapping();
         $schedule->command('idp:openid-clean')->dailyAt("03:30")->withoutOverlapping();
+        // user spammer
+        $schedule->command('user-spam:rebuild')->dailyAt("02:30")->withoutOverlapping();
+        $schedule->command('user-spam:process')->dailyAt("03:30")->withoutOverlapping();
     }
 }

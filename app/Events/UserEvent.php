@@ -1,6 +1,6 @@
 <?php namespace App\Events;
 /**
- * Copyright 2019 OpenStack Foundation
+ * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,8 +11,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use Illuminate\Queue\SerializesModels;
 /**
- * Class UserLocked
+ * Class UserEvent
  * @package App\Events
  */
-final class UserLocked extends UserEvent{}
+abstract class UserEvent
+{
+    use SerializesModels;
+
+    /**
+     * @var int
+     */
+    protected $user_id;
+
+    /**
+     * UserEvent constructor.
+     * @param int $user_id
+     */
+    public function __construct(int $user_id)
+    {
+        $this->user_id = $user_id;
+    }
+
+    /**
+     * @return int
+     */
+    public function getUserId(): int
+    {
+        return $this->user_id;
+    }
+}
