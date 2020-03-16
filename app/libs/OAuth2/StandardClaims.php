@@ -44,7 +44,7 @@ abstract class StandardClaims
     const NickName = 'nickname';
 
     /**
-     * string 	Shorthand name by which the End-User wishes to be referred to at the RP, such as janedoe or j.doe.
+     * string Shorthand name by which the End-User wishes to be referred to at the RP, such as janedoe or j.doe.
      * This value MAY be any valid JSON string including special characters such as @, /, or whitespace. The RP MUST
      * NOT rely upon this value being unique, as discussed in Section 5.7.
      */

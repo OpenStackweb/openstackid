@@ -176,6 +176,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
         // Profile Claims
         $claim_set->addClaim(new JWTClaim(StandardClaims::Name, new StringOrURI($user->getFullName())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::GivenName, new StringOrURI($user->getFirstName())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::PreferredUserName, new StringOrURI($user->getNickName())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::FamilyName, new StringOrURI($user->getLastName())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::NickName, new StringOrURI($user->getNickName())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::Picture, new StringOrURI($user->getPic())));
