@@ -46,10 +46,9 @@ final class OAuth2LogoutRequest extends OAuth2Request
             return false;
         }
         $log_out_uri = $this->getPostLogoutRedirectUri();
-        $state       = $this->getState();
-        if(!empty($log_out_uri))
+        if(empty($log_out_uri))
         {
-            return !empty($state);
+            return false;
         }
         return true;
     }
