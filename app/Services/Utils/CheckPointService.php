@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
+use Auth\User;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -86,7 +87,9 @@ class CheckPointService implements ICheckPointService
                 $user_trail->setExceptionType($class_name);
                 $user_trail->setStackTrace($ex->getTraceAsString());
                 if(Auth::check()){
-                    $user_trail->setUser(Auth::user());
+                    $currentUser = Auth::user();
+                    if($currentUser instanceof User && !$currentUser->isNew())
+                        $user_trail->setUser($currentUser);
                 }
                 $this->user_exception_trail_repository->add($user_trail, true);
 
