@@ -8,6 +8,7 @@
     <div class="container">
         <div class="row">
             <div class="col-md-6 col-sm-6">
+                @if(count($clients) > 0)
                 <p> Would you like to log out from the following? </p>
                 <p>
                     <ul>
@@ -16,6 +17,9 @@
                     @endforeach
                     </ul>
                  </p>
+                @else
+                    <p> Would you like to log out? </p>
+                @endif
                 {!! Form::open(array('url' => URL::action('OAuth2\OAuth2ProviderController@endSession'), 'method' => 'post',  "autocomplete" => "off")) !!}
                     <fieldset>
                         <input  type="hidden" name="oidc_endsession_consent" id="oidc_endsession_consent" value="1"/>
