@@ -24,4 +24,10 @@ interface IUserRegistrationRequestRepository extends IBaseRepository
      * @return UserRegistrationRequest|null
      */
     public function getByHash(string $hash):?UserRegistrationRequest;
+
+    /**
+     * @param string $email
+     * @return UserRegistrationRequest|null
+     */
+    public function getByEmail(string $email):?UserRegistrationRequest;
 }

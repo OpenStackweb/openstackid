@@ -39,4 +39,14 @@ final class DoctrineUserRegistrationRequestRepository
             'hash' => $hash
         ]);
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function getByEmail(string $email): ?UserRegistrationRequest
+    {
+        return $this->findOneBy([
+            'email' => strtolower(trim($email))
+        ]);
+    }
 }
