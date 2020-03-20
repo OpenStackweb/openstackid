@@ -23,4 +23,5 @@ six==1.14.0
 sklearn==0.0
 wcwidth==0.1.8
 zipp==1.2.0
-singledispatc==3.4.0.3
+singledispatch==3.4.0.3
+six==1.14.0
