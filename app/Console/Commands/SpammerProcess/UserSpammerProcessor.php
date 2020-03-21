@@ -68,14 +68,21 @@ final class UserSpammerProcessor  extends Command
      */
     public function handle()
     {
+        $connections = Config::get('database.connections', []);
+        $db          = $connections['openstackid'] ?? [];
+        $host        = $db['host'] ?? '';
+        $database    = $db['database'] ?? '';
+        $username    = $db['username'] ?? '';
+        $password    = $db['password'] ?? '';
+
         $command = sprintf(
             '%s/app/Console/Commands/SpammerProcess/estimator_process.sh "%s" "%s" "%s" "%s" "%s"',
             base_path(),
             base_path().'/app/Console/Commands/SpammerProcess',
-            env('DB_HOST','localhost'),
-            env('DB_USERNAME',''),
-            env('DB_PASSWORD',''),
-            env('DB_DATABASE','')
+            $host,
+            $username,
+            $password,
+            $database
         );
         $default = Config::get("database.default");
         $process = new Process($command);
