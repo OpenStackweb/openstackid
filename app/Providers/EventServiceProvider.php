@@ -116,9 +116,11 @@ final class EventServiceProvider extends ServiceProvider
             if(is_null($user)) return;
             if(!$user instanceof User) return;
 
-            $support_email = Config::get("mail.support_email");
-            $attempts = $user->getLoginFailedAttempt();
-            Mail::queue(new UserLockedEmail($user, $support_email, $attempts));
+            $support_email = Config::get("mail.support_email", null);
+            if(!empty($support_email)) {
+                $attempts = $user->getLoginFailedAttempt();
+                Mail::queue(new UserLockedEmail($user, $support_email, $attempts));
+            }
         });
 
         Event::listen(UserPasswordResetSuccessful::class, function($event){
