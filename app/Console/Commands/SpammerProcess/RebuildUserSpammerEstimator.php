@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Config;
 use Symfony\Component\Process\Process;
 use Exception;
 /**
@@ -49,15 +50,23 @@ final class RebuildUserSpammerEstimator extends Command
      */
     public function handle()
     {
+        $connections = Config::get('database.connections', []);
+        $db          = $connections['openstackid'] ?? [];
+        $host        = $db['host'] ?? '';
+        $database    = $db['database'] ?? '';
+        $username    = $db['username'] ?? '';
+        $password    = $db['password'] ?? '';
+
         $command = sprintf(
             '%s/app/Console/Commands/SpammerProcess/estimator_build.sh "%s" "%s" "%s" "%s" "%s"',
             base_path(),
             base_path().'/app/Console/Commands/SpammerProcess',
-            env('DB_HOST','localhost'),
-            env('DB_USERNAME',''),
-            env('DB_PASSWORD',''),
-            env('DB_DATABASE','')
+            $host,
+            $username,
+            $password,
+            $database
         );
+
         $process = new Process($command);
         $process->setTimeout(PHP_INT_MAX);
         $process->setIdleTimeout(PHP_INT_MAX);
