@@ -63,14 +63,15 @@ final class ResetPasswordController extends Controller
     {
         try {
             $request = $this->user_password_reset_request_repository->getByToken($token);
+
             if(is_null($request))
-                throw new EntityNotFoundException(sprint("request not found for token %s", $token));
+                throw new EntityNotFoundException(sprintf("Request not found for token %s.", $token));
 
             if(!$request->isValid())
-                throw new ValidationException("request is void");
+                throw new ValidationException("Request is void.");
 
             if($request->isRedeem()){
-                throw new ValidationException("request is already redeem");
+                throw new ValidationException("Request is already redeem.");
             }
             return view('auth.passwords.reset')->with(
                 [
