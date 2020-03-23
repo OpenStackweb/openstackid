@@ -13,6 +13,7 @@
 **/
 
 use Closure;
+use libs\utils\RequestUtils;
 
 /**
 * Class SecurityHTTPHeadersWriterMiddleware
@@ -22,6 +23,10 @@ use Closure;
 */
 class SecurityHTTPHeadersWriterMiddleware
 {
+    const ExcludedRoutes = [
+        // check_session_iframe
+        '/oauth2/check-session'
+    ];
 	/**
 	 * Handle an incoming request.
 	 *
@@ -31,14 +36,25 @@ class SecurityHTTPHeadersWriterMiddleware
 	 */
 	public function handle($request, Closure $next)
 	{
+
 		$response = $next($request);
+        $routePath  = RequestUtils::getCurrentRoutePath($request);
+        if($routePath && is_string($routePath) && !in_array($routePath,self::ExcludedRoutes)){
+            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+            $response->headers->set('X-Frame-Options','DENY');
+        }
 		// https://www.owasp.org/index.php/List_of_useful_HTTP_headers
-		$response->headers->set('X-content-type-options','nosniff');
-		$response->headers->set('X-xss-protection','1; mode=block');
-		//cache
-		$response->headers->set('pragma','no-cache');
-		$response->headers->set('Expires','-1');
-		$response->headers->set('cache-control','no-store, must-revalidate, no-cache');
+		$response->headers->set('X-Content-Type-Options','nosniff');
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+		$response->headers->set('X-XSS-Protection','1; mode=block');
+		// cache
+        /**
+         * Whenever possible ensure the cache-control HTTP header is set with no-cache, no-store, must-revalidate;
+         * and that the pragma HTTP header is set with no-cache.
+         */
+		$response->headers->set('Pragma','no-cache');
+		$response->headers->set('Expires','0');
+		$response->headers->set('Cache-Control','no-cache, no-store, must-revalidate, private');
 		return $response;
 	}
 }

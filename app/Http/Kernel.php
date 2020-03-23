@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use App\Http\Middleware\CookiesSameSiteNoneKnownIncompatibleClients;
+use App\Http\Middleware\SecurityHTTPHeadersWriterMiddleware;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 /**
  * Class Kernel
@@ -43,6 +44,7 @@ class Kernel extends HttpKernel
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            SecurityHTTPHeadersWriterMiddleware::class,
         ],
 
         'api' => [
