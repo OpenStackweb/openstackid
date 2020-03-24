@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Event;
 use App\Events\UserEmailVerified;
 use Doctrine\Common\Collections\Criteria;
 use Illuminate\Auth\Authenticatable;
+use Illuminate\Support\Facades\Log;
 use models\exceptions\ValidationException;
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Client;
@@ -804,6 +805,18 @@ class User extends BaseEntity
      */
     public function checkPassword(string $password): bool
     {
+        if(empty($this->password))
+        {
+            Log::warning(sprintf("User %s (%s) has not password set.", $this->id, $this->email));
+            return false;
+        }
+
+        if(empty($this->password_enc))
+        {
+            Log::warning(sprintf("User %s (%s) has not password encoding set.", $this->id, $this->email));
+            return false;
+        }
+
         return AuthHelper::check($password, $this->password, $this->password_enc, $this->password_salt);
     }
 
