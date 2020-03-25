@@ -44,7 +44,7 @@ class UserSpammerProcessorResultsEmail extends Mailable
         $subject = sprintf("[%s] User Spammer Process Result", Config::get('app.app_name'));
 
         return $this->from(Config::get("mail.from"))
-            ->to(Config::get("mail.from"))
+            ->to(Config::get("mail.user_spam_processor_to"))
             ->subject($subject)
             ->view('emails.user_spammer_process_result');
     }

@@ -120,7 +120,7 @@ final class UserSpammerProcessor  extends Command
             ];
         }
 
-        if(count($users) > 0){
+        if(count($users) > 0 && !empty(Config::get('mail.user_spam_processor_to'))){
             Mail::queue(new UserSpammerProcessorResultsEmail($users));
         }
     }

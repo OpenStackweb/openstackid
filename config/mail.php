@@ -112,4 +112,5 @@ return [
     'reset_password_email_subject' => env('MAIL_USER_RESET_PASSWORD_EMAIL_SUBJECT'),
     'locked_user_email_subject' => env("MAIL_LOCKED_USER_EMAIL_SUBJECT"),
     'support_email' => env("MAIL_SUPPORT_ADDRESS"),
+    'user_spam_processor_to' => env('USER_SPAM_PROCESSOR_TO')
 ];
