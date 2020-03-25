@@ -96,6 +96,9 @@ final class EmailVerificationController extends Controller
 
             return view("auth.email_verification_resend_success", ['user' => $user]);
         }
+        catch (EntityNotFoundException $ex){
+            Log::warning($ex);
+        }
         catch (ValidationException $ex){
             Log::warning($ex);
             foreach ($ex->getMessages() as $message){
