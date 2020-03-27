@@ -46,8 +46,8 @@ interface IAsymmetricKeyRepository extends IBaseRepository
      * @param string $usage
      * @param string $alg
      * @param int|null $owner_id
-     * @return AsymmetricKey
+     * @return AsymmetricKey|null
      */
-    public function getActiveByCriteria(string $type, string $usage, string $alg, int $owner_id = null):AsymmetricKey;
+    public function getActiveByCriteria(string $type, string $usage, string $alg, int $owner_id = null):?AsymmetricKey;
 
 }
