@@ -1435,11 +1435,16 @@ SQL;
     public function verifyEmail()
     {
         if (!$this->email_verified) {
-            $this->email_verified = true;
-            $this->active = true;
-            $this->lock = false;
+            $this->email_verified      = true;
+            $this->spam_type           = self::SpamTypeHam;
+            $this->active              = true;
+            $this->lock                = false;
             $this->email_verified_date = new \DateTime('now', new \DateTimeZone('UTC'));
             Event::fire(new UserEmailVerified(
+                    $this->getId()
+                )
+            );
+            Event::fire(new UserSpamStateUpdated(
                     $this->getId()
                 )
             );

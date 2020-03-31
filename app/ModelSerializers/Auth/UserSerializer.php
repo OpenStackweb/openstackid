@@ -29,11 +29,13 @@ final class PublicUserSerializer extends BaseUserSerializer {
 }
 
 final class PrivateUserSerializer extends BaseUserSerializer {
+
     protected static $array_mappings = [
         'Email'          => 'email:json_string',
         'SpamType'       => 'spam_type:json_string',
         'Identifier'     => 'identifier:json_string',
         'LastLoginDate'  => 'last_login_date:datetime_epoch',
         'Active'         => 'active:json_boolean',
+        'EmailVerified'  => 'email_verified:json_boolean'
     ];
 }

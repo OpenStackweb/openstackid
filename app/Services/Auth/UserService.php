@@ -181,7 +181,7 @@ final class UserService extends AbstractService implements IUserService
                 (
                     sprintf
                     (
-                        "user %s (%s) has already verified his/her email",
+                        "User %s (%s) has already verified his/her email.",
                         $user->getEmail(),
                         $user->getId()
                     )

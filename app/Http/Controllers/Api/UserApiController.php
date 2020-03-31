@@ -202,6 +202,8 @@ final class UserApiController extends APICRUDController {
             'language'               => 'nullable|string',
             'birthday'               => 'nullable|date_format:U',
             'password'               => 'sometimes|string|min:8|confirmed',
+            'email_verified'         => 'nullable|boolean',
+            'active'                 => 'nullable|boolean'
         ];
     }
 
@@ -246,6 +248,8 @@ final class UserApiController extends APICRUDController {
             'language'               => 'nullable|string',
             'birthday'               => 'nullable|date_format:U',
             'password'               => 'sometimes|string|min:8|confirmed',
+            'email_verified'         => 'nullable|boolean',
+            'active'                 => 'nullable|boolean'
         ];
     }
 
@@ -259,4 +263,7 @@ final class UserApiController extends APICRUDController {
         return $this->update($myId);
     }
 
+    protected function serializerType():string{
+        return SerializerRegistry::SerializerType_Private;
+    }
 }

@@ -12,8 +12,6 @@
  * limitations under the License.
  **/
 use App\Events\OAuth2ClientLocked;
-use App\Events\UserActivated;
-use App\Events\UserDeactivated;
 use App\Events\UserEmailUpdated;
 use App\Events\UserLocked;
 use App\Events\UserPasswordResetRequestCreated;

@@ -160,14 +160,14 @@ $(document).ready(function() {
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     timeout:60000,
-                    success: function (data,textStatus,jqXHR) {
+                    success: function (data, textStatus, jqXHR) {
                         $('body').ajax_loader('stop');
                         swal({
                             title: "Success!",
                             type: "success",
                             text: "User info updated successfully!",
                         });
-
+                        $('#spam-type').val(data.spam_type);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         $('body').ajax_loader('stop');
