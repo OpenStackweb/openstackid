@@ -12,7 +12,9 @@
  * limitations under the License.
  **/
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class CleanOAuth2StaleData
@@ -51,6 +53,14 @@ final class CleanOAuth2StaleData extends Command
     public function handle()
     {
         // delete void access tokens
-        DB::raw("delete from oauth2_access_token where DATE_ADD(created_at, INTERVAL lifetime second) <= UTC_TIMESTAMP();");
+
+        if (Schema::hasTable('oauth2_access_token')) {
+            $res = DB::table('oauth2_access_token')
+                ->whereRaw("DATE_ADD(created_at, INTERVAL lifetime second) <= UTC_TIMESTAMP()")
+                ->delete();
+
+            Log::debug(sprintf("CleanOAuth2StaleData::handle %s rows where deleted from oauth2_access_token", $res));
+        }
+
     }
 }

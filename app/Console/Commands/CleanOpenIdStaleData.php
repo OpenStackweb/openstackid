@@ -12,7 +12,9 @@
  * limitations under the License.
  **/
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class CleanOpenIdStaleData
@@ -53,11 +55,31 @@ final class CleanOpenIdStaleData extends Command
 
         $interval = self::IntervalInSeconds;
 
-        // delete void associations
-        DB::raw("delete from openid_associations where DATE_ADD(issued, INTERVAL lifetime second) <= UTC_TIMESTAMP();");
-        // delete old exceptions trails
-        DB::raw("delete from user_exceptions_trail where DATE_ADD(created_at, INTERVAL {$interval} second) <= UTC_TIMESTAMP();");
-        // delete old user actions
-        DB::raw("delete from user_actions where DATE_ADD(created_at, INTERVAL 1 year) <= UTC_TIMESTAMP()");
+        if (Schema::hasTable('openid_associations')) {
+            // delete void associations
+            $res = DB::table('openid_associations')
+                ->whereRaw("DATE_ADD(issued, INTERVAL lifetime second) <= UTC_TIMESTAMP()")
+                ->delete();
+
+            Log::debug(sprintf("CleanOpenIdStaleData::handle %s rows where deleted from openid_associations", $res));
+        }
+
+        if (Schema::hasTable('user_exceptions_trail')) {
+            // delete old exceptions trails
+            $res = DB::table('user_exceptions_trail')
+                ->whereRaw("DATE_ADD(created_at, INTERVAL {$interval} second) <= UTC_TIMESTAMP()")
+                ->delete();
+
+            Log::debug(sprintf("CleanOpenIdStaleData::handle %s rows where deleted from user_exceptions_trail", $res));
+        }
+
+        if (Schema::hasTable('user_actions')) {
+            // delete old user actions
+            $res = DB::table('user_actions')
+                ->whereRaw("DATE_ADD(created_at, INTERVAL 1 year) <= UTC_TIMESTAMP()")
+                ->delete();
+
+            Log::debug(sprintf("CleanOpenIdStaleData::handle %s rows where deleted from user_actions", $res));
+        }
     }
 }
