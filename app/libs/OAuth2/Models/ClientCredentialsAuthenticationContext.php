@@ -41,7 +41,7 @@ final class ClientCredentialsAuthenticationContext extends ClientAuthenticationC
         ]))
             throw new InvalidTokenEndpointAuthMethodException($auth_type);
 
-        $this->client_secret = $client_secret;
+        $this->client_secret = urldecode($client_secret);
     }
 
     /**

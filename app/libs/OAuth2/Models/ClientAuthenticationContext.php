@@ -44,7 +44,7 @@ abstract class ClientAuthenticationContext
         if( !in_array($auth_type, OAuth2Protocol::$token_endpoint_auth_methods))
             throw new InvalidTokenEndpointAuthMethodException($auth_type);
 
-        $this->client_id = $client_id;
+        $this->client_id = urldecode($client_id);
         $this->auth_type = $auth_type;
     }
 
