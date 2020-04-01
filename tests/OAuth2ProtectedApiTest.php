@@ -55,7 +55,7 @@ abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
 
         $scope = $this->getScopes();
 
-        $this->client_id     = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $this->client_id     = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $this->client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array

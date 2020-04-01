@@ -44,9 +44,8 @@ final class ClientPlainCredentialsAuthContextValidator implements IClientAuthCon
         if($context->getClient()->getClientType() !== IClient::ClientType_Confidential)
             throw new InvalidClientCredentials(sprintf('invalid client type %s', $context->getClient()->getClientType()));
 
-        // decode client credentials just in case they are sent using GET request
-        $providedClientId     = urldecode($context->getId());
-        $providedClientSecret = urldecode($context->getSecret());
+        $providedClientId     = $context->getId();
+        $providedClientSecret = $context->getSecret();
 
         Log::debug(sprintf("ClientPlainCredentialsAuthContextValidator::validate client id %s - provide client id %s", $context->getClient()->getClientId(), $providedClientId));
         Log::debug(sprintf("ClientPlainCredentialsAuthContextValidator::validate client secret %s - provide client secret %s", $context->getClient()->getClientSecret(), $providedClientSecret));

@@ -56,7 +56,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     public function testNonePrompt()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = [
             'client_id' => $client_id,
@@ -89,7 +89,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testLoginWithTrailingSpace()
     {
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '%2E%2D%5F%7E87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array
         (
@@ -132,7 +132,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testConsentPrompt()
     {
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array
         (
@@ -217,7 +217,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $user = $user_repository->findOneBy(["identifier" => 'sebastian.marcet']);
         $this->be($user, 'web');
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array
         (
@@ -298,7 +298,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     public function testAuthCode()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '%2E%2D%5F%7E87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array
         (
@@ -382,7 +382,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     public function testAuthCodeInvalidLoginHint()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array
         (
@@ -414,7 +414,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     public function testAuthCodeOpenIdScopeOnly()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array
@@ -494,7 +494,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testMaxAge1AndWait2()
     {
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array
         (
@@ -550,7 +550,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testToken
     (
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client',
+        $client_id = '%2E%2D%5F%7E87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client',
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg',
         $use_enc = true
     ) {
@@ -697,7 +697,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testTokenSeveralScopes
     (
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client',
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client',
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg',
         $use_enc = true
     ) {
@@ -858,7 +858,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testGetRefreshTokenWithPromptSetToConsentLogin(){
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
         $use_enc = true;
 
@@ -1003,7 +1003,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testFlowNativeDisplay(){
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array(
@@ -1314,7 +1314,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     public function testTokenResponseModePost()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array
@@ -2507,7 +2507,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testHybridFlowCodeIdToken()
     {
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array
@@ -2613,7 +2613,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testHybridFlowCodeIdTokenIdTokenHint()
     {
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array
@@ -2833,7 +2833,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testHybridFlowCodeAccessToken()
     {
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array
@@ -2950,7 +2950,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testHybridFlowCodeAccessTokenIdToken()
     {
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array
@@ -3057,7 +3057,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     public function testTryingAuthCodeTwice()
     {
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array

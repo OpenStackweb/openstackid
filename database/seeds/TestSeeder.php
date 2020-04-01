@@ -758,7 +758,7 @@ PPK;
                 'app_name'             => 'oauth2_test_app',
                 'app_description'      => 'oauth2_test_app',
                 'app_logo'             => null,
-                'client_id'            => 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client',
+                'client_id'            => '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client',
                 'client_secret'        => 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg',
                 'client_type'          => IClient::ClientType_Confidential,
                 'application_type'     => IClient::ApplicationType_Web_App,

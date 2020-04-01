@@ -47,8 +47,12 @@ abstract class OpenStackIDBaseTest extends BrowserKitTestCase {
             DB::table('openid_associations')->delete();
         if (Schema::hasTable('user_actions'))
             DB::table('user_actions')->delete();
-        if (Schema::hasTable('openid_users'))
-            DB::table('openid_users')->delete();
+        if (Schema::hasTable('user_groups'))
+            DB::table('user_groups')->delete();
+        if (Schema::hasTable('groups'))
+            DB::table('groups')->delete();
+        if (Schema::hasTable('users'))
+            DB::table('users')->delete();
         if (Schema::hasTable('oauth2_api_endpoint_api_scope'))
             DB::table('oauth2_api_endpoint_api_scope')->delete();
         if (Schema::hasTable('oauth2_api_endpoint'))

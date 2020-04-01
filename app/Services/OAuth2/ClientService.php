@@ -19,6 +19,7 @@ use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Client;
@@ -121,41 +122,67 @@ final class ClientService extends AbstractService implements IClientService
     public function getCurrentClientAuthInfo()
     {
 
-        $auth_header = Request::header('Authorization');
-
         if
         (
             Input::has(OAuth2Protocol::OAuth2Protocol_ClientAssertionType) &&
             Input::has(OAuth2Protocol::OAuth2Protocol_ClientAssertion)
         )
         {
+            Log::debug
+            (
+                sprintf
+                (
+                    "ClientService::getCurrentClientAuthInfo params %s - %s present",
+                    OAuth2Protocol::OAuth2Protocol_ClientAssertionType,
+                    OAuth2Protocol::OAuth2Protocol_ClientAssertion
+                )
+            );
+
             return new ClientAssertionAuthenticationContext
             (
                 Input::get(OAuth2Protocol::OAuth2Protocol_ClientAssertionType, ''),
                 Input::get(OAuth2Protocol::OAuth2Protocol_ClientAssertion, '')
             );
         }
+
         if
         (
             Input::has(OAuth2Protocol::OAuth2Protocol_ClientId) &&
             Input::has(OAuth2Protocol::OAuth2Protocol_ClientSecret)
         )
         {
+            Log::debug
+            (
+                sprintf
+                (
+                    "ClientService::getCurrentClientAuthInfo params %s - %s present",
+                    OAuth2Protocol::OAuth2Protocol_ClientId,
+                    OAuth2Protocol::OAuth2Protocol_ClientSecret
+                )
+            );
+
             return new ClientCredentialsAuthenticationContext
             (
-                Input::get(OAuth2Protocol::OAuth2Protocol_ClientId, ''),
-                Input::get(OAuth2Protocol::OAuth2Protocol_ClientSecret, ''),
+                urldecode(Input::get(OAuth2Protocol::OAuth2Protocol_ClientId, '')),
+                urldecode(Input::get(OAuth2Protocol::OAuth2Protocol_ClientSecret, '')),
                 OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretPost
             );
         }
+
+        $auth_header = Request::header('Authorization');
         if(!empty($auth_header))
         {
+            Log::debug
+            (
+                "ClientService::getCurrentClientAuthInfo Authorization Header present"
+            );
+
             $auth_header = trim($auth_header);
             $auth_header = explode(' ', $auth_header);
 
             if (!is_array($auth_header) || count($auth_header) < 2)
             {
-                throw new MissingClientAuthorizationInfo('bad auth header.');
+                throw new MissingClientAuthorizationInfo('Wrong Authorization header format.');
             }
 
             $auth_header_content = $auth_header[1];
@@ -164,12 +191,23 @@ final class ClientService extends AbstractService implements IClientService
 
             if (!is_array($auth_header_content) || count($auth_header_content) !== 2)
             {
-                throw new MissingClientAuthorizationInfo('bad auth header.');
+                throw new MissingClientAuthorizationInfo('Wrong Authorization header format.');
             }
 
-            return new ClientCredentialsAuthenticationContext(
-                $auth_header_content[0],
-                $auth_header_content[1],
+            Log::debug
+            (
+                sprintf
+                (
+                    "ClientService::getCurrentClientAuthInfo client id %s - client secret %s",
+                    $auth_header_content[0],
+                    $auth_header_content[1]
+                )
+            );
+
+            return new ClientCredentialsAuthenticationContext
+            (
+                urldecode($auth_header_content[0]),
+                urldecode($auth_header_content[1]),
                 OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic
             );
         }

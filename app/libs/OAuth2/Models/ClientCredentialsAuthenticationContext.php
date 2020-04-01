@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use OAuth2\Exceptions\InvalidTokenEndpointAuthMethodException;
 use OAuth2\OAuth2Protocol;
 /**
@@ -34,14 +36,26 @@ final class ClientCredentialsAuthenticationContext extends ClientAuthenticationC
     public function __construct($client_id, $client_secret, $auth_type)
     {
 
+        Log::debug
+        (
+            sprintf
+            (
+                "ClientCredentialsAuthenticationContext::__construct client id %s - client secret %s - auth type %s",
+                $client_id,
+                $client_secret,
+                $auth_type
+            )
+        );
+
         parent::__construct($client_id, $auth_type);
+
         if(!in_array($auth_type, [
             OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
             OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretPost
         ]))
             throw new InvalidTokenEndpointAuthMethodException($auth_type);
 
-        $this->client_secret = urldecode($client_secret);
+        $this->client_secret = $client_secret;
     }
 
     /**

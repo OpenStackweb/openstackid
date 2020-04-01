@@ -52,7 +52,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     public function testAuthCode()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = [
             'client_id'     => $client_id,
@@ -104,7 +104,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     public function testAuthCodeNoResponseType()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array(
             'client_id' => $client_id,
@@ -129,7 +129,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     public function testCancelAuthCode()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array(
             'client_id' => $client_id,
@@ -159,7 +159,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     public function testAuthCodeInvalidRedirectUri()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array(
             'client_id' => $client_id,
@@ -187,7 +187,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     public function testToken($test_refresh_token = true)
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array
@@ -267,7 +267,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     public function testAuthCodeReplayAttack()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
         $params = array
@@ -343,7 +343,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         try {
 
-            $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+            $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
             $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
             Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
@@ -495,7 +495,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             // set token lifetime
             $_ENV['access.token.lifetime'] = 1;
 
-            $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+            $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
             $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
             Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
@@ -599,7 +599,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     {
         try {
 
-            $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+            $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
             $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
 
@@ -713,7 +713,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     {
         try {
 
-            $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+            $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
             $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
             Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
@@ -822,7 +822,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     {
         try {
 
-            $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+            $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
             $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
 
             Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
@@ -1198,7 +1198,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
     public function testMissingScope()
     {
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
 
         $params = array(
             'client_id' => $client_id,

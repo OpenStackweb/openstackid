@@ -42,7 +42,7 @@ class ClientPublicKeyApiTest extends BrowserKitTestCase {
 
     public function testCreate(){
 
-        $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client = EntityManager::getRepository(Client::class)->findOneBy(['client_id' => $client_id]);
 
         $data = array

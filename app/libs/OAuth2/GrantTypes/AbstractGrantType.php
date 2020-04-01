@@ -94,14 +94,14 @@ abstract class AbstractGrantType implements IGrantType
         $this->client_auth_context = $this->client_service->getCurrentClientAuthInfo();
 
         //retrieve client from storage..
-        $this->current_client      = $this->client_repository->getClientById($this->client_auth_context->getId());
+        $this->current_client = $this->client_repository->getClientById($this->client_auth_context->getId());
 
         if (is_null($this->current_client))
             throw new InvalidClientException
             (
                 sprintf
                 (
-                    "client id %s does not exists!",
+                    "Client id %s does not exists!",
                     $this->client_auth_context->getId()
                 )
             );
@@ -111,7 +111,7 @@ abstract class AbstractGrantType implements IGrantType
             (
                 sprintf
                 (
-                    'client id %s is locked.',
+                    'Client id %s is locked.',
                     $this->client_auth_context->getId()
                 )
             );
@@ -124,7 +124,7 @@ abstract class AbstractGrantType implements IGrantType
             (
                 sprintf
                 (
-                    'invalid credentials for client id %s.',
+                    'Invalid credentials for client id %s.',
                     $this->client_auth_context->getId()
                 )
             );
