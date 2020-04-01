@@ -23,6 +23,8 @@ class UserSpammerProcessorResultsEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $tries = 1;
+
     /**
      * @var array
      */
@@ -42,9 +44,10 @@ class UserSpammerProcessorResultsEmail extends Mailable
     {
 
         $subject = sprintf("[%s] User Spammer Process Result", Config::get('app.app_name'));
-
+        $to = Config::get("mail.user_spam_processor_to");
+        $to = explode(',', $to);
         return $this->from(Config::get("mail.from"))
-            ->to(Config::get("mail.user_spam_processor_to"))
+            ->to($to)
             ->subject($subject)
             ->view('emails.user_spammer_process_result');
     }

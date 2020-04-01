@@ -17,6 +17,7 @@ use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\Process\Process;
@@ -68,60 +69,70 @@ final class UserSpammerProcessor  extends Command
      */
     public function handle()
     {
-        $connections = Config::get('database.connections', []);
-        $db          = $connections['openstackid'] ?? [];
-        $host        = $db['host'] ?? '';
-        $database    = $db['database'] ?? '';
-        $username    = $db['username'] ?? '';
-        $password    = $db['password'] ?? '';
+        try {
+            $connections = Config::get('database.connections', []);
+            $db = $connections['openstackid'] ?? [];
+            $host = $db['host'] ?? '';
+            $database = $db['database'] ?? '';
+            $username = $db['username'] ?? '';
+            $password = $db['password'] ?? '';
 
-        $command = sprintf(
-            '%s/app/Console/Commands/SpammerProcess/estimator_process.sh "%s" "%s" "%s" "%s" "%s"',
-            base_path(),
-            base_path().'/app/Console/Commands/SpammerProcess',
-            $host,
-            $username,
-            $password,
-            $database
-        );
-        $default = Config::get("database.default");
-        $process = new Process($command);
-        $process->setTimeout(PHP_INT_MAX);
-        $process->setIdleTimeout(PHP_INT_MAX);
-        $process->run();
+            $command = sprintf(
+                '%s/app/Console/Commands/SpammerProcess/estimator_process.sh "%s" "%s" "%s" "%s" "%s"',
+                base_path(),
+                base_path() . '/app/Console/Commands/SpammerProcess',
+                $host,
+                $username,
+                $password,
+                $database
+            );
 
-        while ($process->isRunning()) {
+            Log::debug(sprintf("UserSpammerProcessor::handle running command %s", $command));
+
+            $process = new Process($command);
+            $process->setTimeout(PHP_INT_MAX);
+            $process->setIdleTimeout(PHP_INT_MAX);
+            $process->run();
+
+            while ($process->isRunning()) {
+            }
+
+            $csv_content = $process->getOutput();
+
+            Log::debug(sprintf("UserSpammerProcessor::handle output %s", $csv_content));
+
+            if (!$process->isSuccessful()) {
+                throw new Exception("Process Error!");
+            }
+
+            $rows = CSVReader::load($csv_content);
+
+            // send email with excerpt
+
+            $users = [];
+
+            foreach ($rows as $row) {
+                $user_id = intval($row["ID"]);
+                $type = $row["Type"];
+                $user = $this->user_repository->getById($user_id);
+                if (is_null($user) || !$user instanceof User) continue;
+
+                $users[] = [
+                    'id' => $user->getId(),
+                    'email' => $user->getEmail(),
+                    'full_name' => $user->getFullName(),
+                    'spam_type' => $type,
+                    'edit_link' => URL::route("edit_user", ["user_id" => $user->getId()], true)
+                ];
+            }
+
+            if (count($users) > 0 && !empty(Config::get('mail.user_spam_processor_to'))) {
+                Log::debug("UserSpammerProcessor::handle sending email");
+                Mail::queue(new UserSpammerProcessorResultsEmail($users));
+            }
         }
-
-        $csv_content = $process->getOutput();
-
-        if (!$process->isSuccessful()) {
-            throw new Exception("Process Error!");
-        }
-
-        $rows = CSVReader::load($csv_content);
-
-        // send email with excerpt
-
-        $users = [];
-
-        foreach($rows as $row) {
-            $user_id = intval($row["ID"]);
-            $type    = $row["Type"];
-            $user    = $this->user_repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User) continue;
-
-            $users[] = [
-                'id'        => $user->getId(),
-                'email'     => $user->getEmail(),
-                'full_name' => $user->getFullName(),
-                'spam_type' => $type,
-                'edit_link' => URL::route("edit_user", ["user_id" => $user->getId()], true)
-            ];
-        }
-
-        if(count($users) > 0 && !empty(Config::get('mail.user_spam_processor_to'))){
-            Mail::queue(new UserSpammerProcessorResultsEmail($users));
+        catch (Exception $ex){
+            Log::error($ex);
         }
     }
 }

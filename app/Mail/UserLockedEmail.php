@@ -26,6 +26,8 @@ final class UserLockedEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $tries = 2;
+
     /**
      * @var string
      */

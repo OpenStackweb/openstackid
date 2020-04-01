@@ -25,6 +25,8 @@ final class WelcomeNewUserEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $tries = 1;
+
     /**
      * @var string
      */
