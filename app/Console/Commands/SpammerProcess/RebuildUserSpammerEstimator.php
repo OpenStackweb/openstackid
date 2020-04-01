@@ -13,6 +13,7 @@
  **/
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 use Exception;
 /**
@@ -50,35 +51,44 @@ final class RebuildUserSpammerEstimator extends Command
      */
     public function handle()
     {
-        $connections = Config::get('database.connections', []);
-        $db          = $connections['openstackid'] ?? [];
-        $host        = $db['host'] ?? '';
-        $database    = $db['database'] ?? '';
-        $username    = $db['username'] ?? '';
-        $password    = $db['password'] ?? '';
+        try {
+            $connections = Config::get('database.connections', []);
+            $db = $connections['openstackid'] ?? [];
+            $host = $db['host'] ?? '';
+            $database = $db['database'] ?? '';
+            $username = $db['username'] ?? '';
+            $password = $db['password'] ?? '';
 
-        $command = sprintf(
-            '%s/app/Console/Commands/SpammerProcess/estimator_build.sh "%s" "%s" "%s" "%s" "%s"',
-            base_path(),
-            base_path().'/app/Console/Commands/SpammerProcess',
-            $host,
-            $username,
-            $password,
-            $database
-        );
+            $command = sprintf(
+                '%s/app/Console/Commands/SpammerProcess/estimator_build.sh "%s" "%s" "%s" "%s" "%s"',
+                base_path(),
+                base_path() . '/app/Console/Commands/SpammerProcess',
+                $host,
+                $username,
+                $password,
+                $database
+            );
 
-        $process = new Process($command);
-        $process->setTimeout(PHP_INT_MAX);
-        $process->setIdleTimeout(PHP_INT_MAX);
-        $process->run();
+            Log::debug(sprintf("RebuildUserSpammerEstimator::handle running command %s", $command));
 
-        while ($process->isRunning()) {
+            $process = new Process($command);
+            $process->setTimeout(PHP_INT_MAX);
+            $process->setIdleTimeout(PHP_INT_MAX);
+            $process->run();
+
+            while ($process->isRunning()) {
+            }
+
+            $output = $process->getOutput();
+
+            Log::debug(sprintf("RebuildUserSpammerEstimator::handle output %s", $output));
+
+            if (!$process->isSuccessful()) {
+                throw new Exception("Process Error!");
+            }
         }
-
-        $output = $process->getOutput();
-
-        if (!$process->isSuccessful()) {
-            throw new Exception("Process Error!");
+        catch (Exception $ex){
+            Log::error($ex);
         }
     }
 }

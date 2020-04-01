@@ -27,6 +27,8 @@ class OAuth2ClientLocked extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $tries = 1;
+
     /**
      * @var string
      */
