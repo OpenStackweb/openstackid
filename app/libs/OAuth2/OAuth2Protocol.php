@@ -1412,6 +1412,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $id_token_hint = $this->last_request->getIdTokenHint();
             $client_id     = null;
             $user_id       = null;
+            $user          = null;
 
             if(!empty($id_token_hint)){
                 $jwt = BasicJWTFactory::build($id_token_hint);
@@ -1422,7 +1423,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
                 }
 
                 $client_id = $jwt->getClaimSet()->getAudience()->getString();
-                $user_id    = $jwt->getClaimSet()->getSubject();
+                $user_id   = $jwt->getClaimSet()->getSubject();
             }
             if(empty($client_id)){
                 $client_id = $this->last_request->getClientId();
