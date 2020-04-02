@@ -275,7 +275,10 @@ final class OAuth2ProviderController extends Controller
         if(!$request->isValid())
         {
             Log::error('invalid OAuth2LogoutRequest!');
-            return Response::view('errors.404', [], 404);
+            return Response::view('errors.400', [
+                'error'             => 'Invalid logout request.',
+                'error_description' => $request->getLastValidationError()
+            ], 400);
         }
 
         if(Request::isMethod('get') )
@@ -298,6 +301,7 @@ final class OAuth2ProviderController extends Controller
                 'id_token_hint'            => $request->getIdTokenHint(),
                 'post_logout_redirect_uri' => $request->getPostLogoutRedirectUri(),
                 'state'                    => $request->getState(),
+                'client_id'                => $request->getClientId(),
             ]);
         }
 

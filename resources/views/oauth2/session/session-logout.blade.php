@@ -26,6 +26,7 @@
                         <input  type="hidden" name="id_token_hint" id="id_token_hint" value="{!!$id_token_hint!!}"/>
                         <input  type="hidden" name="post_logout_redirect_uri" id="post_logout_redirect_uri" value="{!!$post_logout_redirect_uri!!}"/>
                         <input  type="hidden" name="state" id="state" value="{!!$state!!}"/>
+                        <input  type="hidden" name="client_id" id="client_id" value="{!!$client_id!!}"/>
                         <div class="form-group">
                             {!! Form::submit('Yes ',array('id'=>'login','class'=>'btn active btn-primary')) !!}
                             <a class="btn btn-danger active" href="{!! URL::action('OAuth2\OAuth2ProviderController@cancelLogout') !!}">No</a>

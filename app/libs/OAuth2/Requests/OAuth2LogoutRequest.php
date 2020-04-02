@@ -14,7 +14,6 @@
 
 use OAuth2\OAuth2Message;
 use OAuth2\OAuth2Protocol;
-
 /**
  * OpenID Connect logout request initiated by the relying party (RP).
  *
@@ -38,18 +37,23 @@ final class OAuth2LogoutRequest extends OAuth2Request
     public function isValid()
     {
         $this->last_validation_error = '';
-
-        $id_token_hint = $this->getIdTokenHint();
-        if(empty($id_token_hint))
-        {
-            $this->last_validation_error = 'id_token_hint not set';
-            return false;
-        }
         $log_out_uri = $this->getPostLogoutRedirectUri();
+        $token_id    = $this->getIdTokenHint();
+        $client_id   = $this->getClientId();
+        // mandatory
         if(empty($log_out_uri))
         {
+            $this->last_validation_error = 'log_out_uri not set.';
             return false;
         }
+        if(empty($token_id)){
+            // if token id hint is not set client id is mandatory
+            if(empty($client_id)){
+                $this->last_validation_error = "client_id is not set.";
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -67,6 +71,14 @@ final class OAuth2LogoutRequest extends OAuth2Request
     public function getPostLogoutRedirectUri()
     {
         return $this->getParam(OAuth2Protocol::OAuth2Protocol_PostLogoutRedirectUri);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getClientId()
+    {
+        return $this->getParam(OAuth2Protocol::OAuth2Protocol_ClientId);
     }
 
     /**
