@@ -73,6 +73,7 @@ final class ResetPasswordController extends Controller
             if($request->isRedeem()){
                 throw new ValidationException("Request is already redeem.");
             }
+
             return view('auth.passwords.reset')->with(
                 [
                     'token' => $token,
@@ -80,6 +81,9 @@ final class ResetPasswordController extends Controller
                 ]);
         }
         catch (EntityNotFoundException $ex){
+            Log::warning($ex);
+        }
+        catch (ValidationException $ex){
             Log::warning($ex);
         }
         catch(\Exception $ex){
