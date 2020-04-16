@@ -102,6 +102,12 @@ final class PasswordSetController extends Controller
 
             return view('auth.passwords.set', $params);
         }
+        catch(EntityNotFoundException $ex){
+            Log::warning($ex);
+        }
+        catch(ValidationException $ex){
+            Log::warning($ex);
+        }
         catch (\Exception $ex){
             Log::error($ex);
         }
@@ -124,10 +130,8 @@ final class PasswordSetController extends Controller
     }
 
     /**
-     * set the given user's password.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     * @param LaravelRequest $request
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
      */
     public function setPassword(LaravelRequest $request)
     {
@@ -168,6 +172,9 @@ final class PasswordSetController extends Controller
             Auth::login($user_registration_request->getOwner(), true);
 
             return view("auth.passwords.set_success", $params);
+        }
+        catch (EntityNotFoundException $ex){
+            Log::warning($ex);
         }
         catch (ValidationException $ex){
             Log::warning($ex);

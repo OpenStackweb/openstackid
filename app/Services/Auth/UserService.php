@@ -28,6 +28,7 @@ use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Auth\UserPasswordResetRequest;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use models\exceptions\EntityNotFoundException;
@@ -346,9 +347,8 @@ final class UserService extends AbstractService implements IUserService
     /**
      * @param string $token
      * @param string $new_password
-     * @throws ValidationException
-     * @throws EntityNotFoundException
      * @return UserRegistrationRequest
+     * @throws \Exception
      */
     public function setPassword(string $token, string $new_password): UserRegistrationRequest
     {
@@ -357,18 +357,21 @@ final class UserService extends AbstractService implements IUserService
 
             $request = $this->user_registration_request_repository->getByHash($token);
 
-            if(is_null($request))
-                throw new EntityNotFoundException("request not found");
+            if(is_null($request)) {
+                Log::warning(sprintf("UserService::setPassword registration request %s not found.", $token));
+                throw new EntityNotFoundException("Request not found.");
+            }
 
             if($request->isRedeem()){
-                throw new ValidationException("request is already redeem");
+                Log::warning(sprintf("UserService::setPassword registration request %s already redeem.", $token));
+                throw new ValidationException("Request is already redeem.");
             }
 
             $email = $request->getEmail();
 
             $former_user = $this->user_repository->getByEmailOrName($email);
             if(!is_null($former_user))
-                throw new ValidationException(sprintf("user %s already exists!", $email));
+                throw new ValidationException(sprintf("User %s already exists!.", $email));
 
             $user = UserFactory::build([
                 'first_name'     => $request->getFirstName(),
