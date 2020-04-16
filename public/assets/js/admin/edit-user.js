@@ -79,7 +79,6 @@ $(document).ready(function() {
         rules: {
             "first_name"  : {required: true},
             "last_name"   : {required: true},
-            "identifier"  : {required: true},
             "email"       : {required: true, email: true}
         }
     });

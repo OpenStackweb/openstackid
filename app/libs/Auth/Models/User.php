@@ -384,6 +384,7 @@ class User extends BaseEntity
         $this->affiliations = new ArrayCollection();
         $this->scope_groups = new ArrayCollection();
         $this->reset_password_requests = new ArrayCollection();
+        $this->spam_type = self::SpamTypeNone;
     }
 
     /**
