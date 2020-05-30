@@ -15,6 +15,7 @@ use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use jwt\impl\JWTClaimSet;
 use jwt\JWTClaim;
 use OAuth2\AddressClaim;
@@ -102,9 +103,10 @@ final class UserService extends OAuth2ProtectedService implements IUserService
         $data = [];
         try
         {
-
+            Log::debug("UserService::getCurrentUserInfo");
             $current_user_id = $this->resource_server_context->getCurrentUserId();
 
+            Log::debug(sprintf("UserService::getCurrentUserInfo current_user_id %s", $current_user_id));
             if (is_null($current_user_id)) {
                 throw new Exception('me is no set!.');
             }
@@ -114,10 +116,11 @@ final class UserService extends OAuth2ProtectedService implements IUserService
 
             if(!$current_user instanceof User) throw new EntityNotFoundException();
 
-            $scopes       = $this->resource_server_context->getCurrentScope();
+            $scopes = $this->resource_server_context->getCurrentScope();
 
             if (in_array(self::UserProfileScope_Address, $scopes)) {
                 // Address Claims
+                Log::debug(sprintf("UserService::getCurrentUserInfo current_user_id %s address", $current_user_id));
                 $data[AddressClaim::Country]       = $current_user->getCountry();
                 $data[AddressClaim::StreetAddress] = $current_user->getCountry();
                 $data[AddressClaim::PostalCode]    = $current_user->getPostalCode();
@@ -125,6 +128,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
                 $data[AddressClaim::Locality]      = $current_user->getLocality();
             }
             if (in_array(self::UserProfileScope_Profile, $scopes)) {
+                Log::debug(sprintf("UserService::getCurrentUserInfo current_user_id %s profile", $current_user_id));
                 // Profile Claims
                 $data[StandardClaims::Name]                = $current_user->getFullName();
                 $data[StandardClaims::GivenName]           = $current_user->getFirstName();
@@ -152,6 +156,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
                 $data[StandardClaims::Groups] = $user_groups;
             }
             if (in_array(self::UserProfileScope_Email, $scopes)) {
+                Log::debug(sprintf("UserService::getCurrentUserInfo current_user_id %s email", $current_user_id));
                 // Email Claim
                 $data[StandardClaims::Email]         = $current_user->getEmail();
                 $data[StandardClaims::SecondEmail]   = $current_user->getSecondEmail();

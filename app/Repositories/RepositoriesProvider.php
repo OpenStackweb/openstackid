@@ -21,6 +21,10 @@ use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
 use App\libs\Auth\Repositories\IWhiteListedIPRepository;
 use App\libs\OAuth2\Repositories\IOAuth2TrailExceptionRepository;
+use App\Models\Repositories\IDisqusSSOProfileRepository;
+use App\Models\Repositories\IRocketChatSSOProfileRepository;
+use App\Models\SSO\DisqusSSOProfile;
+use App\Models\SSO\RocketChatSSOProfile;
 use App\Repositories\IServerConfigurationRepository;
 use App\Repositories\IServerExtensionRepository;
 use Auth\Group;
@@ -224,6 +228,20 @@ final class RepositoriesProvider extends ServiceProvider
             }
         );
 
+        App::singleton(
+            IDisqusSSOProfileRepository::class,
+            function(){
+                return EntityManager::getRepository(DisqusSSOProfile::class);
+            }
+        );
+
+        App::singleton(
+            IRocketChatSSOProfileRepository::class,
+            function(){
+                return EntityManager::getRepository(RocketChatSSOProfile::class);
+            }
+        );
+
     }
 
     public function provides()
@@ -246,6 +264,8 @@ final class RepositoriesProvider extends ServiceProvider
             IWhiteListedIPRepository::class,
             IUserRegistrationRequestRepository::class,
             ISpamEstimatorFeedRepository::class,
+            IDisqusSSOProfileRepository::class,
+            IRocketChatSSOProfileRepository::class,
         ];
     }
 }

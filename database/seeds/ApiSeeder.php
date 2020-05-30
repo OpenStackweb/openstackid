@@ -52,5 +52,15 @@ class ApiSeeder extends Seeder {
         EntityManager::persist($api);
 
         EntityManager::flush();
+
+        $api = new Api();
+        $api->setName('sso');
+        $api->setActive(true);
+        $api->setDescription('SSO Integration API');
+        $api->setResourceServer($rs);
+
+        EntityManager::persist($api);
+
+        EntityManager::flush();
     }
 }

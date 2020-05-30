@@ -1,7 +1,6 @@
-<?php namespace App\libs\OAuth2;
-
+<?php namespace App\Services\Apis;
 /**
- * Copyright 2019 OpenStack Foundation
+ * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,16 +14,20 @@
 
 
 /**
- * Interface IUserScopes
- * @package App\libs\OAuth2
+ * Interface IRocketChatAPI
+ * @package App\Services\Apis
  */
-interface IUserScopes
+interface IRocketChatAPI
 {
-    const Profile = 'profile';
-    const Email   = 'email';
-    const Address = 'address';
-    const Registration = 'user-registration';
-    const ReadAll = 'users-read-all';
-    const SSO = 'sso';
+    /**
+     * @param string $base_url
+     * @return IRocketChatAPI
+     */
+    public function setBaseUrl(string $base_url):IRocketChatAPI;
 
+    /**
+     * @param string $service_name
+     * @return array
+     */
+    public function login(string $service_name):array;
 }

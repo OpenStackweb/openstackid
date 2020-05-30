@@ -11,11 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
+use App\Services\Apis\IRocketChatAPI;
+use App\Services\Apis\RocketChatAPI;
+use App\Services\Auth\DisqusSSOService;
 use App\Services\Auth\GroupService;
+use App\Services\Auth\IDisqusSSOService;
 use App\Services\Auth\IGroupService;
+use App\Services\Auth\IRocketChatSSOService;
 use App\Services\Auth\IUserService;
+use App\Services\Auth\RocketChatSSOService;
 use App\Services\Auth\UserService;
 use Illuminate\Support\ServiceProvider;
 use Services\SecurityPolicies\AuthorizationCodeRedeemPolicy;
@@ -84,12 +89,15 @@ final class ServicesProvider extends ServiceProvider
 
         App::singleton(IUserService::class, UserService::class);
         App::singleton(IGroupService::class, GroupService::class);
+        App::singleton(IDisqusSSOService::class, DisqusSSOService::class);
+        App::singleton(IRocketChatSSOService::class, RocketChatSSOService::class);
+        App::singleton(IRocketChatAPI::class, RocketChatAPI::class);
     }
 
     public function provides()
     {
         return [
-            \Services\IUserActionService::class,
+            IUserActionService::class,
             \Services\SecurityPolicies\DelayCounterMeasure::class,
             \Services\SecurityPolicies\LockUserCounterMeasure::class,
             \Services\SecurityPolicies\RevokeAuthorizationCodeRelatedTokens::class,
@@ -100,6 +108,9 @@ final class ServicesProvider extends ServiceProvider
             AuthorizationCodeRedeemPolicy::class,
             UtilsServiceCatalog::CheckPointService,
             IUserService::class,
+            IDisqusSSOService::class,
+            IRocketChatSSOService::class,
+            IRocketChatAPI::class,
         ];
     }
 }

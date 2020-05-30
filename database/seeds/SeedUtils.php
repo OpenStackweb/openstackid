@@ -16,11 +16,34 @@ use Models\OAuth2\ApiEndpoint;
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Api;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Models\OAuth2\ResourceServer;
 /**
  * Class SeedUtils
  */
 final class SeedUtils
 {
+    /**
+     * @param string $api_name
+     * @param string $api_description
+     * @return bool
+     */
+    public static function seedApi(string $api_name, string $api_description){
+        $resource_server_repository = EntityManager::getRepository(ResourceServer::class);
+        $rs = $resource_server_repository->find(1);
+        if(is_null($rs)) return false;
+        $api = new Api();
+        $api->setName($api_name);
+        $api->setActive(true);
+        $api->setDescription($api_description);
+        $api->setResourceServer($rs);
+
+        EntityManager::persist($api);
+
+        EntityManager::flush();
+
+        return true;
+    }
+
     /**
      * @param string $api_name
      * @param array $endpoints_info

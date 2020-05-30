@@ -27,7 +27,7 @@ use Exception;
  * Class OAuth2UserApiController
  * @package App\Http\Controllers\Api\OAuth2
  */
-final class OAuth2UserApiController extends OAuth2ProtectedController
+    final class OAuth2UserApiController extends OAuth2ProtectedController
 {
     use GetAllTrait;
 

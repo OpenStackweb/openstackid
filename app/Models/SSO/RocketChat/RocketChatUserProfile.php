@@ -1,7 +1,6 @@
-<?php namespace App\libs\OAuth2;
-
+<?php namespace App\Models\SSO;
 /**
- * Copyright 2019 OpenStack Foundation
+ * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,18 +12,30 @@
  * limitations under the License.
  **/
 
-
 /**
- * Interface IUserScopes
- * @package App\libs\OAuth2
+ * Class RocketChatUserProfile
+ * @package App\Models\SSO
  */
-interface IUserScopes
+class RocketChatUserProfile
 {
-    const Profile = 'profile';
-    const Email   = 'email';
-    const Address = 'address';
-    const Registration = 'user-registration';
-    const ReadAll = 'users-read-all';
-    const SSO = 'sso';
+    /**
+     * @var array
+     */
+    private $payload;
 
+    /**
+     * RocketChatUserProfile constructor.
+     * @param array $payload
+     */
+    public function __construct(array $payload)
+    {
+        $this->payload = $payload;
+    }
+
+    /**
+     * @return array
+     */
+    public function serialize():array {
+        return $this->payload['data'] ?? [];
+    }
 }

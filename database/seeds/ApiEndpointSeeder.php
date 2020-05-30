@@ -26,6 +26,7 @@ class ApiEndpointSeeder extends Seeder
         DB::table('oauth2_api_endpoint')->delete();
         $this->seedUsersEndpoints();
         $this->seedRegistrationEndpoints();
+        $this->seedSSOEndpoints();
     }
 
 
@@ -87,6 +88,29 @@ class ApiEndpointSeeder extends Seeder
                 'http_method' => 'POST',
                 'scopes'      => [
                     \App\libs\OAuth2\IUserScopes::Registration
+                ],
+            ],
+        ]);
+    }
+
+    private function seedSSOEndpoints(){
+        SeedUtils::seedApiEndpoints('sso', [
+            [
+                'name' => 'sso-disqus',
+                'active' => true,
+                'route' => '/api/v1/sso/disqus/{forum_slug}/profile',
+                'http_method' => 'GET',
+                'scopes'      => [
+                    \App\libs\OAuth2\IUserScopes::SSO
+                ],
+            ],
+            [
+                'name' => 'sso-rocket-chat',
+                'active' => true,
+                'route' => '/api/v1/sso/rocket-chat/{forum_slug}/profile',
+                'http_method' => 'GET',
+                'scopes'      => [
+                    \App\libs\OAuth2\IUserScopes::SSO
                 ],
             ],
         ]);

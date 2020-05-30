@@ -418,6 +418,7 @@ PPK;
         $this->seedApiScopeScopes();
         $this->seedUsersScopes();
         $this->seedUsersRegistrationScopes();
+        $this->seedSSOScopes();
         $this->seedPublicCloudScopes();
         $this->seedPrivateCloudScopes();
         $this->seedConsultantScopes();
@@ -427,6 +428,7 @@ PPK;
         $this->seedApiEndpoints();
         $this->seedUsersEndpoints();
         $this->seedUserRegistrationEndpoints();
+        $this->seedSSOEndpoints();
         /*
         $this->seedApiEndpointEndpoints();
         $this->seedScopeEndpoints();
@@ -666,6 +668,13 @@ PPK;
                 'name'            => 'user-registration',
                 'active'          =>  true,
                 'description'     => 'User Registration',
+                'resource_server'    => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'sso',
+                'active'          =>  true,
+                'description'     => 'SSO Integration',
                 'resource_server'    => $resource_server,
                 'logo'               => asset('/assets/img/apis/server.png')
             ),
@@ -1405,6 +1414,31 @@ PPK;
         EntityManager::flush();
     }
 
+    private function seedSSOScopes(){
+
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api = $api_repository->findOneBy(['name' => 'sso']);
+
+        $current_realm = Config::get('app.url');
+
+
+        $api_scope_payloads = [
+            array(
+                'name'               => IUserScopes::SSO,
+                'short_description'  => 'Allows SSO integration',
+                'description'        => 'Allows SSO integration',
+                'api'                => $api,
+                'system'             => false,
+                'active'             => true,
+            ),
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
+    }
+
     private function seedPublicCloudScopes(){
 
         $api_repository = EntityManager::getRepository(Api::class);
@@ -1678,6 +1712,46 @@ PPK;
 
         $api_scope_repository = EntityManager::getRepository(ApiScope::class);
         $scope = $api_scope_repository->findOneBy(['name' => IUserScopes::Registration]);
+
+        foreach($api_scope_payloads as $payload) {
+            $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
+            $endpoint->addScope($scope);
+            EntityManager::persist($endpoint);
+        }
+
+        EntityManager::flush();
+    }
+
+    private function seedSSOEndpoints(){
+        $api_repository = EntityManager::getRepository(Api::class);
+        $endpoint_repository = EntityManager::getRepository(ApiEndpoint::class);
+        $api = $api_repository->findOneBy(['name' => 'sso']);
+
+        $api_scope_payloads = [
+            array(
+                'name' => 'sso-disqus',
+                'active'          =>  true,
+                'api'             => $api,
+                'route' => '/api/v1/sso/disqus/{forum_slug}/profile',
+                'http_method'     => 'GET'
+            ),
+
+            array(
+                'name' => 'sso-rocket-chat',
+                'active'          =>  true,
+                'api'             => $api,
+                'route' => '/api/v1/sso/rocket-chat/{forum_slug}/profile',
+                'http_method'     => 'GET'
+            ),
+        ];
+
+        foreach($api_scope_payloads as $payload) {
+            EntityManager::persist(ApiEndpointFactory::build($payload));
+        }
+        EntityManager::flush();
+
+        $api_scope_repository = EntityManager::getRepository(ApiScope::class);
+        $scope = $api_scope_repository->findOneBy(['name' => \App\libs\OAuth2\IUserScopes::SSO]);
 
         foreach($api_scope_payloads as $payload) {
             $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);

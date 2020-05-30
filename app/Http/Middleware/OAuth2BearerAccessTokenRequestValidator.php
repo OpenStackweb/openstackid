@@ -193,7 +193,7 @@ final class OAuth2BearerAccessTokenRequestValidator
             //if js client , then check if the origin is allowed ....
             if($client->getApplicationType() == IClient::ApplicationType_JS_Client)
             {
-                if(!$client->isOriginAllowed($origin))
+                if(!empty($origin) && !$client->isOriginAllowed($origin))
                     throw new OAuth2ResourceServerException
                     (
                         403,

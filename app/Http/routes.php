@@ -160,7 +160,7 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
         });
     });
 
-    //Admin Backend API
+    // Admin Backend Services
 
     Route::group([
         'namespace'  =>  'Api',
@@ -365,7 +365,8 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
     });
 });
 
-//OAuth2 Protected API
+// OAuth2 Protected API
+
 Route::group(
     [
         'namespace'  => 'App\Http\Controllers\Api\OAuth2',
@@ -382,5 +383,22 @@ Route::group(
 
     Route::group(['prefix' => 'user-registration-requests'], function(){
         Route::post('', 'OAuth2UserRegistrationRequestApiController@register');
+    });
+
+    // 3rd Party SSO integrations
+
+    Route::group(['prefix' => 'sso'], function () {
+
+        Route::group(['prefix' => 'disqus'], function () {
+            Route::group(['prefix' => '{forum_slug}'], function () {
+                Route::get('profile', 'OAuth2DisqusSSOApiController@getUserProfile');
+            });
+        });
+
+        Route::group(['prefix' => 'rocket-chat'], function () {
+            Route::group(['prefix' => '{forum_slug}'], function () {
+                Route::get('profile', 'OAuth2RocketChatSSOApiController@getUserProfile');
+            });
+        });
     });
 });

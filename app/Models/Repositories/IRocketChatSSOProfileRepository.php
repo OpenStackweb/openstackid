@@ -1,7 +1,6 @@
-<?php namespace App\libs\OAuth2;
-
+<?php namespace App\Models\Repositories;
 /**
- * Copyright 2019 OpenStack Foundation
+ * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,19 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-
+use App\Models\SSO\RocketChatSSOProfile;
+use models\utils\IBaseRepository;
 /**
- * Interface IUserScopes
- * @package App\libs\OAuth2
+ * Interface IRocketChatSSOProfileRepository
+ * @package App\Models\Repositories
  */
-interface IUserScopes
+interface IRocketChatSSOProfileRepository extends IBaseRepository
 {
-    const Profile = 'profile';
-    const Email   = 'email';
-    const Address = 'address';
-    const Registration = 'user-registration';
-    const ReadAll = 'users-read-all';
-    const SSO = 'sso';
-
+    public function getByForumSlug(string $forum_slug):?RocketChatSSOProfile;
 }

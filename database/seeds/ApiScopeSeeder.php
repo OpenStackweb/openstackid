@@ -30,6 +30,7 @@ class ApiScopeSeeder extends Seeder {
         DB::table('oauth2_api_scope')->delete();
         $this->seedUsersScopes();
         $this->seedRegistrationScopes();
+        $this->seedSSOScopes();
     }
 
 
@@ -99,6 +100,19 @@ class ApiScopeSeeder extends Seeder {
             ],
 
         ], 'user-registration');
+    }
 
+    private function seedSSOScopes(){
+        SeedUtils::seedScopes([
+            [
+                'name'               => IUserScopes::SSO,
+                'short_description'  => 'Allows SSO integration',
+                'description'        => 'Allows SSO integration',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => true,
+            ],
+
+        ], 'sso');
     }
 }

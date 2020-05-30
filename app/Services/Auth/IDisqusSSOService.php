@@ -1,7 +1,6 @@
-<?php namespace App\libs\OAuth2;
-
+<?php namespace App\Services\Auth;
 /**
- * Copyright 2019 OpenStack Foundation
+ * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,18 +12,20 @@
  * limitations under the License.
  **/
 
+use App\Models\SSO\Disqus\DisqusUserProfile;
+use App\Services\IBaseService;
+use models\exceptions\EntityNotFoundException;
 
 /**
- * Interface IUserScopes
- * @package App\libs\OAuth2
+ * Interface IDisqusSSOService
+ * @package App\Services\Auth
  */
-interface IUserScopes
+interface IDisqusSSOService extends IBaseService
 {
-    const Profile = 'profile';
-    const Email   = 'email';
-    const Address = 'address';
-    const Registration = 'user-registration';
-    const ReadAll = 'users-read-all';
-    const SSO = 'sso';
-
+    /**
+     * @param string $forum_slug
+     * @return DisqusUserProfile|null
+     * @throws EntityNotFoundException
+     */
+    public function getUserProfile(string $forum_slug):?DisqusUserProfile;
 }
