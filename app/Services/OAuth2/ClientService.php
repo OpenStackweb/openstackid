@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\Request;
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Client;
 use models\utils\IEntity;
-use OAuth2\Exceptions\InvalidApiScope;
 use OAuth2\Exceptions\InvalidClientAuthMethodException;
 use OAuth2\Exceptions\MissingClientAuthorizationInfo;
 use OAuth2\Models\ClientAssertionAuthenticationContext;
@@ -388,11 +387,11 @@ final class ClientService extends AbstractService implements IClientService
 
             if($scope->isAssignedByGroups()) {
                 if(!$owner->isGroupScopeAllowed($scope))
-                    throw new InvalidApiScope(sprintf('you cant assign to this client api scope %s', $scope_id));
+                    throw new ValidationException(sprintf('you cant assign to this client api scope %s', $scope_id));
             }
 
             if($scope->isSystem() && !$owner->canUseSystemScopes())
-                throw new InvalidApiScope(sprintf('you cant assign to this client api scope %s', $scope_id));
+                throw new ValidationException(sprintf('you cant assign to this client api scope %s', $scope_id));
 
             $client->addScope($scope);
             $client->setEditedBy($this->auth_service->getCurrentUser());
