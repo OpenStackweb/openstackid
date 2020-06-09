@@ -54,9 +54,10 @@ class DisqusUserProfile
     {
         $this->public_key = $profile->getPublicKey();
         $this->private_key = $profile->getSecretKey();
-        $this->user_id = $user->getId();
+        $this->user_id    = $user->getId();
         $this->user_email = $user->getEmail();
-        $this->user_name = $user->getNickName();
+        $this->user_name  = $user->getNickName();
+        $this->user_avatar = $user->getPic();
     }
 
     /**
@@ -91,7 +92,8 @@ class DisqusUserProfile
         $data = [
             "id" => $this->user_id,
             "username" => $this->user_name,
-            "email" => $this->user_email
+            "email" => $this->user_email,
+            "avatar" => $this->user_avatar
         ];
 
         $message = base64_encode(json_encode($data));
