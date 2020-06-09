@@ -589,7 +589,13 @@ class Client extends BaseEntity implements IClient
         )
             return false;
 
-        return str_contains(strtolower($this->redirect_uris), URLUtils::normalizeUrl($uri));
+        $redirect_uris = explode(',',strtolower($this->redirect_uris));
+        $uri = URLUtils::normalizeUrl($uri);
+        foreach($redirect_uris as $redirect_uri){
+            if(str_contains($uri, $redirect_uri))
+                return true;
+        }
+        return false;
     }
 
     public function getApplicationName()
