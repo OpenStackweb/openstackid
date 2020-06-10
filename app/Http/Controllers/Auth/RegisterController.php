@@ -153,11 +153,11 @@ final class RegisterController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'first_name'               => 'required|string|max:255',
-            'last_name'                => 'required|string|max:255',
+            'first_name'               => 'required|string|max:100',
+            'last_name'                => 'required|string|max:100',
             'country_iso_code'         => 'required|string|country_iso_alpha2_code',
             'email'                    => 'required|string|email|max:255',
-            'password'                 => 'required|string|min:8|confirmed',
+            'password'                 => 'required|string|min:8|max:100|confirmed',
             'g-recaptcha-response'     => 'required|recaptcha',
         ]);
     }
