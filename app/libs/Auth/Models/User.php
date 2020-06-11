@@ -601,7 +601,6 @@ class User extends BaseEntity
     {
         if ($this->groups->contains($group)) return;
         $this->groups->add($group);
-        $group->addUser($this);
     }
 
     /**
@@ -611,7 +610,6 @@ class User extends BaseEntity
     {
         if (!$this->groups->contains($group)) return;
         $this->groups->removeElement($group);
-        $group->removeUser($this);
     }
 
     public function clearGroups(): void

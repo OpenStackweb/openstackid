@@ -142,6 +142,7 @@ $(document).ready(function() {
 
             var groups  = user.groups;
             delete user.groups;
+            user.groups = [];
             if(typeof groups != "undefined" && groups != '') {
                 user.groups = groups.split(",");
                 for (var i = 0; i < user.groups.length; i++) {
