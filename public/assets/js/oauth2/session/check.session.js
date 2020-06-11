@@ -7,7 +7,7 @@
     function hash(message)
     {
         var hash = CryptoJS.SHA256(message).toString();
-        console.log('calculated hash '+hash+' from message '+message);
+        //console.log('calculated hash '+hash+' from message '+message);
         return hash;
     }
 
@@ -53,7 +53,7 @@
                 return "error";
             }
 
-            console.log("sessionState "+sessionState);
+            //console.log("sessionState "+sessionState);
             var sessionStateParts = sessionState.split('.');
             if (sessionStateParts.length !== 2)
             {
@@ -62,8 +62,8 @@
 
             var clientHash = sessionStateParts[0];
             var salt       = sessionStateParts[1];
-            console.log("clientHash "+clientHash);
-            console.log("salt "+salt);
+            //console.log("clientHash "+clientHash);
+            //console.log("salt "+salt);
 
             if (!clientHash || !salt)
             {
@@ -72,7 +72,7 @@
 
             var opbs = $.cookie('op_bs');
             if (opbs == "undefined" || typeof(opbs) == "undefined") return "changed";
-            console.log("opbs "+opbs)
+            //console.log("opbs "+opbs)
             var expectedHash = computeSessionStateHash(clientId, origin, opbs, salt);
             return clientHash === expectedHash ? "unchanged" : "changed";
         }
