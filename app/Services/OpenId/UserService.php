@@ -190,7 +190,7 @@ final class UserService extends AbstractService implements IUserService
                     throw new ValidationException(sprintf("email %s already belongs to another user", $payload["email"]));
             }
 
-            if(isset($payload["identifier"])){
+            if(isset($payload["identifier"]) && !empty($payload["identifier"])){
                 $former_user = $this->repository->getByIdentifier(trim($payload["identifier"]));
                 if(!is_null($former_user))
                     throw new ValidationException(sprintf("identifier %s already belongs to another user", $payload["identifier"]));
@@ -234,7 +234,7 @@ final class UserService extends AbstractService implements IUserService
                     throw new ValidationException(sprintf("email %s already belongs to another user", $payload["email"]));
             }
 
-            if(isset($payload["identifier"])){
+            if(isset($payload["identifier"]) && !empty($payload["identifier"])){
                 $former_user = $this->repository->getByIdentifier(trim($payload["identifier"]));
                 if(!is_null($former_user) && $former_user->getId() != $id)
                     throw new ValidationException(sprintf("identifier %s already belongs to another user", $payload["identifier"]));
