@@ -75,8 +75,29 @@ final class PasswordSetController extends Controller
             if(is_null($user_registration_request))
                 throw new EntityNotFoundException("request not found");
 
-            if($user_registration_request->isRedeem())
+            if($user_registration_request->isRedeem()) {
+
+                // check redirect uri
+                if($request->has("redirect_uri") && $request->has("client_id")){
+                    $redirect_uri = $request->get("redirect_uri");
+                    $client_id    = $request->get("client_id");
+                    $client       = $this->client_repository->getClientById($client_id);
+
+                    if(is_null($client))
+                        throw new ValidationException("client does not exists");
+
+                    if(!$client->isUriAllowed($redirect_uri))
+                        throw new ValidationException(sprintf("redirect_uri %s is not allowed on associated client", $redirect_uri));
+
+                    $params['client_id']    = $client_id;
+                    $params['redirect_uri'] = $redirect_uri;
+                    $params['email']        = $user_registration_request->getEmail();
+
+                    return view("auth.passwords.set_success", $params);
+                }
+
                 throw new ValidationException("request already redeem!");
+            }
 
             $params = [
                 "email"        => $user_registration_request->getEmail(),
