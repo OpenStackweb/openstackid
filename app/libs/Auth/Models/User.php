@@ -369,7 +369,7 @@ class User extends BaseEntity
         $this->public_profile_show_email = false;
         $this->public_profile_show_fullname = false;
         $this->password = "";
-        $this->identifier = "";
+        $this->identifier = null;
         $this->gender_specify = "";
         $this->password_enc = AuthHelper::AlgNative;
         $this->password_salt = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);
