@@ -57,7 +57,7 @@ final class UserFactory
         if(isset($payload['bio']))
             $user->setBio(trim($payload['bio']));
 
-        if(isset($payload['identifier']))
+        if(isset($payload['identifier']) && !empty($payload['identifier']))
             $user->setIdentifier(trim($payload['identifier']));
 
         if(isset($payload['statement_of_interest']))
