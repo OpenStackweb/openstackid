@@ -376,6 +376,7 @@ Route::group(
 
     Route::group(['prefix' => 'users'], function () {
         Route::get('', 'OAuth2UserApiController@getAll');
+        Route::get('/{id}', 'OAuth2UserApiController@get');
         Route::get('/me', 'OAuth2UserApiController@me');
         Route::get('/info', 'OAuth2UserApiController@userInfo');
         Route::post('/info', 'OAuth2UserApiController@userInfo');

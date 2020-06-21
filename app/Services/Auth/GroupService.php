@@ -11,11 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\GroupFactory;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\Services\AbstractService;
 use Auth\Group;
 use Auth\Repositories\IUserRepository;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use models\utils\IEntity;
@@ -148,6 +152,14 @@ final class GroupService extends AbstractService implements IGroupService
                 throw new EntityNotFoundException();
 
             $user->addToGroup($group);
+
+           try {
+               if(Config::get("queue.enable_message_broker", false) == true)
+                   PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+           }
+           catch (\Exception $ex){
+               Log::warning($ex);
+           }
        });
     }
 
@@ -165,6 +177,14 @@ final class GroupService extends AbstractService implements IGroupService
                 throw new EntityNotFoundException();
 
             $user->removeFromGroup($group);
+
+            try {
+                if(Config::get("queue.enable_message_broker", false) == true)
+                    PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+            }
+            catch (\Exception $ex){
+                Log::warning($ex);
+            }
         });
     }
 }

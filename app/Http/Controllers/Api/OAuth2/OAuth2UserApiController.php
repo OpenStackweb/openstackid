@@ -13,53 +13,66 @@
  **/
 
 use App\Http\Controllers\GetAllTrait;
+use App\Http\Utils\PagingConstants;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
 use OAuth2\Builders\IdTokenBuilder;
 use OAuth2\IResourceServerContext;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\ResourceServer\IUserService;
+use utils\Filter;
+use utils\FilterParser;
 use Utils\Http\HttpContentType;
+use utils\OrderParser;
+use utils\PagingInfo;
 use Utils\Services\ILogService;
 use Exception;
+
 /**
  * Class OAuth2UserApiController
  * @package App\Http\Controllers\Api\OAuth2
  */
-    final class OAuth2UserApiController extends OAuth2ProtectedController
+final class OAuth2UserApiController extends OAuth2ProtectedController
 {
     use GetAllTrait;
 
-    protected function getAllSerializerType():string{
+    protected function getAllSerializerType(): string
+    {
         return SerializerRegistry::SerializerType_Private;
     }
 
     /**
      * @return array
      */
-    protected function getFilterRules():array
+    protected function getFilterRules(): array
     {
         return [
             'first_name' => ['=@', '=='],
-            'last_name'  => ['=@', '=='],
-            'email'      => ['=@', '=='],
+            'last_name' => ['=@', '=='],
+            'email' => ['=@', '=='],
         ];
     }
 
-    public function getOrderRules():array{
+    public function getOrderRules(): array
+    {
         return [];
     }
 
     /**
      * @return array
      */
-    protected function getFilterValidatorRules():array
+    protected function getFilterValidatorRules(): array
     {
         return [
-            'first_name'  => 'sometimes|required|string',
-            'last_name'   => 'sometimes|required|string',
-            'email'       => 'sometimes|required|string',
+            'first_name' => 'sometimes|required|string',
+            'last_name' => 'sometimes|required|string',
+            'email' => 'sometimes|required|string',
         ];
     }
 
@@ -97,10 +110,10 @@ use Exception;
     )
     {
         parent::__construct($resource_server_context, $log_service);
-        $this->repository        = $repository;
-        $this->user_service      = $user_service;
+        $this->repository = $repository;
+        $this->user_service = $user_service;
         $this->client_repository = $client_repository;
-        $this->id_token_builder  = $id_token_builder;
+        $this->id_token_builder = $id_token_builder;
     }
 
     /**
@@ -109,13 +122,10 @@ use Exception;
      */
     public function me()
     {
-        try
-        {
+        try {
             $data = $this->user_service->getCurrentUserInfo();
             return $this->ok($data);
-        }
-        catch(Exception $ex)
-        {
+        } catch (Exception $ex) {
             $this->log_service->error($ex);
             return $this->error500($ex);
         }
@@ -123,11 +133,10 @@ use Exception;
 
     public function userInfo()
     {
-        try
-        {
-            $claims    = $this->user_service->getCurrentUserInfoClaims();
+        try {
+            $claims = $this->user_service->getCurrentUserInfoClaims();
             $client_id = $this->resource_server_context->getCurrentClientId();
-            $client    = $this->client_repository->getClientById($client_id);
+            $client = $this->client_repository->getClientById($client_id);
 
             // The UserInfo Claims MUST be returned as the members of a JSON object unless a signed or encrypted response
             // was requested during Client Registration.
@@ -135,29 +144,47 @@ use Exception;
 
             $sig_alg = $user_info_response_info->getSigningAlgorithm();
             $enc_alg = $user_info_response_info->getEncryptionKeyAlgorithm();
-            $enc     = $user_info_response_info->getEncryptionContentAlgorithm();
+            $enc = $user_info_response_info->getEncryptionContentAlgorithm();
 
-            if($sig_alg || ($enc_alg && $enc) )
-            {
+            if ($sig_alg || ($enc_alg && $enc)) {
                 $jwt = $this->id_token_builder->buildJWT($claims, $user_info_response_info, $client);
                 $http_response = Response::make($jwt->toCompactSerialization(), 200);
                 $http_response->header('Content-Type', HttpContentType::JWT);
-                $http_response->header('Cache-Control','no-cache, no-store, max-age=0, must-revalidate');
-                $http_response->header('Pragma','no-cache');
+                $http_response->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
+                $http_response->header('Pragma', 'no-cache');
                 return $http_response;
-            }
-            else
-            {
+            } else {
                 // return plain json
-                return $this->ok( $claims->toArray() );
+                return $this->ok($claims->toArray());
             }
-        }
-        catch(Exception $ex)
-        {
+        } catch (Exception $ex) {
             $this->log_service->error($ex);
             return $this->error500($ex);
         }
     }
 
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function get($id)
+    {
+        try {
+            $user = $this->repository->getById(intval($id));
+            if (is_null($user)) {
+                throw new EntityNotFoundException();
+            }
+            return $this->ok(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
+        } catch (ValidationException $ex1) {
+            Log::warning($ex1);
+            return $this->error412($ex1->getMessages());
+        } catch (EntityNotFoundException $ex2) {
+            Log::warning($ex2);
+            return $this->error404(['message' => $ex2->getMessage()]);
+        } catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
 
 }

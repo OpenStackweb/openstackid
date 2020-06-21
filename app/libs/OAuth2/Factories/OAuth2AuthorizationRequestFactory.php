@@ -32,8 +32,8 @@ final class OAuth2AuthorizationRequestFactory
     public function build(OAuth2Message $msg){
 
         $auth_request = new OAuth2AuthorizationRequest($msg);
-
-        if( str_contains($auth_request->getScope(), OAuth2Protocol::OpenIdConnect_Scope) ) {
+        $scope = $auth_request->getScope();
+        if(!is_null($scope) && str_contains($scope, OAuth2Protocol::OpenIdConnect_Scope) ) {
             $auth_request = new OAuth2AuthenticationRequest($auth_request);
         }
 

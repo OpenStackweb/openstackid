@@ -73,8 +73,17 @@ class ApiEndpointSeeder extends Seeder
                     'scopes' => [
                         \App\libs\OAuth2\IUserScopes::ReadAll
                     ],
+                ],
+                // get user by id
+                [
+                    'name' => 'get-user-by-id',
+                    'active' => true,
+                    'route' => '/api/v1/users/{id}',
+                    'http_method' => 'GET',
+                    'scopes' => [
+                        \App\libs\OAuth2\IUserScopes::ReadAll
+                    ],
                 ]
-
             ]
         );
     }

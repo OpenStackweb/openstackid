@@ -37,7 +37,7 @@ final class OAuth2ClientTests extends TestCase
         $this->redis->flushall();
     }
 
-    public function testGetClient($appName = 'Call For Presentations'):Client
+    public function testGetClient($appName = 'Call For Presentations'): Client
     {
         $repo = EntityManager::getRepository(Client::class);
         $client = $repo->getByApplicationName($appName);
@@ -47,12 +47,5 @@ final class OAuth2ClientTests extends TestCase
         $this->assertTrue(count($accessTokens) == 0);
 
         return $client;
-    }
-
-    public function testClearAccessTokens(){
-        $client = $this->testGetClient();
-        $this->assertTrue($client->hasAccessTokens());
-        $client->removeAllAccessTokens();
-        EntityManager::flush();
     }
 }

@@ -284,7 +284,7 @@ final class AuthService implements IAuthService
     {
 
         try {
-            $rps = Cookie::get(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME);
+            $rps = Cookie::get(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME, "");
             $zlib = CompressionAlgorithms_Registry::getInstance()->get(CompressionAlgorithmsNames::ZLib);
 
             if (!empty($rps)) {

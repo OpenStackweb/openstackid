@@ -65,6 +65,7 @@ final class OAuth2UserRegistrationServiceApiTest extends OAuth2ProtectedApiTest
     protected function getScopes()
     {
         $scope = [
+            "openid",
             IUserScopes::Registration,
         ];
 

@@ -12,12 +12,16 @@
  * limitations under the License.
  **/
 use App\Events\UserEmailUpdated;
+use App\Jobs\PublishUserCreated;
+use App\Jobs\PublishUserDeleted;
+use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\Services\AbstractService;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use models\exceptions\EntityNotFoundException;
@@ -258,6 +262,14 @@ final class UserService extends AbstractService implements IUserService
                 Event::fire(new UserEmailUpdated($user->getId()));
             }
 
+            try {
+                if(Config::get("queue.enable_message_broker", false) == true)
+                    PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+            }
+            catch (\Exception $ex){
+                Log::warning($ex);
+            }
+
             return $user;
 
         });
@@ -275,6 +287,14 @@ final class UserService extends AbstractService implements IUserService
             if(is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
             $this->repository->delete($user);
+
+            try {
+                if(Config::get("queue.enable_message_broker", false) == true)
+                    PublishUserDeleted::dispatch($user)->onConnection('message_broker');
+            }
+            catch (\Exception $ex){
+                Log::warning($ex);
+            }
         });
     }
 }

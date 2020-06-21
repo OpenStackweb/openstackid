@@ -17,6 +17,7 @@ use App\Events\UserLocked;
 use App\Events\UserPasswordResetRequestCreated;
 use App\Events\UserPasswordResetSuccessful;
 use App\Events\UserSpamStateUpdated;
+use App\Jobs\PublishUserCreated;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\Mail\UserLockedEmail;
 use App\Mail\UserPasswordResetMail;
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\App;
 use App\Events\UserCreated;
 use App\Events\UserEmailVerified;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Config;
 use Models\OAuth2\Client;
@@ -80,6 +82,14 @@ final class EventServiceProvider extends ServiceProvider
             Mail::queue(new WelcomeNewUserEmail($user));
             if(!$user->isEmailVerified() && !$user->hasCreator())
                 $user_service->sendVerificationEmail($user);
+
+            try {
+                if(Config::get("queue.enable_message_broker", false) == true)
+                    PublishUserCreated::dispatch($user)->onConnection('message_broker');
+            }
+            catch (\Exception $ex){
+                Log::warning($ex);
+            }
         });
 
         Event::listen(UserSpamStateUpdated::class, function($event)

@@ -11,7 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\ModelSerializers\BaseSerializer;
+use Auth\Group;
+use Auth\User;
+use Illuminate\Support\Facades\Auth;
+
 /**
  * Class BaseUserSerializer
  * @package App\ModelSerializers\Auth
@@ -19,23 +24,51 @@ use App\ModelSerializers\BaseSerializer;
 class BaseUserSerializer extends BaseSerializer
 {
     protected static $array_mappings = [
-        'FirstName'   => 'first_name:json_string',
-        'LastName'    => 'last_name:json_string',
+        'FirstName' => 'first_name:json_string',
+        'LastName' => 'last_name:json_string',
     ];
 }
 
-final class PublicUserSerializer extends BaseUserSerializer {
+final class PublicUserSerializer extends BaseUserSerializer
+{
 
 }
 
-final class PrivateUserSerializer extends BaseUserSerializer {
+final class PrivateUserSerializer extends BaseUserSerializer
+{
 
     protected static $array_mappings = [
-        'Email'          => 'email:json_string',
-        'SpamType'       => 'spam_type:json_string',
-        'Identifier'     => 'identifier:json_string',
-        'LastLoginDate'  => 'last_login_date:datetime_epoch',
-        'Active'         => 'active:json_boolean',
-        'EmailVerified'  => 'email_verified:json_boolean'
+        'Email' => 'email:json_string',
+        'Bio' => 'bio:json_string',
+        'Gender' => 'gender:json_string',
+        'SpamType' => 'spam_type:json_string',
+        'Identifier' => 'identifier:json_string',
+        'LastLoginDate' => 'last_login_date:datetime_epoch',
+        'Active' => 'active:json_boolean',
+        'EmailVerified' => 'email_verified:json_boolean'
     ];
+
+    /**
+     * @param null $expand
+     * @param array $fields
+     * @param array $relations
+     * @param array $params
+     * @return array
+     */
+    public function serialize($expand = null, array $fields = [], array $relations = [], array $params = [])
+    {
+        $user = $this->object;
+        if (!$user instanceof User) return [];
+
+        $values = parent::serialize($expand, $fields, $relations, $params);
+
+        $groups = [];
+        foreach ($user->getGroups() as $group) {
+            if (!$group instanceof Group) continue;
+            $groups[] = $group->getSlug();
+        }
+
+        $values['groups'] = $groups;
+        return $values;
+    }
 }

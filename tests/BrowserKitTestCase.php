@@ -15,6 +15,7 @@
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Laravel\BrowserKitTesting\TestCase as BaseTestCase;
 /**
@@ -51,6 +52,7 @@ abstract class BrowserKitTestCase extends BaseTestCase
     {
         Artisan::call('doctrine:migrations:migrate', ['--connection=model ']);
         Mail::fake();
+        Queue::fake();
         $this->seed('TestSeeder');
     }
 }
