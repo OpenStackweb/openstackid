@@ -61,6 +61,7 @@ final class UserApiController extends APICRUDController {
         return [
             'first_name'     => ['=@', '=='],
             'last_name'      => ['=@', '=='],
+            'full_name'      => ['=@', '=='],
             'email'          => ['=@', '=='],
         ];
     }
@@ -73,6 +74,7 @@ final class UserApiController extends APICRUDController {
         return [
             'first_name'     => 'nullable|string',
             'last_name'      => 'nullable|string',
+            'full_name'      => 'nullable|string',
             'email'          => 'nullable|string',
         ];
     }

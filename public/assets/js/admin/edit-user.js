@@ -29,7 +29,7 @@ $(document).ready(function() {
             url: urls.fetchGroups,
             wildcard: '%QUERY%',
             prepare: function (query, settings) {
-                settings.url = urls.fetchGroups+'?filter[]=name=@'+query+'&filter[]=active==1';
+                settings.url = urls.fetchGroups+'?page=1&per_page=10&filter[]=name=@'+query+',slug=@'+query+'&filter[]=active==1';
                 return settings;
             },
             transform: function(input){

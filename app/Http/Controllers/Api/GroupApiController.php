@@ -199,6 +199,7 @@ final class GroupApiController extends APICRUDController
                     'first_name'     => ['=@', '=='],
                     'last_name'      => ['=@', '=='],
                     'email'          => ['=@', '=='],
+                    'full_name'      => ['=@', '=='],
                 ]);
             }
 
@@ -208,6 +209,7 @@ final class GroupApiController extends APICRUDController
                 'first_name'     => 'nullable|string',
                 'last_name'      => 'nullable|string',
                 'email'          => 'nullable|string',
+                'full_name'      => 'nullable|string',
             ];
 
             if(count($filter_validator_rules)) {
