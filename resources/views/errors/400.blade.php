@@ -6,7 +6,7 @@
             400. That’s an error.
         </p>
         <p>
-            <b>{!! $error_code !!}</b>
+            <b>{!! $error !!}</b>
         </p>
         <p>
             {!! $error_description !!}

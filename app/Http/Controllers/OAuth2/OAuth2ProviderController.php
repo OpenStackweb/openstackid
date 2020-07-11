@@ -111,7 +111,7 @@ final class OAuth2ProviderController extends Controller
                 'errors.400',
                 array
                 (
-                    'error_code'        => $ex1->getError(),
+                    'error'        => $ex1->getError(),
                     'error_description' => $ex1->getMessage()
                 ),
                 400
@@ -125,7 +125,7 @@ final class OAuth2ProviderController extends Controller
                 'errors.400',
                 array
                 (
-                    'error_code'        => "Bad Request",
+                    'error'        => "Bad Request",
                     'error_description' => "Generic Error"
                 ),
                 400

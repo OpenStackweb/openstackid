@@ -82,7 +82,7 @@ class OpenIdProviderController extends Controller
                 'errors.400',
                 array
                 (
-                    'error_code'        => "Bad Request",
+                    'error'        => "Bad Request",
                     'error_description' => $ex1->getMessage()
                 ),
                 400
@@ -95,7 +95,7 @@ class OpenIdProviderController extends Controller
                 'errors.400',
                 array
                 (
-                    'error_code'        => "Bad Request",
+                    'error'        => "Bad Request",
                     'error_description' => "Generic Error"
                 ),
                 400
