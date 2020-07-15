@@ -195,4 +195,9 @@ abstract class StandardClaims
      * WeChatUser
      */
     const WeChatUser = 'wechat_user';
+
+    /**
+     * Company
+     */
+    const Company = 'company';
 }

@@ -139,6 +139,17 @@
                     </select>
                 </div>
                 <div class="clearfix"></div>
+                <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                    <label for="city">Phone</label>
+                    <input autocomplete="off" class="form-control" type="text" name="phone_number" id="phone_number"
+                           value="{!! $user->phone_number !!}">
+                </div>
+                <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                    <label for="state">Company</label>
+                    <input autocomplete="off" class="form-control" type="text" name="company" id="company"
+                           value="{!! $user->company !!}">
+                </div>
+                <div class="clearfix"></div>
                 <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
                     <label for="language">Language</label>
                     <select id="language" class="form-control" name="language" value="{!! $user->language !!}" data-lpignore="true" autocomplete="off">

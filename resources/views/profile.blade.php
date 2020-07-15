@@ -151,7 +151,6 @@
                                        value="{!! $user->address2 !!}">
                             </div>
                             <div class="clearfix"></div>
-
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="city">City</label>
                                 <input autocomplete="off" class="form-control" type="text" name="city" id="city"
@@ -177,6 +176,17 @@
                                         <option value="{!! $country->getAlpha2() !!}">{!! $country->getName() !!}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="city">Phone</label>
+                                <input autocomplete="off" class="form-control" type="text" name="phone_number" id="phone_number"
+                                       value="{!! $user->phone_number !!}">
+                            </div>
+                            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+                                <label for="state">Company</label>
+                                <input autocomplete="off" class="form-control" type="text" name="company" id="company"
+                                       value="{!! $user->company !!}">
                             </div>
                             <div class="clearfix"></div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">

@@ -79,7 +79,6 @@ final class UserApiController extends APICRUDController {
         ];
     }
 
-
     /**
      * @param $id
      * @return mixed
@@ -205,7 +204,9 @@ final class UserApiController extends APICRUDController {
             'birthday'               => 'nullable|date_format:U',
             'password'               => 'sometimes|string|min:8|confirmed',
             'email_verified'         => 'nullable|boolean',
-            'active'                 => 'nullable|boolean'
+            'active'                 => 'nullable|boolean',
+            'phone_number'           => 'nullable|string',
+            'company'                => 'nullable|string',
         ];
     }
 
@@ -251,7 +252,9 @@ final class UserApiController extends APICRUDController {
             'birthday'               => 'nullable|date_format:U',
             'password'               => 'sometimes|string|min:8|confirmed',
             'email_verified'         => 'nullable|boolean',
-            'active'                 => 'nullable|boolean'
+            'active'                 => 'nullable|boolean',
+            'phone_number'           => 'nullable|string',
+            'company'                => 'nullable|string',
         ];
     }
 
