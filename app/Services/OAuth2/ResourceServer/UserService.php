@@ -133,6 +133,8 @@ final class UserService extends OAuth2ProtectedService implements IUserService
                 $data[StandardClaims::Name]                = $current_user->getFullName();
                 $data[StandardClaims::GivenName]           = $current_user->getFirstName();
                 $data[StandardClaims::FamilyName]          = $current_user->getLastName();
+                $data[StandardClaims::PhoneNumber]         = $current_user->getPhoneNumber();
+                $data[StandardClaims::PhoneNumberVerified] = false;
                 $data[StandardClaims::NickName]            = $current_user->getIdentifier();
                 $data[StandardClaims::SubjectIdentifier]   = $current_user->getAuthIdentifier();
                 $data[StandardClaims::Picture]             = $current_user->getPic();
@@ -146,6 +148,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
                 $data[StandardClaims::GitHubUser]          = $current_user->getGithubUser();
                 $data[StandardClaims::WeChatUser]          = $current_user->getWechatUser();
                 $data[StandardClaims::TwitterName]         = $current_user->getTwitterName();
+                $data[StandardClaims::Company]             = $current_user->getCompany();
 
                 $user_groups = [];
 

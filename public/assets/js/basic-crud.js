@@ -157,12 +157,15 @@ BasicCrud.prototype = {
                     $('.label-info').show();
                     $('#table').hide();
                     $('#search-container').hide();
+                    $('#pager-container').hide();
                     $('body').ajax_loader('stop');
                     return;
                 }
+
                 $('.label-info').hide();
                 $('#table').show();
                 $('#search-container').show();
+                $('#pager-container').show();
                 
                 var body = _this.templatePage.render(items, _this.directivesPage);
                 $('#body-table', '#table').remove();
@@ -204,7 +207,6 @@ BasicCrud.prototype = {
                         }
                     }
                 };
-
                 var pager = templatePager.render(pages, directivesPager);
 
                 $('#pager', '#pager-container').remove();

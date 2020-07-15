@@ -281,6 +281,18 @@ class User extends BaseEntity
      */
     private $spam_type;
 
+    /**
+     * @ORM\Column(name="company", nullable=true, type="string")
+     * @var string
+     */
+    private $company;
+
+    /**
+     * @ORM\Column(name="phone_number", nullable=true, type="string")
+     * @var string
+     */
+    private $phone_number;
+
     // relations
 
     /**
@@ -385,6 +397,8 @@ class User extends BaseEntity
         $this->scope_groups = new ArrayCollection();
         $this->reset_password_requests = new ArrayCollection();
         $this->spam_type = self::SpamTypeNone;
+        $this->company = null;
+        $this->phone_number = null;
     }
 
     /**
@@ -1665,5 +1679,36 @@ SQL;
         return $this->spam_type == self::SpamTypeSpam;
     }
 
+    /**
+     * @return string
+     */
+    public function getCompany(): ?string
+    {
+        return $this->company;
+    }
+
+    /**
+     * @param string $company
+     */
+    public function setCompany(string $company): void
+    {
+        $this->company = $company;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPhoneNumber(): ?string
+    {
+        return $this->phone_number;
+    }
+
+    /**
+     * @param string $phone_number
+     */
+    public function setPhoneNumber(string $phone_number): void
+    {
+        $this->phone_number = $phone_number;
+    }
 
 }

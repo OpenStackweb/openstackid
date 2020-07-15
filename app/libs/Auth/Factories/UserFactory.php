@@ -118,6 +118,12 @@ final class UserFactory
         if(isset($payload['state']))
             $user->setState(trim($payload['state']));
 
+        if(isset($payload['phone_number']))
+            $user->setPhoneNumber(trim($payload['phone_number']));
+
+        if(isset($payload['company']))
+            $user->setCompany(trim($payload['company']));
+
         if(isset($payload['post_code']))
             $user->setPostCode(trim($payload['post_code']));
 
