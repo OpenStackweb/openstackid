@@ -21,6 +21,8 @@ use App\Services\Auth\IGroupService;
 use App\Services\Auth\IRocketChatSSOService;
 use App\Services\Auth\IUserService;
 use App\Services\Auth\RocketChatSSOService;
+use App\Services\Auth\StreamChatSSOService;
+use App\Services\Auth\IStreamChatSSOService;
 use App\Services\Auth\UserService;
 use Illuminate\Support\ServiceProvider;
 use Services\SecurityPolicies\AuthorizationCodeRedeemPolicy;
@@ -92,6 +94,7 @@ final class ServicesProvider extends ServiceProvider
         App::singleton(IDisqusSSOService::class, DisqusSSOService::class);
         App::singleton(IRocketChatSSOService::class, RocketChatSSOService::class);
         App::singleton(IRocketChatAPI::class, RocketChatAPI::class);
+        App::singleton(IStreamChatSSOService::class, StreamChatSSOService::class);
     }
 
     public function provides()
@@ -111,6 +114,7 @@ final class ServicesProvider extends ServiceProvider
             IDisqusSSOService::class,
             IRocketChatSSOService::class,
             IRocketChatAPI::class,
+            IStreamChatSSOService::class,
         ];
     }
 }

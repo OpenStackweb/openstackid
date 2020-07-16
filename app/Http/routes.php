@@ -401,5 +401,11 @@ Route::group(
                 Route::get('profile', 'OAuth2RocketChatSSOApiController@getUserProfile');
             });
         });
+
+        Route::group(['prefix' => 'stream-chat'], function () {
+            Route::group(['prefix' => '{forum_slug}'], function () {
+                Route::get('profile', 'OAuth2StreamChatSSOApiController@getUserProfile');
+            });
+        });
     });
 });

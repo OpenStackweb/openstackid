@@ -122,6 +122,15 @@ class ApiEndpointSeeder extends Seeder
                     \App\libs\OAuth2\IUserScopes::SSO
                 ],
             ],
+            [
+                'name' => 'sso-stream-chat',
+                'active' => true,
+                'route' => '/api/v1/sso/stream-chat/{forum_slug}/profile',
+                'http_method' => 'GET',
+                'scopes'      => [
+                    \App\libs\OAuth2\IUserScopes::SSO
+                ],
+            ],
         ]);
     }
 

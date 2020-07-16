@@ -18,8 +18,8 @@
  */
 interface IGroupSlugs
 {
-
     public const SuperAdminGroup              = 'super-admins';
+    public const AdminGroup                   = 'administrators';
     public const OAuth2ServerAdminGroup       = 'oauth2-server-admins';
     public const OAuth2SystemScopeAdminsGroup = 'oauth2-system-scope-admins';
     public const OpenIdServerAdminsGroup      = 'openid-server-admins';

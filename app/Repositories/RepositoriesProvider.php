@@ -23,8 +23,10 @@ use App\libs\Auth\Repositories\IWhiteListedIPRepository;
 use App\libs\OAuth2\Repositories\IOAuth2TrailExceptionRepository;
 use App\Models\Repositories\IDisqusSSOProfileRepository;
 use App\Models\Repositories\IRocketChatSSOProfileRepository;
+use App\Models\Repositories\IStreamChatSSOProfileRepository;
 use App\Models\SSO\DisqusSSOProfile;
 use App\Models\SSO\RocketChatSSOProfile;
+use App\Models\SSO\StreamChat\StreamChatSSOProfile;
 use App\Repositories\IServerConfigurationRepository;
 use App\Repositories\IServerExtensionRepository;
 use Auth\Group;
@@ -242,6 +244,13 @@ final class RepositoriesProvider extends ServiceProvider
             }
         );
 
+        App::singleton(
+            IStreamChatSSOProfileRepository::class,
+            function(){
+                return EntityManager::getRepository(StreamChatSSOProfile::class);
+            }
+        );
+
     }
 
     public function provides()
@@ -266,6 +275,7 @@ final class RepositoriesProvider extends ServiceProvider
             ISpamEstimatorFeedRepository::class,
             IDisqusSSOProfileRepository::class,
             IRocketChatSSOProfileRepository::class,
+            IStreamChatSSOProfileRepository::class,
         ];
     }
 }

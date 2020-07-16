@@ -6,3 +6,4 @@ php artisan doctrine:clear:query:cache
 php artisan doctrine:clear:result:cache
 php artisan route:clear
 php artisan route:cache
+php artisan config:clear

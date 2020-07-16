@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\SSO\DisqusSSOProfile;
 use App\Models\Utils\BaseEntity;
 use App\Models\SSO\RocketChatSSOProfile;
+use App\Models\SSO\StreamChat\StreamChatSSOProfile;
 /**
  * Class OAuthSSOApiControllerTest
  */
@@ -39,6 +40,11 @@ final class OAuthSSOApiControllerTest extends OAuth2ProtectedApiTest
     static $rocket_chat_repository;
 
     /**
+     * @var ObjectRepository
+     */
+    static $stream_chat_repository;
+
+    /**
      * @var DisqusSSOProfile
      */
     static $disqus_profile;
@@ -48,14 +54,22 @@ final class OAuthSSOApiControllerTest extends OAuth2ProtectedApiTest
      */
     static $rocket_chat_profile;
 
+    /**
+     * @var StreamChatSSOProfile
+     */
+    static $stream_chat_profile;
+
+
     public function setUp()
     {
         parent::setUp();
         DB::table("sso_disqus_profile")->delete();
         DB::table("sso_rocket_chat_profile")->delete();
+        DB::table("sso_stream_chat_profile")->delete();
 
         self::$disqus_repository = EntityManager::getRepository(DisqusSSOProfile::class);
         self::$rocket_chat_repository = EntityManager::getRepository(RocketChatSSOProfile::class);
+        self::$stream_chat_repository = EntityManager::getRepository(StreamChatSSOProfile::class);
 
         self::$disqus_profile = new DisqusSSOProfile();
         self::$disqus_profile->setForumSlug("poc_disqus");
@@ -67,14 +81,20 @@ final class OAuthSSOApiControllerTest extends OAuth2ProtectedApiTest
         self::$rocket_chat_profile->setBaseUrl("https://rocket-chat.dev.fnopen.com");
         self::$rocket_chat_profile->setServiceName("fnid");
 
+        self::$stream_chat_profile = new StreamChatSSOProfile();
+        self::$stream_chat_profile->setForumSlug("poc_stream_chat");
+        self::$stream_chat_profile->setApiKey(env("STREAM_CHAT_API_KEY") ?? '');
+        self::$stream_chat_profile->setApiSecret(env("STREAM_CHAT_API_SECRET") ?? '');
+
         self::$em = Registry::getManager(BaseEntity::EntityManager);
         if (!self::$em ->isOpen()) {
             self::$em  = Registry::resetManager(BaseEntity::EntityManager);
         }
+
         self::$em->persist(self::$disqus_profile);
         self::$em->persist(self::$rocket_chat_profile);
+        self::$em->persist(self::$stream_chat_profile);
         self::$em->flush();
-
     }
 
     protected function tearDown()
@@ -142,6 +162,38 @@ final class OAuthSSOApiControllerTest extends OAuth2ProtectedApiTest
         $this->assertResponseStatus(412);
         $content = $response->getContent();
     }
+
+    /**
+    public function testStreamChatGetUserProfileOK(){
+
+        $params = [
+            "forum_slug" => self::$stream_chat_profile->getForumSlug()
+        ];
+
+        $headers = [
+            "HTTP_Authorization" => " Bearer " . $this->access_token,
+            "CONTENT_TYPE"        => "application/json"
+        ];
+
+        $response = $this->action
+        (
+            "GET",
+            "Api\\OAuth2\\OAuth2StreamChatSSOApiController@getUserProfile",
+            $params,
+            [],
+            [],
+            [],
+            $headers
+        );
+
+        $this->assertResponseStatus(200);
+        $content = $response->getContent();
+        $profile = json_decode($content, true);
+        $this->assertTrue(isset($profile['id']));
+        $this->assertTrue(isset($profile['token']));
+        $this->assertTrue(isset($profile['api_key']));
+    }
+    **/
 
     protected function getScopes()
     {

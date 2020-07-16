@@ -1728,21 +1728,28 @@ PPK;
         $api = $api_repository->findOneBy(['name' => 'sso']);
 
         $api_scope_payloads = [
-            array(
+            [
                 'name' => 'sso-disqus',
                 'active'          =>  true,
                 'api'             => $api,
                 'route' => '/api/v1/sso/disqus/{forum_slug}/profile',
                 'http_method'     => 'GET'
-            ),
-
-            array(
+            ],
+            [
                 'name' => 'sso-rocket-chat',
                 'active'          =>  true,
                 'api'             => $api,
                 'route' => '/api/v1/sso/rocket-chat/{forum_slug}/profile',
                 'http_method'     => 'GET'
-            ),
+            ],
+            [
+                'name' => 'sso-stream-chat',
+                'active' => true,
+                'api'             => $api,
+                'route' => '/api/v1/sso/stream-chat/{forum_slug}/profile',
+                'http_method' => 'GET',
+
+            ],
         ];
 
         foreach($api_scope_payloads as $payload) {
