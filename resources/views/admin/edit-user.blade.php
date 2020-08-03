@@ -237,5 +237,5 @@
     {!! HTML::script('assets/chosen-js/chosen.jquery.js') !!}
     {!! HTML::script("assets/js/urlfragment.jquery.js") !!}
     {!! HTML::script("assets/moment/min/moment.min.js") !!}
-    {!! HTML::script('assets/js/admin/edit-user.js') !!}
+    {!! HTML::script('assets/js/admin/edit-user.js?v='.rand(1,1000)) !!}
 @append

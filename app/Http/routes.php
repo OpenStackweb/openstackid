@@ -184,7 +184,6 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
             });
         });
 
-
         Route::group(['prefix' => 'groups',  'middleware' => ['openstackid.currentuser.serveradmin.json']], function () {
             Route::get('', "GroupApiController@getAll");
             Route::post('', "GroupApiController@create");

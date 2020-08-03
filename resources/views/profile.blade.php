@@ -351,5 +351,5 @@
     {!! HTML::script('assets/chosen-js/chosen.jquery.js') !!}
     {!! HTML::script("assets/js/urlfragment.jquery.js") !!}
     {!! HTML::script("assets/moment/min/moment.min.js") !!}
-    {!! HTML::script('assets/js/profile.js') !!}
+    {!! HTML::script('assets/js/profile.js?v='.rand(1,1000)) !!}
 @append

@@ -39,6 +39,8 @@ $(document).ready(function() {
     $('#statement_of_interest').summernote();
     $('#birthday').datepicker();
 
+    $('#img-pic',form).data('original-src', $('#img-pic', form).attr('src'));
+
     $('#country_iso_code').chosen({width: '100%', height: '34px'});
     $("#country_iso_code").val(current_country);
     $("#country_iso_code").trigger("chosen:updated");
@@ -138,8 +140,35 @@ $(document).ready(function() {
         }
     }
 
-    $("#pic", form).change(function() {
-        readURL(this);
+    function fileValidation(input) {
+
+        var filePath = input.value;
+
+        // Allowing file type
+        var allowedExtensions =
+            /(\.png|\.jpeg|\.jpg)$/i;
+
+        if (!allowedExtensions.exec(filePath)) {
+            swal({
+                title: "Validation Error",
+                type: "warning",
+                text: "Invalid file type",
+            });
+            var imgSrc = $('#img-pic', form).data('original-src');
+            $(input).val('');
+            $('#img-pic', form).attr('src', imgSrc);
+            return false;
+        }
+        return true;
+    }
+
+    $("#pic", form).change(function(evt) {
+        if(fileValidation(this)) {
+            readURL(this);
+            return true;
+        }
+        evt.preventDefault();
+        return false;
     });
 
     $("#password_container").hide();
