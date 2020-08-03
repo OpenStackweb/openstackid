@@ -111,7 +111,7 @@ abstract class APICRUDController extends JsonController
      * @return array
      */
     protected function getUpdatePayload():array{
-        return Input::All();
+        return request()->all();
     }
 
     /**
@@ -131,6 +131,10 @@ abstract class APICRUDController extends JsonController
     protected function curateCreatePayload(array $payload):array {
         return $payload;
     }
+
+    protected function onUpdate($id, $payload){
+        return $this->service->update($id, $payload);
+    }
     /**
      * @param $id
      * @param array $payload
@@ -148,7 +152,7 @@ abstract class APICRUDController extends JsonController
                 throw $ex->setMessages($validation->messages()->toArray());
             }
 
-            $entity = $this->service->update($id, $this->curateUpdatePayload($payload));
+            $entity = $this->onUpdate($id, $this->curateUpdatePayload($payload));
 
             return $this->updated(SerializerRegistry::getInstance()->getSerializer($entity, $this->serializerType())->serialize());
         }

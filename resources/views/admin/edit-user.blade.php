@@ -12,10 +12,23 @@
         </div>
     </div>
     <div class="row">
-        <form id="user-form" name="user-form" role="form"
-                autocomplete="off"
-                  action='{!!URL::action("Api\\UserApiController@update",["id" => $user->id])!!}'>
-                <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
+        <form id="user-form" name="user-form"
+              role="form"
+              style="padding-top: 20px"
+              autocomplete="off"
+              enctype="multipart/form-data"
+              method="post"
+              action='{!!URL::action("Api\\UserApiController@update",["id" => $user->id])!!}'>
+              @method('PUT')
+              @csrf
+            <div class="form-group col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                                <span class="control-label col-md-2">
+                                    <img src="{!! $user->pic !!}" class="img-circle" id="img-pic" title="Profile pic">
+                                </span>
+                <input type="file" name="pic" id="pic"/>
+            </div>
+
+            <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                     <label for="first_name">First name</label>
                     <input  autocomplete="off" class="form-control" type="text" name="first_name" id="first_name" value="{!! $user->first_name !!}" data-lpignore="true">
                 </div>
@@ -189,11 +202,11 @@
                         />&nbsp;Email Verified?
                     </label>
                 </div>
-                <div class="col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                <div class="col-xs-10 col-sm-4 col-md-12 col-lg-12" style="padding-bottom: 20px">
                     <label for="spam-type">Spam Type</label>
                     <input type="text" readonly class="form-control" id="spam-type" name="spam-type" data-lpignore="true" value="{!! $user->spam_type !!}">
                 </div>
-                <button type="submit" class="btn btn-default btn-lg btn-primary">Save</button>
+                <button style="margin-left: 15px;" type="submit" class="btn btn-default btn-lg btn-primary">Save</button>
                 <input type="hidden" name="id" id="id" value="{!! $user->id !!}"/>
             </form>
     </div>

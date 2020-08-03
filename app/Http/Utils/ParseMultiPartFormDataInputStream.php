@@ -243,8 +243,12 @@ final class ParseMultiPartFormDataInputStream
                 $val = self::boolVal($val);
             if(!empty($val) && is_int($val))
                 $val = intval($val);
+            if(!empty($val) && is_numeric($val))
+                $val = intval($val);
             if(!empty($val) && is_double($val))
                 $val = doubleval($val);
+            if(!empty($val) && is_string($val))
+                $val = strval($val);
             if (preg_match('/^(.*)\[\]$/i', $match[1], $tmp)) {
                 $data[$tmp[1]][] = $val;
             } else {

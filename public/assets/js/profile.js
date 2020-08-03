@@ -92,14 +92,21 @@ $(document).ready(function() {
             }
 
             var href = $(this).attr('action');
+            var data = new FormData();
+
+            data.append('user', JSON.stringify(user));
+
+            if($('#pic', form)[0].files.length > 0)
+                data.append('pic', $('#pic', form)[0].files[0]);
 
             $.ajax(
                 {
                     type: "PUT",
                     url: href,
-                    data: JSON.stringify(user),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
+                    data: data,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
                     timeout:60000,
                     success: function (data,textStatus,jqXHR) {
                         $('body').ajax_loader('stop');
@@ -108,7 +115,6 @@ $(document).ready(function() {
                             type: "success",
                             text: "User info updated successfully!",
                         });
-
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         $('body').ajax_loader('stop');
@@ -119,6 +125,21 @@ $(document).ready(function() {
         }
         event.preventDefault();
         return false;
+    });
+
+    function readURL(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+
+            reader.onload = function(e) {
+                $('#img-pic').attr('src', e.target.result);
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    $("#pic", form).change(function() {
+        readURL(this);
     });
 
     $("#password_container").hide();

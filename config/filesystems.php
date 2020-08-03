@@ -54,13 +54,14 @@ return [
             'visibility' => 'public',
         ],
 
-        's3' => [
-            'driver' => 's3',
-            'key' => 'your-key',
-            'secret' => 'your-secret',
-            'region' => 'your-region',
-            'bucket' => 'your-bucket',
-        ],
+        'swift' => [
+            'driver'                => 'swift',
+            'auth_url'              => env('CLOUD_STORAGE_AUTH_URL'),
+            'region'                => env('CLOUD_STORAGE_REGION'),
+            'app_credential_id'     => env('CLOUD_STORAGE_APP_CREDENTIAL_ID'),
+            'app_credential_secret' => env('CLOUD_STORAGE_APP_CREDENTIAL_SECRET'),
+            'container'             => env('CLOUD_STORAGE_CONTAINER'),
+        ]
 
     ],
 

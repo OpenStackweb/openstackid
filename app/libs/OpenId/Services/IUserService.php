@@ -13,6 +13,7 @@
  **/
 use App\Services\IBaseService;
 use Auth\User;
+use Illuminate\Http\UploadedFile;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 /**
@@ -60,5 +61,15 @@ interface IUserService extends IBaseService
      * @throws ValidationException
      */
     public function saveProfileInfo($user_id, $show_pic, $show_full_name, $show_email, $identifier);
+
+    /**
+     * @param $user_id
+     * @param UploadedFile $file
+     * @param int $max_file_size
+     * @throws EntityNotFoundException
+     * @throws ValidationException
+     * @return User
+     */
+    public function updateProfilePhoto($user_id, UploadedFile $file, $max_file_size = 10485760):User;
 
 }

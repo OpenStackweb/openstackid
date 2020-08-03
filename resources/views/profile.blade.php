@@ -21,23 +21,24 @@
                 </div>
                 <div class="row">
                     <div class="col-md-12">
-                        <form id="user-form" name="user-form" role="form"
+                        <form id="user-form" name="user-form"
+                              role="form"
                               autocomplete="off"
+                              enctype="multipart/form-data"
+                              method="post"
+                              style="padding-bottom: 20px"
                               action='{!!URL::action("Api\\UserApiController@updateMe") !!}'>
-
+                            @method('PUT')
+                            @csrf
                             <legend><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true"
                                           title="this information will be public on your profile page"></span>&nbsp;{!! Config::get('app.app_name') !!} Account Settings:
                             </legend>
 
                             <div class="form-group col-xs-12 col-sm-12 col-md-12 col-lg-12">
                                 <span class="control-label col-md-2">
-                                    <img src="{!! $user->pic !!}" class="img-circle" title="Gravatar profile pic">
+                                    <img src="{!! $user->pic !!}" class="img-circle" id="img-pic" title="Profile pic">
                                 </span>
-                                <div class="col-md-10" style="margin-top: 5px;">
-                                    <p class="help-block">
-                                        {!! Config::get('app.app_name') !!} uses the 'Gravatar' profile picture associated with your email address. You can customise your profile pic at <a href="http://en.gravatar.com/" target="_blank">Gravatar.com</a>
-                                    </p>
-                                </div>
+                                <input type="file" name="pic" id="pic"/>
                             </div>
 
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">

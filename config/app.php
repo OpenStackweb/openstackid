@@ -162,6 +162,7 @@ return [
         // Doctrine Beberlei (Query/Type) extensions install them:
         LaravelDoctrine\Extensions\BeberleiExtensionsServiceProvider::class,
         \App\Models\Utils\MySQLExtensionsServiceProvider::class,
+        \App\libs\Utils\FileSystem\SwiftServiceProvider::class,
     ],
 
     /*

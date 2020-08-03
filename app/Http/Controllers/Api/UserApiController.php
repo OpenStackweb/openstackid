@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Http\Controllers\APICRUDController;
 use App\Http\Utils\HTMLCleaner;
 use App\ModelSerializers\SerializerRegistry;
@@ -24,11 +25,14 @@ use OAuth2\Services\ITokenService;
 use OpenId\Services\IUserService;
 use models\exceptions\EntityNotFoundException;
 use Utils\Services\ILogService;
+use Illuminate\Http\Request as LaravelRequest;
+
 /**
  * Class UserApiController
  * @package App\Http\Controllers\Api
  */
-final class UserApiController extends APICRUDController {
+final class UserApiController extends APICRUDController
+{
 
     /**
      * @var ITokenService
@@ -48,7 +52,8 @@ final class UserApiController extends APICRUDController {
         ILogService $log_service,
         IUserService $user_service,
         ITokenService $token_service
-    ){
+    )
+    {
         parent::__construct($user_repository, $user_service, $log_service);
         $this->token_service = $token_service;
     }
@@ -56,26 +61,26 @@ final class UserApiController extends APICRUDController {
     /**
      * @return array
      */
-    protected function getFilterRules():array
+    protected function getFilterRules(): array
     {
         return [
-            'first_name'     => ['=@', '=='],
-            'last_name'      => ['=@', '=='],
-            'full_name'      => ['=@', '=='],
-            'email'          => ['=@', '=='],
+            'first_name' => ['=@', '=='],
+            'last_name' => ['=@', '=='],
+            'full_name' => ['=@', '=='],
+            'email' => ['=@', '=='],
         ];
     }
 
     /**
      * @return array
      */
-    protected function getFilterValidatorRules():array
+    protected function getFilterValidatorRules(): array
     {
         return [
-            'first_name'     => 'nullable|string',
-            'last_name'      => 'nullable|string',
-            'full_name'      => 'nullable|string',
-            'email'          => 'nullable|string',
+            'first_name' => 'nullable|string',
+            'last_name' => 'nullable|string',
+            'full_name' => 'nullable|string',
+            'email' => 'nullable|string',
         ];
     }
 
@@ -83,22 +88,18 @@ final class UserApiController extends APICRUDController {
      * @param $id
      * @return mixed
      */
-    public function unlock($id){
+    public function unlock($id)
+    {
         try {
             $entity = $this->service->unlockUser($id);
             return $this->updated(SerializerRegistry::getInstance()->getSerializer($entity)->serialize());
-        }
-        catch (ValidationException $ex1)
-        {
+        } catch (ValidationException $ex1) {
             Log::warning($ex1);
             return $this->error412(array($ex1->getMessage()));
-        }
-        catch (EntityNotFoundException $ex2)
-        {
+        } catch (EntityNotFoundException $ex2) {
             Log::warning($ex2);
             return $this->error404(array('message' => $ex2->getMessage()));
-        }
-        catch (Exception $ex) {
+        } catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }
@@ -108,28 +109,25 @@ final class UserApiController extends APICRUDController {
      * @param $id
      * @return mixed
      */
-    public function lock($id){
+    public function lock($id)
+    {
         try {
             $entity = $this->service->lockUser($id);
             return $this->updated(SerializerRegistry::getInstance()->getSerializer($entity)->serialize());
-        }
-        catch (ValidationException $ex1)
-        {
+        } catch (ValidationException $ex1) {
             Log::warning($ex1);
             return $this->error412(array($ex1->getMessage()));
-        }
-        catch (EntityNotFoundException $ex2)
-        {
+        } catch (EntityNotFoundException $ex2) {
             Log::warning($ex2);
             return $this->error404(array('message' => $ex2->getMessage()));
-        }
-        catch (Exception $ex) {
+        } catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }
     }
 
-    protected function getAllSerializerType():string{
+    protected function getAllSerializerType(): string
+    {
         return SerializerRegistry::SerializerType_Private;
     }
 
@@ -138,36 +136,33 @@ final class UserApiController extends APICRUDController {
      * @param $value
      * @return mixed
      */
-    public function revokeMyToken($value){
+    public function revokeMyToken($value)
+    {
 
-        try{
-            $hint = Input::get('hint','none');
+        try {
+            $hint = Input::get('hint', 'none');
 
-            switch($hint){
-                case 'access-token':{
-                    $this->token_service->revokeAccessToken($value,true);
-                }
-                break;
+            switch ($hint) {
+                case 'access-token':
+                    {
+                        $this->token_service->revokeAccessToken($value, true);
+                    }
+                    break;
                 case 'refresh-token':
-                    $this->token_service->revokeRefreshToken($value,true);
+                    $this->token_service->revokeRefreshToken($value, true);
                     break;
                 default:
-                    throw new Exception(sprintf("hint %s not allowed",$hint));
+                    throw new Exception(sprintf("hint %s not allowed", $hint));
                     break;
             }
             return $this->deleted();
-        }
-        catch (ValidationException $ex1)
-        {
+        } catch (ValidationException $ex1) {
             Log::warning($ex1);
-            return $this->error412(array( $ex1->getMessage()));
-        }
-        catch (EntityNotFoundException $ex2)
-        {
+            return $this->error412(array($ex1->getMessage()));
+        } catch (EntityNotFoundException $ex2) {
             Log::warning($ex2);
             return $this->error404(array('message' => $ex2->getMessage()));
-        }
-        catch (Exception $ex) {
+        } catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }
@@ -179,44 +174,46 @@ final class UserApiController extends APICRUDController {
     protected function getUpdatePayloadValidationRules(): array
     {
         return [
-            'first_name'             => 'required|string',
-            'last_name'              => 'required|string',
-            'email'                  => 'required|email',
-            'identifier'             => 'sometimes|string',
-            'bio'                    => 'nullable|string',
-            'address1'               => 'nullable|string',
-            'address2'               => 'nullable|string',
-            'city'                   => 'nullable|string',
-            'state'                  => 'nullable|string',
-            'post_code'              => 'nullable|string',
-            'country_iso_code'       => 'nullable|country_iso_alpha2_code',
-            'second_email'           => 'nullable|email',
-            'third_email'            => 'nullable|email',
-            'gender'                 => 'nullable|string',
-            'gender_specify'         => 'nullable|string',
-            'statement_of_interest'  => 'nullable|string',
-            'irc'                    => 'nullable|string',
-            'linked_in_profile'      => 'nullable|string',
-            'github_user'            => 'nullable|string',
-            'wechat_user'            => 'nullable|string',
-            'twitter_name'           => 'nullable|string',
-            'language'               => 'nullable|string',
-            'birthday'               => 'nullable|date_format:U',
-            'password'               => 'sometimes|string|min:8|confirmed',
-            'email_verified'         => 'nullable|boolean',
-            'active'                 => 'nullable|boolean',
-            'phone_number'           => 'nullable|string',
-            'company'                => 'nullable|string',
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'email' => 'required|email',
+            'identifier' => 'sometimes|string',
+            'bio' => 'nullable|string',
+            'address1' => 'nullable|string',
+            'address2' => 'nullable|string',
+            'city' => 'nullable|string',
+            'state' => 'nullable|string',
+            'post_code' => 'nullable|string',
+            'country_iso_code' => 'nullable|country_iso_alpha2_code',
+            'second_email' => 'nullable|email',
+            'third_email' => 'nullable|email',
+            'gender' => 'nullable|string',
+            'gender_specify' => 'nullable|string',
+            'statement_of_interest' => 'nullable|string',
+            'irc' => 'nullable|string',
+            'linked_in_profile' => 'nullable|string',
+            'github_user' => 'nullable|string',
+            'wechat_user' => 'nullable|string',
+            'twitter_name' => 'nullable|string',
+            'language' => 'nullable|string',
+            'birthday' => 'nullable|date_format:U',
+            'password' => 'sometimes|string|min:8|confirmed',
+            'email_verified' => 'nullable|boolean',
+            'active' => 'nullable|boolean',
+            'phone_number' => 'nullable|string',
+            'company' => 'nullable|string',
         ];
     }
 
-    protected function curateUpdatePayload(array $payload):array {
+    protected function curateUpdatePayload(array $payload): array
+    {
         return HTMLCleaner::cleanData($payload, [
             'bio', 'statement_of_interest'
         ]);
     }
 
-    protected function curateCreatePayload(array $payload):array {
+    protected function curateCreatePayload(array $payload): array
+    {
         return HTMLCleaner::cleanData($payload, [
             'bio', 'statement_of_interest'
         ]);
@@ -228,47 +225,77 @@ final class UserApiController extends APICRUDController {
     protected function getCreatePayloadValidationRules(): array
     {
         return [
-            'first_name'             => 'required|string',
-            'last_name'              => 'required|string',
-            'email'                  => 'required|email',
-            'identifier'             => 'sometimes|string',
-            'bio'                    => 'nullable|string',
-            'address1'               => 'nullable|string',
-            'address2'               => 'nullable|string',
-            'city'                   => 'nullable|string',
-            'state'                  => 'nullable|string',
-            'post_code'              => 'nullable|string',
-            'country_iso_code'       => 'nullable|country_iso_alpha2_code',
-            'second_email'           => 'nullable|email',
-            'third_email'            => 'nullable|email',
-            'gender'                 => 'nullable|string',
-            'statement_of_interest'  => 'nullable|string',
-            'irc'                    => 'nullable|string',
-            'linked_in_profile'      => 'nullable|string',
-            'github_user'            => 'nullable|string',
-            'wechat_user'            => 'nullable|string',
-            'twitter_name'           => 'nullable|string',
-            'language'               => 'nullable|string',
-            'birthday'               => 'nullable|date_format:U',
-            'password'               => 'sometimes|string|min:8|confirmed',
-            'email_verified'         => 'nullable|boolean',
-            'active'                 => 'nullable|boolean',
-            'phone_number'           => 'nullable|string',
-            'company'                => 'nullable|string',
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'email' => 'required|email',
+            'identifier' => 'sometimes|string',
+            'bio' => 'nullable|string',
+            'address1' => 'nullable|string',
+            'address2' => 'nullable|string',
+            'city' => 'nullable|string',
+            'state' => 'nullable|string',
+            'post_code' => 'nullable|string',
+            'country_iso_code' => 'nullable|country_iso_alpha2_code',
+            'second_email' => 'nullable|email',
+            'third_email' => 'nullable|email',
+            'gender' => 'nullable|string',
+            'statement_of_interest' => 'nullable|string',
+            'irc' => 'nullable|string',
+            'linked_in_profile' => 'nullable|string',
+            'github_user' => 'nullable|string',
+            'wechat_user' => 'nullable|string',
+            'twitter_name' => 'nullable|string',
+            'language' => 'nullable|string',
+            'birthday' => 'nullable|date_format:U',
+            'password' => 'sometimes|string|min:8|confirmed',
+            'email_verified' => 'nullable|boolean',
+            'active' => 'nullable|boolean',
+            'phone_number' => 'nullable|string',
+            'company' => 'nullable|string',
         ];
     }
 
+
     /**
+     * @param LaravelRequest $request
      * @return \Illuminate\Http\JsonResponse|mixed
      */
-    public function updateMe(){
-        if(!Auth::check())
+    public function updateMe(LaravelRequest $request)
+    {
+        if (!Auth::check())
             return $this->error403();
+
         $myId = Auth::user()->getId();
         return $this->update($myId);
     }
 
-    protected function serializerType():string{
+    /**
+     * @return array
+     */
+    protected function getUpdatePayload():array{
+        $payload = request()->all();
+        if(isset($payload['user'])){
+            return json_decode($payload['user'],true);
+        }
+        return $payload;
+    }
+
+    /**
+     * @param $id
+     * @param $payload
+     * @return \models\utils\IEntity
+     */
+    protected function onUpdate($id, $payload){
+        $user = parent::onUpdate($id, $payload);
+        $file = request()->file('pic');
+        if (!is_null($file)) {
+            $user = $this->service->updateProfilePhoto($id, $file);
+        }
+        return $user;
+    }
+
+    protected function serializerType(): string
+    {
         return SerializerRegistry::SerializerType_Private;
     }
 }
