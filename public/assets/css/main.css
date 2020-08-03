@@ -324,6 +324,7 @@ span.help-block::before {
     border: 0;
     vertical-align: middle;
     border-radius: 50%;
+    height: 100px;
 }
 
 .help-block{

@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use App\Events\UserEmailUpdated;
-use App\Jobs\PublishUserCreated;
 use App\Jobs\PublishUserDeleted;
 use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
@@ -21,9 +20,11 @@ use App\Services\AbstractService;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use models\utils\IEntity;
@@ -31,6 +32,7 @@ use OpenId\Services\IUserService;
 use Utils\Db\ITransactionService;
 use Utils\Services\ILogService;
 use Utils\Services\IServerConfigurationService;
+use App\libs\Utils\FileSystem\FileNameSanitizer;
 /**
  * Class UserService
  * @package Services\OpenId
@@ -295,6 +297,39 @@ final class UserService extends AbstractService implements IUserService
             catch (\Exception $ex){
                 Log::warning($ex);
             }
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateProfilePhoto($user_id, UploadedFile $file, $max_file_size = 10485760): User
+    {
+        return $this->tx_service->transaction(function() use($user_id, $file, $max_file_size) {
+            $allowed_extensions = ['png', 'jpg', 'jpeg'];
+
+            $user = $this->repository->getById($user_id);
+            if(is_null($user) || !$user instanceof User)
+                throw new EntityNotFoundException("user not found");
+            $fileName = $file->getClientOriginalName();
+            $fileExt = $file->extension() ?? pathinfo($fileName, PATHINFO_EXTENSION);
+
+            if (!in_array($fileExt, $allowed_extensions)) {
+                throw new ValidationException(sprintf( "file does not has a valid extension (%s).", join(",", $allowed_extensions)));
+            }
+            if ($file->getSize() > $max_file_size) {
+                throw new ValidationException(sprintf("file exceeds max_file_size (%s MB).", ($max_file_size / 1024) / 1024));
+            }
+
+            // normalize fileName
+            $fileName = FileNameSanitizer::sanitize($fileName);
+            $path = User::getProfilePicFolder();
+
+            Storage::disk('swift')->putFileAs($path, $file, $fileName);
+
+            $user->setPic($fileName);
+
+            return $user;
         });
     }
 }

@@ -21,6 +21,7 @@ use App\Events\UserEmailVerified;
 use Doctrine\Common\Collections\Criteria;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use models\exceptions\ValidationException;
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Client;
@@ -292,6 +293,12 @@ class User extends BaseEntity
      * @var string
      */
     private $phone_number;
+
+    /**
+     * @ORM\Column(name="pic", type="string")
+     * @var string
+     */
+    private $pic;
 
     // relations
 
@@ -798,7 +805,17 @@ class User extends BaseEntity
      */
     public function getPic(): string
     {
+        if(!empty($this->pic)){
+            return Storage::disk('swift')->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
+        }
         return $this->getGravatarUrl();
+    }
+
+    /**
+     * @param string $pic
+     */
+    public function setPic(string $pic){
+        $this->pic = $pic;
     }
 
     /**
@@ -1711,4 +1728,9 @@ SQL;
         $this->phone_number = $phone_number;
     }
 
+    const ProfilePicFolder = 'profile_pics';
+
+    public static function getProfilePicFolder():string{
+        return self::ProfilePicFolder;
+    }
 }
