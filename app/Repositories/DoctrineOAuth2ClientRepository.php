@@ -36,6 +36,8 @@ final class DoctrineOAuth2ClientRepository
                "owner.id :operator :value",
                 "admin_user.id :operator :value"
             ],
+            'locked' =>  'e.locked',
+            'client_id' =>  'e.client_id',
             'resource_server_not_set' => new DoctrineLeftJoinFilterMapping("e.resource_server", "resource_server", "resource_server is null"),
         ];
     }
