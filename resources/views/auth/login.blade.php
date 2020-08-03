@@ -91,6 +91,11 @@
                         {!! Config::get("app.app_name") !!}</a>
                 </div>
             </div>
+            <div style="clear:both;padding-top:15px;" class="row">
+                <div class="col-md-12">
+                    <a title="help" target="_blank" href="mailto:{!! Config::get("app.help_email") !!}">Help</a>
+                </div>
+            </div>
             </fieldset>
             {!! Form::close() !!}
         </div>

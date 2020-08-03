@@ -54,6 +54,7 @@
                         </ul>
                     </li>
                 @endif
+                <li><a title="help" target="_blank" href="mailto:{!! Config::get("app.help_email") !!}">Help</a></li>
                 <li><a href='{!! URL::action("UserController@logout") !!}'>Logout</a></li>
             </ul>
         </div><!--/.nav-collapse -->
