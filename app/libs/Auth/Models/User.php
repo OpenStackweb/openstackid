@@ -605,6 +605,14 @@ class User extends BaseEntity
     }
 
     /**
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return $this->belongToGroup(IGroupSlugs::AdminGroup);
+    }
+
+    /**
      * @param string $slug
      * @return bool
      */

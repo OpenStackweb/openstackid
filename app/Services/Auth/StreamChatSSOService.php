@@ -87,12 +87,25 @@ final class StreamChatSSOService
                 throw new EntityNotFoundException("Forum not found");
             }
 
+            // @see https://github.com/nparsons08/stream-chat-boilerplate-api/blob/master/src/controllers/v1/token/token.action.js
+            // @see https://getstream.io/chat/docs/tokens_and_authentication/?language=php
             $client = new StreamChatClient($sso_profile->getApiKey(), $sso_profile->getApiSecret());
-            $token = $client->createToken($current_user->getIdentifier());
+            $token = $client->createToken(strval($current_user->getId()));
 
-            $chat_user = $client->updateUser([
+            /**
+             * Available roles
+             *  user
+             *  guest
+             *  admin
+             */
+            $role = 'user';
+            if($current_user->isSuperAdmin() || $current_user->isAdmin()){
+                $role = 'admin';
+            }
+            // register user on stream api
+            $client->updateUser([
                 'id' => strval($current_user->getId()),
-                'role' => $current_user->isSuperAdmin()? 'admin' : 'user',
+                'role' => $role,
                 'name' => $current_user->getFullName(),
                 'image' => $current_user->getPic(),
             ]);
