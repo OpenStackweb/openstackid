@@ -10,7 +10,10 @@
                 href = href +'?email=' + email;
 
             setTimeout(function(){ window.location = href; }, 3000);
+            return;
         }
+
+        setTimeout(function(){ window.location = '/accounts/user/profile'; }, 3000);
 
     });
 
