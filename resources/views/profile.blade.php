@@ -44,12 +44,12 @@
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="first_name">First name</label>
                                 <input autocomplete="off" class="form-control" type="text" name="first_name" id="first_name"
-                                       value="{!! $user->first_name !!}">
+                                       value="{!! $user->first_name !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="last_name">Last name</label>
                                 <input autocomplete="off" class="form-control" type="text" name="last_name" id="last_name"
-                                       value="{!! $user->last_name !!}">
+                                       value="{!! $user->last_name !!}" data-lpignore="true">
                             </div>
                             <div class="clearfix"></div>
 
@@ -57,11 +57,13 @@
                                 <label for="email">Email</label>
                                 <input class="form-control" type="email" name="email" id="email"
                                        autocomplete="username"
+                                       data-lpignore="true"
                                        value="{!! $user->email !!}">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="identifier">Identifier</label>
                                 <input autocomplete="off" class="form-control" type="text" name="identifier" id="identifier"
+                                       data-lpignore="true"
                                        value="{!! $user->identifier !!}">
                             </div>
 
@@ -69,17 +71,20 @@
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="second_email">Second Email</label>
                                 <input autocomplete="off" class="form-control" type="email" name="second_email" id="second_email"
+                                       data-lpignore="true"
                                        value="{!! $user->second_email !!}">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="third_email">Third Email</label>
                                 <input autocomplete="off" class="form-control" type="email" name="third_email" id="third_email"
+                                       data-lpignore="true"
                                        value="{!! $user->third_email !!}">
                             </div>
                             <div class="clearfix"></div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="birthday">Birthday</label>
                                 <input class="form-control" type="text" name="birthday" id="birthday"
+                                       data-lpignore="true"
                                        autocomplete="off"
                                        @if($user->birthday)
                                        value="{!! $user->birthday->format("m/d/Y") !!}"
@@ -97,6 +102,7 @@
                                     <option value="Specify">Let me specify</option>
                                 </select>
                                 <input class="form-control hide" type="text"
+                                       data-lpignore="true"
                                        name="gender_specify" id="gender_specify"
                                        placeholder="Specify your gender"
                                        autocomplete="off"
@@ -106,67 +112,67 @@
 
                             <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
                                 <label for="bio">Bio</label>
-                                <textarea autocomplete="off" class="form-control" name="bio" id="bio">{!! $user->bio !!}</textarea>
+                                <textarea autocomplete="off" class="form-control" name="bio" id="bio" data-lpignore="true">{!! $user->bio !!}</textarea>
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
                                 <label for="bio">Statement of interest</label>
                                 <textarea autocomplete="off" class="form-control" name="statement_of_interest"
-                                          id="statement_of_interest">{!! $user->statement_of_interest !!}</textarea>
+                                          id="statement_of_interest" data-lpignore="true">{!! $user->statement_of_interest !!}</textarea>
                             </div>
 
                             <div class="form-group col-xs-10 col-sm-4 col-md-4 col-lg-4">
                                 <label for="irc">IRC</label>
-                                <input autocomplete="off" class="form-control" type="text" name="irc" id="irc" value="{!! $user->irc !!}">
+                                <input autocomplete="off" class="form-control" type="text" name="irc" id="irc" value="{!! $user->irc !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-4 col-lg-4">
                                 <label for="github_user">Github user</label>
                                 <input autocomplete="off" class="form-control" type="text" name="github_user" id="github_user"
-                                       value="{!! $user->github_user !!}">
+                                       value="{!! $user->github_user !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-4 col-lg-4">
                                 <label for="github_user">Twitter</label>
                                 <input autocomplete="off" class="form-control" type="text" name="twitter_name" id="twitter_name"
-                                       value="{!! $user->twitter_name !!}">
+                                       value="{!! $user->twitter_name !!}" data-lpignore="true">
                             </div>
                             <div class="clearfix"></div>
 
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="wechat_user">WEChat user</label>
                                 <input autocomplete="off" class="form-control" type="text" name="wechat_user" id="wechat_user"
-                                       value="{!! $user->wechat_user !!}">
+                                       value="{!! $user->wechat_user !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="linked_in_profile">LinkedIn Profile</label>
                                 <input autocomplete="off" class="form-control" type="text" name="linked_in_profile" id="linked_in_profile"
-                                       value="{!! $user->linked_in_profile !!}">
+                                       value="{!! $user->linked_in_profile !!}" data-lpignore="true">
                             </div>
                             <div class="clearfix"></div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="address1">Address 1</label>
                                 <input autocomplete="off" class="form-control" type="text" name="address1" id="address1"
-                                       value="{!! $user->address1 !!}">
+                                       value="{!! $user->address1 !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="address2">Address 2</label>
                                 <input autocomplete="off" class="form-control" type="text" name="address2" id="address2"
-                                       value="{!! $user->address2 !!}">
+                                       value="{!! $user->address2 !!}" data-lpignore="true">
                             </div>
                             <div class="clearfix"></div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="city">City</label>
                                 <input autocomplete="off" class="form-control" type="text" name="city" id="city"
-                                       value="{!! $user->city !!}">
+                                       value="{!! $user->city !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="state">State</label>
                                 <input autocomplete="off" class="form-control" type="text" name="state" id="state"
-                                       value="{!! $user->state !!}">
+                                       value="{!! $user->state !!}" data-lpignore="true">
                             </div>
                             <div class="clearfix"></div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="post_code">Post Code</label>
                                 <input autocomplete="off" class="form-control" type="text" name="post_code" id="post_code"
-                                       value="{!! $user->post_code !!}">
+                                       value="{!! $user->post_code !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="country_iso_code">Country</label>
@@ -182,12 +188,12 @@
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="city">Phone</label>
                                 <input autocomplete="off" class="form-control" type="text" name="phone_number" id="phone_number"
-                                       value="{!! $user->phone_number !!}">
+                                       value="{!! $user->phone_number !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                                 <label for="state">Company</label>
                                 <input autocomplete="off" class="form-control" type="text" name="company" id="company"
-                                       value="{!! $user->company !!}">
+                                       value="{!! $user->company !!}" data-lpignore="true">
                             </div>
                             <div class="clearfix"></div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
@@ -208,12 +214,17 @@
                                 <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
                                     <input type="password" class="form-control" id="password" name="password"
                                            autocomplete="new-password"
-                                           placeholder="Password">
+                                           placeholder="Password"
+                                           data-lpignore="true"
+                                    >
                                 </div>
                                 <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
-                                    <input type="password" class="form-control" id="password-confirm"
+                                    <input type="password" class="form-control"
+                                           id="password-confirm"
                                            autocomplete="new-password"
-                                           name="password_confirmation" placeholder="Confirm Password">
+                                           name="password_confirmation"
+                                           placeholder="Confirm Password"
+                                           data-lpignore="true">
                                 </div>
                             </div>
                             <div class="checkbox col-xs-10 col-sm-4 col-md-12 col-lg-12">
