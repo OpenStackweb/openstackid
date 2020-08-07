@@ -275,7 +275,11 @@ final class UserApiController extends APICRUDController
     protected function getUpdatePayload():array{
         $payload = request()->all();
         if(isset($payload['user'])){
-            return json_decode($payload['user'],true);
+            $payload = json_decode($payload['user'],true);
+            if(is_null($payload)){
+                Log::warning(sprintf("UserApiController::getUpdatePayload can not decode %s ", $payload['user']));
+                return [];
+            }
         }
         return $payload;
     }
