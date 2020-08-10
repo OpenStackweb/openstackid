@@ -1,6 +1,6 @@
 @extends('layout')
 @section('title')
-    <title>Welcome to OpenStackId - Sign Up </title>
+    <title>Welcome to {{ Config::get('app.app_name') }} - Sign Up </title>
 @append
 @section('scripts')
     {!! HTML::style('assets/css/auth/email.css') !!}

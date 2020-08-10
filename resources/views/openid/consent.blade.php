@@ -14,7 +14,7 @@ Welcome, <a href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::use
     <h4>{!! Config::get('app.app_name') !!} - Openid verification</h4>
     {!! Form::open(array('url' => URL::action("UserController@postConsent"),'id'=>'authorization_form', 'method' => 'post',  "autocomplete" => "off")) !!}
     <legend>
-        Sign in to <b>{!! $realm !!}</b> using your OpenStackId
+        Sign in to <b>{!! $realm !!}</b> using your {{ Config::get('app.app_name') }}
     </legend>
     <p>A site identifying itself as <b>{!! $realm !!}</b></p>
     <p>has asked us for confirmation that <a href="{!! str_replace("%23","#",$openid_url) !!}" target='_blank'>{!! str_replace("%23","#",$openid_url) !!}</a> is your identity URL</p>
