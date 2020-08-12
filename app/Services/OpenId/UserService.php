@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use App\Events\UserEmailUpdated;
+use App\Events\UserPasswordResetSuccessful;
 use App\Jobs\PublishUserDeleted;
 use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
@@ -229,11 +230,14 @@ final class UserService extends AbstractService implements IUserService
     public function update(int $id, array $payload): IEntity
     {
         return $this->tx_service->transaction(function() use($id, $payload){
+
             $user = $this->repository->getById($id);
             if(is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
 
             $former_email = $user->getEmail();
+            $former_password = $user->getPassword();
+
             if(isset($payload["email"])){
                 $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
                 if(!is_null($former_user) && $former_user->getId() != $id)
@@ -259,9 +263,14 @@ final class UserService extends AbstractService implements IUserService
             }
 
             if($former_email != $user->getEmail()){
-                Log::debug(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email , $user->getEmail()));
+                Log::warning(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email , $user->getEmail()));
                 $user->clearEmailVerification();
                 Event::fire(new UserEmailUpdated($user->getId()));
+            }
+
+            if($former_password != $user->getPassword()){
+                Log::warning(sprintf("UserService::update use id %s - password changed", $id));
+                Event::fire(new UserPasswordResetSuccessful($user->getId()));
             }
 
             try {

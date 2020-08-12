@@ -26,5 +26,6 @@ interface IUserScopes
     const Registration = 'user-registration';
     const ReadAll = 'users-read-all';
     const SSO = 'sso';
-
+    const MeRead = 'me/read';
+    const MeWrite = 'me/write';
 }

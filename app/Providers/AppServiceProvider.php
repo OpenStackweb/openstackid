@@ -90,7 +90,7 @@ class AppServiceProvider extends ServiceProvider
             if(!is_array($value)) return false;
             foreach($value as $element)
             {
-                if(!is_int($element)) return false;
+                if(!is_integer($element)) return false;
             }
             return true;
         });

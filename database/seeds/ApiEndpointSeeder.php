@@ -83,7 +83,25 @@ class ApiEndpointSeeder extends Seeder
                     'scopes' => [
                         \App\libs\OAuth2\IUserScopes::ReadAll
                     ],
-                ]
+                ],
+                [
+                    'name' => 'update-my-user',
+                    'active' => true,
+                    'route' => '/api/v1/users/me',
+                    'http_method' => 'PUT',
+                    'scopes' => [
+                        \App\libs\OAuth2\IUserScopes::MeWrite
+                    ],
+                ],
+                [
+                    'name' => 'update-my-user-pic',
+                    'active' => true,
+                    'route' => '/api/v1/users/me/pic',
+                    'http_method' => 'PUT',
+                    'scopes' => [
+                        \App\libs\OAuth2\IUserScopes::MeWrite
+                    ],
+                ],
             ]
         );
     }

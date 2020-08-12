@@ -13,11 +13,13 @@
  **/
 
 use App\Http\Controllers\GetAllTrait;
-use App\Http\Utils\PagingConstants;
+use App\Http\Controllers\UserValidationRulesFactory;
+use App\Http\Utils\HTMLCleaner;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use models\exceptions\EntityNotFoundException;
@@ -26,14 +28,10 @@ use OAuth2\Builders\IdTokenBuilder;
 use OAuth2\IResourceServerContext;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\ResourceServer\IUserService;
-use utils\Filter;
-use utils\FilterParser;
 use Utils\Http\HttpContentType;
-use utils\OrderParser;
-use utils\PagingInfo;
 use Utils\Services\ILogService;
 use Exception;
-
+use OpenId\Services\IUserService as IOpenIdUserService;
 /**
  * Class OAuth2UserApiController
  * @package App\Http\Controllers\Api\OAuth2
@@ -92,10 +90,18 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
     private $id_token_builder;
 
     /**
+     * @var IOpenIdUserService
+     */
+    private $openid_user_service;
+
+
+    /**
+     * OAuth2UserApiController constructor.
      * @param IUserRepository $repository
      * @param IUserService $user_service
      * @param IResourceServerContext $resource_server_context
      * @param ILogService $log_service
+     * @param IOpenIdUserService $openid_user_service
      * @param IClientRepository $client_repository
      * @param IdTokenBuilder $id_token_builder
      */
@@ -105,6 +111,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         IUserService $user_service,
         IResourceServerContext $resource_server_context,
         ILogService $log_service,
+        IOpenIdUserService $openid_user_service,
         IClientRepository $client_repository,
         IdTokenBuilder $id_token_builder
     )
@@ -114,6 +121,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         $this->user_service = $user_service;
         $this->client_repository = $client_repository;
         $this->id_token_builder = $id_token_builder;
+        $this->openid_user_service = $openid_user_service;
     }
 
     /**
@@ -127,6 +135,88 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             return $this->ok($data);
         } catch (Exception $ex) {
             $this->log_service->error($ex);
+            return $this->error500($ex);
+        }
+    }
+
+    protected function curateUpdatePayload(array $payload): array
+    {
+        // remove possible fields that an user can not update
+        // from this endpoint
+        if(isset($payload['groups']))
+            unset($payload['groups']);
+
+        if(isset($payload['email_verified']))
+            unset($payload['email_verified']);
+
+        if(isset($payload['active']))
+            unset($payload['active']);
+
+        return HTMLCleaner::cleanData($payload, [
+            'bio', 'statement_of_interest'
+        ]);
+    }
+
+     public function UpdateMe(){
+        try {
+            if(!Request::isJson()) return $this->error400();
+            if(!$this->resource_server_context->getCurrentUserId()){
+                return $this->error403();
+            }
+            $payload = Input::json()->all();
+            // Creates a Validator instance and validates the data.
+
+            $validation = Validator::make($payload, UserValidationRulesFactory::build($payload, true));
+            if ($validation->fails()) {
+                $ex = new ValidationException();
+                throw $ex->setMessages($validation->messages()->toArray());
+            }
+
+            $user = $this->openid_user_service->update($this->resource_server_context->getCurrentUserId(), $this->curateUpdatePayload($payload));
+
+            return $this->updated(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
+        }
+        catch (ValidationException $ex1)
+        {
+            Log::warning($ex1);
+            return $this->error412($ex1->getMessages());
+        }
+        catch (EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(['message' => $ex2->getMessage()]);
+        }
+        catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
+
+    public function UpdateMyPic(){
+        try {
+            if (!$this->resource_server_context->getCurrentUserId()) {
+                return $this->error403();
+            }
+
+            $file = request()->file('pic');
+
+            if (!is_null($file)) {
+                $user = $this->openid_user_service->updateProfilePhoto($this->resource_server_context->getCurrentUserId(), $file);
+            }
+            return $this->updated(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
+        }
+        catch (ValidationException $ex1)
+        {
+            Log::warning($ex1);
+            return $this->error412($ex1->getMessages());
+        }
+        catch (EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(['message' => $ex2->getMessage()]);
+        }
+        catch (Exception $ex) {
+            Log::error($ex);
             return $this->error500($ex);
         }
     }

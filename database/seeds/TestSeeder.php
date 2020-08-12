@@ -1373,14 +1373,32 @@ PPK;
                 'system'             => false,
                 'active'             => true,
             ),
-            array(
+            [
                 'name'               => 'address',
                 'short_description'  => 'This scope value requests access to the address Claim.',
                 'description'        => 'This scope value requests access to the address Claim.',
                 'api'                => $api,
                 'system'             => false,
                 'active'             => true,
-            )
+            ],
+            [
+                'name'               => IUserScopes::MeRead,
+                'short_description'  => 'Allows access to read your Profile',
+                'description'        => 'Allows access to read your Profile',
+                'api'                => $api,
+                'system'             => false,
+                'default'            => false,
+                'active'             => true,
+            ],
+            [
+                'name'               => IUserScopes::MeWrite,
+                'short_description'  => 'Allows access to write your Profile',
+                'description'        => 'Allows access to write your Profile',
+                'api'                => $api,
+                'system'             => false,
+                'default'            => false,
+                'active'             => true,
+            ]
         ];
 
         foreach($api_scope_payloads as $payload) {
@@ -1645,28 +1663,41 @@ PPK;
         $users = $api_repository->findOneBy(['name' => 'users']);
 
         $api_scope_payloads = [
-            array(
+           [
                 'name'            => 'get-user-info',
                 'active'          =>  true,
                 'api'          => $users,
                 'route'           => '/api/v1/users/me',
                 'http_method'     => 'GET'
-            ),
-            array(
+            ],
+            [
                 'name'            => 'get-user-claims-get',
                 'active'          =>  true,
                 'api'             => $users,
                 'route'           => '/api/v1/users/info',
                 'http_method'     => 'GET'
-            ),
-            array(
+            ],
+            [
                 'name'            => 'get-user-claims-post',
                 'active'          =>  true,
                 'api'             => $users,
                 'route'           => '/api/v1/users/info',
                 'http_method'     => 'POST'
-            )
-
+            ],
+            [
+                'name' => 'update-my-user',
+                'active' => true,
+                'route' => '/api/v1/users/me',
+                'api'             => $users,
+                'http_method' => 'PUT',
+            ],
+            [
+                'name' => 'update-my-user-pic',
+                'active' => true,
+                'route' => '/api/v1/users/me/pic',
+                'api'             => $users,
+                'http_method' => 'PUT',
+            ],
         ];
 
         foreach($api_scope_payloads as $payload) {
@@ -1678,12 +1709,14 @@ PPK;
         $profile_scope = $api_scope_repository->findOneBy(['name' => 'profile']);
         $email_scope   = $api_scope_repository->findOneBy(['name' => 'email']);
         $address_scope = $api_scope_repository->findOneBy(['name' => 'address']);
+        $me_write = $api_scope_repository->findOneBy(['name' => IUserScopes::MeWrite]);
 
         foreach($api_scope_payloads as $payload) {
             $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
             $endpoint->addScope($address_scope);
             $endpoint->addScope($email_scope);
             $endpoint->addScope($profile_scope);
+            $endpoint->addScope($me_write);
             EntityManager::persist($endpoint);
         }
 

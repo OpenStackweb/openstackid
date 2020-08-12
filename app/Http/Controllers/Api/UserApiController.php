@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Controllers\APICRUDController;
+use App\Http\Controllers\UserValidationRulesFactory;
 use App\Http\Utils\HTMLCleaner;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
@@ -173,36 +174,7 @@ final class UserApiController extends APICRUDController
      */
     protected function getUpdatePayloadValidationRules(): array
     {
-        return [
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'email' => 'required|email',
-            'identifier' => 'sometimes|string',
-            'bio' => 'nullable|string',
-            'address1' => 'nullable|string',
-            'address2' => 'nullable|string',
-            'city' => 'nullable|string',
-            'state' => 'nullable|string',
-            'post_code' => 'nullable|string',
-            'country_iso_code' => 'nullable|country_iso_alpha2_code',
-            'second_email' => 'nullable|email',
-            'third_email' => 'nullable|email',
-            'gender' => 'nullable|string',
-            'gender_specify' => 'nullable|string',
-            'statement_of_interest' => 'nullable|string',
-            'irc' => 'nullable|string',
-            'linked_in_profile' => 'nullable|string',
-            'github_user' => 'nullable|string',
-            'wechat_user' => 'nullable|string',
-            'twitter_name' => 'nullable|string',
-            'language' => 'nullable|string',
-            'birthday' => 'nullable|date_format:U',
-            'password' => 'sometimes|string|min:8|confirmed',
-            'email_verified' => 'nullable|boolean',
-            'active' => 'nullable|boolean',
-            'phone_number' => 'nullable|string',
-            'company' => 'nullable|string',
-        ];
+        return UserValidationRulesFactory::build([], true);
     }
 
     protected function curateUpdatePayload(array $payload): array
@@ -224,37 +196,8 @@ final class UserApiController extends APICRUDController
      */
     protected function getCreatePayloadValidationRules(): array
     {
-        return [
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'email' => 'required|email',
-            'identifier' => 'sometimes|string',
-            'bio' => 'nullable|string',
-            'address1' => 'nullable|string',
-            'address2' => 'nullable|string',
-            'city' => 'nullable|string',
-            'state' => 'nullable|string',
-            'post_code' => 'nullable|string',
-            'country_iso_code' => 'nullable|country_iso_alpha2_code',
-            'second_email' => 'nullable|email',
-            'third_email' => 'nullable|email',
-            'gender' => 'nullable|string',
-            'statement_of_interest' => 'nullable|string',
-            'irc' => 'nullable|string',
-            'linked_in_profile' => 'nullable|string',
-            'github_user' => 'nullable|string',
-            'wechat_user' => 'nullable|string',
-            'twitter_name' => 'nullable|string',
-            'language' => 'nullable|string',
-            'birthday' => 'nullable|date_format:U',
-            'password' => 'sometimes|string|min:8|confirmed',
-            'email_verified' => 'nullable|boolean',
-            'active' => 'nullable|boolean',
-            'phone_number' => 'nullable|string',
-            'company' => 'nullable|string',
-        ];
+        return UserValidationRulesFactory::build([], false);
     }
-
 
     /**
      * @param LaravelRequest $request

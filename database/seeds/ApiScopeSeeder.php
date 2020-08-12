@@ -65,6 +65,22 @@ class ApiScopeSeeder extends Seeder {
                 'system'             => false,
                 'default'            => false,
                 'groups'             => true,
+            ],
+            [
+                'name'               => IUserScopes::MeRead,
+                'short_description'  => 'Allows access to read your Profile',
+                'description'        => 'Allows access to read your Profile',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => false,
+            ],
+            [
+                'name'               => IUserScopes::MeWrite,
+                'short_description'  => 'Allows access to write your Profile',
+                'description'        => 'Allows access to write your Profile',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => false,
             ]
         ], 'users');
 

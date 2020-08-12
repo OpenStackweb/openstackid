@@ -168,16 +168,19 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
         'middleware' => ['ssl', 'auth']], function () {
 
         Route::group(['prefix' => 'users'], function () {
+
             Route::delete('/me/tokens/{value}',"UserApiController@revokeMyToken");
             Route::get('' , "UserApiController@getAll");
             Route::post('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@create"]);
             Route::put('me', "UserApiController@updateMe");
+
             Route::group(['prefix' => '{id}'], function(){
 
                 Route::group(['prefix' => 'locked'], function(){
                     Route::put('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'UserApiController@unlock']);
                     Route::delete('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'UserApiController@lock']);
                 });
+
                 Route::get('',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@get"]);
                 Route::delete('',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' =>"UserApiController@delete"]);
                 Route::put('',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' =>"UserApiController@update"]);
@@ -376,7 +379,15 @@ Route::group(
     Route::group(['prefix' => 'users'], function () {
         Route::get('', 'OAuth2UserApiController@getAll');
         Route::get('/{id}', 'OAuth2UserApiController@get');
-        Route::get('/me', 'OAuth2UserApiController@me');
+
+        Route::group(['prefix' => 'me'], function () {
+            Route::get('', 'OAuth2UserApiController@me');
+            Route::put('','OAuth2UserApiController@UpdateMe');
+            Route::group(['prefix' => 'pic'], function () {
+                Route::put('','OAuth2UserApiController@UpdateMyPic');
+            });
+        });
+
         Route::get('/info', 'OAuth2UserApiController@userInfo');
         Route::post('/info', 'OAuth2UserApiController@userInfo');
     });
