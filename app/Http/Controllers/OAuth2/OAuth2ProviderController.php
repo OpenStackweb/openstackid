@@ -15,6 +15,7 @@
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 use OAuth2\Exceptions\OAuth2BaseException;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
@@ -292,7 +293,7 @@ final class OAuth2ProviderController extends Controller
                     Log::info(sprintf("added RP %s", $client->getApplicationName()));
                 }
             }
-
+            Session::put("logout.return_url", Request::server('HTTP_REFERER'));
             // At the logout endpoint, the OP SHOULD ask the End-User whether he wants to log out of the OP as well.
             // If the End-User says "yes", then the OP MUST log out the End-User.
             return View::make('oauth2.session.session-logout',
@@ -325,6 +326,11 @@ final class OAuth2ProviderController extends Controller
 
     public function cancelLogout()
     {
+
+        $return_url = Session::get("logout.return_url");
+        if(!empty($return_url)){
+            return Redirect::to($return_url);
+        }
         return Redirect::action('HomeController@index');
     }
 } 
