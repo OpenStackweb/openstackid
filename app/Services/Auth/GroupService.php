@@ -146,21 +146,22 @@ final class GroupService extends AbstractService implements IGroupService
      */
     public function addUser2Group(Group $group, int $user_id): void
     {
-       $this->tx_service->transaction(function() use($group, $user_id){
+       $user = $this->tx_service->transaction(function() use($group, $user_id){
             $user = $this->user_repository->getById($user_id);
             if(is_null($user))
                 throw new EntityNotFoundException();
 
             $user->addToGroup($group);
-
-           try {
-               if(Config::get("queue.enable_message_broker", false) == true)
-                   PublishUserUpdated::dispatch($user)->onConnection('message_broker');
-           }
-           catch (\Exception $ex){
-               Log::warning($ex);
-           }
+            return $user;
        });
+
+        try {
+            if(Config::get("queue.enable_message_broker", false) == true)
+                PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+        }
+        catch (\Exception $ex){
+            Log::warning($ex);
+        }
     }
 
     /**
@@ -171,20 +172,22 @@ final class GroupService extends AbstractService implements IGroupService
      */
     public function removeUserFromGroup(Group $group, int $user_id): void
     {
-        $this->tx_service->transaction(function() use($group, $user_id){
+        $user = $this->tx_service->transaction(function() use($group, $user_id){
             $user = $this->user_repository->getById($user_id);
             if(is_null($user))
                 throw new EntityNotFoundException();
 
             $user->removeFromGroup($group);
 
-            try {
-                if(Config::get("queue.enable_message_broker", false) == true)
-                    PublishUserUpdated::dispatch($user)->onConnection('message_broker');
-            }
-            catch (\Exception $ex){
-                Log::warning($ex);
-            }
+            return $user;
         });
+
+        try {
+            if(Config::get("queue.enable_message_broker", false) == true)
+                PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+        }
+        catch (\Exception $ex){
+            Log::warning($ex);
+        }
     }
 }
