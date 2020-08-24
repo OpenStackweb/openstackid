@@ -297,7 +297,6 @@ final class UserService extends AbstractService implements IUserService
             $user = $this->repository->getById($id);
             if(is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
-            $this->repository->delete($user);
 
             try {
                 if(Config::get("queue.enable_message_broker", false) == true)
@@ -306,6 +305,9 @@ final class UserService extends AbstractService implements IUserService
             catch (\Exception $ex){
                 Log::warning($ex);
             }
+
+            $this->repository->delete($user);
+
         });
     }
 
@@ -314,7 +316,7 @@ final class UserService extends AbstractService implements IUserService
      */
     public function updateProfilePhoto($user_id, UploadedFile $file, $max_file_size = 10485760): User
     {
-        return $this->tx_service->transaction(function() use($user_id, $file, $max_file_size) {
+        $user = $this->tx_service->transaction(function() use($user_id, $file, $max_file_size) {
             $allowed_extensions = ['png', 'jpg', 'jpeg'];
 
             $user = $this->repository->getById($user_id);
@@ -340,5 +342,15 @@ final class UserService extends AbstractService implements IUserService
 
             return $user;
         });
+
+        try {
+            if(Config::get("queue.enable_message_broker", false) == true)
+                PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+        }
+        catch (\Exception $ex){
+            Log::warning($ex);
+        }
+
+        return $user;
     }
 }
