@@ -26,6 +26,7 @@ class BaseUserSerializer extends BaseSerializer
     protected static $array_mappings = [
         'FirstName' => 'first_name:json_string',
         'LastName' => 'last_name:json_string',
+        'Pic' => 'pic:json_url',
     ];
 }
 
