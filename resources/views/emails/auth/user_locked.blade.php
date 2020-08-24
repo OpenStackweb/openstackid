@@ -12,6 +12,8 @@
     @endif
 </p>
 <p>Please send an email to {!!$support_email!!} in order to reactive it again.</p>
-<p>Cheers,<br/>{!! Config::get('app.tenant_name') !!} Support Team</p>
+<br/>
+<br/>
+<p>Cheers,<br/>Your {!! Config::get('app.tenant_name') !!} Support Team</p>
 </body>
 </html>

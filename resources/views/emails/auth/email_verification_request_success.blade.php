@@ -8,6 +8,6 @@
 <p>Your email address has been successfully verified.</p>
 <br/>
 <br/>
-<p>Cheers,<br/>{!! Config::get('app.tenant_name') !!} Support Team</p>
+<p>Cheers,<br/>Your {!! Config::get('app.tenant_name') !!} Support Team</p>
 </body>
 </html>

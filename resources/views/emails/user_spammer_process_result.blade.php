@@ -13,6 +13,8 @@
     @endforeach
 </ul>
 </p>
-<p>Cheers,<br/>{!! Config::get('app.tenant_name') !!} Support Team</p>
+<br/>
+<br/>
+<p>Cheers,<br/>Your {!! Config::get('app.tenant_name') !!} Support Team</p>
 </body>
 </html>
