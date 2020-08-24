@@ -7,6 +7,8 @@
 <p>Dear {!!$user_fullname!!},</p>
 <p>You are receiving this email because you changed your password.</p>
 <p>If you did not request a password reset, please get in touch with us.</p>
-<p>Cheers,<br/>{!! Config::get('app.tenant_name') !!} Support Team</p>
+<br/>
+<br/>
+<p>Cheers,<br/>Your {!! Config::get('app.tenant_name') !!} Support Team</p>
 </body>
 </html>

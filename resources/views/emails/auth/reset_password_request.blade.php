@@ -9,6 +9,8 @@
 <p>Please click the link below to reset your password.</p>
 <p><a href="{!! $reset_link  !!}" target="_blank">Reset your Password.</a></p>
 <p>If you did not request a password reset, no further action is required.</p>
-<p>Cheers,<br/>{!! Config::get('app.tenant_name') !!} Support Team</p>
+<br/>
+<br/>
+<p>Cheers,<br/>Your {!! Config::get('app.tenant_name') !!} Support Team</p>
 </body>
 </html>

@@ -10,6 +10,6 @@
 <p>If you did not create an {!! Config::get('app.app_name') !!} account, no further action is required.</p>
 <br/>
 <br/>
-<p>Cheers,<br/>{!! Config::get('app.tenant_name') !!} Support Team</p>
+<p>Cheers,<br/>Your {!! Config::get('app.tenant_name') !!} Support Team</p>
 </body>
 </html>
