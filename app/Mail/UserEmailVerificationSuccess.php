@@ -55,7 +55,7 @@ class UserEmailVerificationSuccess extends Mailable
     {
         $subject = Config::get("mail.verification_sucessfull_email_subject");
         if(empty($subject))
-            $subject = sprintf("[%s] You have verified your email address", Config::get('app.app_name'));
+            $subject = sprintf("Success! %s email verified", Config::get('app.app_name'));
 
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)

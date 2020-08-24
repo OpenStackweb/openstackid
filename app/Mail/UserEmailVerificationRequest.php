@@ -64,7 +64,7 @@ final class UserEmailVerificationRequest extends Mailable
     {
         $subject = Config::get("mail.verification_email_subject");
         if(empty($subject))
-            $subject = sprintf("[%s] Verify Email Address", Config::get('app.app_name'));
+            $subject = sprintf("%s email verification needed", Config::get('app.app_name'));
 
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)

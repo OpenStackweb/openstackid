@@ -5,7 +5,9 @@
 </head>
 <body>
 <p>Dear {!!$user_fullname!!},</p>
-<p>Your Email address has been successfully verified.</p>
+<p>Your email address has been successfully verified.</p>
+<br/>
+<br/>
 <p>Cheers,<br/>{!! Config::get('app.tenant_name') !!} Support Team</p>
 </body>
 </html>

@@ -56,7 +56,7 @@ final class WelcomeNewUserEmail extends Mailable
     {
         $subject = Config::get("mail.welcome_new_user_email_subject");
         if (empty($subject))
-            $subject = sprintf("[%s] Welcome, Thanks for registering !!!", Config::get('app.app_name'));
+            $subject = sprintf("%s registration confirmation", Config::get('app.app_name'));
 
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
