@@ -10,9 +10,8 @@
 @section('content')
     <div class="container">
         <div class="well">
-            <p> There was an error on your reset password process.</p>
-            <p> Please try it later.</p>
-            <p> Or go back to <a href="{!!URL::action("Auth\ForgotPasswordController@showLinkRequestForm") !!}">Reset Password</a>.</p>
+            <p> There was no user with that email address found.</p>
+            <p>You can try again <a href="{!!URL::action("Auth\ForgotPasswordController@showLinkRequestForm") !!}">with a different email address</a> or <a href="{!! URL::action("Auth\RegisterController@showRegistrationForm")!!}">Create an {{ Config::get("app.app_name") }}</a>.</p>
         </div>
     </div>
 @endsection
