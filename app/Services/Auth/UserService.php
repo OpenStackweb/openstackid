@@ -131,6 +131,13 @@ final class UserService extends AbstractService implements IUserService
 
             $this->user_repository->add($user);
 
+            $formerRequest = $this->user_registration_request_repository->getByEmail($email);
+            if(!is_null($formerRequest)){
+                if(!$formerRequest->isRedeem()){
+                    $formerRequest->redeem();
+                }
+            }
+
             return $user;
         });
     }
