@@ -11,8 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use App\Http\Utils\CountriesISOCodes;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +19,7 @@ use Illuminate\Support\Facades\Validator;
 use Sokil\IsoCodes\IsoCodesFactory;
 use Validators\CustomValidator;
 use App\Http\Utils\Log\LaravelMailerHandler;
+use Utils\Services\ICacheService;
 /**
  * Class AppServiceProvider
  * @package App\Providers
@@ -46,7 +46,8 @@ class AppServiceProvider extends ServiceProvider
 
         if (!empty($to) && !empty($from)) {
             $subject = Config::get('log.email_subject', 'openstackid-resource-server error');
-            $handler = new LaravelMailerHandler($to, $subject, $from);
+            $cacheService = App::make(ICacheService::class);
+            $handler = new LaravelMailerHandler($cacheService, $to, $subject, $from);
             $handler->setLevel(Config::get('log.email_level', 'error'));
             $logger->pushHandler($handler);
         }
@@ -80,7 +81,6 @@ class AppServiceProvider extends ServiceProvider
 
             return preg_match('/^(\w|\.)+$/', $value);
         });
-
 
         Validator::extend('int_array', function($attribute, $value, $parameters, $validator)
         {
