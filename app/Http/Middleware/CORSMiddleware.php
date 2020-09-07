@@ -29,8 +29,6 @@ use libs\utils\RequestUtils;
 final class CORSMiddleware
 {
 
-    const CORS_IP_BLACKLIST_PREFIX = 'CORS_IP_BLACKLIST_PREFIX:';
-
     private $headers = [];
 
     /**
@@ -124,11 +122,6 @@ final class CORSMiddleware
     {
         $actual_request = false;
         if ($this->isValidCORSRequest($request)) {
-            if (!$this->testOriginHeaderScrutiny($request)) {
-                $response = new Response();
-                $response->setStatusCode(403);
-                return $response;
-            }
             /* Step 01 : Determine the type of the incoming request */
             $type = $this->getRequestType($request);
             /* Step 02 : Process request according to is type */
@@ -322,73 +315,6 @@ final class CORSMiddleware
          * same-origin POST/PUT/DELETE requests (same-origin GET requests will not have an Origin header).
          */
         return $request->headers->has('Origin');
-    }
-
-    /**
-     * https://www.owasp.org/index.php/CORS_OriginHeaderScrutiny
-     * Filter that will ensure the following points for each incoming HTTP CORS requests:
-     *  - Have only one and non empty instance of the origin header,
-     *  - Have only one and non empty instance of the host header,
-     *  - The value of the origin header is present in a internal allowed domains list (white list). As we act before the
-     *    step 2 of the CORS HTTP requests/responses exchange process, allowed domains list is yet provided to client,
-     *  - Cache IP of the sender for 1 hour. If the sender send one time a origin domain that is not in the white list
-     *    then all is requests will return an HTTP 403 response (protract allowed domain guessing).
-     * We use the method above because it's not possible to identify up to 100% that the request come from one expected
-     * client application, since:
-     *  - All information of a HTTP request can be faked,
-     *  - It's the browser (or others tools) that send the HTTP request then the IP address that we have access to is the
-     *    client IP address.
-     * @param Request $request
-     * @return bool
-     */
-    private function testOriginHeaderScrutiny(Request $request)
-    {
-        /* Step 0 : Check presence of client IP in black list */
-        $client_ip = $request->getClientIp();
-        if (Cache::has(self::CORS_IP_BLACKLIST_PREFIX . $client_ip)) {
-            return false;
-        }
-        /* Step 1 : Check that we have only one and non empty instance of the "Origin" header */
-        $origin = $request->headers->get('Origin', null, false);
-        if (is_array($origin) && count($origin) > 1) {
-            // If we reach this point it means that we have multiple instance of the "Origin" header
-            // Add client IP address to black listed client
-            $expiresAt = Carbon::now()->addMinutes(60);
-            Cache::put(self::CORS_IP_BLACKLIST_PREFIX . $client_ip, self::CORS_IP_BLACKLIST_PREFIX . $client_ip, $expiresAt);
-            return false;
-        }
-        /* Step 2 : Check that we have only one and non empty instance of the "Host" header */
-        $host = $request->headers->get('Host', null, false);
-        //Have only one and non empty instance of the host header,
-        if (is_array($host) && count($host) > 1) {
-            // If we reach this point it means that we have multiple instance of the "Host" header
-            $expiresAt = Carbon::now()->addMinutes(60);
-            Cache::put(self::CORS_IP_BLACKLIST_PREFIX . $client_ip, self::CORS_IP_BLACKLIST_PREFIX . $client_ip, $expiresAt);
-            return false;
-        }
-        /* Step 3 : Perform analysis - Origin header is required */
-
-        $origin      = $request->headers->get('Origin');
-        $host        = $request->headers->get('Host');
-        $server_name = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : null;
-
-
-        // check origin not empty and allowed
-
-        if (!$this->isAllowedOrigin($origin)) {
-            $expiresAt = Carbon::now()->addMinutes(60);
-            Cache::put(self::CORS_IP_BLACKLIST_PREFIX . $client_ip, self::CORS_IP_BLACKLIST_PREFIX . $client_ip, $expiresAt);
-            return false;
-        }
-
-        if (is_null($host) || $server_name != $host) {
-            $expiresAt = Carbon::now()->addMinutes(60);
-            Cache::put(self::CORS_IP_BLACKLIST_PREFIX . $client_ip, self::CORS_IP_BLACKLIST_PREFIX . $client_ip, $expiresAt);
-            return false;
-        }
-
-        /* Step 4 : Finalize request next step */
-        return true;
     }
 
     private function checkEndPoint($endpoint_path, $http_method)
