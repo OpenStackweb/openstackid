@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Auth\Models\IGroupSlugs;
 use App\Models\Repositories\IStreamChatSSOProfileRepository;
 use App\Models\SSO\StreamChat\StreamChatUserProfile;
 use App\Services\AbstractService;
@@ -97,10 +99,26 @@ final class StreamChatSSOService
              *  user
              *  guest
              *  admin
+             *  help-qa-user
+             *  qa-user
+             *  help-user
              */
             $role = 'user';
-            if($current_user->isSuperAdmin() || $current_user->isAdmin()){
+            $isAdmin = $current_user->isSuperAdmin() || $current_user->isAdmin();
+            $isChatQA = $current_user->belongToGroup(IGroupSlugs::ChatQAGroup);
+            $isChatHelp = $current_user->belongToGroup(IGroupSlugs::ChatHelpGroup);
+
+            if($isAdmin){
                 $role = 'admin';
+            }
+            else if($isChatQA && $isChatHelp){
+                $role = 'help-qa-user';
+            }
+            else if($isChatQA){
+                $role = 'qa-user';
+            }
+            else if($isChatHelp){
+                $role = 'help-user';
             }
             // register user on stream api
             $client->updateUser([

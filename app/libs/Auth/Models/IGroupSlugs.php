@@ -24,4 +24,6 @@ interface IGroupSlugs
     public const OAuth2SystemScopeAdminsGroup = 'oauth2-system-scope-admins';
     public const OpenIdServerAdminsGroup      = 'openid-server-admins';
     public const RawUsersGroup                = 'raw-users';
+    public const ChatQAGroup                  = 'chat-qa';
+    public const ChatHelpGroup                = 'chat-help';
 }
