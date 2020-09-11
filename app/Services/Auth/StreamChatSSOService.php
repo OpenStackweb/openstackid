@@ -96,29 +96,29 @@ final class StreamChatSSOService
 
             /**
              * Available roles
+             * https://getstream.io/chat/docs/channel_user_role/?language=js
              *  user
              *  guest
              *  admin
-             *  help-qa-user
-             *  qa-user
-             *  help-user
              */
             $role = 'user';
+            $localRole = 'user';
             $isAdmin = $current_user->isSuperAdmin() || $current_user->isAdmin();
             $isChatQA = $current_user->belongToGroup(IGroupSlugs::ChatQAGroup);
             $isChatHelp = $current_user->belongToGroup(IGroupSlugs::ChatHelpGroup);
 
             if($isAdmin){
                 $role = 'admin';
+                $localRole = 'admin';
             }
             else if($isChatQA && $isChatHelp){
-                $role = 'help-qa-user';
+                $localRole = 'help-qa-user';
             }
             else if($isChatQA){
-                $role = 'qa-user';
+                $localRole = 'qa-user';
             }
             else if($isChatHelp){
-                $role = 'help-user';
+                $localRole = 'help-user';
             }
             // register user on stream api
             $client->updateUser([
@@ -126,6 +126,7 @@ final class StreamChatSSOService
                 'role' => $role,
                 'name' => $current_user->getFullName(),
                 'image' => $current_user->getPic(),
+                'local_role' => $localRole
             ]);
 
             return new StreamChatUserProfile
@@ -134,7 +135,8 @@ final class StreamChatSSOService
                 $current_user->getFullName(),
                 $current_user->getPic(),
                 $token,
-                $sso_profile->getApiKey()
+                $sso_profile->getApiKey(),
+                $localRole
             );
         });
     }
