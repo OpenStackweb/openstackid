@@ -51,7 +51,7 @@ final class UserValidationRulesFactory
                 'twitter_name' => 'nullable|string',
                 'language' => 'nullable|string',
                 'birthday' => 'nullable|date_format:U',
-                'password' => 'sometimes|string|min:8|confirmed',
+                'password' => 'sometimes|string|confirmed|password_policy',
                 'phone_number' => 'nullable|string',
                 'company' => 'nullable|string',
                 // admin fields
@@ -84,7 +84,7 @@ final class UserValidationRulesFactory
             'twitter_name' => 'nullable|string',
             'language' => 'nullable|string',
             'birthday' => 'nullable|date_format:U',
-            'password' => 'sometimes|string|min:8|confirmed',
+            'password' => 'sometimes|string|confirmed|password_policy',
             'phone_number' => 'nullable|string',
             'company' => 'nullable|string',
             // admin fields

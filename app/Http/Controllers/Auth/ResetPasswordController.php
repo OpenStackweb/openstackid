@@ -102,7 +102,7 @@ final class ResetPasswordController extends Controller
     {
         return Validator::make($data, [
             'token'                    => 'required',
-            'password'                 => 'required|string|min:8|confirmed',
+            'password'                 => 'required|string|confirmed|password_policy',
             'g-recaptcha-response'     => 'required|recaptcha',
         ]);
     }

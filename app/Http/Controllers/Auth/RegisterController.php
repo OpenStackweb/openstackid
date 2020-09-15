@@ -157,7 +157,7 @@ final class RegisterController extends Controller
             'last_name'                => 'required|string|max:100',
             'country_iso_code'         => 'required|string|country_iso_alpha2_code',
             'email'                    => 'required|string|email|max:255',
-            'password'                 => 'required|string|min:8|max:50|confirmed',
+            'password'                 => 'required|string|confirmed|password_policy',
             'g-recaptcha-response'     => 'required|recaptcha',
         ]);
     }
