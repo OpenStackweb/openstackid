@@ -25,7 +25,7 @@ use Utils\Services\ICacheService;
 final class LaravelMailerHandler extends MailHandler
 {
     // seconds
-    const TIME_BETWEEN_SAME_ERROR = 60 * 60;
+    const TIME_BETWEEN_SAME_ERROR = 60 * 30;
     /**
      * The email addresses to which the message will be sent
      * @var array
@@ -141,10 +141,10 @@ final class LaravelMailerHandler extends MailHandler
 
         // to avoid bloating inboxes/quotas
         if($this->cacheService){
-            $footPrint = md5($subject);
+            $footPrint = md5($subject.$content);
             if($this->cacheService->exists($footPrint)){
                 // short circuit
-                Log::debug(sprintf("LaravelMailerHandler::send skipping exception %s", $subject));
+                Log::debug(sprintf("LaravelMailerHandler::send skipping exception %s %s", $subject, $content));
                 return;
             }
             $this->cacheService->setSingleValue($footPrint, $footPrint, LaravelMailerHandler::TIME_BETWEEN_SAME_ERROR);
