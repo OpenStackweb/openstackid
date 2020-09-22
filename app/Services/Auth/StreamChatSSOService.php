@@ -107,11 +107,7 @@ final class StreamChatSSOService
             $isChatQA = $current_user->belongToGroup(IGroupSlugs::ChatQAGroup);
             $isChatHelp = $current_user->belongToGroup(IGroupSlugs::ChatHelpGroup);
 
-            if($isAdmin){
-                $role = 'admin';
-                $localRole = 'admin';
-            }
-            else if($isChatQA && $isChatHelp){
+            if($isChatQA && $isChatHelp){
                 $localRole = 'help-qa-user';
             }
             else if($isChatQA){
@@ -119,6 +115,10 @@ final class StreamChatSSOService
             }
             else if($isChatHelp){
                 $localRole = 'help-user';
+            }
+            else if($isAdmin){
+                $role = 'admin';
+                $localRole = 'admin';
             }
             // register user on stream api
             $client->updateUser([
