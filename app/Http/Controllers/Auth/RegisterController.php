@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use App\Http\Controllers\Controller;
+use App\Http\Utils\CountryList;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -59,7 +60,6 @@ final class RegisterController extends Controller
         $this->memento_service = $memento_service;
     }
 
-
     /**
      * @param LaravelRequest $request
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
@@ -68,17 +68,14 @@ final class RegisterController extends Controller
     public function showRegistrationForm(LaravelRequest $request)
     {
         try {
-            // init database
-            $isoCodes = new IsoCodesFactory();
-            // get countries database
-            $countries = $isoCodes->getCountries()->toArray();
+
             $params = [
                 "redirect_uri" => '',
                 "email"        => '',
                 "first_name"   => '',
                 "last_name"    => '',
                 "client_id"    => '',
-                'countries'    => $countries
+                'countries'    => CountryList::getCountries()
             ];
 
             // check if we have a former oauth2 request

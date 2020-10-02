@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Utils\CountryList;
 use App\libs\Auth\Repositories\IBannedIPRepository;
 use App\libs\Auth\Repositories\IGroupRepository;
 use Auth\Repositories\IUserRepository;
@@ -585,7 +587,7 @@ class AdminController extends Controller {
         return View::make("admin.users",
             [
                 'page'      => $this->user_repository->getAllByPage(new PagingInfo(1, 10)),
-                'countries' => $countries,
+                'countries' => CountryList::getCountries(),
             ]
         );
     }
@@ -622,13 +624,11 @@ class AdminController extends Controller {
                 $lang2Code[] = $lang;
         }
 
-        // get countries database
-        $countries = $isoCodes->getCountries()->toArray();
 
         return View::make("admin.edit-user",
             [
                 'user'      => $user,
-                'countries' => $countries,
+                'countries' => CountryList::getCountries(),
                 'languages' => $lang2Code,
             ]
         );

@@ -13,6 +13,7 @@
  **/
 use App\Http\Controllers\OpenId\DiscoveryController;
 use App\Http\Controllers\OpenId\OpenIdController;
+use App\Http\Utils\CountryList;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
 use Exception;
@@ -452,15 +453,12 @@ final class UserController extends OpenIdController
                 $lang2Code[] = $lang;
         }
 
-        // get countries database
-        $countries = $isoCodes->getCountries()->toArray();
-
         return View::make("profile", [
             'user'       => $user,
             "openid_url" => $this->server_configuration_service->getUserIdentityEndpointURL($user->getIdentifier()),
             "sites"      => $sites,
             'actions'    => $actions,
-            'countries'  => $countries,
+            'countries'  => CountryList::getCountries(),
             'languages'  => $lang2Code,
         ]);
     }
