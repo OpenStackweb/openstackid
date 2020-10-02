@@ -96,11 +96,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Validator::extend("password_policy", function($attribute, $value, $parameters, $validator){
-            $validator->addReplacer('password_policy', function($message, $attribute, $rule, $parameters) use ($validator) {
-                return sprintf("The %s must be 12–30 characters, and include a number or a symbol", $attribute);
+            $min = 8;
+            $validator->addReplacer('password_policy', function($message, $attribute, $rule, $parameters) use ($validator, $min) {
+                return sprintf("The %s must be %s–30 characters, and must include a special character", $attribute, $min);
             });
 
-            return preg_match("/^((?=.*?[0-9])|(?=.*?[#?!@()$%^&*=_{}[\]:;\"'|<>,.\/~`±§+-])).{12,30}$/", $value);
+            return preg_match("/^((?=.*?[#?!@()$%^&*=_{}[\]:;\"'|<>,.\/~`±§+-])).{8,30}$/", $value);
         });
     }
 
