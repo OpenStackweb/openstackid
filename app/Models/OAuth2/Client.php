@@ -1024,6 +1024,9 @@ class Client extends BaseEntity implements IClient
      */
     public function isPostLogoutUriAllowed($post_logout_uri)
     {
+        if(empty($this->post_logout_redirect_uris)) return false;
+        if(empty($post_logout_uri)) return false;
+
         if(!filter_var($post_logout_uri, FILTER_VALIDATE_URL)) return false;
         if(is_null($this->post_logout_redirect_uris)) return false;
         if(empty($this->post_logout_redirect_uris)) return false;
