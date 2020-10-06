@@ -30,7 +30,7 @@ return [
     */
 
     'connections' => [
-
+        // db
         'database' => [
             'connection' => env('QUEUE_CONN', ''),
             'database' => env('QUEUE_DATABASE', ''),
@@ -38,6 +38,14 @@ return [
             'table'    => 'queue_jobs',
             'queue'    => 'default',
             'expire'   => 60,
+        ],
+        // redis
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => 'default',
+            'expire' => 60,
+            'block_for' => 5,
         ],
         // ...
         'message_broker' => [
