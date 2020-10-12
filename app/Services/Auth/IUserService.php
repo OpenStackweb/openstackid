@@ -47,10 +47,11 @@ interface IUserService
 
     /**
      * @param User $user
-     * @return User
+     * @param string|null $verification_link
      * @throws ValidationException
+     * @return User
      */
-    public function sendVerificationEmail(User $user): User;
+    public function sendVerificationEmail(User $user, string $verification_link = null): User;
 
     /**
      * @param User $user
@@ -98,4 +99,10 @@ interface IUserService
      * @return void
      */
     public function recalculateUserSpamType(User $user):void;
+
+    /**
+     * @param User $user
+     * @return string|null
+     */
+    public function sendWelcomeEmail(User $user):?string;
 }

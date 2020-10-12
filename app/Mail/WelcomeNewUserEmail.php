@@ -17,6 +17,8 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\URL;
+
 /**
  * Class WelcomeNewUserEmail
  * @package App\Mail
@@ -38,13 +40,26 @@ final class WelcomeNewUserEmail extends Mailable
     public $user_fullname;
 
     /**
+     * @var string
+     */
+    public $verification_link;
+
+    /**
+     * @var string
+     */
+    public $bio_link;
+
+    /**
      * WelcomeNewUserEmail constructor.
      * @param User $user
+     * @param string|null $verification_link
      */
-    public function __construct(User $user)
+    public function __construct(User $user, ?string $verification_link)
     {
         $this->user_email = $user->getEmail();
         $this->user_fullname = $user->getFullName();
+        $this->verification_link = $verification_link;
+        $this->bio_link = URL::action("UserController@getLogin");
     }
 
     /**

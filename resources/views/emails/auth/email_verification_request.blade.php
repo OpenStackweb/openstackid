@@ -6,7 +6,7 @@
 <body>
 <p>Dear {!!$user_fullname!!},</p>
 <p>
-    Thank you for your interest in joining the Open Infrastructure community! In order to verify your email,
+    Thank you for your interest in joining the {!! Config::get('app.tenant_name') !!} community! In order to verify your email,
     please click the verification link: <a href="{!! $verification_link !!}" target="_blank">Verify Email Address.</a>
 </p>
 <p>

@@ -22,6 +22,7 @@ use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
 use App\Mail\UserEmailVerificationRequest;
 use App\Mail\UserPasswordResetRequestMail;
+use App\Mail\WelcomeNewUserEmail;
 use App\Services\AbstractService;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
@@ -178,31 +179,55 @@ final class UserService extends AbstractService implements IUserService
 
     /**
      * @param User $user
-     * @return User
-     * @throws ValidationException
+     * @return string
      */
-    public function sendVerificationEmail(User $user): User
-    {
-        return $this->tx_service->transaction(function() use($user){
-            if($user->isEmailVerified())
-                throw new ValidationException
-                (
-                    sprintf
-                    (
-                        "User %s (%s) has already verified his/her email.",
-                        $user->getEmail(),
-                        $user->getId()
-                    )
-                );
+    private function generateVerificationLink(User $user):string{
+
+        return $this->tx_service->transaction(function() use($user) {
 
             //generate unique token
-            do{
+            do {
                 $token = $user->generateEmailVerificationToken();
                 $former_user = $this->user_repository->getByVerificationEmailToken($token);
-                if(is_null($former_user)) break;
-            } while(true);
+                if (is_null($former_user)) break;
+            } while (true);
 
-           $verification_link = URL::route("verification_verify", ["token" => $token]);
+            return URL::route("verification_verify", ["token" => $token]);
+        });
+    }
+
+    /**
+     * @param User $user
+     * @return string|null
+     * @throws \Exception
+     */
+    public function sendWelcomeEmail(User $user):?string {
+
+        return $this->tx_service->transaction(function() use($user){
+
+            $verification_link = null;
+
+            if(!$user->isEmailVerified())
+               $verification_link = $this->generateVerificationLink($user);
+
+            Mail::queue(new WelcomeNewUserEmail($user, $verification_link));
+
+            return $verification_link;
+        });
+    }
+
+    /**
+     * @param User $user
+     * @param string|null $verification_link
+     * @return User
+     * @throws \Exception
+     */
+    public function sendVerificationEmail(User $user, string $verification_link = null): User
+    {
+        return $this->tx_service->transaction(function() use($user, $verification_link){
+
+            if(empty($verification_link))
+                $verification_link = $this->generateVerificationLink($user);
 
            Mail::queue(new UserEmailVerificationRequest($user, $verification_link));
 

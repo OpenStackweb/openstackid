@@ -1491,10 +1491,15 @@ SQL;
     }
 
     /**
-     * @return String
+     * @return string
+     * @throws ValidationException
      */
     public function generateEmailVerificationToken(): string
     {
+        if($this->isEmailVerified()){
+            throw new ValidationException(sprintf("User %s (%s) is already verified.", $this->id, $this->email));
+        }
+
         $generator = new RandomGenerator();
         $token = strval($this->id) . $generator->randomToken();
         $this->email_verified_token_hash = self::createConfirmationTokenHash($token);

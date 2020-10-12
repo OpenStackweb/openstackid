@@ -77,14 +77,16 @@ final class EventServiceProvider extends ServiceProvider
             if(is_null($user)) return;
             if(! $user instanceof User) return;
             $user_service = App::make(IUserService::class);
+            if(!$user_service instanceof IUserService) return;
+
             $user_service->generateIdentifier($user);
 
-            Mail::queue(new WelcomeNewUserEmail($user));
+            $verification_link = $user_service->sendWelcomeEmail($user);
 
             if(!$user->isEmailVerified()) {
 
                 if (!$user->hasCreator())
-                    $user_service->sendVerificationEmail($user);
+                    $user_service->sendVerificationEmail($user, $verification_link);
             }
             else{
                 // email is already verified
