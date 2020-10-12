@@ -15,6 +15,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Utils\CountryList;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
@@ -149,14 +150,20 @@ final class RegisterController extends Controller
      */
     protected function validator(array $data)
     {
-        return Validator::make($data, [
+        $rules = [
             'first_name'               => 'required|string|max:100',
             'last_name'                => 'required|string|max:100',
             'country_iso_code'         => 'required|string|country_iso_alpha2_code',
             'email'                    => 'required|string|email|max:255',
             'password'                 => 'required|string|confirmed|password_policy',
             'g-recaptcha-response'     => 'required|recaptcha',
-        ]);
+        ];
+
+        if(!empty(Config::get("app.code_of_conduct_link", null))){
+            $rules['agree_code_of_conduct'] = 'required|string|in:on';
+        }
+
+        return Validator::make($data, $rules);
     }
 
     /**

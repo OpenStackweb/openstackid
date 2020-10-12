@@ -92,3 +92,8 @@ body{
 .signup-form form a:hover{
     text-decoration: underline;
 }
+
+.agree_code_of_conduct a {
+    color: #337ab7 !important;
+    text-decoration: none !important;
+}
