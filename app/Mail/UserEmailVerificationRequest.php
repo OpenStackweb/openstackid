@@ -15,8 +15,8 @@ use Auth\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Class UserEmailVerificationRequest
@@ -44,6 +44,11 @@ final class UserEmailVerificationRequest extends Mailable
     public $user_fullname;
 
     /**
+     * @var string
+     */
+    public $bio_link;
+
+    /**
      * UserEmailVerificationRequest constructor.
      * @param User $user
      * @param string $verification_link
@@ -53,6 +58,7 @@ final class UserEmailVerificationRequest extends Mailable
         $this->verification_link = $verification_link;
         $this->user_email = $user->getEmail();
         $this->user_fullname = $user->getFullName();
+        $this->bio_link = URL::action("UserController@getLogin");
     }
 
     /**
@@ -62,13 +68,16 @@ final class UserEmailVerificationRequest extends Mailable
      */
     public function build()
     {
-        $subject = Config::get("mail.verification_email_subject");
-        if(empty($subject))
-            $subject = sprintf("%s email verification needed", Config::get('app.app_name'));
 
+        $subject = sprintf("%s email verification needed", Config::get('app.app_name'));
+        $view = 'emails.auth.email_verification_request';
+        if(Config::get("app.tenant_name") == 'FNTECH') {
+            $view = 'emails.auth.email_verification_request_fn';
+            $subject = sprintf("%s email verification needed", Config::get('app.app_name'));
+        }
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
             ->subject($subject)
-            ->view('emails.auth.email_verification_request');
+            ->view($view);
     }
 }
