@@ -220,9 +220,10 @@ return [
     ],
 
     'version'     => env('APP_VERSION', 'XX.XX.XX'),
-    'app_name'    => env('APP_NAME', 'OpenStackId'),
+    'app_name'    => env('APP_NAME', 'OpenStackID'),
     'tenant_name' => env('TENANT_NAME', 'OpenStack'),
     'logo_url'    => env('LOGO_URL', '/assets/img/openstack-logo-full.svg'),
     'tenant_favicon' => env('TENANT_FAV_ICON_URL', '/assets/img/favicon-32x32.png'),
-    'help_email' => env('HELP_EMAIL', 'support@openstack.org')
+    'help_email' => env('HELP_EMAIL', 'support@openstack.org'),
+    'code_of_conduct_link' => env("CODE_OF_CONDUCT_LINK","https://www.openstack.org/legal/community-code-of-conduct"),
 ];

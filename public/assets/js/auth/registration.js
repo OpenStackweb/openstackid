@@ -48,6 +48,7 @@
                     minlength: 8,
                     equalTo : "#password"
                 },
+                'agree_code_of_conduct': {required: true},
                 'g_recaptcha_hidden': {required: true}
             },
             messages: {

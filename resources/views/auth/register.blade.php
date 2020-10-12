@@ -84,12 +84,22 @@
             <div class="form-group password-container">
                 <input type="password" class="form-control" id="password-confirm" name="password_confirmation" placeholder="Confirm Password" required="required" autocomplete="new-password" data-lpignore="true">
             </div>
+            <i class="fa fa-info-circle"> The password must be 8–30 characters, and must include a special character.</i>
             <div class="form-group">
                 <div class="recaptcha-container" >
                     {!! Recaptcha::render(['id'=>'captcha', 'class'=>'input-block-level', 'callback'=>'verifyCaptchaCallback']) !!}
                     <input type="hidden"name="g_recaptcha_hidden" id="g_recaptcha_hidden">
                 </div>
             </div>
+
+            @if(Config::get("app.code_of_conduct_link"))
+                <div class="checkbox agree_code_of_conduct">
+                    <label>
+                        <input name="agree_code_of_conduct" id="agree_code_of_conduct" type="checkbox"> I agree to the <a href="{!! Config::get("app.code_of_conduct_link") !!}" target="_blank">{!! Config::get("app.tenant_name") !!} Community Code of Conduct</a>?
+                    </label>
+                </div>
+            @endif
+
             <div class="form-group">
                 <button type="submit" class="btn btn-primary btn-lg btn-block">Register Now</button>
             </div>
