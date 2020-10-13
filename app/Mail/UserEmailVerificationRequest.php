@@ -16,6 +16,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 /**
@@ -75,6 +76,7 @@ final class UserEmailVerificationRequest extends Mailable
             $view = 'emails.auth.email_verification_request_fn';
             $subject = sprintf("%s email verification needed", Config::get('app.app_name'));
         }
+        Log::debug(sprintf("UserEmailVerificationRequest::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
             ->subject($subject)

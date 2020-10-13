@@ -17,6 +17,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Models\OAuth2\Client;
 
 /**
@@ -72,7 +73,7 @@ class OAuth2ClientLocked extends Mailable
         $subject = Config::get("mail.verification_email_subject");
         if(empty($subject))
             $subject = sprintf("[%s] Verify Email Address", Config::get('app.app_name'));
-
+        Log::warning(sprintf("OAuth2ClientLocked::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
             ->subject($subject)

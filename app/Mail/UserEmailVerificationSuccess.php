@@ -16,6 +16,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+
 /**
  * Class UserEmailVerificationSuccess
  * @package App\Mail
@@ -56,7 +58,7 @@ class UserEmailVerificationSuccess extends Mailable
         $subject = Config::get("mail.verification_sucessfull_email_subject");
         if(empty($subject))
             $subject = sprintf("Success! %s email verified", Config::get('app.app_name'));
-
+        Log::debug(sprintf("UserEmailVerificationSuccess::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
             ->subject($subject)

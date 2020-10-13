@@ -17,6 +17,8 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+
 /**
  * Class UserPasswordResetMail
  * @package App\Mail
@@ -57,7 +59,7 @@ final class UserPasswordResetMail extends Mailable
         $subject = Config::get("mail.reset_password_success_email_subject");
         if(empty($subject))
             $subject = sprintf("[%s] Your Password Reset was successful", Config::get('app.app_name'));
-
+        Log::debug(sprintf("UserPasswordResetMail::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
             ->subject($subject)

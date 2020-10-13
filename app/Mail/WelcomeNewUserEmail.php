@@ -17,6 +17,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 /**
@@ -77,7 +78,7 @@ final class WelcomeNewUserEmail extends Mailable
             $view = 'emails.welcome_new_user_email_fn';
             $subject = sprintf("Thank you for registering for an %s account", Config::get('app.app_name'));
         }
-
+        Log::debug(sprintf("WelcomeNewUserEmail::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
             ->subject($subject)

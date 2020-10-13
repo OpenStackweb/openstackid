@@ -17,6 +17,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class UserLocked
@@ -73,7 +74,7 @@ final class UserLockedEmail extends Mailable
         $subject = Config::get("mail.locked_user_email_subject");
         if(empty($subject))
             $subject = sprintf("[%s] Your User has been locked", Config::get('app.app_name'));
-
+        Log::warning(sprintf("UserLockedEmail::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
             ->subject($subject)
