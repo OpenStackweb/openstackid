@@ -35,6 +35,7 @@ final class DoctrineUserRepository extends ModelDoctrineRepository implements IU
             'full_name'   => new DoctrineFilterMapping("concat(e.first_name, ' ', e.last_name) :operator :value"),
             'github_user' => 'e.github_user:json_string',
             'email'       => ['e.email:json_string', 'e.second_email:json_string', 'e.third_email:json_string'],
+            'primary_email' => 'e.email:json_string',
             'active'      => 'e.active:json_boolean',
             'group_id'    => new DoctrineJoinFilterMapping('e.groups', "g", "g.id :operator :value")
         ];

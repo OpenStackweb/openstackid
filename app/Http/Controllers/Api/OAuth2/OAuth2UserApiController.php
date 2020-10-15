@@ -54,6 +54,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             'first_name' => ['=@', '=='],
             'last_name' => ['=@', '=='],
             'email' => ['=@', '=='],
+            'primary_email' => ['=@', '=='],
         ];
     }
 
@@ -71,6 +72,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             'first_name' => 'sometimes|required|string',
             'last_name' => 'sometimes|required|string',
             'email' => 'sometimes|required|string',
+            'primary_email' => 'sometimes|required|string',
         ];
     }
 
