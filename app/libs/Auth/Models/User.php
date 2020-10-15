@@ -1191,6 +1191,9 @@ class User extends BaseEntity
      */
     public function setPassword(string $password): void
     {
+        if(empty($this->password_enc)){
+            $this->password_enc = AuthHelper::AlgNative;
+        }
         $this->password_salt = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);
         $this->password = AuthHelper::encrypt_password($password, $this->password_salt, $this->password_enc);
     }
