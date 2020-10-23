@@ -71,7 +71,7 @@ class Kernel extends HttpKernel
         'throttle'                                 => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'csrf'                                     => \App\Http\Middleware\VerifyCsrfToken::class,
         'oauth2.endpoint'                          => \App\Http\Middleware\OAuth2BearerAccessTokenRequestValidator::class,
-        'cors'                                     => \App\Http\Middleware\CORSMiddleware::class,
+        'cors'                                     =>  \Spatie\Cors\Cors::class,
         'oauth2.currentuser.serveradmin'           => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdmin::class,
         'oauth2.currentuser.serveradmin.json'      => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdminJson::class,
         'openstackid.currentuser.serveradmin'      => \App\Http\Middleware\CurrentUserIsOpenIdServerAdmin::class,

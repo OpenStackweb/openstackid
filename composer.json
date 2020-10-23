@@ -26,6 +26,7 @@
     "ext-json": "*",
     "ext-pdo": "*",
     "beberlei/DoctrineExtensions": "1.1.5",
+    "behat/transliterator": "^1.2",
     "doctrine/orm": "2.6.4",
     "doctrine/persistence": "1.1.1",
     "ezyang/htmlpurifier": "v4.12.0",
@@ -42,16 +43,16 @@
     "laravel/framework": "5.6.39",
     "laravel/tinker": "^1.0",
     "laravelcollective/html": "5.6.10",
+    "php-opencloud/openstack": "dev-master",
     "phpseclib/phpseclib": "2.0.11",
     "predis/predis": "v1.0.4",
     "s-ichikawa/laravel-sendgrid-driver": "2.1.0",
     "smarcet/jose4php": "1.0.17",
     "sokil/php-isocodes": "^3.0",
+    "spatie/laravel-cors": "^1.6",
     "vladimir-yuldashev/laravel-queue-rabbitmq": "v7.5.0",
     "zendframework/zend-crypt": "3.3.0",
-    "zendframework/zend-math": "3.1.1",
-    "behat/transliterator": "^1.2",
-    "php-opencloud/openstack": "dev-master"
+    "zendframework/zend-math": "3.1.1"
   },
   "require-dev": {
     "filp/whoops": "^2.0",
