@@ -122,14 +122,14 @@ class CustomAuthProvider implements UserProvider
 
                 if (is_null($user)) //user must exists
                 {
-                    throw new AuthenticationException(sprintf("user %s does not exists!", $email));
+                    throw new AuthenticationException(sprintf("User %s does not exists.", $email));
                 }
 
                 if(!$user->canLogin())
                 {
                     if(!$user->isEmailVerified())
-                        throw new UnverifiedEmailMemberException(sprintf("user %s is not verified yet!", $email));
-                    throw new AuthenticationException(sprintf("user %s does not exists!", $email));
+                        throw new UnverifiedEmailMemberException(sprintf("User %s is not yet verified; check your email and click on the confirmation link before trying to log in again.", $email));
+                    throw new AuthenticationException(sprintf("User %s does not exists.", $email));
                 }
 
                 $valid_password = $user->checkPassword($password);
@@ -144,7 +144,7 @@ class CustomAuthProvider implements UserProvider
                 if (!$user->isActive()) {
                     Log::warning(sprintf("user %s is on lock state", $email));
                     throw new AuthenticationLockedUserLoginAttempt($email,
-                        sprintf("user %s is on lock state", $email));
+                        sprintf("User %s is locked.", $email));
                 }
 
                 //update user fields
