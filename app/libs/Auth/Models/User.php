@@ -813,8 +813,14 @@ class User extends BaseEntity
      */
     public function getPic(): string
     {
-        if(!empty($this->pic)){
-            return Storage::disk('swift')->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
+        try {
+            if (!empty($this->pic)) {
+                return Storage::disk('swift')->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
+            }
+            return $this->getGravatarUrl();
+        }
+        catch (\Exception $ex) {
+            Log::warning($ex);
         }
         return $this->getGravatarUrl();
     }
@@ -1476,6 +1482,7 @@ SQL;
     public function verifyEmail()
     {
         if (!$this->email_verified) {
+            Log::debug(sprintf("User::verifyEmail verifying email %s", $this->email));
             $this->email_verified      = true;
             $this->spam_type           = self::SpamTypeHam;
             $this->active              = true;
@@ -1564,15 +1571,16 @@ SQL;
      */
     public function preUpdate(PreUpdateEventArgs $args)
     {
-        if($this->spam_type != self::SpamTypeNone &&
-            !$args->hasChangedField("active")  &&
-            ($args->hasChangedField("bio") || $args->hasChangedField("email"))) {
-            // enqueue user for spam re checker
-            $this->resetSpamTypeClassification();
-            Event::fire(new UserSpamStateUpdated($this->getId()));
-        }
-        if($args->hasChangedField("email")) {
-            // record email change
+        if($this->spam_type != self::SpamTypeNone ){
+            if($args->hasChangedField("active")) return;
+            $bio_changed = $args->hasChangedField("bio") && !empty($args->getNewValue('bio'));
+            $email_changed = $args->hasChangedField("email");
+            if( $bio_changed|| $email_changed) {
+                // enqueue user for spam re checker
+                Log::warning(sprintf("User::preUpdate user %s was marked for spam type reclasification.", $this->email));
+                $this->resetSpamTypeClassification();
+                Event::fire(new UserSpamStateUpdated($this->getId()));
+            }
         }
     }
 

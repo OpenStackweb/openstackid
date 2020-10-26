@@ -14,6 +14,8 @@
 use Auth\Group;
 use Auth\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+
 /**
  * Class UserFactory
  * @package App\libs\Auth\Factories
@@ -157,7 +159,7 @@ final class UserFactory
         if(isset($payload['public_profile_show_email']))
             $user->setPublicProfileShowEmail(boolval($payload['public_profile_show_email']));
 
-        if(isset($payload['email_verified']) && $payload['email_verified'] == true && !$user->isEmailVerified())
+        if(isset($payload['email_verified']) && boolval($payload['email_verified']) === true && !$user->isEmailVerified())
             $user->verifyEmail();
 
         return $user;
