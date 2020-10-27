@@ -373,7 +373,11 @@ Route::group(
     [
         'namespace'  => 'App\Http\Controllers\Api\OAuth2',
         'prefix'     => 'api/v1',
-        'middleware' => ['api']
+        'middleware' => [
+            'ssl',
+            'cors',
+            'oauth2.endpoint',
+        ]
     ], function () {
 
     Route::group(['prefix' => 'users'], function () {
@@ -382,7 +386,7 @@ Route::group(
 
         Route::group(['prefix' => 'me'], function () {
             Route::get('', 'OAuth2UserApiController@me');
-            Route::put('','OAuth2UserApiController@UpdateMe');
+            Route::match(['options','put'],'','OAuth2UserApiController@UpdateMe');
             Route::group(['prefix' => 'pic'], function () {
                 Route::put('','OAuth2UserApiController@UpdateMyPic');
             });

@@ -243,12 +243,8 @@ final class ParseMultiPartFormDataInputStream
                 $val = self::boolVal($val);
             if(!empty($val) && is_int($val))
                 $val = intval($val);
-            if(!empty($val) && is_numeric($val))
-                $val = intval($val);
             if(!empty($val) && is_double($val))
                 $val = doubleval($val);
-            if(!empty($val) && is_string($val))
-                $val = strval($val);
             if (preg_match('/^(.*)\[\]$/i', $match[1], $tmp)) {
                 $data[$tmp[1]][] = $val;
             } else {
@@ -321,7 +317,7 @@ final class ParseMultiPartFormDataInputStream
 
     function parse_parameter( &$params, $parameter, $value ) {
         if ( strpos($parameter, '[') !== FALSE ) {
-            $matches = [];
+            $matches = array();
             if ( preg_match( '/^([^[]*)\[([^]]*)\](.*)$/', $parameter, $match ) ) {
                 $name = $match[1];
                 $key = $match[2];
@@ -329,17 +325,17 @@ final class ParseMultiPartFormDataInputStream
 
                 if ( $name !== '' && $name !== NULL ) {
                     if ( ! isset($params[$name]) || ! is_array($params[$name]) ) {
-                        $params[$name] = [];
+                        $params[$name] = array();
                     } else {
                     }
                     if ( strlen($rem) > 0 ) {
                         if ( $key === '' || $key === NULL ) {
-                            $arr = [];
+                            $arr = array();
                             $this->parse_parameter( $arr, $rem, $value );
                             $params[$name][] = $arr;
                         } else {
                             if ( !isset($params[$name][$key]) || !is_array($params[$name][$key]) ) {
-                                $params[$name][$key] = [];
+                                $params[$name][$key] = array();
                             }
                             $this->parse_parameter( $params[$name][$key], $rem, $value );
                         }
@@ -357,7 +353,7 @@ final class ParseMultiPartFormDataInputStream
                             $this->parse_parameter( $params, $rem, $value );
                         } else {
                             if ( ! isset($params[$key]) || ! is_array($params[$key]) ) {
-                                $params[$key] = [];
+                                $params[$key] = array();
                             }
                             $this->parse_parameter( $params[$key], $rem, $value );
                         }

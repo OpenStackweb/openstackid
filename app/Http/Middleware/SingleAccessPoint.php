@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 use Utils\Services\ICheckPointService;
 use Utils\Services\ServiceLocator;
 use Utils\Services\UtilsServiceCatalog;
-
+use Exception;
 /**
  * Class SingleAccessPoint
  * @package App\Http\Middleware
@@ -28,7 +28,7 @@ final class SingleAccessPoint
     public function handle($request, Closure $next)
     {
         // Perform action
-        if(Config::get('server.Banning_Enable', true))
+        if(Config::get('server.banning_enable', true))
         {
             try {
                 //checkpoint security pattern entry point

@@ -17,6 +17,7 @@ use App\Http\Controllers\UserValidationRulesFactory;
 use App\Http\Utils\HTMLCleaner;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
+use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
@@ -194,17 +195,18 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         }
     }
 
-    public function UpdateMyPic(){
+    public function UpdateMyPic(LaravelRequest $request){
         try {
             if (!$this->resource_server_context->getCurrentUserId()) {
                 return $this->error403();
             }
 
-            $file = request()->file('pic');
-
-            if (!is_null($file)) {
-                $user = $this->openid_user_service->updateProfilePhoto($this->resource_server_context->getCurrentUserId(), $file);
+            $file = $request->hasFile('file') ? $request->file('file'):null;
+            if(is_null($file)){
+                throw new ValidationException('file is not present');
             }
+            $user = $this->openid_user_service->updateProfilePhoto($this->resource_server_context->getCurrentUserId(), $file);
+
             return $this->updated(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
         }
         catch (ValidationException $ex1)

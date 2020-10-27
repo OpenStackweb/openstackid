@@ -29,7 +29,6 @@ use OAuth2\Services\ITokenService;
 use OAuth2\IResourceServerContext;
 use OAuth2\Repositories\IApiEndpointRepository;
 use URL\Normalizer;
-use Illuminate\Support\Facades\Route;
 use Exception;
 use Utils\Services\ICheckPointService;
 use Utils\Services\ILogService;
@@ -111,6 +110,8 @@ final class OAuth2BearerAccessTokenRequestValidator
      */
     public function handle($request, Closure $next)
     {
+        Log::debug(sprintf("OAuth2BearerAccessTokenRequestValidator::handle %s %s", $request->getMethod(), $request->getRequestUri()));
+
         $url    = $request->getRequestUri();
         $method = $request->getMethod();
         $realm  = $request->getHost();
