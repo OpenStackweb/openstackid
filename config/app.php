@@ -136,12 +136,12 @@ return [
          * Application Service Providers...
          */
         \App\Http\Utils\UtilsProvider::class,
+        Repositories\RepositoriesProvider::class,
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         Services\Utils\UtilsProvider::class,
-        Repositories\RepositoriesProvider::class,
         Services\OAuth2\OAuth2ServiceProvider::class,
         Services\OpenId\OpenIdProvider::class,
         Auth\AuthenticationServiceProvider::class,
