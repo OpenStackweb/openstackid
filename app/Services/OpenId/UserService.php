@@ -317,6 +317,7 @@ final class UserService extends AbstractService implements IUserService
     public function updateProfilePhoto($user_id, UploadedFile $file, $max_file_size = 10485760): User
     {
         $user = $this->tx_service->transaction(function() use($user_id, $file, $max_file_size) {
+
             $allowed_extensions = ['png', 'jpg', 'jpeg'];
 
             $user = $this->repository->getById($user_id);
@@ -324,6 +325,8 @@ final class UserService extends AbstractService implements IUserService
                 throw new EntityNotFoundException("user not found");
             $fileName = $file->getClientOriginalName();
             $fileExt = $file->extension() ?? pathinfo($fileName, PATHINFO_EXTENSION);
+
+            Log::debug(sprintf("UserService::updateProfilePhoto user %s fileName %s fileExt %s", $user_id, $fileName, $fileExt));
 
             if (!in_array($fileExt, $allowed_extensions)) {
                 throw new ValidationException(sprintf( "file does not has a valid extension (%s).", join(",", $allowed_extensions)));
@@ -336,6 +339,7 @@ final class UserService extends AbstractService implements IUserService
             $fileName = FileNameSanitizer::sanitize($fileName);
             $path = User::getProfilePicFolder();
 
+            Log::debug(sprintf("UserService::updateProfilePhoto user %s saving file to swift path %s fileName %s", $user_id, $path, $fileName));
             Storage::disk('swift')->putFileAs($path, $file, $fileName);
 
             $user->setPic($fileName);
