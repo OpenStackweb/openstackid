@@ -28,11 +28,11 @@ final class SingleAccessPoint
     public function handle($request, Closure $next)
     {
         // Perform action
+        $checkpoint_service = ServiceLocator::getInstance()->getService(UtilsServiceCatalog::CheckPointService);
         if(Config::get('server.banning_enable', true))
         {
             try {
                 //checkpoint security pattern entry point
-                $checkpoint_service = ServiceLocator::getInstance()->getService(UtilsServiceCatalog::CheckPointService);
                 if ($checkpoint_service instanceof ICheckPointService && !$checkpoint_service->check()) {
                     return Response::view('errors.404', [], 404);
                 }

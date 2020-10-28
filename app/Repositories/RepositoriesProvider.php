@@ -256,6 +256,7 @@ final class RepositoriesProvider extends ServiceProvider
     public function provides()
     {
         return [
+            IServerConfigurationRepository::class,
             IGroupRepository::class,
             IOpenIdAssociationRepository::class,
             IOpenIdTrustedSiteRepository::class,
