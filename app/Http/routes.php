@@ -388,7 +388,7 @@ Route::group(
             Route::get('', 'OAuth2UserApiController@me');
             Route::match(['options','put'],'','OAuth2UserApiController@UpdateMe');
             Route::group(['prefix' => 'pic'], function () {
-                Route::put('','OAuth2UserApiController@UpdateMyPic');
+                Route::match(['options','put'],'','OAuth2UserApiController@UpdateMyPic');
             });
         });
 
@@ -397,7 +397,7 @@ Route::group(
     });
 
     Route::group(['prefix' => 'user-registration-requests'], function(){
-        Route::post('', 'OAuth2UserRegistrationRequestApiController@register');
+        Route::match(['options','post'],'', 'OAuth2UserRegistrationRequestApiController@register');
     });
 
     // 3rd Party SSO integrations
