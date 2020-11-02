@@ -20,6 +20,7 @@ use Sokil\IsoCodes\IsoCodesFactory;
 use Validators\CustomValidator;
 use App\Http\Utils\Log\LaravelMailerHandler;
 use Utils\Services\ICacheService;
+use Illuminate\Support\Facades\URL;
 /**
  * Class AppServiceProvider
  * @package App\Providers
@@ -33,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+
+        URL::forceScheme('https');
 
         $logger = Log::getLogger();
 
