@@ -11,7 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Illuminate\Support\Facades\Request;
+
+use Illuminate\Support\Facades\Log;
 /**
  * Class IPHelper
  * @package Utils
@@ -24,7 +25,8 @@ class IPHelper
      */
     public static function getUserIp()
     {
-        $remote_address = Request::server('REMOTE_ADDR');
-        return $remote_address;
+        $ip = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'] ?? '';
+        Log::debug(sprintf("IPHelper::getUserIp ip %s", $ip));
+        return $ip;
     }
 } 
