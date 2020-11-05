@@ -42,6 +42,7 @@ final class PrivateUserSerializer extends BaseUserSerializer
         'Email' => 'email:json_string',
         'Bio' => 'bio:json_string',
         'Company' => 'company:json_string',
+        'JobTitle' => 'job_title:json_string',
         'Gender' => 'gender:json_string',
         'SpamType' => 'spam_type:json_string',
         'Identifier' => 'identifier:json_string',

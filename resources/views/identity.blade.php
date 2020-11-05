@@ -17,7 +17,7 @@
                     @if( $show_pic && !empty($pic))
                         <div class="row">
                             <div class="col-md-4">
-                                <img src="{!! $pic !!}" class="img-thumbnail">
+                                <img src="{!! $pic !!}" class="img-circle" id="img-pic" title="Profile pic">
                             </div>
                         </div>
                     @endif
@@ -53,7 +53,7 @@
                 @if( $show_pic && !empty($pic))
                     <div class="row">
                         <div class="col-md-4">
-                            <img src="{!! $pic !!}" class="img-thumbnail">
+                            <img src="{!! $pic !!}" class="img-circle" id="img-pic" title="Profile pic">
                         </div>
                     </div>
                 @endif

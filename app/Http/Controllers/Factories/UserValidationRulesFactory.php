@@ -54,6 +54,7 @@ final class UserValidationRulesFactory
                 'password' => 'sometimes|string|confirmed|password_policy',
                 'phone_number' => 'nullable|string',
                 'company' => 'nullable|string',
+                'job_title' => 'nullable|string',
                 // admin fields
                 'email_verified' => 'nullable|boolean',
                 'active' => 'nullable|boolean',
@@ -87,6 +88,7 @@ final class UserValidationRulesFactory
             'password' => 'sometimes|string|confirmed|password_policy',
             'phone_number' => 'nullable|string',
             'company' => 'nullable|string',
+            'job_title' => 'nullable|string',
             // admin fields
             'email_verified' => 'nullable|boolean',
             'active' => 'nullable|boolean',

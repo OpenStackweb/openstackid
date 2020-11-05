@@ -289,6 +289,12 @@ class User extends BaseEntity
     private $company;
 
     /**
+     * @ORM\Column(name="job_title", nullable=true, type="string")
+     * @var string
+     */
+    private $job_title;
+
+    /**
      * @ORM\Column(name="phone_number", nullable=true, type="string")
      * @var string
      */
@@ -1757,4 +1763,21 @@ SQL;
     public static function getProfilePicFolder():string{
         return self::ProfilePicFolder;
     }
+
+    /**
+     * @return string
+     */
+    public function getJobTitle(): ?string
+    {
+        return $this->job_title;
+    }
+
+    /**
+     * @param string $job_title
+     */
+    public function setJobTitle(string $job_title): void
+    {
+        $this->job_title = $job_title;
+    }
+
 }

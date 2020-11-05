@@ -126,6 +126,9 @@ final class UserFactory
         if(isset($payload['company']))
             $user->setCompany(trim($payload['company']));
 
+        if(isset($payload['job_title']))
+            $user->setJobTitle(trim($payload['job_title']));
+
         if(isset($payload['post_code']))
             $user->setPostCode(trim($payload['post_code']));
 
