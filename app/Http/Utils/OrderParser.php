@@ -31,6 +31,7 @@ final class OrderParser
         //default ordering is asc
         foreach($orders as $field)
         {
+            $field = trim($field);
             $element = null;
             if(strpos($field, '+') === 0)
             {

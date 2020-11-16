@@ -107,6 +107,8 @@ final class ServicesProvider extends ServiceProvider
             \Services\SecurityPolicies\BlacklistSecurityPolicy::class,
             \Services\SecurityPolicies\LockUserSecurityPolicy::class,
             \Services\SecurityPolicies\OAuth2LockClientCounterMeasure::class,
+            IUserService::class,
+            IGroupService::class,
             OAuth2SecurityPolicy::class,
             AuthorizationCodeRedeemPolicy::class,
             UtilsServiceCatalog::CheckPointService,

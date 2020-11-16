@@ -67,6 +67,16 @@ final class GroupApiController extends APICRUDController
     /**
      * @return array
      */
+    protected function getOrderRules():array{
+        return [
+            'name',
+            'slug'
+        ];
+    }
+
+    /**
+     * @return array
+     */
     protected function getFilterValidatorRules():array
     {
         return [

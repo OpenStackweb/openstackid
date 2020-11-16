@@ -23,6 +23,18 @@ use utils\PagingResponse;
  */
 final class DoctrineGroupRepository extends ModelDoctrineRepository implements IGroupRepository
 {
+
+    /**
+     * @return array
+     */
+    protected function getOrderMappings()
+    {
+        return [
+            'name' => 'e.name',
+            'slug' => 'e.slug',
+        ];
+    }
+
     /**
      * @return array
      */
