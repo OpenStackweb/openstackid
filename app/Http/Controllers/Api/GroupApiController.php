@@ -69,6 +69,7 @@ final class GroupApiController extends APICRUDController
      */
     protected function getOrderRules():array{
         return [
+            'id',
             'name',
             'slug'
         ];

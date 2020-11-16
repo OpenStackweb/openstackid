@@ -28,6 +28,26 @@ BasicCrud.prototype = {
 
             $('#btn-do-search-clear').hide();
 
+            $("body").on('click',".sort-header",function (event) {
+                $(".sort-header").removeClass("current");
+                $(this).addClass('current');
+                var dir = '+';
+                if($(this).hasClass('asc')){
+                    $(this).removeClass('asc');
+                    $(this).addClass('desc');
+                    dir = '-';
+                }
+                else {
+                    dir = '+';
+                    $(this).removeClass('desc');
+                    $(this).addClass('asc');
+                }
+
+                var field = $(this).data('field');
+                _this.orderBy = encodeURI(dir+field);
+                _this.loadPage();
+            });
+
             var currentTermFromDeepLink = $(window).url_fragment('getParam', 'term');
             if (currentTermFromDeepLink != null) {
                 $('#search-term').val(currentTermFromDeepLink);
@@ -136,7 +156,6 @@ BasicCrud.prototype = {
         var url = this.urls.load + '?page=' + parseInt(this.currentPage) + '&per_page=' + this.perPage;
 
         if (this.searchTerm != null && this.searchTerm != '') {
-
             url += '&' + this._buildFilters();
         }
 

@@ -13,10 +13,6 @@
  **/
 use App\libs\Auth\Repositories\IGroupRepository;
 use Auth\Group;
-use utils\Filter;
-use utils\Order;
-use utils\PagingInfo;
-use utils\PagingResponse;
 /**
  * Class DoctrineGroupRepository
  * @package App\Repositories
@@ -30,6 +26,7 @@ final class DoctrineGroupRepository extends ModelDoctrineRepository implements I
     protected function getOrderMappings()
     {
         return [
+            'id' => 'e.id',
             'name' => 'e.name',
             'slug' => 'e.slug',
         ];

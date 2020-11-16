@@ -68,6 +68,8 @@ UsersCrud.prototype.init = function () {
     // Chain parent method
     BasicCrud.prototype.init.call(this);
     var _this = this;
+    // default sort
+    this.orderBy= encodeURI('+email');
 
     $("body").on('click', ".user-active-checkbox", function (event) {
         var active = $(this).is(':checked');

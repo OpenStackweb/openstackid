@@ -24,13 +24,13 @@
             <table id="table" class="table table-hover table-condensed">
                 <thead>
                 <tr>
-                    <th>Identifier</th>
-                    <th>First Name</th>
-                    <th>Surname</th>
-                    <th>Email</th>
+                    <th data-field="identifier" class="sort-header">Identifier</th>
+                    <th data-field="first_name" class="sort-header">First Name</th>
+                    <th data-field="last_name" class="sort-header">Surname</th>
+                    <th data-field="email" class="sort-header current asc">Email</th>
                     <th>Active</th>
-                    <th>Last Login Date</th>
-                    <th>Spam Type</th>
+                    <th data-field="last_login_date" class="sort-header">Last Login Date</th>
+                    <th data-field="spam_type" class="sort-header">Spam Type</th>
                     <th>&nbsp;</th>
                 </tr>
                 </thead>

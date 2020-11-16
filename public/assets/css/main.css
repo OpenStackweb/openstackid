@@ -348,3 +348,25 @@ span.help-block::before {
     vertical-align: middle;
     display:table-cell;
 }
+
+.sort-header{
+    cursor: pointer;
+}
+
+.sort-header.current.desc:after{
+    content: '\f0dd';
+    font-family: FontAwesome;
+    font-weight: normal;
+    font-style: normal;
+    margin:0px 0px 0px 10px;
+    text-decoration:none;
+}
+
+.sort-header.current.asc:after{
+    content: '\f0de';
+    font-family: FontAwesome;
+    font-weight: normal;
+    font-style: normal;
+    margin:0px 0px 0px 10px;
+    text-decoration:none;
+}

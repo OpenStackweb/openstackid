@@ -57,6 +57,8 @@ GroupsCrud.prototype._buildFilters = function () {
 GroupsCrud.prototype.init = function () {
     BasicCrud.prototype.init.call(this);
     var _this = this;
+    // default sort
+    this.orderBy= encodeURI('+name');
 
     var add_item_form   = $('#form-add-item');
     var add_item_dialog = $("#dialog-form-add-item");

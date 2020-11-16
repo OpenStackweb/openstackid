@@ -24,9 +24,9 @@
             <table id="table" class="table table-hover table-condensed">
                 <thead>
                 <tr>
-                    <th>Id</th>
-                    <th>Name</th>
-                    <th>Slug</th>
+                    <th data-field="id" class="sort-header">Id</th>
+                    <th data-field="name" class="sort-header current asc">Name</th>
+                    <th data-field="slug" class="sort-header">Slug</th>
                     <th>Active</th>
                     <th>&nbsp;</th>
                 </tr>

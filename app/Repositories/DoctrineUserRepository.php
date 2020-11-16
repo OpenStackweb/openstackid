@@ -15,14 +15,29 @@ use Auth\Repositories\IUserRepository;
 use Auth\User;
 use utils\DoctrineFilterMapping;
 use utils\DoctrineJoinFilterMapping;
-use utils\DoctrineLeftJoinFilterMapping;
-
 /**
  * Class DoctrineUserRepository
  * @package App\Repositories
  */
-final class DoctrineUserRepository extends ModelDoctrineRepository implements IUserRepository
+final class DoctrineUserRepository
+    extends ModelDoctrineRepository implements IUserRepository
 {
+
+    /**
+     * @return array
+     */
+    protected function getOrderMappings()
+    {
+        return [
+            'first_name' => 'e.first_name',
+            'last_name' => 'e.last_name',
+            'email' => 'e.email',
+            'active' => 'e.active',
+            'identifier' => 'e.identifier',
+            'last_login_date' => 'e.last_login_date',
+            'spam_type' => 'e.spam_type',
+        ];
+    }
 
     /**
      * @return array

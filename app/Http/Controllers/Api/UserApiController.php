@@ -86,6 +86,20 @@ final class UserApiController extends APICRUDController
     }
 
     /**
+     * @return array
+     */
+    protected function getOrderRules():array{
+        return [
+            'first_name',
+            'last_name',
+            'email',
+            'identifier',
+            'last_login_date',
+            'spam_type'
+        ];
+    }
+
+    /**
      * @param $id
      * @return mixed
      */
