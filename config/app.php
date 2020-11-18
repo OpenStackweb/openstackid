@@ -226,4 +226,5 @@ return [
     'tenant_favicon' => env('TENANT_FAV_ICON_URL', '/assets/img/favicon-32x32.png'),
     'help_email' => env('HELP_EMAIL', 'support@openstack.org'),
     'code_of_conduct_link' => env("CODE_OF_CONDUCT_LINK","https://www.openstack.org/legal/community-code-of-conduct"),
+    'app_info' => env("APP_INFO_TEXT"),
 ];

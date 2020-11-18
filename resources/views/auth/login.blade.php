@@ -28,10 +28,16 @@
     <div class="col-md-4" id="sidebar">
         <div class="well">
             {!! Form::open(array('id'=>'login_form','url' => URL::action('UserController@postLogin'), 'method' => 'post',  "autocomplete" => "off")) !!}
-            <legend>Welcome&nbsp;to&nbsp;{{ Config::get("app.app_name") }}!&nbsp;<span aria-hidden="true" style="font-size: 10pt;"
+            <legend>
+                Welcome&nbsp;to&nbsp;{{ Config::get("app.app_name") }}!&nbsp;<span aria-hidden="true" style="font-size: 10pt;"
                                                                  class="glyphicon glyphicon-info-sign pointable"
                                                                  title="Please use your {{ Config::get("app.app_name") }} to log in"></span>
             </legend>
+            @if(Config::get("app.app_info"))
+                <p class="help-block">
+                    {{Config::get("app.app_info")}}
+                </p>
+            @endif
             <div class="form-group">
                 {!! Form::email('username',Session::has('username')? Session::get('username'):null, array
                 (
@@ -43,7 +49,7 @@
             </div>
             <div class="form-group">
                 <input placeholder="Password" class="form-control" required="true" autocomplete="current-password" name="password" id="password" type="password" value="">
-                <span toggle="#password" class="fa fa-fw fa-eye fa-eye-slash field-icon toggle-password" title="Show Password">
+                <span toggle="#password" class="fa fa-fw fa-eye fa-eye-slash field-icon toggle-password" title="Show Password"/>
             </div>
             <div class="form-group">
                 @if(Session::has('flash_notice'))
@@ -75,7 +81,7 @@
             <div style="clear:both;padding-top:15px;" class="row">
                 <div class="col-md-12">
                     <a title="register new account" target="_blank"
-                       href="{!! URL::action("Auth\RegisterController@showRegistrationForm") !!}">Register for an
+                       href="{!! URL::action("Auth\RegisterController@showRegistrationForm") !!}">Create an
                         {!! Config::get("app.app_name") !!} </a>
                 </div>
             </div>
