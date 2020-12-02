@@ -340,7 +340,7 @@ span.help-block::before {
     margin-top: 5px;
     margin-bottom: 10px;
     font-size: 12px;
-    color: #aaa;
+    color: #737373;
 }
 
 .input-group-button {
@@ -369,8 +369,4 @@ span.help-block::before {
     font-style: normal;
     margin:0px 0px 0px 10px;
     text-decoration:none;
-}
-
-.help-block{
-
 }
