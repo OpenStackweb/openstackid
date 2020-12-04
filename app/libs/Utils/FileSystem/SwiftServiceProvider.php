@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use App\Services\FileSystem\Swift\SwiftAdapter;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use League\Flysystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
@@ -41,45 +42,52 @@ final class SwiftServiceProvider extends ServiceProvider
     {
         Storage::extend('swift', function ($app, $config) {
 
-            $configOptions = [
-                'authUrl' => $config["auth_url"],
-                'region'  => $config["region"],
-            ];
+            try {
 
-            $userName     = $config["user_name"] ?? null;
-            $userPassword = $config["api_key"] ?? null;
-
-            if(!empty($userName) && !empty($userPassword)){
-
-                $configOptions['user'] = [
-                    'name'     => $userName,
-                    'password' => $userPassword,
-                    'domain'   => ['id' => $config["user_domain"] ?? 'default']
+                $configOptions = [
+                    'authUrl' => $config["auth_url"],
+                    'region' => $config["region"],
                 ];
 
-                $configOptions['scope' ] =  [
-                    'project' => [
-                        'name' =>  $config["project_name"],
-                        'domain' => ['id' => $config["project_domain"] ?? 'default']
-                    ],
-                ];
+                $userName = $config["user_name"] ?? null;
+                $userPassword = $config["api_key"] ?? null;
+
+                if (!empty($userName) && !empty($userPassword)) {
+
+                    $configOptions['user'] = [
+                        'name' => $userName,
+                        'password' => $userPassword,
+                        'domain' => ['id' => $config["user_domain"] ?? 'default']
+                    ];
+
+                    $configOptions['scope'] = [
+                        'project' => [
+                            'name' => $config["project_name"],
+                            'domain' => ['id' => $config["project_domain"] ?? 'default']
+                        ],
+                    ];
+                }
+
+                $appCredentialId = $config["app_credential_id"] ?? null;
+                $appCredentialSecret = $config["app_credential_secret"] ?? null;
+
+                if (!empty($appCredentialId) && !empty($appCredentialSecret)) {
+                    $configOptions['application_credential'] = [
+                        'id' => $appCredentialId,
+                        'secret' => $appCredentialSecret,
+                    ];
+                }
+
+                $openstackClient = new OpenStack($configOptions);
+
+                $container = $openstackClient->objectStoreV1()->getContainer($config["container"]);
+
+                return new Filesystem(new SwiftAdapter($container));
             }
-
-            $appCredentialId =  $config["app_credential_id"] ?? null;
-            $appCredentialSecret = $config["app_credential_secret"] ?? null;
-
-            if(!empty($appCredentialId) && !empty($appCredentialSecret)){
-                $configOptions['application_credential'] = [
-                    'id' => $appCredentialId,
-                    'secret' => $appCredentialSecret,
-                ];
+            catch (\Exception $ex){
+                Log::error($ex);
+                return null;
             }
-
-            $openstackClient = new OpenStack($configOptions);
-
-            $container = $openstackClient->objectStoreV1()->getContainer($config["container"]);
-
-            return new Filesystem(new SwiftAdapter($container));
         });
     }
 }
