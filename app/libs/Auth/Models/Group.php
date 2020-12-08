@@ -19,7 +19,7 @@ use App\Models\Utils\BaseEntity;
 use models\exceptions\ValidationException;
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineGroupRepository")
- * @ORM\Table(name="groups")
+ * @ORM\Table(name="`groups`")
  * @ORM\HasLifecycleCallbacks
  * Class Group
  * @package Auth
