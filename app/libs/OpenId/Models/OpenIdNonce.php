@@ -143,4 +143,12 @@ final class OpenIdNonce extends Identifier
     {
         return 'nonce';
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function toArray(): array
+    {
+        return [];
+    }
 }

@@ -85,4 +85,12 @@ class RefreshToken extends Token {
     {
         return 'refresh_token';
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function toArray(): array
+    {
+        return [];
+    }
 }

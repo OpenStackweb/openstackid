@@ -223,7 +223,6 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
         );
 
-
         $response = $this->action
         (
             "POST",
@@ -251,7 +250,6 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             $refresh_token = $response->refresh_token;
             $this->assertTrue(!empty($refresh_token));
         }
-
     }
 
     public function testTokenNTimes($n = 100){
@@ -1220,5 +1218,166 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
 
         $this->assertTrue(isset($comps["query"]));
         $this->assertTrue($comps["query"] == "error=invalid_scope&error_description=missing+scope+param");
+    }
+
+    public function testAuthCodePKCEPublicClient(){
+        $client_id = '1234/Vcvr6fvQbH4HyNgwKlfSpkce.openstack.client';
+
+        Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
+        $code_verifier = "1qaz2wsx3edc4rfv5tgb6yhn7ujm8ik8ik9ol1qaz2wsx3edc4rfv5tgb6yhn~";
+        $encoded = base64_encode(hash('sha256', $code_verifier, true));
+
+        $codeChallenge = strtr(rtrim($encoded, '='), '+/', '-_');
+
+        $params = [
+            'client_id' => $client_id,
+            'redirect_uri' => 'https://www.test.com/oauth2',
+            'response_type' => OAuth2Protocol::OAuth2Protocol_ResponseType_Code,
+            'response_mode' => 'fragment',
+            'scope' => sprintf('openid %s/resource-server/read', $this->current_realm),
+            'state' => '123456',
+            'code_challenge' => $codeChallenge,
+            'code_challenge_method' => 'S256',
+            OAuth2Protocol::OAuth2Protocol_AccessType => OAuth2Protocol::OAuth2Protocol_AccessType_Offline,
+        ];
+
+        $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
+            $params,
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(302);
+        $url = $response->getTargetUrl();
+        // get auth code ...
+        $comps = @parse_url($url);
+        $fragment = $comps['fragment'];
+        $response = [];
+        parse_str($fragment, $response);
+
+        $this->assertTrue(isset($response['code']));
+        $this->assertTrue(isset($response['state']));
+        $this->assertTrue($response['state'] === '123456');
+
+        $params = [
+            'code' => $response['code'],
+            'redirect_uri' => 'https://www.test.com/oauth2',
+            'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
+            'code_verifier' => $code_verifier,
+            'client_id' => $client_id,
+        ];
+
+        $response = $this->action
+        (
+            "POST",
+            "OAuth2\OAuth2ProviderController@token",
+            $params,
+            [],
+            [],
+            [],
+            []
+        );
+
+        $this->assertResponseStatus(200);
+        $this->assertEquals('application/json;charset=UTF-8', $response->headers->get('Content-Type'));
+        $content = $response->getContent();
+
+        $response = json_decode($content);
+        $access_token = $response->access_token;
+
+        $this->assertTrue(!empty($access_token));
+
+        $refresh_token = $response->refresh_token;
+
+        $this->assertTrue(!empty($refresh_token));
+
+        $params = [
+            'refresh_token' => $refresh_token,
+            'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_RefreshToken,
+            'client_id' => $client_id
+        ];
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
+            $params,
+            [],
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(200);
+        $this->assertEquals('application/json;charset=UTF-8', $response->headers->get('Content-Type'));
+        $content = $response->getContent();
+
+        $response = json_decode($content);
+
+        //get new access token and new refresh token...
+        $new_access_token  = $response->access_token;
+        $new_refresh_token = $response->refresh_token;
+
+        $this->assertTrue(!empty($new_access_token));
+        $this->assertTrue(!empty($new_refresh_token));
+
+    }
+
+    public function testAuthCodeInvalidPKCEPublicClient(){
+        $client_id = '1234/Vcvr6fvQbH4HyNgwKlfSpkce.openstack.client';
+
+        Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
+        $code_verifier = "1qaz2wsx3edc4rfv5tgb6yhn7ujm8ik8ik9ol1qaz2wsx3edc4rfv5tgb6yhn~";
+        $encoded = base64_encode(hash('sha256', $code_verifier, true));
+
+        $codeChallenge = strtr(rtrim($encoded, '='), '+/', '-_');
+
+        $params = [
+            'client_id' => $client_id,
+            'redirect_uri' => 'https://www.test.com/oauth2',
+            'response_type' => OAuth2Protocol::OAuth2Protocol_ResponseType_Code,
+            'response_mode' => 'fragment',
+            'scope' => sprintf('%s/resource-server/read', $this->current_realm),
+            'state' => '123456',
+            'code_challenge' => $codeChallenge,
+            'code_challenge_method' => 'S256',
+            OAuth2Protocol::OAuth2Protocol_AccessType => OAuth2Protocol::OAuth2Protocol_AccessType_Offline,
+        ];
+
+        $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
+            $params,
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(302);
+        $url = $response->getTargetUrl();
+        // get auth code ...
+        $comps = @parse_url($url);
+        $fragment = $comps['fragment'];
+        $response = [];
+        parse_str($fragment, $response);
+
+        $this->assertTrue(isset($response['code']));
+        $this->assertTrue(isset($response['state']));
+        $this->assertTrue($response['state'] === '123456');
+
+        $params = [
+            'code' => $response['code'],
+            'redirect_uri' => 'https://www.test.com/oauth2',
+            'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
+            'code_verifier' => "missmatch",
+            'client_id' => $client_id,
+        ];
+
+        $response = $this->action
+        (
+            "POST",
+            "OAuth2\OAuth2ProviderController@token",
+            $params,
+            [],
+            [],
+            [],
+            []
+        );
+
+        $this->assertResponseStatus(400);
+
     }
 }

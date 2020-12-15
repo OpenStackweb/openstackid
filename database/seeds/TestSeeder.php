@@ -849,6 +849,20 @@ PPK;
                 'redirect_uris' => 'https://www.test.com/oauth2',
             ),
             array(
+                'app_name'             => 'oauth2_test_app_public_pkce',
+                'app_description'      => 'oauth2_test_app_public_pkce',
+                'app_logo'             => null,
+                'client_id'            => '1234/Vcvr6fvQbH4HyNgwKlfSpkce.openstack.client',
+                'client_secret'        => null,
+                'application_type'     => IClient::ApplicationType_JS_Client,
+                'token_endpoint_auth_method' => OAuth2Protocol::TokenEndpoint_AuthMethod_None,
+                'owner'              => $user,
+                'rotate_refresh_token' => true,
+                'use_refresh_token'    => true,
+                'redirect_uris' => 'https://www.test.com/oauth2',
+                'pkce_enabled' => true,
+            ),
+            array(
                 'app_name'             => 'oauth2_native_app',
                 'app_description'      => 'oauth2_native_app',
                 'app_logo'             => null,
@@ -932,6 +946,7 @@ PPK;
         $client_confidential2  = $client_repository->findOneBy(['app_name' => 'oauth2_test_app2']);
         $client_confidential3  = $client_repository->findOneBy(['app_name' => 'oauth2_test_app3']);
         $client_public         = $client_repository->findOneBy(['app_name' => 'oauth2_test_app_public']);
+        $client_public2         = $client_repository->findOneBy(['app_name' => 'oauth2_test_app_public_pkce']);
         $client_service        = $client_repository->findOneBy(['app_name' => 'oauth2.service']);
         $client_native         = $client_repository->findOneBy(['app_name' => 'oauth2_native_app']);
         $client_native2        = $client_repository->findOneBy(['app_name' => 'oauth2_native_app2']);
@@ -946,6 +961,7 @@ PPK;
             $client_confidential2->addScope($scope);
             $client_confidential3->addScope($scope);
             $client_public->addScope($scope);
+            $client_public2->addScope($scope);
             $client_service->addScope($scope);
             $client_native->addScope($scope);
             $client_native2->addScope($scope);
@@ -1062,7 +1078,6 @@ PPK;
             true,
             TestKeys::$private_key_pem
         );
-
 
         EntityManager::persist($pkey_2);
 

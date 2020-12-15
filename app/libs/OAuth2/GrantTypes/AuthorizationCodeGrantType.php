@@ -14,6 +14,7 @@
 
 use App\libs\Utils\URLUtils;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Models\OAuth2\Client;
 use OAuth2\Exceptions\ExpiredAuthorizationCodeException;
 use OAuth2\Exceptions\InvalidApplicationType;
@@ -26,6 +27,7 @@ use OAuth2\Exceptions\OAuth2GenericException;
 use OAuth2\Exceptions\UnAuthorizedClientException;
 use OAuth2\Exceptions\UriNotAllowedException;
 use OAuth2\Factories\OAuth2AccessTokenResponseFactory;
+use OAuth2\Factories\OAuth2PKCEValidationMethodFactory;
 use OAuth2\Models\IClient;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Services\ITokenService;
@@ -187,20 +189,20 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
         try
         {
             parent::completeFlow($request);
-
-            $this->checkClientTypeAccess($this->client_auth_context->getClient());
+            $client = $this->client_auth_context->getClient();
+            $this->checkClientTypeAccess($client);
 
             $current_redirect_uri = $request->getRedirectUri();
             //verify redirect uri
-            if (!$this->current_client->isUriAllowed($current_redirect_uri))
+            if (empty($current_redirect_uri) || !$this->current_client->isUriAllowed($current_redirect_uri))
             {
                 throw new UriNotAllowedException
                 (
-                    $current_redirect_uri
+                    empty($current_redirect_uri)? "missing" : $current_redirect_uri
                 );
             }
 
-            $code     = $request->getCode();
+            $code = $request->getCode();
             // verify that the authorization code is valid
             // The client MUST NOT use the authorization code
             // more than once.  If an authorization code is used more than
@@ -244,10 +246,37 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
             // "redirect_uri" parameter was included in the initial authorization
             // and if included ensure that their values are identical.
             $redirect_uri = $auth_code->getRedirectUri();
-
+            Log::debug(sprintf("AuthorizationCodeGrantType::completeFlow auth code redirect uri %s current_redirect_uri %s", $redirect_uri, $current_redirect_uri));
             if (!empty($redirect_uri) && URLUtils::normalizeUrl($redirect_uri) !== URLUtils::normalizeUrl($current_redirect_uri))
             {
                 throw new UriNotAllowedException($current_redirect_uri);
+            }
+
+            if($client->isPKCEEnabled()){
+                /**
+                 * PKCE Validation
+                 * @see https://tools.ietf.org/html/rfc7636#page-10
+                 * @see https://oauth.net/2/pkce
+                 * server Verifies code_verifier before Returning the Tokens
+                 *  If the "code_challenge_method" from Section 4.3 was "S256", the
+                 * received "code_verifier" is hashed by SHA-256, base64url-encoded, and
+                 * then compared to the "code_challenge", i.e.:
+                 * BASE64URL-ENCODE(SHA256(ASCII(code_verifier))) == code_challenge
+                 * If the "code_challenge_method" from Section 4.3 was "plain", they are
+                 * compared directly, i.e.:
+                 * code_verifier == code_challenge.
+                 * If the values are equal, the token endpoint MUST continue processing
+                 * as normal (as defined by OAuth 2.0
+                 */
+
+                if(!$request instanceof OAuth2AccessTokenRequestAuthCode)
+                    throw new InvalidOAuth2Request();
+
+                $strategy = OAuth2PKCEValidationMethodFactory::build($auth_code, $request);
+
+                if(!$strategy->isValid()){
+                    throw new InvalidOAuth2Request("PKCE request can not be validated");
+                }
             }
 
             $this->principal_service->register
@@ -307,7 +336,8 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
         (
            !(
                $client->getClientType()      === IClient::ClientType_Confidential ||
-               $client->getApplicationType() === IClient::ApplicationType_Native
+               $client->getApplicationType() === IClient::ApplicationType_Native ||
+               $client->isPKCEEnabled()
            )
         )
         {
@@ -315,7 +345,7 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
             (
                 sprintf
                 (
-                    "client id %s - Application type must be %s or %s",
+                    "client id %s - Application type must be %s or %s or have PKCE enabled",
                     $client->getClientId(),
                     IClient::ClientType_Confidential,
                     IClient::ApplicationType_Native
@@ -332,47 +362,17 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
      */
     protected function buildResponse(OAuth2AuthorizationRequest $request, $has_former_consent)
     {
-        $user   = $this->auth_service->getCurrentUser();
-
-        // build current audience ...
-        $audience = $this->scope_service->getStrAudienceByScopeNames
-        (
-            explode
-            (
-                OAuth2Protocol::OAuth2Protocol_Scope_Delimiter,
-                $request->getScope()
-            )
-        );
-
-        $nonce  = null;
-        $prompt = null;
-
-        if($request instanceof OAuth2AuthenticationRequest)
-        {
-            $nonce  = $request->getNonce();
-            $prompt = $request->getPrompt(true);
-        }
-
         $auth_code = $this->token_service->createAuthorizationCode
         (
-            $user->getId(),
-            $request->getClientId(),
-            $request->getScope(),
-            $audience,
-            $request->getRedirectUri(),
-            $request->getAccessType(),
-            $request->getApprovalPrompt(),
-            $has_former_consent,
-            $request->getState(),
-            $nonce,
-            $request->getResponseType(),
-            $prompt
+            $request,
+            $has_former_consent
         );
 
         if (is_null($auth_code))
         {
             throw new OAuth2GenericException("Invalid Auth Code");
         }
+
         // http://openid.net/specs/openid-connect-session-1_0.html#CreatingUpdatingSessions
         $session_state = $this->getSessionState
         (
@@ -394,6 +394,4 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
             $session_state
         );
     }
-
-
 }

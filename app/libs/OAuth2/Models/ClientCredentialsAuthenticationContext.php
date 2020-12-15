@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Illuminate\Support\Facades\Log;
 use OAuth2\Exceptions\InvalidTokenEndpointAuthMethodException;
 use OAuth2\OAuth2Protocol;
@@ -51,7 +50,8 @@ final class ClientCredentialsAuthenticationContext extends ClientAuthenticationC
 
         if(!in_array($auth_type, [
             OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic,
-            OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretPost
+            OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretPost,
+            OAuth2Protocol::TokenEndpoint_AuthMethod_None
         ]))
             throw new InvalidTokenEndpointAuthMethodException($auth_type);
 

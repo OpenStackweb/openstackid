@@ -95,7 +95,7 @@
         </div>
         <div id="main_data" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="main_data_heading">
             <div class="panel-body">
-                @include('oauth2.profile.edit-client-data',array('access_tokens' => $access_tokens, 'refresh_tokens' => $refresh_tokens,'client' => $client))
+                @include('oauth2.profile.edit-client-data', array('access_tokens' => $access_tokens, 'refresh_tokens' => $refresh_tokens,'client' => $client))
             </div>
         </div>
     </div>

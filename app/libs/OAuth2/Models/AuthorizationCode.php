@@ -11,8 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use Utils\IPHelper;
 use OAuth2\OAuth2Protocol;
+
 /**
  * Class AuthorizationCode
  * http://tools.ietf.org/html/rfc6749#section-1.3.1
@@ -58,6 +60,16 @@ class AuthorizationCode extends Token
      * @var bool
      */
     private $requested_auth_time;
+
+    /**
+     * @var string
+     */
+    private $code_challenge;
+
+    /**
+     * @var string
+     */
+    private $code_challenge_method;
 
     /**
      * @var string
@@ -111,110 +123,46 @@ class AuthorizationCode extends Token
      * @param string $approval_prompt
      * @param bool $has_previous_user_consent
      * @param int $lifetime
-     * @param string|null $state
-     * @param string|null $nonce
-     * @param string|null $response_type
-     * @param $requested_auth_time
-     * @param $auth_time
-     * @param null|string $prompt
+     * @param null $state
+     * @param null $nonce
+     * @param null $response_type
+     * @param bool $requested_auth_time
+     * @param int $auth_time
+     * @param null $prompt
+     * @param null $code_challenge
+     * @param null $code_challenge_method
      * @return AuthorizationCode
      */
     public static function create(
         $user_id,
         $client_id,
         $scope,
-        $audience                  = '',
-        $redirect_uri              = null,
-        $access_type               = OAuth2Protocol::OAuth2Protocol_AccessType_Online,
-        $approval_prompt           = OAuth2Protocol::OAuth2Protocol_Approval_Prompt_Auto,
+        $audience = '',
+        $redirect_uri = null,
+        $access_type = OAuth2Protocol::OAuth2Protocol_AccessType_Online,
+        $approval_prompt = OAuth2Protocol::OAuth2Protocol_Approval_Prompt_Auto,
         $has_previous_user_consent = false,
-        $lifetime                  = 600,
-        $state                     = null,
-        $nonce                     = null,
-        $response_type             = null,
-        $requested_auth_time       = false,
-        $auth_time                 = -1,
-        $prompt                    = null
-    ) {
-        $instance                            = new self();
-        $instance->scope                     = $scope;
-        $instance->user_id                   = $user_id;
-        $instance->redirect_uri              = $redirect_uri;
-        $instance->client_id                 = $client_id;
-        $instance->lifetime                  = intval($lifetime);
-        $instance->audience                  = $audience;
-        $instance->is_hashed                 = false;
-        $instance->from_ip                   = IPHelper::getUserIp();
-        $instance->access_type               = $access_type;
-        $instance->approval_prompt           = $approval_prompt;
-        $instance->has_previous_user_consent = $has_previous_user_consent;
-        $instance->state                     = $state;
-        $instance->nonce                     = $nonce;
-        $instance->response_type             = $response_type;
-        $instance->requested_auth_time       = $requested_auth_time;
-        $instance->auth_time                 = $auth_time;
-        $instance->prompt                    = $prompt;
-
-        return $instance;
-    }
-
-    /**
-     * @param $value
-     * @param $user_id
-     * @param $client_id
-     * @param $scope
-     * @param string $audience
-     * @param null $redirect_uri
-     * @param null $issued
-     * @param int $lifetime
-     * @param string $from_ip
-     * @param string $access_type
-     * @param string $approval_prompt
-     * @param bool $has_previous_user_consent
-     * @param string|null $state
-     * @param string|null $nonce
-     * @param string|null $response_type
-     * @param $requested_auth_time
-     * @param $auth_time
-     * @param null|string $prompt
-     * @param bool $is_hashed
-     * @return AuthorizationCode
-     */
-    public static function load
-    (
-        $value,
-        $user_id,
-        $client_id,
-        $scope,
-        $audience                  = '',
-        $redirect_uri              = null,
-        $issued                    = null,
-        $lifetime                  = 600,
-        $from_ip                   = '127.0.0.1',
-        $access_type               = OAuth2Protocol::OAuth2Protocol_AccessType_Online,
-        $approval_prompt           = OAuth2Protocol::OAuth2Protocol_Approval_Prompt_Auto,
-        $has_previous_user_consent = false,
-        $state,
-        $nonce,
-        $response_type,
-        $requested_auth_time       = false,
-        $auth_time                 = -1,
-        $prompt                    = null,
-        $is_hashed                 = false
+        $lifetime = 600,
+        $state = null,
+        $nonce = null,
+        $response_type = null,
+        $requested_auth_time = false,
+        $auth_time = -1,
+        $prompt = null,
+        $code_challenge = null,
+        $code_challenge_method = null
     )
     {
         $instance = new self();
-        $instance->value           = $value;
-        $instance->user_id         = $user_id;
-        $instance->scope           = $scope;
-        $instance->redirect_uri    = $redirect_uri;
-        $instance->client_id       = $client_id;
-        $instance->audience        = $audience;
-        $instance->issued          = $issued;
-        $instance->lifetime        = intval($lifetime);
-        $instance->from_ip         = $from_ip;
-        $instance->is_hashed       = $is_hashed;
-        $instance->access_type     = $access_type;
+        $instance->scope = $scope;
+        $instance->user_id = $user_id;
+        $instance->redirect_uri = $redirect_uri;
+        $instance->client_id = $client_id;
+        $instance->lifetime = intval($lifetime);
+        $instance->audience = $audience;
+        $instance->is_hashed = false;
+        $instance->from_ip = IPHelper::getUserIp();
+        $instance->access_type = $access_type;
         $instance->approval_prompt = $approval_prompt;
         $instance->has_previous_user_consent = $has_previous_user_consent;
         $instance->state = $state;
@@ -222,7 +170,44 @@ class AuthorizationCode extends Token
         $instance->response_type = $response_type;
         $instance->requested_auth_time = $requested_auth_time;
         $instance->auth_time = $auth_time;
-        $instance->prompt   = $prompt;
+        $instance->prompt = $prompt;
+        $instance->code_challenge = $code_challenge;
+        $instance->code_challenge_method = $code_challenge_method;
+
+        return $instance;
+    }
+
+    /**
+     * @param array $payload
+     * @return AuthorizationCode
+     */
+    public static function load
+    (
+        array $payload
+    ): AuthorizationCode
+    {
+        $instance = new self();
+        $instance->value =  $payload['value'];
+        $instance->user_id = $payload['user_id'] ?? null;
+        $instance->scope = $payload['scope'] ?? null;
+        $instance->redirect_uri = $payload['redirect_uri'] ?? null;
+        $instance->client_id = $payload['client_id'] ?? null;
+        $instance->audience = $payload['audience'] ?? null;
+        $instance->issued =  $payload['issued'] ?? null;
+        $instance->lifetime = intval($payload['lifetime']);
+        $instance->from_ip = $payload['from_ip'] ?? null;
+        $instance->is_hashed = isset($payload['is_hashed']) ? boolval($payload['is_hashed']) : false;
+        $instance->access_type = $payload['access_type'] ?? null;
+        $instance->approval_prompt = $payload['approval_prompt'] ?? null;
+        $instance->has_previous_user_consent = $payload['has_previous_user_consent'] ?? false;
+        $instance->state = $payload['state'] ?? null;
+        $instance->nonce = $payload['nonce'] ?? null;
+        $instance->response_type = $payload['response_type'] ?? null;
+        $instance->requested_auth_time = $payload['requested_auth_time'] ?? null;;
+        $instance->auth_time = $payload['auth_time'] ?? null;
+        $instance->prompt = $payload['prompt'] ?? null;
+        $instance->code_challenge = $payload['code_challenge'] ?? null;
+        $instance->code_challenge_method = $payload['code_challenge_method'] ?? null;
         return $instance;
     }
 
@@ -288,7 +273,7 @@ class AuthorizationCode extends Token
     public function isAuthTimeRequested()
     {
         $res = $this->requested_auth_time;
-        if (!is_string($res)) return (bool) $res;
+        if (!is_string($res)) return (bool)$res;
         switch (strtolower($res)) {
             case '1':
             case 'true':
@@ -332,4 +317,71 @@ class AuthorizationCode extends Token
     {
         return 'auth_code';
     }
+
+    public function toArray(): array
+    {
+        return [
+            'client_id' => $this->getClientId(),
+            'scope' => $this->getScope(),
+            'audience' => $this->getAudience(),
+            'redirect_uri' => $this->getRedirectUri(),
+            'issued' => $this->getIssued(),
+            'lifetime' => $this->getLifetime(),
+            'from_ip' => $this->getFromIp(),
+            'user_id' => $this->getUserId(),
+            'access_type' => $this->getAccessType(),
+            'approval_prompt' => $this->getApprovalPrompt(),
+            'has_previous_user_consent' => $this->getHasPreviousUserConsent(),
+            'state' => $this->getState(),
+            'nonce' => $this->getNonce(),
+            'response_type' => $this->getResponseType(),
+            'requested_auth_time' => $this->isAuthTimeRequested(),
+            'auth_time' => $this->getAuthTime(),
+            'prompt' => $this->getPrompt(),
+            'code_challenge' => $this->getCodeChallenge(),
+            'code_challenge_method' => $this->getCodeChallengeMethod(),
+        ];
+    }
+
+    public static function getKeys(): array
+    {
+        return [
+            'user_id',
+            'client_id',
+            'scope',
+            'audience',
+            'redirect_uri',
+            'issued',
+            'lifetime',
+            'from_ip',
+            'access_type',
+            'approval_prompt',
+            'has_previous_user_consent',
+            'state',
+            'nonce',
+            'response_type',
+            'requested_auth_time',
+            'auth_time',
+            'prompt',
+            'code_challenge',
+            'code_challenge_method',
+        ];
+    }
+
+    /**
+     * @return string
+     */
+    public function getCodeChallenge(): ?string
+    {
+        return $this->code_challenge;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCodeChallengeMethod(): ?string
+    {
+        return $this->code_challenge_method;
+    }
+
 }

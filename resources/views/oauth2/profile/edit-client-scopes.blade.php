@@ -19,7 +19,7 @@
                 <div class="checkbox">
                     <label>
                     <input type="checkbox" class="scope-checkbox" id="scope[]"
-                    @if ( in_array($scope->id,$selected_scopes))
+                    @if ( in_array($scope->id, $selected_scopes))
                     checked
                     @endif
                     value="{!!$scope->id!!}"/><span>{!!trim($scope->name)!!}</span>&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title="{!!$scope->description!!}"></span>

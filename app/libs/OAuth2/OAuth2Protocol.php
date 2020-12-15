@@ -648,6 +648,8 @@ final class OAuth2Protocol implements IOAuth2Protocol
         self::TokenEndpoint_AuthMethod_ClientSecretPost,
         self::TokenEndpoint_AuthMethod_ClientSecretJwt,
         self::TokenEndpoint_AuthMethod_PrivateKeyJwt,
+        // PKCE only
+        self::TokenEndpoint_AuthMethod_None,
     );
 
     const OpenIdConnect_Scope = 'openid';
@@ -710,6 +712,25 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * VSCHAR     = %x20-7E
      */
     const VsChar = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.-_~';
+
+    /**
+     * PKCE
+    * @see https://tools.ietf.org/html/rfc7636
+    **/
+
+    // auth request new params
+
+    const PKCE_CodeChallenge = 'code_challenge';
+    const PKCE_CodeChallengeMethod = 'code_challenge_method';
+
+    const PKCE_CodeChallengeMethodPlain = 'plain';
+    const PKCE_CodeChallengeMethodSHA256 = 'S256';
+
+    const PKCE_ValidCodeChallengeMethods = [self::PKCE_CodeChallengeMethodPlain, self::PKCE_CodeChallengeMethodSHA256];
+
+    // token request new params
+
+    const PKCE_CodeVerifier = 'code_verifier';
 
     //services
     /**

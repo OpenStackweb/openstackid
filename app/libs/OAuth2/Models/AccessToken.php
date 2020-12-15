@@ -134,4 +134,12 @@ class AccessToken extends Token {
     {
         return 'access_token';
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function toArray(): array
+    {
+       return [];
+    }
 }

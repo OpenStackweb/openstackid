@@ -74,4 +74,8 @@ class OAuth2AccessTokenRequestAuthCode extends OAuth2TokenRequest
     {
         return $this->getParam(OAuth2Protocol::OAuth2Protocol_ResponseType_Code);
     }
+
+    public function getCodeVerifier():?string{
+        return $this->getParam(OAuth2Protocol::PKCE_CodeVerifier);
+    }
 }

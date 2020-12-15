@@ -61,7 +61,7 @@
                 </div>
             </div>
         @endif
-        @if($client->application_type == OAuth2\Models\IClient::ApplicationType_Web_App || $client->application_type == OAuth2\Models\IClient::ApplicationType_Native)
+        @if($client->canRequestRefreshTokens())
             <div class="row">
                 <div class="col-md-12">
                     <label class="label-client-secret">Client Settings</label>

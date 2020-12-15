@@ -319,4 +319,9 @@ interface IClient extends IEntity
      * @return array
      */
     public function getValidAccessTokens();
+
+    /**
+     * @return bool
+     */
+    public function isPKCEEnabled():bool;
 }

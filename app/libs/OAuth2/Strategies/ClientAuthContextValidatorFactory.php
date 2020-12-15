@@ -63,6 +63,11 @@ final class ClientAuthContextValidatorFactory
                 return new ClientPlainCredentialsAuthContextValidator;
             }
             break;
+            case OAuth2Protocol::TokenEndpoint_AuthMethod_None:
+            {
+                return new ClientPKCEAuthContextValidator;
+            }
+            break;
             case OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretJwt:
             {
                 $validator =  new ClientSharedSecretAssertionAuthContextValidator;

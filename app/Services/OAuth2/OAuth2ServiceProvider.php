@@ -16,6 +16,7 @@ use App\Http\Utils\IUserIPHelperProvider;
 use Illuminate\Support\ServiceProvider;
 use OAuth2\Services\AccessTokenGenerator;
 use OAuth2\Services\AuthorizationCodeGenerator;
+use OAuth2\Services\IApiScopeService;
 use OAuth2\Services\OAuth2ServiceCatalog;
 use OAuth2\Services\RefreshTokenGenerator;
 use Utils\Services\UtilsServiceCatalog;
@@ -83,6 +84,7 @@ final class OAuth2ServiceProvider extends ServiceProvider
                 App::make(\OAuth2\Repositories\IRefreshTokenRepository::class),
                 App::make(\OAuth2\Repositories\IResourceServerRepository::class),
                 App::make(IUserIPHelperProvider::class),
+                App::make(IApiScopeService::class),
                 App::make(UtilsServiceCatalog::TransactionService)
             );
         });
