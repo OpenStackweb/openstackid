@@ -59,6 +59,9 @@ final class UserValidationRulesFactory
                 'email_verified' => 'nullable|boolean',
                 'active' => 'nullable|boolean',
                 'groups' => 'sometimes|int_array',
+                'public_profile_show_photo' => 'sometimes|boolean',
+                'public_profile_show_fullname' => 'sometimes|boolean',
+                'public_profile_show_email' => 'sometimes|boolean',
             ];
         }
 
@@ -93,6 +96,9 @@ final class UserValidationRulesFactory
             'email_verified' => 'nullable|boolean',
             'active' => 'nullable|boolean',
             'groups' => 'sometimes|int_array',
+            'public_profile_show_photo' => 'sometimes|boolean',
+            'public_profile_show_fullname' => 'sometimes|boolean',
+            'public_profile_show_email' => 'sometimes|boolean',
         ];
     }
 }
