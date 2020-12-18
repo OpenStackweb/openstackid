@@ -18,6 +18,8 @@ abstract class StandardClaims
      */
     const Name = 'name';
 
+    const ShowFullName = 'public_profile_show_fullname';
+
     /**
      * Given name(s) or first name(s) of the End-User. Note that in some cultures, people can have multiple given names;
      * all can be present, with the names being separated by space characters.
@@ -63,6 +65,8 @@ abstract class StandardClaims
      */
     const Picture = 'picture';
 
+    const ShowPicture = 'public_profile_show_photo';
+
     /**
      * URL of the End-User's Web page or blog. This Web page SHOULD contain information published by the End-User or an
      * organization that the End-User is affiliated with.
@@ -74,6 +78,8 @@ abstract class StandardClaims
      * MUST NOT rely upon this value being unique, as discussed in Section 5.7.
      */
     const Email = 'email';
+
+    const ShowEmail = 'public_profile_show_email';
 
     /**
      * True if the End-User's e-mail address has been verified; otherwise false. When this Claim Value is true, this
@@ -88,6 +94,8 @@ abstract class StandardClaims
      * neither of the defined values are applicable.
      */
     const Gender = 'gender';
+
+    const GenderSpecify = 'gender_specify';
 
     /**
      * End-User's birthday, represented as an ISO 8601:2004 [ISO8601‑2004] YYYY-MM-DD format. The year MAY be 0000,

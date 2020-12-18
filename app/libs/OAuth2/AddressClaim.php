@@ -60,4 +60,9 @@ abstract class AddressClaim
      */
     const Country = 'country';
 
+
+    const Address1 = 'address1';
+
+    const Address2 = 'address2';
+
 }
