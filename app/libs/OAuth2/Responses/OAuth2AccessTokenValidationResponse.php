@@ -66,6 +66,8 @@ class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse {
             $this['user_last_name']                      = $user->getLastName();
             $this['user_language']                       = $user->getLanguage();
             $this['user_country']                        = $user->getCountry();
+            $this['user_email_verified']                 = $user->isEmailVerified();
+            $this['user_pic']                            = $user->getPic();
             // default empty value
             $user_groups                                = [];
             foreach ($user->getGroups() as $group){
