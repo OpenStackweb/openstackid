@@ -71,7 +71,8 @@
             }
 
             var opbs = $.cookie('op_bs');
-            if (opbs == "undefined" || typeof(opbs) == "undefined") return "changed";
+            // posible cookies not enabled or third party cookies not enabled
+            if (opbs == "undefined" || typeof(opbs) == "undefined") return "error";
             //console.log("opbs "+opbs)
             var expectedHash = computeSessionStateHash(clientId, origin, opbs, salt);
             return clientHash === expectedHash ? "unchanged" : "changed";
