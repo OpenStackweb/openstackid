@@ -13,18 +13,19 @@
  **/
 use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\Log;
+use Utils\Services\ICacheService;
+use Monolog\Formatter\FormatterInterface;
 use Monolog\Handler\MailHandler;
 use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 use Illuminate\Support\Facades\Mail;
-use Utils\Services\ICacheService;
 /**
  * Class LaravelMailerHandler
  * @package App\Http\Utils\Logs
  */
 final class LaravelMailerHandler extends MailHandler
 {
-    // seconds
+    // in seconds
     const TIME_BETWEEN_ERRORS = 60 * 30;
     const SENT_ERROR_EMAIL = 'SENT_ERROR_EMAIL';
     /**
@@ -43,13 +44,13 @@ final class LaravelMailerHandler extends MailHandler
      * Optional headers for the message
      * @var array
      */
-    protected $headers = [];
+    protected $headers = array();
 
     /**
      * Optional parameters for the message
      * @var array
      */
-    protected $parameters = [];
+    protected $parameters = array();
 
     /**
      * The wordwrap length for the message
@@ -77,30 +78,29 @@ final class LaravelMailerHandler extends MailHandler
     private $cacheService;
 
     /**
+     * LaravelMailerHandler constructor.
      * @param ICacheService $cacheService
-     * @param string|array $to             The receiver of the mail
-     * @param string       $subject        The subject of the mail
-     * @param string       $from           The sender of the mail
-     * @param int          $level          The minimum logging level at which this handler will be triggered
-     * @param bool         $bubble         Whether the messages that are handled can bubble up the stack or not
-     * @param int          $maxColumnWidth The maximum column width that the message lines will have
+     * @param $to
+     * @param $subject
+     * @param $from
+     * @param int $level
+     * @param bool $bubble
+     * @param int $maxColumnWidth
      */
     public function __construct(ICacheService $cacheService, $to, $subject, $from, $level = Logger::ERROR, $bubble = true, $maxColumnWidth = 70)
     {
         parent::__construct($level, $bubble);
+        $this->cacheService = $cacheService;
         $this->from = $from;
         $this->to = is_array($to) ? $to : array($to);
-        $this->subject = $subject;
+        $this->subject = empty($subject) ? 'IDP ERROR' : $subject;
         $this->addHeader(sprintf('From: %s', $from));
         $this->maxColumnWidth = $maxColumnWidth;
-        $this->cacheService = $cacheService;
     }
 
     /**
-     * Add headers to the message
-     *
-     * @param  string|array $headers Custom added headers
-     * @return self
+     * @param $headers
+     * @return $this
      */
     public function addHeader($headers)
     {
@@ -130,9 +130,10 @@ final class LaravelMailerHandler extends MailHandler
     /**
      * {@inheritdoc}
      */
-    protected function send($content, array $records)
+    protected function send($content, array $records):void
     {
         $content = wordwrap($content, $this->maxColumnWidth);
+
 
         $subject = $this->subject;
         if ($records) {
@@ -147,7 +148,7 @@ final class LaravelMailerHandler extends MailHandler
                 Log::debug(sprintf("LaravelMailerHandler::send skipping exception %s %s", $subject, $content));
                 return;
             }
-            $this->cacheService->setSingleValue(self::SENT_ERROR_EMAIL, self::SENT_ERROR_EMAIL, LaravelMailerHandler::TIME_BETWEEN_ERRORS);
+            $this->cacheService->setSingleValue(self::SENT_ERROR_EMAIL, self::SENT_ERROR_EMAIL, self::TIME_BETWEEN_ERRORS);
         }
 
         foreach ($this->to as $to) {
@@ -206,5 +207,15 @@ final class LaravelMailerHandler extends MailHandler
         $this->encoding = $encoding;
 
         return $this;
+    }
+
+    /**
+     * Gets the default formatter.
+     *
+     * @return FormatterInterface
+     */
+    protected function getDefaultFormatter(): FormatterInterface
+    {
+        return new LineFormatter();
     }
 }

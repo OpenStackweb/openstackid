@@ -123,6 +123,7 @@ return [
         Illuminate\Foundation\Providers\FoundationServiceProvider::class,
         Illuminate\Hashing\HashServiceProvider::class,
         Illuminate\Mail\MailServiceProvider::class,
+        Illuminate\Notifications\NotificationServiceProvider::class,
         Illuminate\Pagination\PaginationServiceProvider::class,
         Illuminate\Pipeline\PipelineServiceProvider::class,
         Illuminate\Queue\QueueServiceProvider::class,
@@ -132,6 +133,11 @@ return [
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
+
+        /*
+         * Package Service Providers...
+         */
+
         /*
          * Application Service Providers...
          */
@@ -139,6 +145,7 @@ return [
         Repositories\RepositoriesProvider::class,
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
+        // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         Services\Utils\UtilsProvider::class,
@@ -209,7 +216,6 @@ return [
         'View'      => Illuminate\Support\Facades\View::class,
         'Form'      => Collective\Html\FormFacade::class,
         'HTML'      => Collective\Html\HtmlFacade::class,
-        'Input'     => Illuminate\Support\Facades\Input::class,
         'Recaptcha' => Greggilbert\Recaptcha\Facades\Recaptcha::class,
         'ServerConfigurationService' => \Services\Facades\ServerConfigurationService::class,
         'ExternalUrlService'=> \Services\Facades\ExternalUrlService::class,

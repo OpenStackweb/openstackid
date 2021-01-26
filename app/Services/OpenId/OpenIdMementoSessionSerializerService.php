@@ -14,6 +14,7 @@
 use OpenId\Requests\OpenIdMessageMemento;
 use OpenId\Services\IMementoOpenIdSerializerService;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 /**
  * Class OpenIdMementoSessionSerializerService
  * @package Services\OpenId
@@ -28,6 +29,7 @@ class OpenIdMementoSessionSerializerService implements IMementoOpenIdSerializerS
     public function serialize(OpenIdMessageMemento $memento)
     {
         $state = base64_encode(json_encode($memento->getState()));
+        Log::debug(sprintf("OpenIdMementoSessionSerializerService::serialize %s", $state));
         Session::put('openid.request.state', $state);
         Session::save();
     }
@@ -37,9 +39,14 @@ class OpenIdMementoSessionSerializerService implements IMementoOpenIdSerializerS
      */
     public function load()
     {
+        Log::debug(sprintf("OpenIdMementoSessionSerializerService::load"));
+
         $state = Session::get('openid.request.state', null);
 
-        if(is_null($state)) return null;
+        if(is_null($state)) {
+            Log::warning(sprintf("OpenIdMementoSessionSerializerService::load openid.request.state is null"));
+            return null;
+        }
 
         $state = json_decode( base64_decode($state), true);
 
@@ -51,6 +58,7 @@ class OpenIdMementoSessionSerializerService implements IMementoOpenIdSerializerS
      */
     public function forget()
     {
+        Log::debug(sprintf("OpenIdMementoSessionSerializerService::forget"));
         Session::remove('openid.request.state');
         Session::save();
     }
@@ -60,6 +68,7 @@ class OpenIdMementoSessionSerializerService implements IMementoOpenIdSerializerS
      */
     public function exists()
     {
+        Log::debug(sprintf("OpenIdMementoSessionSerializerService::exists"));
         return Session::has('openid.request.state');
     }
 }

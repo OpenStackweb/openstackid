@@ -11,9 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Http\Controllers\Controller;
 use Exception;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use OpenId\Exceptions\InvalidOpenIdMessageException;
@@ -24,6 +25,7 @@ use OpenId\OpenIdMessage;
 use OpenId\Responses\OpenIdResponse;
 use OpenId\Services\IMementoOpenIdSerializerService;
 use OpenId\Strategies\OpenIdResponseStrategyFactoryMethod;
+
 /**
  * Class OpenIdProviderController
  * @package App\Http\Controllers\OpenId
@@ -57,7 +59,7 @@ class OpenIdProviderController extends Controller
     public function endpoint()
     {
         try {
-            $msg = new OpenIdMessage(Input::all());
+            $msg = new OpenIdMessage(Request::all());
 
             if (!$msg->isValid() && $this->memento_service->exists()) {
                 $msg = OpenIdMessage::buildFromMemento($this->memento_service->load());
@@ -74,30 +76,25 @@ class OpenIdProviderController extends Controller
                 return $strategy->handle($response);
             }
             return $response;
-        }
-        catch(OpenIdBaseException $ex1){
+        } catch (OpenIdBaseException $ex1) {
             Log::warning($ex1);
             return Response::view
             (
                 'errors.400',
-                array
-                (
-                    'error'        => "Bad Request",
+                [
+                    'error' => "Bad Request",
                     'error_description' => $ex1->getMessage()
-                ),
+                ],
                 400
             );
-        }
-        catch(Exception $ex){
+        } catch (Exception $ex) {
             Log::error($ex);
             return Response::view
             (
                 'errors.400',
-                array
-                (
-                    'error'        => "Bad Request",
+                [   'error' => "Bad Request",
                     'error_description' => "Generic Error"
-                ),
+                ],
                 400
             );
         }

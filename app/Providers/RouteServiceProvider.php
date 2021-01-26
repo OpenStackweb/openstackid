@@ -13,6 +13,7 @@
  **/
 use Illuminate\Routing\Router;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Route;
 /**
  * Class RouteServiceProvider
  * @package App\Providers
@@ -47,7 +48,46 @@ final class RouteServiceProvider extends ServiceProvider
      */
     public function map(Router $router)
     {
-        require app_path('Http/routes.php');
+        Route::pattern('id', '[0-9]+');
+        Route::pattern('uri_id', '[0-9]+');
+        Route::pattern('active', '(true|false)');
+        Route::pattern('hint', '(access-token|refresh-token)');
+        Route::pattern('scope_id', '[0-9]+');
+
+        $this->mapApiRoutes();
+
+        $this->mapWebRoutes();
+
+    }
+
+    /**
+     * Define the "web" routes for the application.
+     *
+     * These routes all receive session state, CSRF protection, etc.
+     *
+     * @return void
+     */
+    protected function mapWebRoutes()
+    {
+        Route::middleware('web')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/web.php'));
+    }
+
+
+    /**
+     * Define the "api" routes for the application.
+     *
+     * These routes are typically stateless.
+     *
+     * @return void
+     */
+    protected function mapApiRoutes()
+    {
+        Route::middleware('api')
+            ->namespace('App\Http\Controllers\Api\OAuth2')
+            ->prefix('api/v1')
+            ->group(base_path('routes/api.php'));
     }
 
 }

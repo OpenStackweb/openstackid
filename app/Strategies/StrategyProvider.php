@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
 use OAuth2\Responses\OAuth2DirectResponse;
@@ -26,10 +28,8 @@ use OAuth2\Services\OAuth2ServiceCatalog;
  * Class StrategyProvider
  * @package Strategies
  */
-final class StrategyProvider extends ServiceProvider
+final class StrategyProvider extends ServiceProvider implements DeferrableProvider
 {
-
-    protected $defer = true;
 
     public function boot()
     {

@@ -15,7 +15,7 @@
 use App\Http\Controllers\Controller;
 use Utils\Services\ILogService;
 use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Exception;
 /**
  * Class JsonController
@@ -38,8 +38,8 @@ abstract class JsonController extends Controller  {
     protected function created($data='ok'){
         $res = Response::json($data, 201);
         //jsonp
-        if(Input::has('callback'))
-            $res->setCallback(Input::get('callback'));
+        if(Request::has('callback'))
+            $res->setCallback(Request::input('callback'));
         return $res;
     }
 
@@ -47,8 +47,8 @@ abstract class JsonController extends Controller  {
     {
         $res = Response::json($data, $has_content ? 201 : 204);
         //jsonp
-        if (Input::has('callback')) {
-            $res->setCallback(Input::get('callback'));
+        if (Request::has('callback')) {
+            $res->setCallback(Request::input('callback'));
         }
         return $res;
     }
@@ -56,16 +56,16 @@ abstract class JsonController extends Controller  {
     protected function deleted($data='ok'){
         $res =  Response::json($data, 204);
         //jsonp
-        if(Input::has('callback'))
-            $res->setCallback(Input::get('callback'));
+        if(Request::has('callback'))
+            $res->setCallback(Request::input('callback'));
         return $res;
     }
 
     protected function ok($data = 'ok'){
         $res = Response::json($data, 200);
         //jsonp
-        if(Input::has('callback'))
-            $res->setCallback(Input::get('callback'));
+        if(Request::has('callback'))
+            $res->setCallback(Request::input('callback'));
         return $res;
     }
 

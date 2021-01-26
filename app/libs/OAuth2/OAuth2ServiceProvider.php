@@ -11,15 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\App;
 /**
  * Class OAuth2ServiceProvider
  * @package OAuth2
  */
-final class OAuth2ServiceProvider extends ServiceProvider
+final class OAuth2ServiceProvider extends ServiceProvider implements DeferrableProvider
 {
-    protected $defer = true;
 
     public function boot()
     {

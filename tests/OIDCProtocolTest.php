@@ -34,6 +34,7 @@ use Utils\Services\UtilsServiceCatalog;
 use jwt\impl\UnsecuredJWT;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Illuminate\Support\Facades\Session;
+use Database\Seeders\TestSeeder;
 /**
  * Class OIDCProtocolTest
  * http://openid.net/wordpress-content/uploads/2015/02/OpenID-Connect-Conformance-Profiles.pdf

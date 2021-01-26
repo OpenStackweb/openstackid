@@ -1,4 +1,5 @@
 <?php
+use App\libs\Utils\Doctrine\EscapingQuoteStrategy;
 
 return [
 
@@ -24,6 +25,7 @@ return [
         'model' => [
             'dev'        => env('APP_DEBUG', false),
             'meta'       => env('DOCTRINE_METADATA', 'annotations'),
+            'quote_strategy' => EscapingQuoteStrategy::class,
             'connection' => 'openstackid',
             'namespaces' => [
                 'App'
@@ -236,9 +238,21 @@ return [
             ],
             'log_enabled'  => true,
             'file_lock_region_directory' => '/tmp'
-        ]
-
+        ],
+        'metadata'         => [
+            'driver'       => env('DOCTRINE_METADATA_CACHE', env('DOCTRINE_CACHE', 'redis')),
+            'namespace'    => null,
+        ],
+        'query'            => [
+            'driver'       => env('DOCTRINE_QUERY_CACHE', env('DOCTRINE_CACHE', 'redis')),
+            'namespace'    => null,
+        ],
+        'result'           => [
+            'driver'       => env('DOCTRINE_RESULT_CACHE', env('DOCTRINE_CACHE', 'redis')),
+            'namespace'    => null,
+        ],
     ],
+
     /*
     |--------------------------------------------------------------------------
     | Gedmo extensions

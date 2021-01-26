@@ -23,7 +23,7 @@ use Tests\BrowserKitTestCase;
 final class AssociationServiceTest extends BrowserKitTestCase
 {
 
-    public function tearDown()
+    public function tearDown():void
     {
         Mockery::close();
     }
@@ -103,12 +103,10 @@ final class AssociationServiceTest extends BrowserKitTestCase
         $this->assertTrue($res2->getSecret() === $res->getSecret());
     }
 
-
-    /**
-     * @expectedException \OpenId\Exceptions\InvalidAssociation
-     */
     public function testGetSessionAssociationMustFail_InvalidAssociation()
     {
+
+        $this->expectException("OpenId\\Exceptions\\InvalidAssociation");
 
         $cache_mock = Mockery::mock(\Utils\Services\ICacheService::class);
         $cache_mock->shouldReceive('storeHash')->once();
@@ -135,11 +133,10 @@ final class AssociationServiceTest extends BrowserKitTestCase
     }
 
 
-    /**
-     * @expectedException \openid\exceptions\ReplayAttackException
-     */
     public function testAddPrivateAssociationMustFail_ReplayAttackException()
     {
+
+        $this->expectException("openid\\exceptions\\ReplayAttackException");
 
         $cache_stub = new CacheServiceStub;
         $this->app->instance(UtilsServiceCatalog::CacheService, $cache_stub);
@@ -156,6 +153,7 @@ final class AssociationServiceTest extends BrowserKitTestCase
         $this->assertTrue(!is_null($res));
         $lock_manager_service_mock->shouldReceive('acquireLock')->once()->andThrow(new UnacquiredLockException);
         $service->addAssociation($assoc);
+
     }
 
 
@@ -184,12 +182,10 @@ final class AssociationServiceTest extends BrowserKitTestCase
     }
 
 
-    /**
-     * @expectedException \OpenId\Exceptions\OpenIdInvalidRealmException
-     */
     public function testGetPrivateAssociationMustFail_OpenIdInvalidRealmException()
     {
 
+        $this->expectException("OpenId\\Exceptions\\OpenIdInvalidRealmException");
         $cache_stub = new CacheServiceStub;
         $this->app->instance(UtilsServiceCatalog::CacheService, $cache_stub);
 
@@ -207,11 +203,10 @@ final class AssociationServiceTest extends BrowserKitTestCase
         $service->getAssociation($res->getHandle(), 'https://www1.test.com/');
     }
 
-    /**
-     * @expectedException \OpenId\Exceptions\InvalidAssociation
-     */
     public function testGetPrivateAssociationMustFail_InvalidAssociation()
     {
+
+        $this->expectException("OpenId\\Exceptions\\InvalidAssociation");
 
         $cache_stub = new CacheServiceStub;
         $this->app->instance(UtilsServiceCatalog::CacheService, $cache_stub);
@@ -230,13 +225,10 @@ final class AssociationServiceTest extends BrowserKitTestCase
         $service->getAssociation('123456', 'https://www1.test.com/');
     }
 
-
-    /**
-     * @expectedException \OpenId\Exceptions\ReplayAttackException
-     */
     public function testGetPrivateAssociationMustFail_ReplayAttackException()
     {
 
+        $this->expectException("OpenId\\Exceptions\\ReplayAttackException");
 
         $cache_stub = new CacheServiceStub;
         $this->app->instance(UtilsServiceCatalog::CacheService, $cache_stub);

@@ -14,6 +14,7 @@
 use App\libs\OAuth2\IUserScopes;
 use Doctrine\Migrations\AbstractMigration;
 use Doctrine\DBAL\Schema\Schema as Schema;
+use Database\Seeders\SeedUtils;
 /**
  * Class Version20190829142736
  * @package Database\Migrations
@@ -23,9 +24,9 @@ class Version20190829142736 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
-        \SeedUtils::seedScopes([
+        SeedUtils::seedScopes([
             [
                 'name'               => IUserScopes::ReadAll,
                 'short_description'  => 'Allows access to users info',
@@ -36,7 +37,7 @@ class Version20190829142736 extends AbstractMigration
             ],
         ], 'users');
 
-        \SeedUtils::seedApiEndpoints('users', [
+        SeedUtils::seedApiEndpoints('users', [
                 // get users
                 [
                     'name' => 'get-users',
@@ -55,7 +56,7 @@ class Version20190829142736 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
 
     }

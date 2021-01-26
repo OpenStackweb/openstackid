@@ -19,7 +19,7 @@ use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
 use Exception;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use models\exceptions\ValidationException;
 use OAuth2\Services\ITokenService;
@@ -155,7 +155,7 @@ final class UserApiController extends APICRUDController
     {
 
         try {
-            $hint = Input::get('hint', 'none');
+            $hint = Request::input('hint', 'none');
 
             switch ($hint) {
                 case 'access-token':
@@ -193,10 +193,10 @@ final class UserApiController extends APICRUDController
 
     protected function curateUpdatePayload(array $payload): array
     {
-        if(in_array("bio", $payload)){
+        if(array_key_exists("bio", $payload)){
             $payload["bio"] = strip_tags($payload["bio"]);
         }
-        if(in_array("statement_of_interest", $payload)){
+        if(array_key_exists("statement_of_interest", $payload)){
             $payload["statement_of_interest"] = strip_tags($payload["statement_of_interest"]);
         }
         return $payload;
@@ -204,10 +204,10 @@ final class UserApiController extends APICRUDController
 
     protected function curateCreatePayload(array $payload): array
     {
-        if(in_array("bio", $payload)){
+        if(array_key_exists("bio", $payload)){
             $payload["bio"] = strip_tags($payload["bio"]);
         }
-        if(in_array("statement_of_interest", $payload)){
+        if(array_key_exists("statement_of_interest", $payload)){
             $payload["statement_of_interest"] = strip_tags($payload["statement_of_interest"]);
         }
         return $payload;

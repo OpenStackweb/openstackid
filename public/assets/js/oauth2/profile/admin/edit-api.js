@@ -195,7 +195,7 @@ $(document).ready(function() {
         var active = $(this).is(':checked');
 
         var url       = active? scopesUrls.activate : scopesUrls.deactivate;
-        url           = url.replace('@id',id);
+        url           = url.replace('@id', id);
         var verb      = active?'PUT':'DELETE'
 
         $.ajax(
@@ -216,13 +216,14 @@ $(document).ready(function() {
     $("body").on('click','.scope-default-checkbox',function(event){
         var id         = $(this).attr('data-scope-id');
         var is_default = $(this).is(':checked');
-
-        var scope = { id : id, default:is_default};
+        var url        = scopesUrls.update;
+        url            = url.replace('@id', id);
+        var scope      = { id : id, default:is_default};
 
         $.ajax(
             {
                 type: "PUT",
-                url: scopesUrls.update,
+                url: url,
                 data: JSON.stringify(scope),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
@@ -240,13 +241,14 @@ $(document).ready(function() {
     $("body").on('click','.scope-system-checkbox',function(event){
         var id         = $(this).attr('data-scope-id');
         var is_system  = $(this).is(':checked');
-
-        var scope = { id : id, system:is_system};
+        var url        = scopesUrls.update;
+        url            = url.replace('@id', id);
+        var scope      = { id : id, system:is_system};
 
         $.ajax(
             {
                 type: "PUT",
-                url: scopesUrls.update,
+                url: url,
                 data: JSON.stringify(scope),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",

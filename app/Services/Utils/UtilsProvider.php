@@ -14,6 +14,7 @@
 use App\Models\Utils\BaseEntity;
 use App\Repositories\IServerConfigurationRepository;
 use App\Services\Utils\DoctrineTransactionService;
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Utils\Services\UtilsServiceCatalog;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\App;
@@ -21,9 +22,7 @@ use Illuminate\Support\Facades\App;
  * Class UtilsProvider
  * @package Services\Utils
  */
-final class UtilsProvider extends ServiceProvider {
-
-    protected $defer = true;
+final class UtilsProvider extends ServiceProvider implements DeferrableProvider {
 
     /**
      * Register the service provider.

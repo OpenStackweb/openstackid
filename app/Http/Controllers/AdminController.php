@@ -16,7 +16,7 @@ use App\Http\Utils\CountryList;
 use App\libs\Auth\Repositories\IBannedIPRepository;
 use App\libs\Auth\Repositories\IGroupRepository;
 use Auth\Repositories\IUserRepository;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
@@ -493,7 +493,7 @@ class AdminController extends Controller {
 
     public function saveServerConfig(){
 
-        $values = Input::all();
+        $values = Request::all();
 
         $rules = array
         (

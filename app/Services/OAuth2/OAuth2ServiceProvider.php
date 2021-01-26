@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Utils\IUserIPHelperProvider;
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
 use OAuth2\Services\AccessTokenGenerator;
 use OAuth2\Services\AuthorizationCodeGenerator;
@@ -25,10 +26,8 @@ use Illuminate\Support\Facades\App;
  * Class OAuth2ServiceProvider
  * @package Services\OAuth2
  */
-final class OAuth2ServiceProvider extends ServiceProvider
+final class OAuth2ServiceProvider extends ServiceProvider implements DeferrableProvider
 {
-    protected $defer = true;
-
     public function boot()
     {
     }

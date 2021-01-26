@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
 use OpenId\Services\NonceUniqueIdentifierGenerator;
@@ -20,9 +22,7 @@ use Utils\Services\UtilsServiceCatalog;
  * Class OpenIdProvider
  * @package Services\OpenId
  */
-final class OpenIdProvider extends ServiceProvider {
-
-    protected $defer = true;
+final class OpenIdProvider extends ServiceProvider implements DeferrableProvider {
 
     /**
      * Register the service provider.

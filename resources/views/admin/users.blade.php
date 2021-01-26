@@ -80,7 +80,7 @@
             delete: '{!! URL::action("Api\\UserApiController@delete",["id"=>"@id"]) !!}',
             unlock: '{!! URL::action("Api\\UserApiController@unlock",["id"=>"@id"]) !!}',
             lock: '{!! URL::action("Api\\UserApiController@lock",["id"=>"@id"]) !!}',
-            edit: '{!! URL::action("AdminController@editUser",["id"=>"@id"]) !!}',
+            edit: '{!! URL::action("AdminController@editUser",["user_id"=>"@id"]) !!}',
             fetchGroups: '{!!URL::action("Api\GroupApiController@getAll")!!}',
         };
 

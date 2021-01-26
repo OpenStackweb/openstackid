@@ -18,7 +18,7 @@ use App\ModelSerializers\SerializerRegistry;
 use App\Services\Auth\IGroupService;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
@@ -178,7 +178,7 @@ final class GroupApiController extends APICRUDController
      */
     public function getUsersFromGroup($group_id)
     {
-        $values = Input::all();
+        $values = Request::all();
         $rules  = [
 
             'page'     => 'integer|min:1',
@@ -198,15 +198,15 @@ final class GroupApiController extends APICRUDController
             $page     = 1;
             $per_page = PagingConstants::DefaultPageSize;;
 
-            if (Input::has('page')) {
-                $page     = intval(Input::get('page'));
-                $per_page = intval(Input::get('per_page'));
+            if (Request::has('page')) {
+                $page     = intval(Request::input('page'));
+                $per_page = intval(Request::input('per_page'));
             }
 
             $filter = null;
 
-            if (Input::has('filter')) {
-                $filter = FilterParser::parse(Input::get('filter'), [
+            if (Request::has('filter')) {
+                $filter = FilterParser::parse(Request::input('filter'), [
                     'first_name'     => ['=@', '=='],
                     'last_name'      => ['=@', '=='],
                     'email'          => ['=@', '=='],
@@ -229,11 +229,9 @@ final class GroupApiController extends APICRUDController
 
             $order = null;
 
-            if (Input::has('order'))
+            if (Request::has('order'))
             {
-                $order = OrderParser::parse(Input::get('order'), [
-
-                ]);
+                $order = OrderParser::parse(Request::input('order'), []);
             }
 
             $filter->addFilterCondition(FilterElement::makeEqual("group_id", $group_id));
@@ -244,7 +242,7 @@ final class GroupApiController extends APICRUDController
             (
                 $data->toArray
                 (
-                    Input::get('expand', ''),
+                    Request::input('expand', ''),
                     [],
                     [],
                     [],

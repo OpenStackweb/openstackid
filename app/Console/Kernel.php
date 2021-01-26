@@ -41,10 +41,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('idp:oauth2-clean')->dailyAt("02:30")->withoutOverlapping();
-        $schedule->command('idp:openid-clean')->dailyAt("03:30")->withoutOverlapping();
+        $schedule->command('idp:oauth2-clean')->dailyAt("02:30")->withoutOverlapping()->onOneServer();
+        $schedule->command('idp:openid-clean')->dailyAt("03:30")->withoutOverlapping()->onOneServer();
         // user spammer
-        $schedule->command('user-spam:rebuild')->dailyAt("02:30")->withoutOverlapping();
-        $schedule->command('user-spam:process')->dailyAt("03:30")->withoutOverlapping();
+        $schedule->command('user-spam:rebuild')->dailyAt("02:30")->withoutOverlapping()->onOneServer();
+        $schedule->command('user-spam:process')->dailyAt("03:30")->withoutOverlapping()->onOneServer();
     }
 }

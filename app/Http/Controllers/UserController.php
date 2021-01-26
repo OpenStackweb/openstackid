@@ -11,30 +11,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Http\Controllers\OpenId\DiscoveryController;
 use App\Http\Controllers\OpenId\OpenIdController;
 use App\Http\Utils\CountryList;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
 use Exception;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
 use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Repositories\IClientRepository;
 use OpenId\Services\IUserService;
-use OAuth2\Services\IApiScopeService;
-use OAuth2\Services\IClientService;
 use OAuth2\Services\IMementoOAuth2SerializerService;
 use OAuth2\Services\IResourceServerService;
 use OAuth2\Services\ISecurityContextService;
 use OAuth2\Services\ITokenService;
 use OpenId\Services\IMementoOpenIdSerializerService;
 use OpenId\Services\ITrustedSitesService;
-use models\exceptions\ValidationException;
 use Services\IUserActionService;
 use Sokil\IsoCodes\IsoCodesFactory;
 use Strategies\DefaultLoginStrategy;
@@ -47,6 +46,7 @@ use Utils\IPHelper;
 use Utils\Services\IAuthService;
 use Utils\Services\IServerConfigurationService;
 use Utils\Services\IServerConfigurationService as IUtilsServerConfigurationService;
+
 /**
  * Class UserController
  * @package App\Http\Controllers
@@ -151,26 +151,27 @@ final class UserController extends OpenIdController
     )
     {
 
-        $this->openid_memento_service       = $openid_memento_service;
-        $this->oauth2_memento_service       = $oauth2_memento_service;
-        $this->auth_service                 = $auth_service;
+        $this->openid_memento_service = $openid_memento_service;
+        $this->oauth2_memento_service = $oauth2_memento_service;
+        $this->auth_service = $auth_service;
         $this->server_configuration_service = $server_configuration_service;
-        $this->trusted_sites_service        = $trusted_sites_service;
-        $this->discovery                    = $discovery;
-        $this->user_service                 = $user_service;
-        $this->user_action_service          = $user_action_service;
-        $this->client_repository            = $client_repository;
-        $this->scope_repository             = $scope_repository;
-        $this->token_service                = $token_service;
-        $this->resource_server_service      = $resource_server_service;
-        $this->utils_configuration_service  = $utils_configuration_service;
-        $this->security_context_service     = $security_context_service;
+        $this->trusted_sites_service = $trusted_sites_service;
+        $this->discovery = $discovery;
+        $this->user_service = $user_service;
+        $this->user_action_service = $user_action_service;
+        $this->client_repository = $client_repository;
+        $this->scope_repository = $scope_repository;
+        $this->token_service = $token_service;
+        $this->resource_server_service = $resource_server_service;
+        $this->utils_configuration_service = $utils_configuration_service;
+        $this->security_context_service = $security_context_service;
 
         $this->middleware(function ($request, $next) {
-            if ($this->openid_memento_service->exists())
-            {
+            Log::debug(sprintf("UserController::middleware"));
+            if ($this->openid_memento_service->exists()) {
                 //openid stuff
-                $this->login_strategy   = new OpenIdLoginStrategy
+                Log::debug(sprintf("UserController::middleware OIDC"));
+                $this->login_strategy = new OpenIdLoginStrategy
                 (
                     $this->openid_memento_service,
                     $this->user_action_service,
@@ -185,10 +186,8 @@ final class UserController extends OpenIdController
                     $this->user_action_service
                 );
 
-            }
-            else if ($this->oauth2_memento_service->exists())
-            {
-
+            } else if ($this->oauth2_memento_service->exists()) {
+                Log::debug(sprintf("UserController::middleware OAUTH2"));
                 $this->login_strategy = new OAuth2LoginStrategy
                 (
                     $this->auth_service,
@@ -204,11 +203,10 @@ final class UserController extends OpenIdController
                     $this->scope_repository,
                     $this->client_repository
                 );
-            }
-            else
-            {
+            } else {
                 //default stuff
-                $this->login_strategy   = new DefaultLoginStrategy($this->user_action_service, $this->auth_service);
+                Log::debug(sprintf("UserController::middleware DEFAULT"));
+                $this->login_strategy = new DefaultLoginStrategy($this->user_action_service, $this->auth_service);
                 $this->consent_strategy = null;
             }
 
@@ -229,49 +227,44 @@ final class UserController extends OpenIdController
     public function postLogin()
     {
         $max_login_attempts_2_show_captcha = $this->server_configuration_service->getConfigValue("MaxFailed.LoginAttempts.2ShowCaptcha");
-        $login_attempts                    = 0;
-        $username                          = '';
-        try
-        {
+        $login_attempts = 0;
+        $username = '';
+        try {
 
-            $data = Input::all();
+            $data = Request::all();
 
-            if(isset($data['username']))
+            if (isset($data['username']))
                 $data['username'] = trim($data['username']);
-            if(isset($data['password']))
+            if (isset($data['password']))
                 $data['password'] = trim($data['password']);
 
-            $login_attempts = intval(Input::get('login_attempts'));
+            $login_attempts = intval(Request::input('login_attempts'));
             // Build the validation constraint set.
             $rules = array
             (
                 'username' => 'required|email',
                 'password' => 'required',
             );
-            if ($login_attempts >= $max_login_attempts_2_show_captcha)
-            {
+            if ($login_attempts >= $max_login_attempts_2_show_captcha) {
                 $rules['g-recaptcha-response'] = 'required|recaptcha';
             }
             // Create a new validator instance.
             $validator = Validator::make($data, $rules);
 
-            if ($validator->passes())
-            {
+            if ($validator->passes()) {
                 $username = $data['username'];
                 $password = $data['password'];
-                $remember = Input::get("remember");
+                $remember = Request::input("remember");
 
                 $remember = !is_null($remember);
-                if ($this->auth_service->login($username, $password, $remember))
-                {
+                if ($this->auth_service->login($username, $password, $remember)) {
                     return $this->login_strategy->postLogin();
                 }
 
                 //failed login attempt...
                 $user = $this->auth_service->getUserByUsername($username);
 
-                if (!is_null($user))
-                {
+                if (!is_null($user)) {
                     $login_attempts = $user->getLoginFailedAttempt();
                 }
 
@@ -280,9 +273,9 @@ final class UserController extends OpenIdController
                     array
                     (
                         'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                        'login_attempts'                    => $login_attempts,
-                        'username'                          => $username,
-                        'error_message'                     => "We are sorry, your username or password does not match an existing record."
+                        'login_attempts' => $login_attempts,
+                        'username' => $username,
+                        'error_message' => "We are sorry, your username or password does not match an existing record."
                     )
                 );
             }
@@ -292,31 +285,26 @@ final class UserController extends OpenIdController
                 array
                 (
                     'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                    'login_attempts'                    => $login_attempts,
-                    'validator'                         => $validator
+                    'login_attempts' => $login_attempts,
+                    'validator' => $validator
                 )
             );
-        }
-        catch(UnverifiedEmailMemberException $ex1)
-        {
+        } catch (UnverifiedEmailMemberException $ex1) {
             Log::warning($ex1);
             return $this->login_strategy->errorLogin
             (
                 array
                 (
                     'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                    'login_attempts'                    => $login_attempts,
-                    'username'                          => $username,
-                    'error_message'                     => $ex1->getMessage()
+                    'login_attempts' => $login_attempts,
+                    'username' => $username,
+                    'error_message' => $ex1->getMessage()
                 )
             );
-        }
-        catch(AuthenticationException $ex2){
+        } catch (AuthenticationException $ex2) {
             Log::warning($ex2);
             return Redirect::action('UserController@getLogin');
-        }
-        catch (Exception $ex)
-        {
+        } catch (Exception $ex) {
             Log::error($ex);
             return Redirect::action('UserController@getLogin');
         }
@@ -324,9 +312,16 @@ final class UserController extends OpenIdController
 
     public function getConsent()
     {
-        if (is_null($this->consent_strategy))
-        {
-            return View::make("errors.400");
+        if (is_null($this->consent_strategy)) {
+            return Response::view
+            (
+                'errors.400',
+                [
+                    'error' => "Bad Request",
+                    'error_description' => "Generic Error"
+                ],
+                400
+            );
         }
 
         return $this->consent_strategy->getConsent();
@@ -334,28 +329,32 @@ final class UserController extends OpenIdController
 
     public function postConsent()
     {
-        try
-        {
-            $data  = Input::all();
+        try {
+            $data = Request::all();
             $rules = array
             (
                 'trust' => 'required|oauth2_trust_response',
             );
             // Create a new validator instance.
             $validator = Validator::make($data, $rules);
-            if ($validator->passes())
-            {
-                if (is_null($this->consent_strategy))
-                {
-                    return View::make("errors.404");
+            if ($validator->passes()) {
+                if (is_null($this->consent_strategy)) {
+                    Log::warning(sprintf("UserController::postConsent consent strategy is null"));
+                    return Response::view
+                    (
+                        'errors.400',
+                        [
+                            'error' => "Bad Request",
+                            'error_description' => "Generic Error"
+                        ],
+                        400
+                    );
                 }
 
-                return $this->consent_strategy->postConsent(Input::get("trust"));
+                return $this->consent_strategy->postConsent(Request::input("trust"));
             }
             return Redirect::action('UserController@getConsent')->withErrors($validator);
-        }
-        catch (Exception $ex)
-        {
+        } catch (Exception $ex) {
             Log::error($ex);
             return Redirect::action('UserController@getConsent');
         }
@@ -363,16 +362,13 @@ final class UserController extends OpenIdController
 
     public function getIdentity($identifier)
     {
-        try
-        {
+        try {
             $user = $this->auth_service->getUserByOpenId($identifier);
-            if (is_null($user))
-            {
+            if (is_null($user)) {
                 return View::make("errors.404");
             }
 
-            if ($this->isDiscoveryRequest())
-            {
+            if ($this->isDiscoveryRequest()) {
                 /*
                 * If the Claimed Identifier was not previously discovered by the Relying Party
                 * (the "openid.identity" in the request was "http://specs.openid.net/auth/2.0/identifier_select"
@@ -392,8 +388,7 @@ final class UserController extends OpenIdController
 
             $current_user = $this->auth_service->getCurrentUser();
             $another_user = false;
-            if ($current_user && $current_user->getIdentifier() != $user->getIdentifier())
-            {
+            if ($current_user && $current_user->getIdentifier() != $user->getIdentifier()) {
                 $another_user = true;
             }
 
@@ -414,9 +409,7 @@ final class UserController extends OpenIdController
             ];
 
             return View::make("identity", $params);
-        }
-        catch (Exception $ex)
-        {
+        } catch (Exception $ex) {
             Log::error($ex);
             return View::make("errors.404");
         }
@@ -438,8 +431,8 @@ final class UserController extends OpenIdController
 
     public function getProfile()
     {
-        $user    = $this->auth_service->getCurrentUser();
-        $sites   = $user->getTrustedSites();
+        $user = $this->auth_service->getCurrentUser();
+        $sites = $user->getTrustedSites();
         $actions = $user->getLatestNActions(10);
 
         // init database
@@ -448,18 +441,18 @@ final class UserController extends OpenIdController
         // get languages database
         $languages = $isoCodes->getLanguages()->toArray();
         $lang2Code = [];
-        foreach ($languages as $lang){
-            if(!empty($lang->getAlpha2()))
+        foreach ($languages as $lang) {
+            if (!empty($lang->getAlpha2()))
                 $lang2Code[] = $lang;
         }
 
         return View::make("profile", [
-            'user'       => $user,
+            'user' => $user,
             "openid_url" => $this->server_configuration_service->getUserIdentityEndpointURL($user->getIdentifier()),
-            "sites"      => $sites,
-            'actions'    => $actions,
-            'countries'  => CountryList::getCountries(),
-            'languages'  => $lang2Code,
+            "sites" => $sites,
+            'actions' => $actions,
+            'countries' => CountryList::getCountries(),
+            'languages' => $lang2Code,
         ]);
     }
 

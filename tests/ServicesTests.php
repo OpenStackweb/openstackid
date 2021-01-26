@@ -25,7 +25,7 @@ use Mockery;
  */
 final class ServicesTests extends TestCase
 {
-    public function tearDown()
+    public function tearDown():void
     {
         Mockery::close();
     }
@@ -44,7 +44,7 @@ final class ServicesTests extends TestCase
      */
     protected $baseUrl = 'http://localhost';
 
-    public function setUp()
+    public function setUp():void
     {
         parent::setUp(); // Don't forget this!
         $this->redis = Redis::connection();

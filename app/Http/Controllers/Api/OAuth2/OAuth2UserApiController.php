@@ -18,9 +18,8 @@ use App\Http\Utils\HTMLCleaner;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Http\Request as LaravelRequest;
-use Illuminate\Support\Facades\Input;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use models\exceptions\EntityNotFoundException;
@@ -166,7 +165,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             if(!$this->resource_server_context->getCurrentUserId()){
                 return $this->error403();
             }
-            $payload = Input::json()->all();
+            $payload = Request::json()->all();
             // Creates a Validator instance and validates the data.
 
             $validation = Validator::make($payload, UserValidationRulesFactory::build($payload, true));

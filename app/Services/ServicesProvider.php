@@ -24,6 +24,7 @@ use App\Services\Auth\RocketChatSSOService;
 use App\Services\Auth\StreamChatSSOService;
 use App\Services\Auth\IStreamChatSSOService;
 use App\Services\Auth\UserService;
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
 use Services\SecurityPolicies\AuthorizationCodeRedeemPolicy;
 use Services\SecurityPolicies\OAuth2SecurityPolicy;
@@ -35,10 +36,8 @@ use Illuminate\Support\Facades\App;
  * Class ServicesProvider
  * @package Services
  */
-final class ServicesProvider extends ServiceProvider
+final class ServicesProvider extends ServiceProvider implements DeferrableProvider
 {
-    protected $defer = true;
-
     public function boot(){
     }
 

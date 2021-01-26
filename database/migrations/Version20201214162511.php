@@ -24,7 +24,7 @@ class Version20201214162511 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         $builder = new Builder($schema);
         if($schema->hasTable("oauth2_client") && !$builder->hasColumn("oauth2_client","pkce_enabled") ) {
@@ -37,7 +37,7 @@ class Version20201214162511 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
         $builder = new Builder($schema);
         if($schema->hasTable("oauth2_client") && $builder->hasColumn("oauth2_client","pkce_enabled") ) {
