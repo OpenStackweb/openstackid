@@ -309,7 +309,7 @@ class User extends BaseEntity
 
     // relations
     /**
-     * @ORM\OneToOne(targetEntity="App\libs\Auth\Models\UserRegistrationRequest", mappedBy="owner", cascade={"persist","remove"}, orphanRemoval=tru)
+     * @ORM\OneToOne(targetEntity="App\libs\Auth\Models\UserRegistrationRequest", mappedBy="owner", cascade={"persist","remove"}, orphanRemoval=true)
      * @var UserRegistrationRequest
      */
     private $registration_request;
@@ -895,7 +895,7 @@ class User extends BaseEntity
     public function lock()
     {
         $this->deActivate();
-        Event::fire(new UserLocked($this->getId()));
+        Event::dispatch(new UserLocked($this->getId()));
         return $this;
     }
 
@@ -1469,7 +1469,7 @@ SQL;
         if(!$this->active) {
             $this->active = true;
             $this->spam_type = self::SpamTypeHam;
-            Event::fire(new UserSpamStateUpdated(
+            Event::dispatch(new UserSpamStateUpdated(
                     $this->getId()
                 )
             );
@@ -1480,7 +1480,7 @@ SQL;
         if( $this->active) {
             $this->active = false;
             $this->spam_type = self::SpamTypeSpam;
-            Event::fire(new UserSpamStateUpdated(
+            Event::dispatch(new UserSpamStateUpdated(
                     $this->getId()
                 )
             );
@@ -1500,11 +1500,11 @@ SQL;
             $this->active              = true;
             $this->lock                = false;
             $this->email_verified_date = new \DateTime('now', new \DateTimeZone('UTC'));
-            Event::fire(new UserEmailVerified(
+            Event::dispatch(new UserEmailVerified(
                     $this->getId()
                 )
             );
-            Event::fire(new UserSpamStateUpdated(
+            Event::dispatch(new UserSpamStateUpdated(
                     $this->getId()
                 )
             );
@@ -1567,7 +1567,7 @@ SQL;
      */
     public function postPersist($args)
     {
-        Event::fire(new UserCreated($this->getId()));
+        Event::dispatch(new UserCreated($this->getId()));
     }
 
     /**
@@ -1591,7 +1591,7 @@ SQL;
                 // enqueue user for spam re checker
                 Log::warning(sprintf("User::preUpdate user %s was marked for spam type reclasification.", $this->email));
                 $this->resetSpamTypeClassification();
-                Event::fire(new UserSpamStateUpdated($this->getId()));
+                Event::dispatch(new UserSpamStateUpdated($this->getId()));
             }
         }
     }

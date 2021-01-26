@@ -26,7 +26,7 @@ class Version20190904133943 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         $group = EntityManager::getRepository(Group::class)->findOneBy(['name' => 'super admins']);
         if(is_null($group)){
@@ -87,7 +87,7 @@ class Version20190904133943 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
 
     }

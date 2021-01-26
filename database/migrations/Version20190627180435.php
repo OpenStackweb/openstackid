@@ -24,14 +24,14 @@ final class Version20190627180435 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         $builder = new Builder($schema);
 
         $builder->table('users', function (Table $table) {
             $table->bigInteger("created_by_id")->setUnsigned(true)->setNotnull(false);
             $table->index("created_by_id", "created_by_id");
-            $table->foreign("users", "created_by_id", "id");
+            $table->foreign("users", "created_by_id", "id", ['onDelete' => 'SET NULL']);
             $table->dropColumn('lock');
         });
     }
@@ -39,7 +39,7 @@ final class Version20190627180435 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
 
     }

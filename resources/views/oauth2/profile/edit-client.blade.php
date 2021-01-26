@@ -13,7 +13,7 @@
         var dataClientUrls =
         {
             refresh: '{!!URL::action("Api\\ClientApiController@setRefreshTokenClient",array("id"=>$client->id, "use_refresh_token" => "@use_refresh_token"))!!}',
-            rotate: '{!!URL::action("Api\\ClientApiController@setRotateRefreshTokenPolicy",array("id"=>$client->id, 'use_refresh_token'=>'@rotate_refresh_token'))!!}',
+            rotate: '{!!URL::action("Api\\ClientApiController@setRotateRefreshTokenPolicy",array("id"=>$client->id, 'rotate_refresh_token'=>'@rotate_refresh_token'))!!}',
             update: '{!!URL::action("Api\\ClientApiController@update",array("id"=>$client->id))!!}',
             add_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@_create",array("id"=>$client->id))!!}',
             get_public_keys: '{!!URL::action("Api\\ClientPublicKeyApiController@getAll",array("id"=>$client->id))!!}',

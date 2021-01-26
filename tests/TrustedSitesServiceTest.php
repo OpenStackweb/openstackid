@@ -28,7 +28,7 @@ final class TrustedSitesServiceTest extends BrowserKitTestCase {
 		parent::prepareForTests();
 	}
 
-	public function tearDown()
+	public function tearDown():void
     {
         Mockery::close();
     }

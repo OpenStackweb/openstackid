@@ -60,7 +60,7 @@ final class OAuthSSOApiControllerTest extends OAuth2ProtectedApiTest
     static $stream_chat_profile;
 
 
-    public function setUp()
+    public function setUp():void
     {
         parent::setUp();
         DB::table("sso_disqus_profile")->delete();
@@ -97,7 +97,7 @@ final class OAuthSSOApiControllerTest extends OAuth2ProtectedApiTest
         self::$em->flush();
     }
 
-    protected function tearDown()
+    protected function tearDown():void
     {
         self::$em  = Registry::resetManager(BaseEntity::EntityManager);
         self::$disqus_profile = self::$disqus_repository->find(self::$disqus_profile->getId());

@@ -12,17 +12,12 @@
  * limitations under the License.
  **/
 use App\Http\Controllers\Api\JsonController;
-use App\Http\Utils\PagingConstants;
 use App\ModelSerializers\SerializerRegistry;
 use App\Services\IBaseService;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use models\utils\IBaseRepository;
-use utils\Filter;
-use utils\FilterParser;
-use utils\OrderParser;
-use utils\PagingInfo;
 use Utils\Services\ILogService;
 use Exception;
 use models\exceptions\ValidationException;
@@ -84,7 +79,7 @@ abstract class APICRUDController extends JsonController
 
             return $this->ok(SerializerRegistry::getInstance()->getSerializer($entity, $this->serializerType())->serialize
             (
-                Input::get("expand", '')
+                Request::input("expand", '')
             ));
         }
         catch (EntityNotFoundException $ex2)
@@ -181,7 +176,7 @@ abstract class APICRUDController extends JsonController
      * @return array
      */
     protected function getCreatePayload():array{
-        return Input::All();
+        return Request::All();
     }
 
     /**

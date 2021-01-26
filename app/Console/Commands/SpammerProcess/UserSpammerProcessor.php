@@ -70,6 +70,10 @@ final class UserSpammerProcessor  extends Command
     public function handle()
     {
         try {
+            $is_enabled = boolval(Config::get("jobs.spam_processing_enabled"));
+            if(!$is_enabled){
+                return;
+            }
             $connections = Config::get('database.connections', []);
             $db = $connections['openstackid'] ?? [];
             $host = $db['host'] ?? '';
@@ -77,17 +81,15 @@ final class UserSpammerProcessor  extends Command
             $username = $db['username'] ?? '';
             $password = $db['password'] ?? '';
 
-            $command = sprintf(
-                '%s/app/Console/Commands/SpammerProcess/estimator_process.sh "%s" "%s" "%s" "%s" "%s"',
-                base_path(),
+            $command = [sprintf('%s/app/Console/Commands/SpammerProcess/estimator_process.sh',base_path()),
                 base_path() . '/app/Console/Commands/SpammerProcess',
                 $host,
                 $username,
                 $password,
                 $database
-            );
+            ];
 
-            Log::debug(sprintf("UserSpammerProcessor::handle running command %s", $command));
+            Log::debug(sprintf("UserSpammerProcessor::handle running command %s", implode(" ",$command)));
 
             $process = new Process($command);
             $process->setTimeout(PHP_INT_MAX);

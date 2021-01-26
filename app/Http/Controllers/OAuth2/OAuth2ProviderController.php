@@ -13,9 +13,8 @@
  **/
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 use OAuth2\Exceptions\OAuth2BaseException;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
@@ -30,9 +29,7 @@ use OAuth2\Responses\OAuth2Response;
 use OAuth2\Strategies\OAuth2ResponseStrategyFactoryMethod;
 use Utils\Http\HttpContentType;
 use Utils\Services\IAuthService;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redirect;
 use Exception;
 
 /**
@@ -67,9 +64,9 @@ final class OAuth2ProviderController extends Controller
         IAuthService $auth_service
     )
     {
-        $this->oauth2_protocol    = $oauth2_protocol;
-        $this->auth_service       = $auth_service;
-        $this->client_repository  = $client_repository;
+        $this->oauth2_protocol = $oauth2_protocol;
+        $this->auth_service = $auth_service;
+        $this->client_repository = $client_repository;
     }
 
     /**
@@ -81,15 +78,14 @@ final class OAuth2ProviderController extends Controller
      */
     public function auth()
     {
-        try
-        {
+        try {
             $response = $this->oauth2_protocol->authorize
             (
                 OAuth2AuthorizationRequestFactory::getInstance()->build
                 (
                     new OAuth2Message
                     (
-                        Input::all()
+                        Request::all()
                     )
                 )
             );
@@ -104,31 +100,25 @@ final class OAuth2ProviderController extends Controller
             }
 
             return $response;
-        }
-        catch(OAuth2BaseException $ex1)
-        {
+        } catch (OAuth2BaseException $ex1) {
             return Response::view
             (
                 'errors.400',
-                array
-                (
-                    'error'        => $ex1->getError(),
+                [
+                    'error' => $ex1->getError(),
                     'error_description' => $ex1->getMessage()
-                ),
+                ],
                 400
             );
-        }
-        catch(Exception $ex)
-        {
+        } catch (Exception $ex) {
             Log::error($ex);
             return Response::view
             (
                 'errors.400',
-                array
-                (
-                    'error'        => "Bad Request",
+                [
+                    'error' => "Bad Request",
                     'error_description' => "Generic Error"
-                ),
+                ],
                 400
             );
         }
@@ -141,19 +131,18 @@ final class OAuth2ProviderController extends Controller
     public function token()
     {
 
-        $response  = $this->oauth2_protocol->token
+        $response = $this->oauth2_protocol->token
         (
             new OAuth2TokenRequest
             (
                 new OAuth2Message
                 (
-                    Input::all()
+                    Request::all()
                 )
             )
         );
 
-        if ($response instanceof OAuth2Response)
-        {
+        if ($response instanceof OAuth2Response) {
             $strategy = OAuth2ResponseStrategyFactoryMethod::buildStrategy
             (
                 $this->oauth2_protocol->getLastRequest(),
@@ -177,13 +166,12 @@ final class OAuth2ProviderController extends Controller
             (
                 new OAuth2Message
                 (
-                    Input::all()
+                    Request::all()
                 )
             )
         );
 
-        if ($response instanceof OAuth2Response)
-        {
+        if ($response instanceof OAuth2Response) {
             $strategy = OAuth2ResponseStrategyFactoryMethod::buildStrategy
             (
                 $this->oauth2_protocol->getLastRequest(),
@@ -209,13 +197,12 @@ final class OAuth2ProviderController extends Controller
             (
                 new OAuth2Message
                 (
-                    Input::all()
+                    Request::all()
                 )
             )
         );
 
-        if ($response instanceof OAuth2Response)
-        {
+        if ($response instanceof OAuth2Response) {
             $strategy = OAuth2ResponseStrategyFactoryMethod::buildStrategy
             (
                 $this->oauth2_protocol->getLastRequest(),
@@ -234,7 +221,7 @@ final class OAuth2ProviderController extends Controller
     public function certs()
     {
 
-        $doc      = $this->oauth2_protocol->getJWKSDocument();
+        $doc = $this->oauth2_protocol->getJWKSDocument();
         $response = Response::make($doc, 200);
         $response->header('Content-Type', HttpContentType::Json);
 
@@ -244,7 +231,7 @@ final class OAuth2ProviderController extends Controller
     public function discovery()
     {
 
-        $doc      = $this->oauth2_protocol->getDiscoveryDocument();
+        $doc = $this->oauth2_protocol->getDiscoveryDocument();
         $response = Response::make($doc, 200);
         $response->header('Content-Type', HttpContentType::Json);
 
@@ -252,7 +239,7 @@ final class OAuth2ProviderController extends Controller
     }
 
     /**
-     *  @see http://openid.net/specs/openid-connect-session-1_0.html#OPiframe
+     * @see http://openid.net/specs/openid-connect-session-1_0.html#OPiframe
      */
     public function checkSessionIFrame()
     {
@@ -269,20 +256,19 @@ final class OAuth2ProviderController extends Controller
         (
             new OAuth2Message
             (
-                Input::all()
+                Request::all()
             )
         );
 
-        if(!$request->isValid())
-        {
+        if (!$request->isValid()) {
             Log::error('invalid OAuth2LogoutRequest!');
             return Response::view('errors.400', [
-                'error'             => 'Invalid logout request.',
+                'error' => 'Invalid logout request.',
                 'error_description' => $request->getLastValidationError()
             ], 400);
         }
 
-       $response = $this->oauth2_protocol->endSession($request);
+        $response = $this->oauth2_protocol->endSession($request);
 
         if (!is_null($response) && $response instanceof OAuth2Response) {
             $strategy = OAuth2ResponseStrategyFactoryMethod::buildStrategy($request, $response);

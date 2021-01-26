@@ -16,8 +16,7 @@ use Doctrine\DBAL\Schema\Schema as Schema;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Models\OAuth2\ResourceServer;
 use Models\OAuth2\Api;
-use ApiScopeSeeder;
-use ApiEndpointSeeder;
+use Database\Seeders\SeedUtils;
 use App\libs\OAuth2\IUserScopes;
 /**
  * Class Version20190729150610
@@ -28,7 +27,7 @@ final class Version20190729150610 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         $resource_server_repository = EntityManager::getRepository(ResourceServer::class);
         $rs = $resource_server_repository->findOneBy([
@@ -47,7 +46,7 @@ final class Version20190729150610 extends AbstractMigration
 
         EntityManager::flush();
 
-        \SeedUtils::seedScopes([
+        SeedUtils::seedScopes([
             [
                 'name'               => IUserScopes::Registration,
                 'short_description'  => 'Allows to request user registrations.',
@@ -59,7 +58,7 @@ final class Version20190729150610 extends AbstractMigration
 
         ], 'user-registration');
 
-        \SeedUtils::seedApiEndpoints('user-registration', [
+        SeedUtils::seedApiEndpoints('user-registration', [
                 [
                     'name' => 'request-user-registration',
                     'active' => true,
@@ -77,7 +76,7 @@ final class Version20190729150610 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
 
     }

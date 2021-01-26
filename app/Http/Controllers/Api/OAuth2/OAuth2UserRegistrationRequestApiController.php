@@ -13,7 +13,6 @@
  **/
 use App\ModelSerializers\SerializerRegistry;
 use App\Services\Auth\IUserService;
-use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Validator;
@@ -53,7 +52,7 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
         try {
 
             if(!Request::isJson()) return $this->error400();
-            $payload = Input::json()->all();
+            $payload = Request::json()->all();
 
             // Creates a Validator instance and validates the data.
             $validation = Validator::make($payload, [

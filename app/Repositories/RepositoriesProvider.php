@@ -33,6 +33,7 @@ use App\Repositories\IServerExtensionRepository;
 use Auth\Group;
 use Auth\User;
 use Auth\UserPasswordResetRequest;
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
 use Models\BannedIP;
@@ -72,10 +73,8 @@ use OpenId\Repositories\IOpenIdTrustedSiteRepository;
  * Class RepositoriesProvider
  * @package Repositories
  */
-final class RepositoriesProvider extends ServiceProvider
+final class RepositoriesProvider extends ServiceProvider implements DeferrableProvider
 {
-    protected $defer = true;
-
     public function boot()
     {
     }
@@ -284,7 +283,7 @@ final class RepositoriesProvider extends ServiceProvider
             ISpamEstimatorFeedRepository::class,
             IDisqusSSOProfileRepository::class,
             IRocketChatSSOProfileRepository::class,
-            IStreamChatSSOProfileRepository::class
+            IStreamChatSSOProfileRepository::class,
         ];
     }
 }

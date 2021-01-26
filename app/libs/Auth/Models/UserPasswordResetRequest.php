@@ -165,6 +165,6 @@ class UserPasswordResetRequest extends BaseEntity
      * @ORM\PostPersist
      */
     public function inserted($args){
-        Event::fire(new UserPasswordResetRequestCreated($this->getId()));
+        Event::dispatch(new UserPasswordResetRequestCreated($this->getId()));
     }
 }

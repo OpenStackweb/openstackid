@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
 use Utils\Services\UtilsServiceCatalog;
@@ -18,10 +20,8 @@ use Utils\Services\UtilsServiceCatalog;
  * Class AuthenticationServiceProvider
  * @package auth
  */
-final class AuthenticationServiceProvider extends ServiceProvider
+final class AuthenticationServiceProvider extends ServiceProvider implements DeferrableProvider
 {
-
-    protected $defer = true;
 
     public function boot()
     {

@@ -14,7 +14,7 @@
 use App\libs\OAuth2\IUserScopes;
 use Doctrine\Migrations\AbstractMigration;
 use Doctrine\DBAL\Schema\Schema as Schema;
-use SeedUtils;
+use Database\Seeders\SeedUtils;
 /**
  * Class Version20200530150357
  * @package Database\Migrations
@@ -24,7 +24,7 @@ class Version20200530150357 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         if(!SeedUtils::seedApi("sso", "SSO Integration API")) return;
 
@@ -65,7 +65,7 @@ class Version20200530150357 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
 
     }

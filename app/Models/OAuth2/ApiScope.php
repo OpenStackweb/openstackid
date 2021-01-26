@@ -54,10 +54,10 @@ class ApiScope extends BaseEntity
     private $default;
 
     /**
-     * @ORM\Column(name="`system`", type="boolean")
+     * @ORM\Column(name="`is_system`", type="boolean")
      * @var bool
      */
-    private $system;
+    private $is_system;
 
     /**
      * @ORM\Column(name="`assigned_by_groups`", type="boolean")
@@ -86,7 +86,7 @@ class ApiScope extends BaseEntity
         $this->short_description = null;
         $this->active = false;
         $this->default = false;
-        $this->system = false;
+        $this->is_system = false;
         $this->assigned_by_groups = false;
         $this->scope_groups = new ArrayCollection();
     }
@@ -144,21 +144,21 @@ class ApiScope extends BaseEntity
     /**
      * @return string
      */
-    public function getApiName():string{
+    public function getApiName():?string{
         return $this->hasApi() ? $this->getApi()->getName(): null;
     }
 
     /**
      * @return string
      */
-    public function getApiDescription():string{
+    public function getApiDescription():?string{
         return $this->hasApi() ? $this->getApi()->getDescription(): null;
     }
 
     /**
      * @return string
      */
-    public function getApiLogo():string{
+    public function getApiLogo():?string{
         return $this->hasApi() ? $this->getApi()->getLogo(): null;
     }
 
@@ -247,15 +247,15 @@ class ApiScope extends BaseEntity
      */
     public function isSystem(): bool
     {
-        return $this->system;
+        return $this->is_system;
     }
 
     /**
-     * @param bool $system
+     * @param bool $is_system
      */
-    public function setSystem(bool $system): void
+    public function setSystem(bool $is_system): void
     {
-        $this->system = $system;
+        $this->is_system = $is_system;
     }
 
     /**
@@ -281,6 +281,8 @@ class ApiScope extends BaseEntity
     public function __get($name) {
         if($name == 'api_id')
             return $this->getApiId();
+        if($name == 'system')
+            return $this->isSystem();
         return $this->{$name};
     }
 }

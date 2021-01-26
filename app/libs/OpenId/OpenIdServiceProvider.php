@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
 use OpenId\Extensions\OpenIdAuthenticationExtension;
 use OpenId\Services\OpenIdServiceCatalog;
@@ -21,9 +23,7 @@ use Illuminate\Support\Facades\App;
  * Register dependencies with IOC container for package openid
  * @package OpenId
  */
-class OpenIdServiceProvider extends ServiceProvider {
-
-    protected $defer = true;
+class OpenIdServiceProvider extends ServiceProvider implements DeferrableProvider {
 
     public function boot(){
     }

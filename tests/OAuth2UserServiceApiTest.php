@@ -74,7 +74,7 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
     }
 
     public function testGetInfoCORS(){
-        $response = $this->action("GET", "Api\OAuth2\OAuth2UserApiController@me",
+        $response = $this->action("OPTIONS", "Api\OAuth2\OAuth2UserApiController@me",
             [],
             [],
             [],
@@ -86,8 +86,12 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
                 'HTTP_Access-Control-Request-Method'  => 'GET',
             ));
 
-        $this->assertResponseStatus(200);
-        $content   = $response->getContent();
+        // check PreflightRequest
+        $this->assertResponseStatus(204);
+        $headers = $response->headers;
+
+        $this->assertTrue($headers->has("Access-Control-Allow-Methods"));
+        $this->assertTrue($headers->has("Access-Control-Allow-Headers"));
     }
 
     protected function getScopes()

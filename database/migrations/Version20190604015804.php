@@ -24,7 +24,7 @@ final class Version20190604015804 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         $initial_state = <<<SQL
 
@@ -117,7 +117,7 @@ create table if not exists oauth2_api_scope
 	description text not null,
 	active tinyint(1) default '1' not null,
 	`default` tinyint(1) default '0' not null,
-	system tinyint(1) default '0' not null,
+	`is_system` tinyint(1) default '0' not null,
 	created_at timestamp default CURRENT_TIMESTAMP not null,
 	updated_at timestamp default CURRENT_TIMESTAMP not null,
 	api_id bigint unsigned null,
@@ -687,7 +687,7 @@ SQL;
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
         (new Builder($schema))->drop('initial');
     }

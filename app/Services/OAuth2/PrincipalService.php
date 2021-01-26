@@ -42,7 +42,9 @@ final class PrincipalService implements IPrincipalService
         $op_browser_state = Session::get(self::OPBrowserState);
 
         Log::debug(sprintf("PrincipalService::get - user_id %s auth_time %s op_browser_state %s", $user_id, $auth_time, $op_browser_state));
-        // overwrite it
+
+        // overwrite it just in case
+
         Cookie::queue
         (
             IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME,
@@ -55,7 +57,6 @@ final class PrincipalService implements IPrincipalService
             $raw = false,
             $sameSite = 'none'
         );
-
         $principal->setState
         (
             [

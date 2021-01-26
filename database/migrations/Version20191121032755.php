@@ -24,7 +24,7 @@ class Version20191121032755 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         $this->addSql("ALTER TABLE users MODIFY identifier varchar(255) DEFAULT NULL;");
         $this->addSql("ALTER TABLE users MODIFY gender_specify varchar(255) DEFAULT NULL;");
@@ -33,7 +33,7 @@ class Version20191121032755 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
 
     }

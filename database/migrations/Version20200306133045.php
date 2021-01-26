@@ -26,7 +26,7 @@ class Version20200306133045 extends AbstractMigration
      * @param Schema $schema
      * @throws \Doctrine\DBAL\Schema\SchemaException
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         $builder = new Builder($schema);
         if($schema->hasTable("users") && !$builder->hasColumn("users","spam_type") ) {
@@ -81,7 +81,7 @@ class Version20200306133045 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
         $builder = new Builder($schema);
         $builder->dropIfExists("users_email_changed");

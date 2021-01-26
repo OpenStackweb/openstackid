@@ -1,4 +1,4 @@
-<?php
+<?php namespace Database\Seeders;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,6 +48,8 @@ use App\Models\OAuth2\Factories\ApiEndpointFactory;
 use App\libs\OAuth2\IUserScopes;
 use App\libs\Auth\Models\IGroupSlugs;
 use Illuminate\Support\Facades\DB;
+use DateTimeZone;
+use TestKeys;
 /**
  * Class OAuth2ApplicationSeeder
  * This seeder is only for testing purposes

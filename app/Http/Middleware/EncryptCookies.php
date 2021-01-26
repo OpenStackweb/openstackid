@@ -11,10 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Cookie\Middleware\EncryptCookies as Middleware;
 use OAuth2\Services\IPrincipalService;
-use Symfony\Component\HttpFoundation\Request;
 /**
  * Class EncryptCookies
  * @package App\Http\Middleware
@@ -29,31 +27,5 @@ class EncryptCookies extends Middleware
     protected $except = [
         IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME
     ];
-
-    /**
-     * Decrypt the cookies on the request.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Request
-     */
-    protected function decrypt(Request $request)
-    {
-        foreach ($request->cookies as $key => $cookie) {
-            if ($this->isDisabled($key)) {
-                continue;
-            }
-
-            try {
-                $request->cookies->set($key, $this->decryptCookie($key, $cookie));
-            } catch (DecryptException $e) {
-                $request->cookies->set($key, null);
-            }
-            catch(\ErrorException $e1){
-                $request->cookies->set($key, null);
-            }
-        }
-
-        return $request;
-    }
 
 }

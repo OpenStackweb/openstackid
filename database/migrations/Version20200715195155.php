@@ -13,6 +13,7 @@
  **/
 use Doctrine\Migrations\AbstractMigration;
 use Doctrine\DBAL\Schema\Schema as Schema;
+use Database\Seeders\SeedUtils;
 /**
  * Class Version20200715195155
  * @package Database\Migrations
@@ -22,9 +23,9 @@ final class Version20200715195155 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
-        \SeedUtils::seedApiEndpoints('sso', [
+        SeedUtils::seedApiEndpoints('sso', [
             [
                 'name' => 'sso-stream-chat',
                 'active' => true,
@@ -40,7 +41,7 @@ final class Version20200715195155 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
 
     }
