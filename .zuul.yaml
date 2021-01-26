@@ -4,6 +4,8 @@
     run: playbooks/openstackid-release-branch/run.yaml
     post-run: playbooks/openstackid-release-branch/post.yaml
     timeout: 1800
+    # OpenStackID needs MYSQL 5.7.x and will fail with newer MYSQL, Bionic has Java 5.7.x.
+    nodeset: ubuntu-bionic
 
 - job:
     # This is included into the osf/openstackid release pipeline from the
@@ -13,11 +15,16 @@
     run: playbooks/openstackid-release-master/run.yaml
     post-run: playbooks/openstackid-release-master/post.yaml
     timeout: 1800
+    # OpenStackID needs MYSQL 5.7.x and will fail with newer MYSQL, Bionic has Java 5.7.x.
+    nodeset: ubuntu-bionic
 
 - job:
     name: openstackid-unittests
     run: playbooks/openstackid-unittests/run.yaml
     timeout: 1800
+    # OpenStackID needs MYSQL 5.7.x and will fail with newer MYSQL, Bionic has Java 5.7.x.
+    nodeset: ubuntu-bionic
+
 
 - project:
       name: osf/openstackid
