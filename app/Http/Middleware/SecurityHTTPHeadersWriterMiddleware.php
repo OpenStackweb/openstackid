@@ -23,7 +23,7 @@ use libs\utils\RequestUtils;
 */
 class SecurityHTTPHeadersWriterMiddleware
 {
-   /**
+	/**
 	 * Handle an incoming request.
 	 *
 	 * @param  \Illuminate\Http\Request $request
@@ -34,7 +34,7 @@ class SecurityHTTPHeadersWriterMiddleware
 	{
 
 		$response = $next($request);
-     	// https://www.owasp.org/index.php/List_of_useful_HTTP_headers
+       // https://www.owasp.org/index.php/List_of_useful_HTTP_headers
 		$response->headers->set('X-Content-Type-Options','nosniff');
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
 		$response->headers->set('X-XSS-Protection','1; mode=block');

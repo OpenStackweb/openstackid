@@ -82,7 +82,7 @@ function postCSSLoader() {
 
 module.exports = {
     entry: {
-        'index': './resources/assets/js/index.js',
+        'index': './resources/js/index.js',
     },
     devtool: "source-map",
     devServer: {

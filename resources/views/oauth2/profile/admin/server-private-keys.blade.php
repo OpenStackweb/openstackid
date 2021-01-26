@@ -16,7 +16,7 @@
             add: '{!!URL::action("Api\ServerPrivateKeyApiController@create")!!}',
             get: '{!!URL::action("Api\ServerPrivateKeyApiController@getAll", array("page"=>1,"per_page"=>100))!!}',
             delete: '{!!URL::action("Api\ServerPrivateKeyApiController@delete",array("id" =>'@id'))!!}',
-            update: '{!!URL::action("Api\ServerPrivateKeyApiController@update",array('public_key_id'=> '@id'))!!}'
+            update: '{!!URL::action("Api\ServerPrivateKeyApiController@update",array('id'=> '@id'))!!}'
         };
 
         var oauth2_supported_algorithms =

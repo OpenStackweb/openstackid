@@ -300,6 +300,7 @@ final class AuthService implements IAuthService
                 $rps .= '|';
             }
             if(is_null($rps)) $rps = "";
+
             if (!str_contains($rps, $client_id))
                 $rps .= $client_id;
 

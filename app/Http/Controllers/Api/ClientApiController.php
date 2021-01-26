@@ -16,7 +16,6 @@ use App\Http\Utils\PagingConstants;
 use App\ModelSerializers\SerializerRegistry;
 use Exception;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Validator;
 use models\exceptions\EntityNotFoundException;
@@ -372,7 +371,7 @@ final class ClientApiController extends APICRUDController
      */
     public function getAccessTokens($id)
     {
-        $values = Input::all();
+        $values = Request::all();
         $rules  = [
 
             'page'     => 'integer|min:1',
@@ -391,9 +390,9 @@ final class ClientApiController extends APICRUDController
             $page     = 1;
             $per_page = PagingConstants::DefaultPageSize;;
 
-            if (Input::has('page')) {
-                $page     = intval(Input::get('page'));
-                $per_page = intval(Input::get('per_page'));
+            if (Request::has('page')) {
+                $page     = intval(Request::input('page'));
+                $per_page = intval(Request::input('per_page'));
             }
 
             $client    = $this->repository->getClientByIdentifier($id);
@@ -436,7 +435,7 @@ final class ClientApiController extends APICRUDController
      */
     public function getRefreshTokens($id)
     {
-        $values = Input::all();
+        $values = Request::all();
         $rules  = [
 
             'page'     => 'integer|min:1',
@@ -455,9 +454,9 @@ final class ClientApiController extends APICRUDController
             $page     = 1;
             $per_page = PagingConstants::DefaultPageSize;;
 
-            if (Input::has('page')) {
-                $page     = intval(Input::get('page'));
-                $per_page = intval(Input::get('per_page'));
+            if (Request::has('page')) {
+                $page     = intval(Request::input('page'));
+                $per_page = intval(Request::input('per_page'));
             }
 
             $client    = $this->repository->getClientByIdentifier($id);
@@ -499,7 +498,7 @@ final class ClientApiController extends APICRUDController
      */
     public function getAccessTokensByCurrentUser()
     {
-        $values = Input::all();
+        $values = Request::all();
         $rules  = [
 
             'page'     => 'integer|min:1',
@@ -518,9 +517,9 @@ final class ClientApiController extends APICRUDController
             $page     = 1;
             $per_page = PagingConstants::DefaultPageSize;;
 
-            if (Input::has('page')) {
-                $page     = intval(Input::get('page'));
-                $per_page = intval(Input::get('per_page'));
+            if (Request::has('page')) {
+                $page     = intval(Request::input('page'));
+                $per_page = intval(Request::input('per_page'));
             }
 
             $user      = $this->auth_service->getCurrentUser();
@@ -558,7 +557,7 @@ final class ClientApiController extends APICRUDController
      */
     public function getRefreshTokensByCurrentUser()
     {
-        $values = Input::all();
+        $values = Request::all();
         $rules  = [
 
             'page'     => 'integer|min:1',
@@ -577,9 +576,9 @@ final class ClientApiController extends APICRUDController
             $page     = 1;
             $per_page = PagingConstants::DefaultPageSize;;
 
-            if (Input::has('page')) {
-                $page     = intval(Input::get('page'));
-                $per_page = intval(Input::get('per_page'));
+            if (Request::has('page')) {
+                $page     = intval(Request::input('page'));
+                $per_page = intval(Request::input('per_page'));
             }
 
             $user   = $this->auth_service->getCurrentUser();

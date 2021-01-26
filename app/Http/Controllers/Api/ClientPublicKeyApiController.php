@@ -15,7 +15,7 @@
 use OAuth2\Services\IClientPublicKeyService;
 use Utils\Services\ILogService;
 use OAuth2\Repositories\IClientPublicKeyRepository;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 /**
  * Class ClientPublicKeyApiController
  * @package App\Http\Controllers\Api
@@ -41,7 +41,7 @@ final class ClientPublicKeyApiController extends AsymmetricKeyApiController
      * @return array
      */
     protected function getCreatePayload():array{
-        $payload =  Input::All();
+        $payload =  Request::All();
         return array_merge($payload, $this->extra_create_payload_params);
     }
 

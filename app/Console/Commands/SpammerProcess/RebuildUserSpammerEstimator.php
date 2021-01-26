@@ -52,6 +52,11 @@ final class RebuildUserSpammerEstimator extends Command
     public function handle()
     {
         try {
+            $is_enabled = boolval(Config::get("jobs.spam_processing_enabled"));
+            if(!$is_enabled){
+                return;
+            }
+
             $connections = Config::get('database.connections', []);
             $db = $connections['openstackid'] ?? [];
             $host = $db['host'] ?? '';
@@ -59,17 +64,15 @@ final class RebuildUserSpammerEstimator extends Command
             $username = $db['username'] ?? '';
             $password = $db['password'] ?? '';
 
-            $command = sprintf(
-                '%s/app/Console/Commands/SpammerProcess/estimator_build.sh "%s" "%s" "%s" "%s" "%s"',
-                base_path(),
+            $command = [sprintf('%s/app/Console/Commands/SpammerProcess/estimator_build.sh', base_path()),
                 base_path() . '/app/Console/Commands/SpammerProcess',
                 $host,
                 $username,
                 $password,
                 $database
-            );
+            ];
 
-            Log::debug(sprintf("RebuildUserSpammerEstimator::handle running command %s", $command));
+            Log::debug(sprintf("RebuildUserSpammerEstimator::handle running command %s", implode(" ", $command)));
 
             $process = new Process($command);
             $process->setTimeout(PHP_INT_MAX);

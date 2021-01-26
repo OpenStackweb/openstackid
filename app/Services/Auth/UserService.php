@@ -320,7 +320,7 @@ final class UserService extends AbstractService implements IUserService
             $user = $request->getOwner();
             $user->setPassword($new_password);
             $request->redeem();
-            Event::fire(new UserPasswordResetSuccessful($user->getId()));
+            Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
             return $user;
         });
     }
@@ -417,7 +417,7 @@ final class UserService extends AbstractService implements IUserService
             $request->setOwner($user);
             $request->redeem();
             $this->user_repository->add($user);
-            Event::fire(new UserPasswordResetSuccessful($user->getId()));
+            Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
             return $request;
         });
     }

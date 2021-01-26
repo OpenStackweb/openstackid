@@ -30,7 +30,7 @@ class DoctrineRepositoriesTests extends TestCase
      */
     protected $baseUrl = 'http://localhost';
 
-    public function setUp()
+    public function setUp():void
     {
         parent::setUp(); // Don't forget this!
         $this->redis = Redis::connection();

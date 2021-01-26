@@ -14,11 +14,10 @@
 
 use App\Http\Controllers\APICRUDController;
 use OAuth2\Services\IAsymmetricKeyService;
-use models\exceptions\EntityNotFoundException;
 use Utils\Services\ILogService;
 use OAuth2\Repositories\IAsymmetricKeyRepository;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Exception;
 /**
  * Class AsymmetricKeyApiController

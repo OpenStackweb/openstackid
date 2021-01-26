@@ -74,7 +74,7 @@
             add: '{!! URL::action("Api\\GroupApiController@create") !!}',
             load: '{!! URL::action("Api\\GroupApiController@getAll")!!}',
             delete: '{!! URL::action("Api\\GroupApiController@delete",["id"=>"@id"]) !!}',
-            edit: '{!! URL::action("AdminController@editGroup",["id"=>"@id"]) !!}',
+            edit: '{!! URL::action("AdminController@editGroup",["group_id"=>"@id"]) !!}',
             fetchUsers: '{!!URL::action("Api\\UserApiController@getAll")!!}',
         };
 

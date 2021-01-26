@@ -24,7 +24,7 @@ final class Version20190604015808 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function up(Schema $schema)
+    public function up(Schema $schema):void
     {
         if($schema->hasTable("openid_users")) {
             $this->addSql("RENAME TABLE openid_users TO users;");
@@ -36,7 +36,7 @@ final class Version20190604015808 extends AbstractMigration
     /**
      * @param Schema $schema
      */
-    public function down(Schema $schema)
+    public function down(Schema $schema):void
     {
         $this->addSql("RENAME TABLE users TO openid_users;");
 

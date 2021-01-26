@@ -123,8 +123,8 @@ final class ClientService extends AbstractService implements IClientService
 
         if
         (
-            Input::has(OAuth2Protocol::OAuth2Protocol_ClientAssertionType) &&
-            Input::has(OAuth2Protocol::OAuth2Protocol_ClientAssertion)
+            Request::has(OAuth2Protocol::OAuth2Protocol_ClientAssertionType) &&
+            Request::has(OAuth2Protocol::OAuth2Protocol_ClientAssertion)
         )
         {
             Log::debug
@@ -139,8 +139,8 @@ final class ClientService extends AbstractService implements IClientService
 
             return new ClientAssertionAuthenticationContext
             (
-                Input::get(OAuth2Protocol::OAuth2Protocol_ClientAssertionType, ''),
-                Input::get(OAuth2Protocol::OAuth2Protocol_ClientAssertion, '')
+                Request::input(OAuth2Protocol::OAuth2Protocol_ClientAssertionType, ''),
+                Request::input(OAuth2Protocol::OAuth2Protocol_ClientAssertion, '')
             );
         }
 
@@ -189,7 +189,7 @@ final class ClientService extends AbstractService implements IClientService
             );
         }
 
-        if(Input::has(OAuth2Protocol::OAuth2Protocol_ClientId))
+        if(Request::has(OAuth2Protocol::OAuth2Protocol_ClientId))
         {
             Log::debug
             (
@@ -204,14 +204,14 @@ final class ClientService extends AbstractService implements IClientService
             $client_secret = null;
             $auth_type = OAuth2Protocol::TokenEndpoint_AuthMethod_None;
 
-            if(Input::has(OAuth2Protocol::OAuth2Protocol_ClientSecret)){
-                $client_secret =  urldecode(Input::get(OAuth2Protocol::OAuth2Protocol_ClientSecret, ''));
+            if(Request::has(OAuth2Protocol::OAuth2Protocol_ClientSecret)){
+                $client_secret =  urldecode(Request::input(OAuth2Protocol::OAuth2Protocol_ClientSecret, ''));
                 $auth_type = OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretPost;
             }
 
             return new ClientCredentialsAuthenticationContext
             (
-                urldecode(Input::get(OAuth2Protocol::OAuth2Protocol_ClientId, '')),
+                urldecode(Request::input(OAuth2Protocol::OAuth2Protocol_ClientId, '')),
                 $client_secret,
                 $auth_type
             );
@@ -446,7 +446,7 @@ final class ClientService extends AbstractService implements IClientService
             if (is_null($client) || !$client instanceof Client) {
                 throw new EntityNotFoundException(sprintf("client id %s does not exists!", $id));
             }
-            Event::fire('oauth2.client.delete', [$client->getClientId()]);
+            Event::dispatch('oauth2.client.delete', [$client->getClientId()]);
             $this->client_repository->delete($client);
         });
     }
@@ -485,7 +485,7 @@ final class ClientService extends AbstractService implements IClientService
             $client = $this->client_credential_generator->generate($client, true);
             $client->setEditedBy($current_user);
 
-            Event::fire('oauth2.client.regenerate.secret', array($client->getClientId()));
+            Event::dispatch('oauth2.client.regenerate.secret', array($client->getClientId()));
 
             return $client;
         });
@@ -506,7 +506,7 @@ final class ClientService extends AbstractService implements IClientService
             }
             $client->setLocked(true);
             $client->setEditedBy($this->auth_service->getCurrentUser());
-            Event::fire(new OAuth2ClientLocked($client->getClientId()));
+            Event::dispatch(new OAuth2ClientLocked($client->getClientId()));
             return $client;
         });
 

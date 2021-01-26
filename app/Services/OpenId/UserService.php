@@ -292,12 +292,12 @@ final class UserService extends AbstractService implements IUserService
             if($former_email != $user->getEmail()){
                 Log::warning(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email , $user->getEmail()));
                 $user->clearEmailVerification();
-                Event::fire(new UserEmailUpdated($user->getId()));
+                Event::dispatch(new UserEmailUpdated($user->getId()));
             }
 
             if($former_password != $user->getPassword()){
                 Log::warning(sprintf("UserService::update use id %s - password changed", $id));
-                Event::fire(new UserPasswordResetSuccessful($user->getId()));
+                Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
             }
             return $user;
         });

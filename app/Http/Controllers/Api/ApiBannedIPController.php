@@ -19,7 +19,7 @@ use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use Utils\Services\IBannedIPService;
 use Utils\Services\ILogService;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Exception;
 /**
  * Class ApiBannedIPController
@@ -54,7 +54,7 @@ final class ApiBannedIPController extends APICRUDController
     {
         try {
 
-            $ip = Input::get("ip", null);
+            $ip = Request::input("ip", null);
             if (!is_null($ip)) {
                 $banned_ip = $this->repository->getByIp(strval($ip));
             } else {
@@ -89,7 +89,7 @@ final class ApiBannedIPController extends APICRUDController
     {
         try {
             if (is_null($id)) {
-                $ip = Input::get("ip", null);
+                $ip = Request::input("ip", null);
             } else {
                 $banned_ip = $this->repository->getById($id);
                 $ip        = $banned_ip->getIp();

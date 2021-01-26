@@ -105,6 +105,8 @@ return [
     */
 
     'redis' => [
+
+        'client' => env('REDIS_CLIENT', 'predis'),
         /*
          * @see https://github.com/predis/predis/wiki/Connection-Parameters
          */

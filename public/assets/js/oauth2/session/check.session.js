@@ -7,7 +7,7 @@
     function hash(message)
     {
         var hash = CryptoJS.SHA256(message).toString();
-        //console.log('calculated hash '+hash+' from message '+message);
+        console.log('calculated hash '+hash+' from message '+message);
         return hash;
     }
 
@@ -36,6 +36,7 @@
 
             if (!origin || !message)
             {
+                console.log("IDP::calculateSessionStateResult !origin || !message. return error");
                 return "error";
             }
 
@@ -50,13 +51,14 @@
 
             if (!clientId || !sessionState)
             {
+                console.log("IDP::calculateSessionStateResult !clientId || !sessionState. return error");
                 return "error";
             }
 
-            //console.log("sessionState "+sessionState);
             var sessionStateParts = sessionState.split('.');
             if (sessionStateParts.length !== 2)
             {
+                console.log("IDP::calculateSessionStateResult sessionStateParts.length !== 2. return error");
                 return "error";
             }
 
@@ -67,18 +69,25 @@
 
             if (!clientHash || !salt)
             {
+                console.log("IDP::calculateSessionStateResult missing clientHash or salt. return error");
                 return "error";
             }
 
             var opbs = $.cookie('op_bs');
             // posible cookies not enabled or third party cookies not enabled
-            if (opbs == "undefined" || typeof(opbs) == "undefined") return "error";
-            //console.log("opbs "+opbs)
+            if (opbs == "undefined" || typeof(opbs) == "undefined") {
+                console.log("IDP::calculateSessionStateResult missing op_bs cookie. return error");
+                return "error";
+            }
+            console.log("IDP::calculateSessionStateResult opbs " + opbs)
             var expectedHash = computeSessionStateHash(clientId, origin, opbs, salt);
-            return clientHash === expectedHash ? "unchanged" : "changed";
+            var res = clientHash === expectedHash ? "unchanged" : "changed";
+            console.log("IDP::calculateSessionStateResult res "+ res);
+            return res;
         }
         catch(e)
         {
+            console.log("IDP::calculateSessionStateResult exception "+ e);
             return "error";
         }
     }
@@ -87,6 +96,9 @@
     {
         window.addEventListener("message", function (e)
         {
+            if(e.origin == window.origin){
+                return;
+            }
             var result = calculateSessionStateResult(e.origin, e.data);
             e.source.postMessage(result, e.origin);
         }, false);

@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use Closure;
-use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Response;
@@ -144,7 +143,7 @@ final class OAuth2BearerAccessTokenRequestValidator
             } else {
                 // http://tools.ietf.org/html/rfc6750#section-2- 2
                 // if access token is not on authorization header check on POST/GET params
-                $access_token_value = Input::get(OAuth2Protocol::OAuth2Protocol_AccessToken, '');
+                $access_token_value = Request::input(OAuth2Protocol::OAuth2Protocol_AccessToken, '');
             }
 
             if (is_null($access_token_value) || empty($access_token_value)) {

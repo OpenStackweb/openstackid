@@ -15,12 +15,9 @@ use Closure;
 use Illuminate\Support\Facades\Response;
 use OAuth2\Repositories\IClientRepository;
 use Utils\Services\IAuthService;
-use Utils\Services\ServiceLocator;
-use Utils\Services\UtilsServiceCatalog;
-use OAuth2\Services\OAuth2ServiceCatalog;
 use Exception;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -64,7 +61,7 @@ final class CurrentUserCanEditOAuth2Client
                 $client_id          = $route->parameter('client_id');
 
             if(is_null($client_id))
-                $client_id          = Input::get('client_id',null);;
+                $client_id          = Request::input('client_id',null);;
 
             $client                 = $this->client_repository->getClientByIdentifier($client_id);
             $user                   = $this->auth_service->getCurrentUser();
