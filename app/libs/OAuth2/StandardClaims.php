@@ -208,4 +208,10 @@ abstract class StandardClaims
      * Company
      */
     const Company = 'company';
+
+
+    /**
+     * Company
+     */
+    const JobTitle = 'job_title';
 }

@@ -13,6 +13,7 @@
  **/
 use App\Models\SSO\DisqusSSOProfile;
 use Auth\User;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class DisqusUserProfile
@@ -95,7 +96,7 @@ class DisqusUserProfile
             "email" => $this->user_email,
             "avatar" => $this->user_avatar
         ];
-
+        Log::debug(sprintf("DisqusUserProfile::serialize %s", json_encode($data)));
         $message = base64_encode(json_encode($data));
         $timestamp = time();
         $hmac = $this->dsq_hmacsha1($message . ' ' . $timestamp, $this->private_key);

@@ -152,6 +152,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
                 $data[StandardClaims::WeChatUser] = $current_user->getWechatUser();
                 $data[StandardClaims::TwitterName] = $current_user->getTwitterName();
                 $data[StandardClaims::Company] = $current_user->getCompany();
+                $data[StandardClaims::JobTitle] = $current_user->getJobTitle();
                 $data[StandardClaims::ShowPicture] = $current_user->isPublicProfileShowPhoto();
                 $data[StandardClaims::ShowFullName] = $current_user->isPublicProfileShowFullname();
                 $user_groups = [];
@@ -207,6 +208,8 @@ final class UserService extends OAuth2ProtectedService implements IUserService
         $claim_set->addClaim(new JWTClaim(StandardClaims::LinkedInProfile, new StringOrURI($user->getLinkedInProfile())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowPicture, new JsonValue($user->isPublicProfileShowPhoto())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowFullName, new JsonValue($user->isPublicProfileShowFullname())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::Company, new StringOrURI($user->getCompany())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::JobTitle, new StringOrURI($user->getJobTitle())));
 
         $user_groups = [];
 
