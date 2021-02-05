@@ -191,7 +191,7 @@
                                        value="{!! $user->company !!}" data-lpignore="true">
                             </div>
                             <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
-                                <label for="state">Title</label>
+                                <label for="state">Job Title</label>
                                 <input autocomplete="off" class="form-control" type="text" name="job_title" id="job_title"
                                        value="{!! $user->job_title !!}" data-lpignore="true">
                             </div>
@@ -216,6 +216,14 @@
                                 <a href="#" class="change-password-link">Change Password</a>
                             </div>
                             <div id="password_container">
+                                <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                    <input type="password" class="form-control" id="current_password" name="current_password"
+                                           autocomplete="new-password"
+                                           placeholder="Current Password"
+                                           data-lpignore="true"
+                                    >
+                                </div>
+
                                 <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
                                     <input type="password" class="form-control" id="password" name="password"
                                            autocomplete="new-password"

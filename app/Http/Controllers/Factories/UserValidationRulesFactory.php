@@ -22,12 +22,13 @@ final class UserValidationRulesFactory
     /**
      * @param array $data
      * @param bool $update
+     * @param bool $is_admin
      * @return array
      */
-    public static function build(array $data, $update = false){
+    public static function build(array $data, $update = false, $is_admin = false){
 
         if($update){
-            return [
+            $rules =  [
                 'first_name' => 'sometimes|string',
                 'last_name' => 'sometimes|string',
                 'email' => 'sometimes|email',
@@ -63,6 +64,12 @@ final class UserValidationRulesFactory
                 'public_profile_show_fullname' => 'sometimes|boolean',
                 'public_profile_show_email' => 'sometimes|boolean',
             ];
+
+            if(!$is_admin){
+                $rules['current_password'] = 'required_with:password';
+            }
+
+            return $rules;
         }
 
         return [

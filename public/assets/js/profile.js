@@ -117,6 +117,12 @@ $(document).ready(function() {
                             type: "success",
                             text: "User info updated successfully!",
                         });
+                        // reset password form
+                        $("#password_container").hide();
+                        $("#current_password").val('');
+                        $("#password").val('');
+                        $("#current_password").val('');
+                        $('.change-password-link').show();
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         $('body').ajax_loader('stop');

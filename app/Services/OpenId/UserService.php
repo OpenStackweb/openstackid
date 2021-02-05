@@ -22,6 +22,7 @@ use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\Storage;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use models\utils\IEntity;
+use OAuth2\IResourceServerContext;
 use OpenId\Services\IUserService;
 use Utils\Db\ITransactionService;
 use Utils\Services\ILogService;
@@ -66,6 +68,11 @@ final class UserService extends AbstractService implements IUserService
     private $group_repository;
 
     /**
+     * @var IResourceServerContext
+     */
+    private $server_ctx;
+
+    /**
      * UserService constructor.
      * @param IUserRepository $repository
      * @param IGroupRepository $group_repository
@@ -73,6 +80,7 @@ final class UserService extends AbstractService implements IUserService
      * @param ITransactionService $tx_service
      * @param IServerConfigurationService $configuration_service
      * @param ILogService $log_service
+     * @param IResourceServerContext $server_ctx
      */
     public function __construct
     (
@@ -81,7 +89,8 @@ final class UserService extends AbstractService implements IUserService
         IUserNameGeneratorService $user_name_generator,
         ITransactionService $tx_service,
         IServerConfigurationService $configuration_service,
-        ILogService $log_service
+        ILogService $log_service,
+        IResourceServerContext $server_ctx
     )
     {
         parent::__construct($tx_service);
@@ -90,6 +99,7 @@ final class UserService extends AbstractService implements IUserService
         $this->user_name_generator   = $user_name_generator;
         $this->configuration_service = $configuration_service;
         $this->log_service           = $log_service;
+        $this->server_ctx = $server_ctx;
     }
 
     /**
@@ -237,6 +247,23 @@ final class UserService extends AbstractService implements IUserService
 
             $former_email = $user->getEmail();
             $former_password = $user->getPassword();
+            $current_user = !empty($this->server_ctx->getCurrentUserId()) ? $this->repository->getById($this->server_ctx->getCurrentUserId()):Auth::user();
+            $should_ask_4_cur_password_validation = !(!is_null($current_user) &&
+                                         $user->getId() != $current_user->getId() && // is not the same user as current user
+                                         ($current_user->isAdmin() || $current_user->isSuperAdmin()) && // current user should be admin
+                                         (!$user->isAdmin() && !$user->isSuperAdmin()));// user to update is not admin
+
+            if($should_ask_4_cur_password_validation) {
+                if (isset($payload["password"]) && !empty($payload["password"])) {
+                    // changing password
+                    if (!isset($payload['current_password']))
+                        throw new ValidationException(sprintf("current_password is needed to update user password."));
+
+                    if (!$user->checkPassword(trim($payload['current_password']))) {
+                        throw new ValidationException(sprintf("current_password is not correct."));
+                    }
+                }
+            }
 
             if(isset($payload["email"])){
                 $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
