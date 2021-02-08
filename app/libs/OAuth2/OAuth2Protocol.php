@@ -13,6 +13,7 @@
  **/
 use App\Http\Utils\UserIPHelperProvider;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
 use jwk\impl\JWKSet;
 use jwk\impl\RSAJWKFactory;
@@ -1463,8 +1464,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $logged_user = $this->auth_service->getCurrentUser();
 
             if(!is_null($logged_user) && !is_null($user) && $logged_user->getId() !== $user->getId()) {
-                $this->log_service->debug_msg("OAuth2Protocol::endSession user does not match with current session!");
-                throw new InvalidOAuth2Request('user does not match with current session!');
+                Log::warning(sprintf("OAuth2Protocol::endSession user does not match with current session! logged user id %s - user id %s", $logged_user->getId(), $user->getId()));
             }
 
             if(!is_null($logged_user))
