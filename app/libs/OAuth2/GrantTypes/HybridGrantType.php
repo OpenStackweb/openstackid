@@ -17,6 +17,7 @@ use OAuth2\Exceptions\InvalidApplicationType;
 use OAuth2\Exceptions\InvalidClientType;
 use OAuth2\Exceptions\InvalidOAuth2Request;
 use OAuth2\Exceptions\OAuth2GenericException;
+use OAuth2\Models\AuthorizationCode;
 use OAuth2\Models\IClient;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Services\ITokenService;
@@ -181,27 +182,16 @@ class HybridGrantType extends InteractiveGrantType
 
         $auth_code = $this->token_service->createAuthorizationCode
         (
-            $user->getId(),
-            $request->getClientId(),
-            $request->getScope(),
-            $audience,
-            $request->getRedirectUri(),
-            $request->getAccessType(),
-            $request->getApprovalPrompt(),
-            $has_former_consent,
-            $request->getState(),
-            $request->getNonce(),
-            $request->getResponseType(),
-            $request->getPrompt(true)
+            $request,
+            $has_former_consent
         );
 
-        if (is_null($auth_code)) {
-            throw new OAuth2GenericException("Invalid Auth Code");
+        if (is_null($auth_code) || !$auth_code instanceof AuthorizationCode) {
+            throw new OAuth2GenericException("Invalid Auth Code.");
         }
 
         $access_token = null;
         $id_token = null;
-
 
         if (in_array(OAuth2Protocol::OAuth2Protocol_ResponseType_Token, $request->getResponseType(false)))
         {

@@ -1,4 +1,20 @@
 <form id="form-application-security" name="form-application-security">
+    @if($client->getClientType() == \OAuth2\Models\IClient::ClientType_Public)
+    <div class="form-group">
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox"
+                           @if ($client->pkce_enabled)
+                           checked
+                           @endif
+                           id="pkce_enabled">
+                    Use PCKE?
+                    &nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle"
+                                aria-hidden="true" title="Use Proof Key for Code Exchange instead of a Client Secret ( Public Clients)"></span>
+                </label>
+            </div>
+    </div>
+    @endif
     <div class="form-group">
         <label for="default_max_age">Default Max. Age (optional)&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle"
         aria-hidden="true"

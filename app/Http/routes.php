@@ -91,6 +91,7 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
     });
 
     Route::group(['namespace' => 'OAuth2' , 'prefix' => 'oauth2', 'middleware' => ['ssl']], function () {
+
         Route::get('/check-session', "OAuth2ProviderController@checkSessionIFrame");
         Route::get('/end-session', "OAuth2ProviderController@endSession");
         Route::get('/end-session/cancel', "OAuth2ProviderController@cancelLogout");
@@ -375,7 +376,6 @@ Route::group(
         'prefix'     => 'api/v1',
         'middleware' => [
             'ssl',
-            'cors',
             'oauth2.endpoint',
         ]
     ], function () {

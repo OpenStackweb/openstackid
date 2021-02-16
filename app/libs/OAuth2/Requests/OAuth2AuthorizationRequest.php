@@ -33,8 +33,7 @@ class OAuth2AuthorizationRequest extends OAuth2Request
         parent::__construct($msg);
     }
 
-    public static $params = array
-    (
+    public static $params = [
         OAuth2Protocol::OAuth2Protocol_ResponseType => OAuth2Protocol::OAuth2Protocol_ResponseType,
         OAuth2Protocol::OAuth2Protocol_ClientId => OAuth2Protocol::OAuth2Protocol_ClientId,
         OAuth2Protocol::OAuth2Protocol_RedirectUri => OAuth2Protocol::OAuth2Protocol_RedirectUri,
@@ -42,7 +41,8 @@ class OAuth2AuthorizationRequest extends OAuth2Request
         OAuth2Protocol::OAuth2Protocol_State => OAuth2Protocol::OAuth2Protocol_State,
         OAuth2Protocol::OAuth2Protocol_Approval_Prompt => OAuth2Protocol::OAuth2Protocol_Approval_Prompt,
         OAuth2Protocol::OAuth2Protocol_AccessType => OAuth2Protocol::OAuth2Protocol_AccessType,
-    );
+        OAuth2Protocol::OAuth2Protocol_ResponseMode => OAuth2Protocol::OAuth2Protocol_ResponseMode,
+    ];
 
     /**
      * The Response Type request parameter response_type informs the Authorization Server of the desired authorization
@@ -60,6 +60,16 @@ class OAuth2AuthorizationRequest extends OAuth2Request
             OAuth2Protocol::OAuth2Protocol_ResponseType_Delimiter,
             $this->getParam(OAuth2Protocol::OAuth2Protocol_ResponseType)
         );
+    }
+
+    /**
+     * @see http://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#ResponseModes
+     * The Response Mode request parameter response_mode informs the Authorization Server of the mechanism to be used
+     * for returning Authorization Response parameters from the Authorization Endpoint
+     */
+    public function getResponseMode()
+    {
+        return $this->getParam(OAuth2Protocol::OAuth2Protocol_ResponseMode);
     }
 
     /**
@@ -171,16 +181,42 @@ class OAuth2AuthorizationRequest extends OAuth2Request
         }
 
         //approval_prompt
-        $valid_approvals = array
-        (
+        $valid_approvals = [
             OAuth2Protocol::OAuth2Protocol_Approval_Prompt_Auto,
             OAuth2Protocol::OAuth2Protocol_Approval_Prompt_Force
-        );
+        ];
 
         if (!in_array($this->getApprovalPrompt(), $valid_approvals))
         {
             $this->last_validation_error = 'approval_prompt is not valid';
             return false;
+        }
+
+        $response_mode = $this->getResponseMode();
+
+        if(!empty($response_mode))
+        {
+            if(!in_array($response_mode, OAuth2Protocol::$valid_response_modes))
+            {
+                $this->last_validation_error = 'invalid response_mode';
+                return false;
+            }
+
+            $default_response_mode = OAuth2Protocol::getDefaultResponseMode($this->getResponseType(false));
+
+            if($default_response_mode === $response_mode)
+            {
+                $this->last_validation_error = 'invalid response_mode';
+                return false;
+            }
+        }
+
+        // PCKE validation
+        if(!is_null($this->getCodeChallenge())){
+            if(!in_array( $this->getCodeChallengeMethod(), OAuth2Protocol::PKCE_ValidCodeChallengeMethods)){
+                $this->last_validation_error = sprintf("%s not valid", OAuth2Protocol::PKCE_CodeChallengeMethod);
+                return false;
+            }
         }
         return true;
     }
@@ -193,5 +229,15 @@ class OAuth2AuthorizationRequest extends OAuth2Request
         $display = $this->getParam(OAuth2Protocol::OAuth2Protocol_Display);
         if(empty($display)) return OAuth2Protocol::OAuth2Protocol_Display_Page;
         return $display;
+    }
+
+    // PKCE
+
+    public function getCodeChallenge():?string{
+        return $this->getParam(OAuth2Protocol::PKCE_CodeChallenge);
+    }
+
+    public function getCodeChallengeMethod():?string{
+        return $this->getParam(OAuth2Protocol::PKCE_CodeChallengeMethod);
     }
 }

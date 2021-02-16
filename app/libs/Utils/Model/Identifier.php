@@ -90,4 +90,9 @@ abstract class Identifier
      * @return string
      */
     abstract public function getType();
+
+    /**
+     * @return array
+     */
+    abstract public function toArray(): array;
 }

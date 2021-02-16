@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use Exception;
 use OAuth2\Exceptions\InvalidApplicationType;
 use OAuth2\Exceptions\InvalidGrantTypeException;
@@ -27,6 +28,7 @@ use OAuth2\Responses\OAuth2AccessTokenResponse;
 use OAuth2\Responses\OAuth2Response;
 use OAuth2\Services\IClientService;
 use Utils\Services\ILogService;
+
 /**
  * Class RefreshBearerTokenGrantType
  * @see http://tools.ietf.org/html/rfc6749#section-6
@@ -59,7 +61,10 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
      */
     public function canHandle(OAuth2Request $request)
     {
-        return $request instanceof OAuth2TokenRequest && $request->isValid() && $request->getGrantType() == $this->getType();
+        return
+            $request instanceof OAuth2TokenRequest &&
+            $request->isValid() &&
+            $request->getGrantType() == $this->getType();
     }
 
     /** Not implemented , there is no first process phase on this grant type
@@ -92,24 +97,18 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
     public function completeFlow(OAuth2Request $request)
     {
 
-        if (!($request instanceof OAuth2RefreshAccessTokenRequest))
-        {
+        if (!($request instanceof OAuth2RefreshAccessTokenRequest)) {
             throw new InvalidOAuth2Request;
         }
 
         parent::completeFlow($request);
 
-        if
-        (
-            $this->current_client->getApplicationType() != IClient::ApplicationType_Web_App &&
-            $this->current_client->getApplicationType() != IClient::ApplicationType_Native
-        )
-        {
+        if (!$this->current_client->canRequestRefreshTokens()) {
             throw new InvalidApplicationType
             (
                 sprintf
                 (
-                    'client id %s client type must be %s or ',
+                    'client id %s client type must be %s or %s or support PKCE',
                     $this->client_auth_context->getId(),
                     IClient::ApplicationType_Web_App,
                     IClient::ApplicationType_Native
@@ -117,8 +116,7 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
             );
         }
 
-        if (!$this->current_client->useRefreshToken())
-        {
+        if (!$this->current_client->useRefreshToken()) {
             throw new UseRefreshTokenException
             (
                 sprintf
@@ -130,11 +128,10 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
         }
 
         $refresh_token_value = $request->getRefreshToken();
-        $scope               = $request->getScope();
-        $refresh_token       = $this->token_service->getRefreshToken($refresh_token_value);
+        $scope = $request->getScope();
+        $refresh_token = $this->token_service->getRefreshToken($refresh_token_value);
 
-        if (is_null($refresh_token))
-        {
+        if (is_null($refresh_token)) {
             throw new InvalidGrantTypeException
             (
                 sprintf
@@ -145,8 +142,7 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
             );
         }
 
-        if ($refresh_token->getClientId() !== $this->current_client->getClientId())
-        {
+        if ($refresh_token->getClientId() !== $this->current_client->getClientId()) {
             throw new InvalidGrantTypeException
             (
                 sprintf
@@ -158,7 +154,7 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
         }
 
         $new_refresh_token = null;
-        $access_token      = $this->token_service->createAccessTokenFromRefreshToken($refresh_token, $scope);
+        $access_token = $this->token_service->createAccessTokenFromRefreshToken($refresh_token, $scope);
         /*
          * the authorization server could employ refresh token
          * rotation in which a new refresh token is issued with every access
@@ -168,8 +164,7 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
          * legitimate client, one of them will present an invalidated refresh
          * token, which will inform the authorization server of the breach.
          */
-        if ($this->current_client->useRotateRefreshTokenPolicy())
-        {
+        if ($this->current_client->useRotateRefreshTokenPolicy()) {
             $this->token_service->invalidateRefreshToken($refresh_token_value);
             $new_refresh_token = $this->token_service->createRefreshToken($access_token, true);
         }

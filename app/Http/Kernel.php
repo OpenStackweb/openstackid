@@ -30,6 +30,7 @@ class Kernel extends HttpKernel
     protected $middleware = [
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
         \App\Http\Middleware\SingleAccessPoint::class,
+        \Spatie\Cors\Cors::class,
         \App\Http\Middleware\ParseMultipartFormDataInputForNonPostRequests::class,
     ];
 
@@ -50,7 +51,6 @@ class Kernel extends HttpKernel
 
         'api' => [
             'ssl',
-            'cors',
             'oauth2.endpoint',
         ],
     ];
@@ -69,7 +69,6 @@ class Kernel extends HttpKernel
         'guest'                                    => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'throttle'                                 => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'csrf'                                     => \App\Http\Middleware\VerifyCsrfToken::class,
-        'cors'                                     =>  \Spatie\Cors\Cors::class,
         'oauth2.endpoint'                          => \App\Http\Middleware\OAuth2BearerAccessTokenRequestValidator::class,
         'oauth2.currentuser.serveradmin'           => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdmin::class,
         'oauth2.currentuser.serveradmin.json'      => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdminJson::class,

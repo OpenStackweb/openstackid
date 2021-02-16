@@ -24,7 +24,6 @@ use OAuth2\ResourceServer\IUserService;
  */
 class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
 {
-
     /**
      * @var array
      */
@@ -120,15 +119,6 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
         parent::__construct($auth_request->getMessage());
     }
 
-    /**
-     * @see http://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#ResponseModes
-     * The Response Mode request parameter response_mode informs the Authorization Server of the mechanism to be used
-     * for returning Authorization Response parameters from the Authorization Endpoint
-     */
-    public function getResponseMode()
-    {
-        return $this->getParam(OAuth2Protocol::OAuth2Protocol_ResponseMode);
-    }
 
     /**
      * Validates current request
@@ -188,25 +178,6 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
                         $this->last_validation_error = 'not valid prompt';
                         return false;
                     }
-                }
-            }
-
-            $response_mode = $this->getResponseMode();
-
-            if(!empty($response_mode))
-            {
-                if(!in_array($response_mode, OAuth2Protocol::$valid_response_modes))
-                {
-                    $this->last_validation_error = 'invalid response_mode';
-                    return false;
-                }
-
-                $default_response_mode = OAuth2Protocol::getDefaultResponseMode($this->getResponseType(false));
-
-                if($default_response_mode === $response_mode)
-                {
-                    $this->last_validation_error = 'invalid response_mode';
-                    return false;
                 }
             }
 

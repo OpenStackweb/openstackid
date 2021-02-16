@@ -1,6 +1,6 @@
 <?php namespace OAuth2\Strategies;
 /**
- * Copyright 2015 OpenStack Foundation
+ * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,17 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use OAuth2\Exceptions\InvalidClientAuthenticationContextException;
 use OAuth2\Exceptions\InvalidClientCredentials;
 use OAuth2\Models\ClientAuthenticationContext;
 use OAuth2\Models\ClientCredentialsAuthenticationContext;
 use OAuth2\Models\IClient;
-use Illuminate\Support\Facades\Log;
+
 /**
- * Class ClientPlainCredentialsAuthContextValidator
+ * Class ClientPKCEAuthContextValidator
  * @package OAuth2\Strategies
  */
-final class ClientPlainCredentialsAuthContextValidator implements IClientAuthContextValidator
+final class ClientPKCEAuthContextValidator implements IClientAuthContextValidator
 {
 
     /**
@@ -32,25 +34,23 @@ final class ClientPlainCredentialsAuthContextValidator implements IClientAuthCon
      */
     public function validate(ClientAuthenticationContext $context)
     {
-        if(!($context instanceof ClientCredentialsAuthenticationContext))
+        if (!($context instanceof ClientCredentialsAuthenticationContext))
             throw new InvalidClientAuthenticationContextException;
 
         $client = $context->getClient();
-        if(is_null($client))
+        if (is_null($client))
             throw new InvalidClientAuthenticationContextException('client not set!');
 
-        if($client->getTokenEndpointAuthInfo()->getAuthenticationMethod() !== $context->getAuthType())
+        if ($client->getTokenEndpointAuthInfo()->getAuthenticationMethod() !== $context->getAuthType())
             throw new InvalidClientCredentials(sprintf('invalid token endpoint auth method %s', $context->getAuthType()));
 
-        if($client->getClientType() !== IClient::ClientType_Confidential)
+        if ($client->getClientType() !== IClient::ClientType_Public)
             throw new InvalidClientCredentials(sprintf('invalid client type %s', $client->getClientType()));
 
-        $providedClientId     = $context->getId();
-        $providedClientSecret = $context->getSecret();
+        $providedClientId = $context->getId();
 
-        Log::debug(sprintf("ClientPlainCredentialsAuthContextValidator::validate client id %s - provide client id %s", $client->getClientId(), $providedClientId));
-        Log::debug(sprintf("ClientPlainCredentialsAuthContextValidator::validate client secret %s - provide client secret %s", $client->getClientSecret(), $providedClientSecret));
+        Log::debug(sprintf("ClientPKCEAuthContextValidator::validate client id %s - provide client id %s", $client->getClientId(), $providedClientId));
 
-        return $client->getClientId() ===  $providedClientId && $client->getClientSecret() === $providedClientSecret;
+        return $client->getClientId() === $providedClientId && $client->isPKCEEnabled();
     }
 }

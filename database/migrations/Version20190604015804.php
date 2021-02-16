@@ -288,6 +288,7 @@ create table if not exists oauth2_client
 	max_refresh_token_issuance_basis smallint(6) not null,
 	use_refresh_token tinyint(1) default '0' not null,
 	rotate_refresh_token tinyint(1) default '0' not null,
+	pkce_enabled tinyint(1) default '0' not null,
 	resource_server_id bigint unsigned null,
 	website text null,
 	application_type enum('WEB_APPLICATION', 'JS_CLIENT', 'SERVICE', 'NATIVE') default 'WEB_APPLICATION' null,

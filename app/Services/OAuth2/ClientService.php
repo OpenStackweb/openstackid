@@ -144,38 +144,16 @@ final class ClientService extends AbstractService implements IClientService
             );
         }
 
-        if
-        (
-            Input::has(OAuth2Protocol::OAuth2Protocol_ClientId) &&
-            Input::has(OAuth2Protocol::OAuth2Protocol_ClientSecret)
-        )
-        {
-            Log::debug
-            (
-                sprintf
-                (
-                    "ClientService::getCurrentClientAuthInfo params %s - %s present",
-                    OAuth2Protocol::OAuth2Protocol_ClientId,
-                    OAuth2Protocol::OAuth2Protocol_ClientSecret
-                )
-            );
 
-            return new ClientCredentialsAuthenticationContext
-            (
-                urldecode(Input::get(OAuth2Protocol::OAuth2Protocol_ClientId, '')),
-                urldecode(Input::get(OAuth2Protocol::OAuth2Protocol_ClientSecret, '')),
-                OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretPost
-            );
-        }
-
-        $auth_header = Request::header('Authorization');
-        if(!empty($auth_header))
+        if(Request::hasHeader('Authorization'))
         {
+
             Log::debug
             (
                 "ClientService::getCurrentClientAuthInfo Authorization Header present"
             );
 
+            $auth_header = Request::header('Authorization');
             $auth_header = trim($auth_header);
             $auth_header = explode(' ', $auth_header);
 
@@ -208,6 +186,34 @@ final class ClientService extends AbstractService implements IClientService
                 urldecode($auth_header_content[0]),
                 urldecode($auth_header_content[1]),
                 OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic
+            );
+        }
+
+        if(Input::has(OAuth2Protocol::OAuth2Protocol_ClientId))
+        {
+            Log::debug
+            (
+                sprintf
+                (
+                    "ClientService::getCurrentClientAuthInfo params %s - %s present",
+                    OAuth2Protocol::OAuth2Protocol_ClientId,
+                    OAuth2Protocol::OAuth2Protocol_ClientSecret
+                )
+            );
+
+            $client_secret = null;
+            $auth_type = OAuth2Protocol::TokenEndpoint_AuthMethod_None;
+
+            if(Input::has(OAuth2Protocol::OAuth2Protocol_ClientSecret)){
+                $client_secret =  urldecode(Input::get(OAuth2Protocol::OAuth2Protocol_ClientSecret, ''));
+                $auth_type = OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretPost;
+            }
+
+            return new ClientCredentialsAuthenticationContext
+            (
+                urldecode(Input::get(OAuth2Protocol::OAuth2Protocol_ClientId, '')),
+                $client_secret,
+                $auth_type
             );
         }
 

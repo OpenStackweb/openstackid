@@ -22,6 +22,9 @@ use OAuth2\Models\RefreshToken;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Exceptions\InvalidAccessTokenException;
 use OAuth2\Exceptions\InvalidGrantTypeException;
+use OAuth2\Requests\OAuth2AuthorizationRequest;
+use Utils\Model\Identifier;
+
 /**
  * Interface ITokenService
  * Defines the interface for an OAuth2 Token Service
@@ -32,35 +35,15 @@ interface ITokenService {
 
     /**
      * Creates a brand new authorization code
-     * @param $user_id
-     * @param $client_id
-     * @param $scope
-     * @param string $audience
-     * @param null $redirect_uri
-     * @param string $access_type
-     * @param string $approval_prompt
+     * @param OAuth2AuthorizationRequest $request
      * @param bool $has_previous_user_consent
-     * @param string|null $state
-     * @param string|null $nonce
-     * @param string|null $response_type
-     * @param string|null $prompt
-     * @return AuthorizationCode
+     * @return Identifier
      */
     public function createAuthorizationCode
     (
-        $user_id,
-        $client_id,
-        $scope,
-        $audience                  = '' ,
-        $redirect_uri              = null,
-        $access_type               = OAuth2Protocol::OAuth2Protocol_AccessType_Online,
-        $approval_prompt           = OAuth2Protocol::OAuth2Protocol_Approval_Prompt_Auto,
-        $has_previous_user_consent = false,
-        $state                     = null,
-        $nonce                     = null,
-        $response_type             = null,
-        $prompt                    = null
-    );
+        OAuth2AuthorizationRequest $request,
+        bool $has_previous_user_consent = false
+    ):Identifier;
 
 
     /**

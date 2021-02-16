@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Factories;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\Exceptions\InvalidOAuth2Request;
 use OAuth2\Models\AuthorizationCode;
 use OAuth2\OAuth2Protocol;
@@ -20,7 +18,6 @@ use OAuth2\Requests\OAuth2AccessTokenRequestAuthCode;
 use OAuth2\Responses\OAuth2AccessTokenResponse;
 use OAuth2\Responses\OAuth2IdTokenResponse;
 use OAuth2\Services\ITokenService;
-
 /**
  * Class OAuth2AccessTokenResponseFactory
  * @package OAuth2\Factories
@@ -48,11 +45,13 @@ final class OAuth2AccessTokenResponseFactory
             $access_token = null;
             $id_token = null;
             $refresh_token = null;
+
             $response_type = explode
             (
                 OAuth2Protocol::OAuth2Protocol_ResponseType_Delimiter,
                 $auth_code->getResponseType()
             );
+
 
             $is_hybrid_flow = OAuth2Protocol::responseTypeBelongsToFlow
             (

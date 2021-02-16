@@ -15,10 +15,12 @@
 use App\libs\Utils\URLUtils;
 use Auth\User;
 use Doctrine\Common\Collections\Criteria;
+use Illuminate\Support\Facades\Log;
 use jwa\cryptographic_algorithms\ContentEncryptionAlgorithms_Registry;
 use jwa\cryptographic_algorithms\DigitalSignatures_MACs_Registry;
 use jwa\cryptographic_algorithms\KeyManagementAlgorithms_Registry;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
+use models\exceptions\ValidationException;
 use OAuth2\Models\IClient;
 use OAuth2\Models\IClientPublicKey;
 use OAuth2\Models\JWTResponseInfo;
@@ -81,6 +83,12 @@ class Client extends BaseEntity implements IClient
      * @var bool
      */
     private $active;
+
+    /**
+     * @ORM\Column(name="pkce_enabled", type="boolean")
+     * @var bool
+     */
+    private $pkce_enabled;
 
     /**
      * @ORM\Column(name="locked", type="boolean")
@@ -371,6 +379,7 @@ class Client extends BaseEntity implements IClient
         $this->active = false;
         $this->use_refresh_token = false;
         $this->rotate_refresh_token = false;
+        $this->token_endpoint_auth_method = OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic;
         $this->token_endpoint_auth_signing_alg = JSONWebSignatureAndEncryptionAlgorithms::None;
         $this->userinfo_signed_response_alg = JSONWebSignatureAndEncryptionAlgorithms::None;
         $this->userinfo_encrypted_response_alg = JSONWebSignatureAndEncryptionAlgorithms::None;
@@ -389,7 +398,7 @@ class Client extends BaseEntity implements IClient
         $this->max_access_token_issuance_qty = 0;
         $this->max_refresh_token_issuance_basis = 0;
         $this->max_refresh_token_issuance_qty = 0;
-        $this->token_endpoint_auth_method = OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretBasic;
+        $this->pkce_enabled = false;
     }
 
     public static  $valid_app_types = [
@@ -423,22 +432,25 @@ class Client extends BaseEntity implements IClient
             throw new \InvalidArgumentException("Invalid application_type");
         }
         $this->application_type = strtoupper($application_type);
-        $this->client_type = $this->infereClientTypeFromAppType($this->application_type);
+        $this->client_type = $this->inferClientTypeFromAppType($this->application_type);
     }
 
     /**
      * @return bool
      */
     public function canRequestRefreshTokens():bool{
-        return $this->getApplicationType() == IClient::ApplicationType_Native ||
-            $this->getApplicationType() == IClient::ApplicationType_Web_App;
+        return
+            $this->getApplicationType() == IClient::ApplicationType_Native ||
+            $this->getApplicationType() == IClient::ApplicationType_Web_App ||
+            // PCKE
+            $this->pkce_enabled;
     }
 
     /**
      * @param string $app_type
      * @return string
      */
-    private function infereClientTypeFromAppType(string $app_type)
+    private function inferClientTypeFromAppType(string $app_type)
     {
         switch($app_type)
         {
@@ -587,14 +599,20 @@ class Client extends BaseEntity implements IClient
             ($this->application_type !== IClient::ApplicationType_Native && !URLUtils::isHTTPS($uri))
             && (ServerConfigurationService::getConfigValue("SSL.Enable"))
         )
+        {
+            Log::debug(sprintf("Client::isUriAllowed url %s is not under ssl schema", $uri));
             return false;
+        }
 
         $redirect_uris = explode(',',strtolower($this->redirect_uris));
         $uri = URLUtils::normalizeUrl($uri);
         foreach($redirect_uris as $redirect_uri){
+            Log::debug(sprintf("Client::isUriAllowed url %s client %s redirect_uri %s", $uri, $this->client_id, $redirect_uri));
             if(str_contains($uri, $redirect_uri))
                 return true;
         }
+
+        Log::debug(sprintf("Client::isUriAllowed url %s is not allowed as return url for client %s", $uri, $this->client_id));
         return false;
     }
 
@@ -1113,6 +1131,7 @@ class Client extends BaseEntity implements IClient
      */
     public function isOwner(User $user):bool
     {
+        if(!$this->hasUser()) return false;
         return intval($this->user->getId()) === intval($user->getId());
     }
 
@@ -1132,7 +1151,7 @@ class Client extends BaseEntity implements IClient
      */
     public function addScope(ApiScope $scope)
     {
-        if($this->scopes->contains($scope)) return;
+        if($this->scopes->contains($scope)) return $this;
         $this->scopes->add($scope);
         return $this;
     }
@@ -1564,5 +1583,24 @@ class Client extends BaseEntity implements IClient
         if($name == 'user_id')
             return $this->getUserId();
         return $this->{$name};
+    }
+
+    public function isPKCEEnabled():bool{
+        return $this->pkce_enabled;
+    }
+
+    public function enablePCKE(){
+        if($this->client_type != self::ClientType_Public){
+            throw new ValidationException("Only Public Clients could use PCKE.");
+        }
+        $this->pkce_enabled = true;
+        $this->token_endpoint_auth_method = OAuth2Protocol::TokenEndpoint_AuthMethod_None;
+    }
+
+    public function disablePCKE(){
+        if($this->client_type != self::ClientType_Public){
+            throw new ValidationException("Only Public Clients could use PCKE.");
+        }
+        $this->pkce_enabled = false;
     }
 }

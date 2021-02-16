@@ -32,21 +32,8 @@ final class ClientFactory
      */
     public static function build(array $payload):Client
     {
-        $scope_repository = App::make(IApiScopeRepository::class);
         $client = self::populate(new Client, $payload);
         $client->setActive(true);
-        //add default scopes
-        foreach ($scope_repository->getDefaults() as $default_scope) {
-            if
-            (
-                $default_scope->getName() === OAuth2Protocol::OfflineAccess_Scope
-                && !$client->canRequestRefreshTokens()
-            ) {
-                continue;
-            }
-            $client->addScope($default_scope);
-        }
-
         if ($client->getClientType() !== IClient::ClientType_Confidential) {
             $client->setTokenEndpointAuthMethod(OAuth2Protocol::TokenEndpoint_AuthMethod_None);
         }
@@ -200,6 +187,29 @@ final class ClientFactory
         if(isset($payload['resource_server']) && $payload['resource_server'] instanceof ResourceServer){
             $resource_server = $payload['resource_server'];
             $client->setResourceServer($resource_server);
+        }
+
+        if(isset($payload['pkce_enabled'])) {
+
+            $pkce_enabled = boolval($payload['pkce_enabled']);
+
+            if($pkce_enabled)
+                $client->enablePCKE();
+            else
+                $client->disablePCKE();
+        }
+
+        $scope_repository = App::make(IApiScopeRepository::class);
+        //add default scopes
+        foreach ($scope_repository->getDefaults() as $default_scope) {
+            if
+            (
+                $default_scope->getName() === OAuth2Protocol::OfflineAccess_Scope
+                && !$client->canRequestRefreshTokens()
+            ) {
+                continue;
+            }
+            $client->addScope($default_scope);
         }
 
         return $client;

@@ -1,5 +1,4 @@
 <?php namespace OAuth2\Strategies;
-
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-use OAuth2\Requests\OAuth2AuthenticationRequest;
+use OAuth2\Requests\OAuth2AuthorizationRequest;
 use OAuth2\Requests\OAuth2Request;
 use OAuth2\Responses\OAuth2DirectResponse;
 use OAuth2\Responses\OAuth2IndirectFragmentResponse;
@@ -24,7 +22,6 @@ use Utils\IHttpResponseStrategy;
 use Utils\Services\ServiceLocator;
 use OAuth2\OAuth2Protocol;
 use Exception;
-
 /**
  * Class OAuth2ResponseStrategyFactoryMethod
  * @package OAuth2\Strategies
@@ -42,7 +39,7 @@ final class OAuth2ResponseStrategyFactoryMethod
     {
         $type = $response->getType();
 
-        if($request instanceof OAuth2AuthenticationRequest)
+        if($request instanceof OAuth2AuthorizationRequest)
         {
             $response_mode = $request->getResponseMode();
 
