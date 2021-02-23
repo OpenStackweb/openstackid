@@ -265,7 +265,7 @@ final class UserService extends AbstractService implements IUserService
                 }
             }
 
-            if(isset($payload["email"])){
+            if(isset($payload["email"]) && !empty($payload["email"])){
                 $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
                 if(!is_null($former_user) && $former_user->getId() != $id)
                     throw new ValidationException(sprintf("email %s already belongs to another user", $payload["email"]));

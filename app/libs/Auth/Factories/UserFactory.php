@@ -48,11 +48,12 @@ final class UserFactory
         if(isset($payload['last_name']))
             $user->setLastName(trim($payload['last_name']));
 
-        if(isset($payload['email']))
+        if(isset($payload['email']) && !empty($payload['email']))
             $user->setEmail(strtolower(trim($payload['email'])));
 
         if(isset($payload['second_email']))
             $user->setSecondEmail(strtolower(trim($payload['second_email'])));
+
         if(isset($payload['third_email']))
             $user->setThirdEmail(strtolower(trim($payload['third_email'])));
 
