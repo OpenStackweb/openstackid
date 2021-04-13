@@ -39,3 +39,4 @@ _intellij_phpdebug_validator.php
 /public/assets/moment
 routes.txt
 model.sql
+.phpunit.result.cache
