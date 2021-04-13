@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use OAuth2\Models\IPrincipal;
 use OAuth2\Models\Principal;
 use OAuth2\Services\IPrincipalService;
+
 /**
  * Class PrincipalService
  * @package Services\OAuth2
@@ -25,8 +27,8 @@ use OAuth2\Services\IPrincipalService;
 final class PrincipalService implements IPrincipalService
 {
 
-    const UserIdParam    = 'openstackid.oauth2.principal.user_id';
-    const AuthTimeParam  = 'openstackid.oauth2.principal.auth_time';
+    const UserIdParam = 'openstackid.oauth2.principal.user_id';
+    const AuthTimeParam = 'openstackid.oauth2.principal.auth_time';
     const OPBrowserState = 'openstackid.oauth2.principal.opbs';
 
     /**
@@ -34,27 +36,26 @@ final class PrincipalService implements IPrincipalService
      */
     public function get()
     {
-        $principal        = new Principal;
-        $user_id          = Session::get(self::UserIdParam);
-        $auth_time        = Session::get(self::AuthTimeParam);
+        $principal = new Principal;
+        $user_id = Session::get(self::UserIdParam);
+        $auth_time = Session::get(self::AuthTimeParam);
         $op_browser_state = Session::get(self::OPBrowserState);
 
         Log::debug(sprintf("PrincipalService::get - user_id %s auth_time %s op_browser_state %s", $user_id, $auth_time, $op_browser_state));
-        if(!Cookie::has(IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME)){
-            Log::debug("PrincipalService::get cookie op_bs is missing trying to set it again ...");
-            Cookie::queue
-            (
-                IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME,
-                $op_browser_state,
-                Config::get("session.lifetime", 120),
-                $path = Config::get("session.path"),
-                $domain = Config::get("session.domain"),
-                $secure = true,
-                $httpOnly = false,
-                $raw = false,
-                $sameSite = 'none'
-            );
-        }
+        // overwrite it
+        Cookie::queue
+        (
+            IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME,
+            $op_browser_state,
+            Config::get("session.lifetime", 120),
+            $path = Config::get("session.path"),
+            $domain = Config::get("session.domain"),
+            $secure = true,
+            $httpOnly = false,
+            $raw = false,
+            $sameSite = 'none'
+        );
+
         $principal->setState
         (
             [
@@ -85,7 +86,8 @@ final class PrincipalService implements IPrincipalService
     /**
      * @return string
      */
-    private function calculateBrowserState():string{
+    private function calculateBrowserState(): string
+    {
         return hash('sha256', Session::getId());
     }
 
@@ -101,7 +103,7 @@ final class PrincipalService implements IPrincipalService
         Session::put(self::AuthTimeParam, $auth_time);
         // Maintain a `op_browser_state` cookie along with the `sessionid` cookie that
         // represents the End-User's login state at the OP. If the user is not logged
-        $op_browser_state  = $this->calculateBrowserState();
+        $op_browser_state = $this->calculateBrowserState();
         Cookie::queue
         (
             IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME,

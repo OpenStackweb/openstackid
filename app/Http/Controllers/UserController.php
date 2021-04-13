@@ -326,7 +326,7 @@ final class UserController extends OpenIdController
     {
         if (is_null($this->consent_strategy))
         {
-            return View::make("errors.404");
+            return View::make("errors.400");
         }
 
         return $this->consent_strategy->getConsent();

@@ -23,11 +23,7 @@ use libs\utils\RequestUtils;
 */
 class SecurityHTTPHeadersWriterMiddleware
 {
-    const ExcludedRoutes = [
-        // check_session_iframe
-        '/oauth2/check-session'
-    ];
-	/**
+   /**
 	 * Handle an incoming request.
 	 *
 	 * @param  \Illuminate\Http\Request $request
@@ -38,12 +34,7 @@ class SecurityHTTPHeadersWriterMiddleware
 	{
 
 		$response = $next($request);
-        $routePath  = RequestUtils::getCurrentRoutePath($request);
-        if($routePath && is_string($routePath) && !in_array($routePath,self::ExcludedRoutes)){
-            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
-            $response->headers->set('X-Frame-Options','DENY');
-        }
-		// https://www.owasp.org/index.php/List_of_useful_HTTP_headers
+     	// https://www.owasp.org/index.php/List_of_useful_HTTP_headers
 		$response->headers->set('X-Content-Type-Options','nosniff');
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
 		$response->headers->set('X-XSS-Protection','1; mode=block');
