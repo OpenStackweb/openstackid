@@ -282,55 +282,13 @@ final class OAuth2ProviderController extends Controller
             ], 400);
         }
 
-        if(Request::isMethod('get') )
-        {
-            $clients = [];
-            foreach($this->auth_service->getLoggedRPs() as $client_id)
-            {
-                $client = $this->client_repository->getClientById($client_id);
-                if(!is_null($client)){
-                    $clients[] = $client;
-                    Log::info(sprintf("added RP %s", $client->getApplicationName()));
-                }
-            }
-            Session::put("logout.return_url", Request::server('HTTP_REFERER'));
-            // At the logout endpoint, the OP SHOULD ask the End-User whether he wants to log out of the OP as well.
-            // If the End-User says "yes", then the OP MUST log out the End-User.
-            return View::make('oauth2.session.session-logout',
-            [
-                'clients'                  => $clients,
-                'id_token_hint'            => $request->getIdTokenHint(),
-                'post_logout_redirect_uri' => $request->getPostLogoutRedirectUri(),
-                'state'                    => $request->getState(),
-                'client_id'                => $request->getClientId(),
-            ]);
+       $response = $this->oauth2_protocol->endSession($request);
+
+        if (!is_null($response) && $response instanceof OAuth2Response) {
+            $strategy = OAuth2ResponseStrategyFactoryMethod::buildStrategy($request, $response);
+            return $strategy->handle($response);
         }
 
-        $consent = Input::get('oidc_endsession_consent');
-
-        if($consent === '1')
-        {
-            $response = $this->oauth2_protocol->endSession($request);
-
-            if (!is_null($response) && $response instanceof OAuth2Response) {
-                $strategy = OAuth2ResponseStrategyFactoryMethod::buildStrategy($request, $response);
-                return $strategy->handle($response);
-            }
-
-            return View::make('oauth2.session.session-ended');
-        }
-
-        Log::error('invalid consent response!');
-        return Response::view('errors.404', [], 404);
-    }
-
-    public function cancelLogout()
-    {
-
-        $return_url = Session::get("logout.return_url");
-        if(!empty($return_url)){
-            return Redirect::to($return_url);
-        }
-        return Redirect::action('HomeController@index');
+        return View::make('oauth2.session.session-ended');
     }
 } 

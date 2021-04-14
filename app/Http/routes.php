@@ -94,7 +94,6 @@ Route::group(['namespace' => 'App\Http\Controllers', 'middleware' => 'web' ], fu
 
         Route::get('/check-session', "OAuth2ProviderController@checkSessionIFrame");
         Route::get('/end-session', "OAuth2ProviderController@endSession");
-        Route::get('/end-session/cancel', "OAuth2ProviderController@cancelLogout");
         Route::post('/end-session', "OAuth2ProviderController@endSession");
 
         //authorization endpoint
