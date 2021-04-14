@@ -193,16 +193,24 @@ final class UserApiController extends APICRUDController
 
     protected function curateUpdatePayload(array $payload): array
     {
-        return HTMLCleaner::cleanData($payload, [
-            'bio', 'statement_of_interest'
-        ]);
+        if(in_array("bio", $payload)){
+            $payload["bio"] = strip_tags($payload["bio"]);
+        }
+        if(in_array("statement_of_interest", $payload)){
+            $payload["statement_of_interest"] = strip_tags($payload["statement_of_interest"]);
+        }
+        return $payload;
     }
 
     protected function curateCreatePayload(array $payload): array
     {
-        return HTMLCleaner::cleanData($payload, [
-            'bio', 'statement_of_interest'
-        ]);
+        if(in_array("bio", $payload)){
+            $payload["bio"] = strip_tags($payload["bio"]);
+        }
+        if(in_array("statement_of_interest", $payload)){
+            $payload["statement_of_interest"] = strip_tags($payload["statement_of_interest"]);
+        }
+        return $payload;
     }
 
     /**

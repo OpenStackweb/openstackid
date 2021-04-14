@@ -237,6 +237,8 @@
         @endforeach
 
     </script>
+    {!! HTML::script('assets/simplemde/simplemde.min.js') !!}
+    {!! HTML::style('assets/simplemde/simplemde.min.css') !!}
     {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
     {!! HTML::style('assets/chosen-js/chosen.css') !!}
     {!! HTML::script('assets/chosen-js/chosen.jquery.js') !!}

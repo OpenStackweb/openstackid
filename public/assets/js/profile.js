@@ -35,8 +35,12 @@ $(document).ready(function() {
         }
     });
 
-    $('#bio').summernote();
-    $('#statement_of_interest').summernote();
+    //$('#bio').summernote();
+    //$('#statement_of_interest').summernote();
+
+    var simplemdeBio = new SimpleMDE({ element: $("#bio")[0] });
+    var simplemdeStatement = new SimpleMDE({ element: $("#statement_of_interest")[0] });
+
     $('#birthday').datepicker();
 
     $('#img-pic',form).data('original-src', $('#img-pic', form).attr('src'));
@@ -93,6 +97,10 @@ $(document).ready(function() {
                 user.birthday = '';
             }
 
+            // get values
+            user.bio = simplemdeBio.value();
+            user.statement_of_interest = simplemdeStatement.value();
+
             var href = $(this).attr('action');
             var data = new FormData();
 
@@ -123,6 +131,7 @@ $(document).ready(function() {
                         $("#password").val('');
                         $("#current_password").val('');
                         $('.change-password-link').show();
+                        location.reload(true);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         $('body').ajax_loader('stop');

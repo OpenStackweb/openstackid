@@ -42,6 +42,7 @@ var plugins = [
             {from: './node_modules/chosen-js', to: 'chosen-js'},
             {from: './node_modules/moment', to: 'moment'},
             {from: './node_modules/@github/clipboard-copy-element/dist', to: 'clipboard-copy-element'},
+            {from: './node_modules/simplemde/dist', to: 'simplemde'},
         ],
         {copyUnmodified: false}
     ),

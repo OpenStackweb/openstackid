@@ -369,7 +369,10 @@
         var current_language = '{!!$user->language!!}';
         var current_country  = '{!!$user->country_iso_code!!}';
         var current_gender   = '{!! $user->gender !!}';
+
     </script>
+    {!! HTML::script('assets/simplemde/simplemde.min.js') !!}
+    {!! HTML::style('assets/simplemde/simplemde.min.css') !!}
     {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
     {!! HTML::style('assets/chosen-js/chosen.css') !!}
     {!! HTML::script('assets/chosen-js/chosen.jquery.js') !!}
