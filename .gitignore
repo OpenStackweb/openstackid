@@ -41,3 +41,4 @@ _intellij_phpdebug_validator.php
 routes.txt
 model.sql
 .phpunit.result.cache
+!/public/web.config
