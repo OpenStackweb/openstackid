@@ -1,4 +1,6 @@
 <?php namespace OAuth2\Discovery;
+use App\libs\Auth\SocialLoginProviders;
+
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -251,6 +253,15 @@ final class DiscoveryDocumentBuilder
     public function addUserInfoEncryptionEncSupported($enc)
     {
         $this->addArrayValue(OpenIDProviderMetadata::UserInfoEncryptionEncValuesSupported, $enc);
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function addAvailableThirdPartyIdentityProviders(){
+        foreach(SocialLoginProviders::ValidProviders as $provider)
+            $this->addArrayValue("third_party_identity_providers", $provider);
         return $this;
     }
 

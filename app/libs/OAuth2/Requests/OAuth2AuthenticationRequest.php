@@ -37,6 +37,7 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
         OAuth2Protocol::OAuth2Protocol_IDTokenHint,
         OAuth2Protocol::OAuth2Protocol_LoginHint,
         OAuth2Protocol::OAuth2Protocol_ACRValues,
+        OAuth2Protocol::OAuth2Protocol_Provider,
     );
 
     /**
@@ -109,6 +110,10 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
     public function offlineAccessRequested()
     {
         return str_contains($this->getScope(), OAuth2Protocol::OfflineAccess_Scope);
+    }
+
+    public function getProvider():?string{
+        return $this->getParam(OAuth2Protocol::OAuth2Protocol_Provider);
     }
 
     /**

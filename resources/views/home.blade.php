@@ -16,12 +16,12 @@
                         <div class="col-md-12">
                             <div class="row" style="padding-top: 5px;padding-bottom: 5px;">
                                 <div class="col-md-12">
-                                    <a href="{!! URL::action("UserController@getLogin") !!}" class="btn btn-default btn-md active">Sign in to your account</a>
+                                    <a target="_self" href="{!! URL::action("UserController@getLogin") !!}" class="btn btn-default btn-md active">Sign in to your account</a>
                                 </div>
                             </div>
                             <div class="row" style="padding-top: 5px;padding-bottom: 5px;">
                                 <div class="col-md-12">
-                                    <a href="{!! URL::action("Auth\RegisterController@showRegistrationForm")  !!}" class="btn btn-default btn-md active">Register for an {{ Config::get('app.app_name') }}</a>
+                                    <a target="_self" href="{!! URL::action("Auth\RegisterController@showRegistrationForm")  !!}" class="btn btn-default btn-md active">Register for an {{ Config::get('app.app_name') }}</a>
                                 </div>
                             </div>
                         </div>

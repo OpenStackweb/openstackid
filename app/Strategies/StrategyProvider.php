@@ -48,6 +48,10 @@ final class StrategyProvider extends ServiceProvider implements DeferrableProvid
         // authentication strategies
         App::singleton(OAuth2ServiceCatalog::AuthenticationStrategy, \Strategies\OAuth2AuthenticationStrategy::class);
         App::singleton(OpenIdServiceCatalog::AuthenticationStrategy, \Strategies\OpenIdAuthenticationStrategy::class);
+
+        // factories
+
+        App::singleton(ILoginStrategyFactory::class, LoginStrategyFactory::class);
     }
 
     public function provides()
@@ -61,6 +65,7 @@ final class StrategyProvider extends ServiceProvider implements DeferrableProvid
             OAuth2IndirectFragmentResponse::OAuth2IndirectFragmentResponse,
             OAuth2ServiceCatalog::AuthenticationStrategy,
             OpenIdServiceCatalog::AuthenticationStrategy,
+            ILoginStrategyFactory::class,
         ];
     }
 }

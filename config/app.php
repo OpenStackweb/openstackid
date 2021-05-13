@@ -170,6 +170,8 @@ return [
         LaravelDoctrine\Extensions\BeberleiExtensionsServiceProvider::class,
         \App\Models\Utils\MySQLExtensionsServiceProvider::class,
         \App\libs\Utils\FileSystem\SwiftServiceProvider::class,
+        // remove 'Laravel\Socialite\SocialiteServiceProvider',
+        \SocialiteProviders\Manager\ServiceProvider::class, // add
     ],
 
     /*
@@ -223,6 +225,7 @@ return [
         'EntityManager' => LaravelDoctrine\ORM\Facades\EntityManager::class,
         'Registry'      => LaravelDoctrine\ORM\Facades\Registry::class,
         'Doctrine'      => LaravelDoctrine\ORM\Facades\Doctrine::class,
+        'Socialite'     => Laravel\Socialite\Facades\Socialite::class,
     ],
 
     'version'     => env('APP_VERSION', 'XX.XX.XX'),

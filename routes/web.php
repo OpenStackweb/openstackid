@@ -41,10 +41,16 @@ Route::group(array('middleware' => ['ssl']), function () {
 
     //user interaction
     Route::group(array('prefix' => 'auth'), function () {
+
         Route::group(array('prefix' => 'login'), function () {
             Route::get('', "UserController@getLogin");
+            Route::get('account-verify', "UserController@getAccount");
             Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
             Route::get('cancel', "UserController@cancelLogin");
+            Route::group(array('prefix' => '{provider}'), function () {
+                Route::get('', 'SocialLoginController@redirect')->name("social_login");
+                Route::any('callback','SocialLoginController@callback')->name("social_login_callback");
+            });
         });
 
         // registration routes

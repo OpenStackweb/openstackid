@@ -42,3 +42,6 @@ routes.txt
 model.sql
 .phpunit.result.cache
 !/public/web.config
+/public/assets/dist/
+/public/assets/login.js
+/public/assets/css/login.css

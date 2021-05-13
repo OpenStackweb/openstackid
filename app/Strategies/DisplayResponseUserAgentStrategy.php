@@ -11,9 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Auth\SocialLoginProviders;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Redirect;
+
 /**
  * Class DisplayResponseUserAgentStrategy
  * @package Strategies
@@ -36,6 +39,12 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
      */
     public function getLoginResponse(array $data = [])
     {
+        $provider = $data["provider"] ?? null;
+
+        if(!empty($provider)) {
+            return redirect()->route('social_login', ['provider' => $provider]);
+        }
+        $data['supported_providers'] = SocialLoginProviders::buildSupportedProviders();
         return Response::view("auth.login", $data, 200);
     }
 
@@ -45,12 +54,11 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
      */
     public function getLoginErrorResponse(array $data = [])
     {
-        $response =  Redirect::action('UserController@getLogin')
-            ->with('max_login_attempts_2_show_captcha', $data['max_login_attempts_2_show_captcha'])
-            ->with('login_attempts', $data['login_attempts']);
+        $response =  Redirect::action('UserController@getLogin');
 
-        if(isset($data['username']))
-            $response= $response->with('username', $data['username']);
+        foreach ($data as $key => $val)
+            $response= $response->with($key, $val);
+
         if(isset($data['error_message']))
             $response = $response->with('flash_notice', $data['error_message']);
         if(isset($data['validator']))
