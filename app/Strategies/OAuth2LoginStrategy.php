@@ -76,10 +76,12 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
 
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
-        return $response_strategy->getLoginResponse();
+        return $response_strategy->getLoginResponse([
+            'provider' => $auth_request->getProvider()
+        ]);
     }
 
-    public function postLogin()
+    public function postLogin(array $params = [])
     {
         $auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build(
             OAuth2Message::buildFromMemento(
@@ -87,8 +89,12 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
             )
         );
 
+        $realm = "From ".$auth_request->getRedirectUri();
+        if(isset($params['provider']))
+            $realm .= " using ".strtoupper($params['provider']);
+
         $this->user_action_service->addUserAction($this->auth_service->getCurrentUser()->getId(), IPHelper::getUserIp(),
-            IUserActionService::LoginAction, $auth_request->getRedirectUri());
+            IUserActionService::LoginAction, $realm);
 
         return Redirect::action("OAuth2\OAuth2ProviderController@auth");
     }

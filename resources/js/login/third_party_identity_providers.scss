@@ -1,0 +1,60 @@
+$facebook_base_color:#3B5998;
+$apple_base_color:#000000;
+$google_base_color:#DD4B39;
+$linkedin_base_color:#2867B2;
+
+.facebook{
+  background-color: $facebook_base_color !important;
+}
+
+.facebook:hover,
+.facebook:focus {
+  background-color: #5B7BD5;
+  background-image: linear-gradient(#5B7BD5, #4864B1);
+}
+.facebook:before {
+  border-right: #364e92 1px solid !important;
+  background: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/14082/icon_facebook.png') 6px 6px no-repeat !important;
+}
+
+.apple{
+  background-color: $apple_base_color !important;
+}
+
+.apple:before {
+  border-right: #000001 1px solid !important;
+  background: url('/assets/img/third_party_identity_providers/icon_apple.png') 6px 6px no-repeat !important;
+}
+.google:before {
+  border-right: #BB3F30 1px solid;
+  background: url('/assets/img/third_party_identity_providers/icon_google.png') 6px 6px no-repeat;
+}
+
+.google {
+  background-color: $google_base_color !important;
+}
+
+.google:hover,
+.google:focus {
+  background: #E74B37;
+}
+
+.google:before {
+  border-right: #BB3F30 1px solid;
+  background: url('/assets/img/third_party_identity_providers/icon_google.png') 6px 6px no-repeat;
+}
+
+.linkedin{
+  background-color: $linkedin_base_color !important;
+}
+
+.linkedin:hover,
+.linkedin:focus {
+  background-color: #2867B3;
+  background-image: linear-gradient(#5B7BD5, #4864B1);
+}
+
+.linkedin:before {
+  border-right: #4864B1 1px solid;
+  background: url('/assets/img/third_party_identity_providers/icon_linkedin.png') 6px 6px no-repeat;
+}

@@ -14,6 +14,7 @@
 
 use App\Http\Controllers\OpenId\DiscoveryController;
 use App\Http\Controllers\OpenId\OpenIdController;
+use App\Http\Controllers\Traits\JsonResponses;
 use App\Http\Utils\CountryList;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
 use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Repositories\IClientRepository;
 use OpenId\Services\IUserService;
@@ -224,28 +227,70 @@ final class UserController extends OpenIdController
         return $this->login_strategy->cancelLogin();
     }
 
+    use JsonResponses;
+
+    /**
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function getAccount(){
+        try {
+            $email = Request::input("email", "");
+            if(empty($email)){
+                throw new ValidationException("empty email.");
+            }
+
+            $user = $this->auth_service->getUserByUsername($email);
+
+            if(is_null($user))
+                throw new EntityNotFoundException();
+
+            return $this->ok(
+                [
+                    'pic' => $user->getPic(),
+                    'full_name' => $user->getFullName()
+                ]
+            );
+        }
+        catch (ValidationException $ex){
+            Log::warning($ex);
+            return $this->error412($ex->getMessages());
+        }
+        catch (EntityNotFoundException $ex){
+            Log::warning($ex);
+            return $this->error404();
+        }
+        catch (Exception $ex){
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
+
     public function postLogin()
     {
         $max_login_attempts_2_show_captcha = $this->server_configuration_service->getConfigValue("MaxFailed.LoginAttempts.2ShowCaptcha");
-        $login_attempts = 0;
-        $username = '';
-        try {
+        $login_attempts                    = 0;
+        $username                          = '';
+        $user = null;
+        try
+        {
 
             $data = Request::all();
 
             if (isset($data['username']))
                 $data['username'] = trim($data['username']);
-            if (isset($data['password']))
+
+            if(isset($data['password']))
                 $data['password'] = trim($data['password']);
 
             $login_attempts = intval(Request::input('login_attempts'));
             // Build the validation constraint set.
-            $rules = array
-            (
+            $rules = [
                 'username' => 'required|email',
                 'password' => 'required',
-            );
-            if ($login_attempts >= $max_login_attempts_2_show_captcha) {
+            ];
+
+            if ($login_attempts >= $max_login_attempts_2_show_captcha)
+            {
                 $rules['g-recaptcha-response'] = 'required|recaptcha';
             }
             // Create a new validator instance.
@@ -255,9 +300,10 @@ final class UserController extends OpenIdController
                 $username = $data['username'];
                 $password = $data['password'];
                 $remember = Request::input("remember");
-
                 $remember = !is_null($remember);
-                if ($this->auth_service->login($username, $password, $remember)) {
+
+                if ($this->auth_service->login($username, $password, $remember))
+                {
                     return $this->login_strategy->postLogin();
                 }
 
@@ -270,36 +316,56 @@ final class UserController extends OpenIdController
 
                 return $this->login_strategy->errorLogin
                 (
-                    array
-                    (
+                    [
                         'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                        'login_attempts' => $login_attempts,
-                        'username' => $username,
-                        'error_message' => "We are sorry, your username or password does not match an existing record."
-                    )
+                        'login_attempts'                    => $login_attempts,
+                        'error_message'                     => "We are sorry, your username or password does not match an existing record.",
+                        'user_fullname'                     => $user->getFullName(),
+                        'user_pic'                          => $user->getPic(),
+                        'user_verified'                     => true,
+                        'username'                          => $username,
+                    ]
                 );
             }
+
             // validator errors
+            $response_data =    [
+                'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                'login_attempts'                    => $login_attempts,
+                'validator'                         => $validator
+            ];
+
+            if(!is_null($user)){
+                $response_data['user_fullname'] = $user->getFullName();
+                $response_data['user_pic'] = $user->getPic();
+                $response_data['user_verified'] = true;
+            }
+
             return $this->login_strategy->errorLogin
             (
-                array
-                (
-                    'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                    'login_attempts' => $login_attempts,
-                    'validator' => $validator
-                )
+                $response_data
             );
         } catch (UnverifiedEmailMemberException $ex1) {
             Log::warning($ex1);
+
+            $user = $this->auth_service->getUserByUsername($username);
+
+            $response_data =    [
+                'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                'login_attempts'                    => $login_attempts,
+                'username'                          => $username,
+                'error_message'                     => $ex1->getMessage()
+            ];
+
+            if(!is_null($user)){
+                $response_data['user_fullname'] = $user->getFullName();
+                $response_data['user_pic'] = $user->getPic();
+                $response_data['user_verified'] = true;
+            }
+
             return $this->login_strategy->errorLogin
             (
-                array
-                (
-                    'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                    'login_attempts' => $login_attempts,
-                    'username' => $username,
-                    'error_message' => $ex1->getMessage()
-                )
+                $response_data
             );
         } catch (AuthenticationException $ex2) {
             Log::warning($ex2);

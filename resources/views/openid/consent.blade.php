@@ -12,7 +12,7 @@ Welcome, <a href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::use
 @section('content')
 <div class="container">
     <h4>{!! Config::get('app.app_name') !!} - Openid verification</h4>
-    {!! Form::open(array('url' => URL::action("UserController@postConsent"),'id'=>'authorization_form', 'method' => 'post',  "autocomplete" => "off")) !!}
+    {!! Form::open(array('url' => URL::action("UserController@postConsent"),'id'=>'authorization_form', 'method' => 'post',  "autocomplete" => "off", "target" => "_self")) !!}
     <legend>
         Sign in to <b>{!! $realm !!}</b> using your {{ Config::get('app.app_name') }}
     </legend>

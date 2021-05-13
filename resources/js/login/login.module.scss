@@ -1,0 +1,74 @@
+$border-color: #e3e3e3;
+$base-color:#3fa2f7;
+
+.main_container{
+  border: solid 1px $border-color;
+  margin-top: 10%;
+  margin-bottom: 10%;
+  color: $base-color;
+}
+
+.inner_container {
+    display: flex;
+    margin-top: 64px;
+    padding-bottom: 20%;
+    flex-direction: column;
+    .app_logo{
+      max-width: 40%;
+      float: right;
+      margin-bottom: 15%;
+    }
+    .continue_btn{
+      float: right;
+      margin-top: 30%;
+    }
+    .recaptcha{
+      width: 100%;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .separator{
+      color:$base-color;
+      width: 100%;
+      border: 1px solid;
+      margin-bottom: 5%;
+      margin-top: 5%;
+    }
+}
+
+.paper_root {
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+
+  .apply_button {
+    height: 55px;
+    margin-bottom: 8px;
+    margin-top: 16px;
+    margin-left: 10px;
+    min-width: 20px !important;
+    font-size: 20pt;
+  }
+}
+
+.third_party_idp_button {
+  width: 100%;
+  margin-top: 5px !important;
+  margin-bottom: 5px !important;
+  position:relative;
+  box-sizing: border-box;
+}
+
+.third_party_idp_button:before{
+  content: "";
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 100%;
+}
+
+.valid_user_name_chip{
+  float: right;
+}

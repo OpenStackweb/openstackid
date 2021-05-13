@@ -36,6 +36,7 @@
         @endif
         <div class="signup-form">
             <form id="form-password-reset" class="form-horizontal" method="POST"
+                  target="_self"
                   action="{{ URL::action('Auth\ResetPasswordController@reset') }}">
                 @csrf
                 <input type="hidden" name="token" value="{{ $token }}">

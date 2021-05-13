@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Auth\SocialLoginProviders;
 use Utils\IPHelper;
 use Services\IUserActionService;
 use Utils\Services\IAuthService;
@@ -44,15 +46,26 @@ class DefaultLoginStrategy implements ILoginStrategy
     public function getLogin()
     {
         if (Auth::guest())
-            return View::make("auth.login");
+            return View::make("auth.login", [
+                'supported_providers' => SocialLoginProviders::buildSupportedProviders()
+            ]);
         return Redirect::action("UserController@getProfile");
     }
 
-    public function  postLogin()
+    public function  postLogin(array $params = [])
     {
         $user = $this->auth_service->getCurrentUser();
         $identifier = $user->getIdentifier();
-        $this->user_action_service->addUserAction($this->auth_service->getCurrentUser()->getId(), IPHelper::getUserIp(), IUserActionService::LoginAction);
+        $realm = "From Site";
+        if(isset($params['provider']))
+            $realm .= " using ".strtoupper($params['provider']);
+        $this->user_action_service->addUserAction
+        (
+            $this->auth_service->getCurrentUser()->getId(),
+            IPHelper::getUserIp(),
+            IUserActionService::LoginAction,
+            $realm
+        );
         $default_url = URL::action("UserController@getIdentity", array("identifier" => $identifier));
         return Redirect::intended($default_url);
     }
@@ -68,11 +81,11 @@ class DefaultLoginStrategy implements ILoginStrategy
      */
     public function errorLogin(array $params)
     {
-        $response = Redirect::action('UserController@getLogin')
-            ->with('max_login_attempts_2_show_captcha', $params['max_login_attempts_2_show_captcha'])
-            ->with('login_attempts', $params['login_attempts']);
-        if(isset($params['username']))
-            $response= $response->with('username', $params['username']);
+        $response = Redirect::action('UserController@getLogin');
+
+        foreach ($params as $key => $val)
+            $response = $response->with($key, $val);
+
         if(isset($params['error_message']))
             $response = $response->with('flash_notice', $params['error_message']);
         if(isset($params['validator']))
