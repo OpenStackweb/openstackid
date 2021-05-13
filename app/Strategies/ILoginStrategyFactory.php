@@ -1,4 +1,4 @@
-<?php namespace App\Http\Controllers\Api;
+<?php namespace Strategies;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,21 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use App\Http\Controllers\Controller;
-use App\Http\Controllers\Traits\JsonResponses;
-use Utils\Services\ILogService;
+use Strategies\ILoginStrategy;
+
 /**
- * Class JsonController
- * @package App\Http\Controllers
+ * Interface ILoginStrategyFactory
+ * @package Strategies
  */
-abstract class JsonController extends Controller  {
-
-    protected $log_service;
-
-    public function __construct(ILogService $log_service)
-    {
-        $this->log_service = $log_service;
-    }
-
-    use JsonResponses;
-} 
+interface ILoginStrategyFactory
+{
+    public function build():ILoginStrategy;
+}

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     @yield('title')
+    <base href="{!! Config::get('app.url') !!}" target="_blank">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{!! Config::get('app.tenant_favicon') !!}" />
     @yield('meta')
@@ -33,7 +34,6 @@
         </div>
         <footer class="row"></footer>
     </div>
-    {!! HTML::script('assets/__common__.js')!!}
     {!! HTML::script('assets/index.js')!!}
     {!! HTML::script('assets/js/ajax.utils.js')!!}
     {!! HTML::script('assets/js/jquery.cleanform.js')!!}

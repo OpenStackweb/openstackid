@@ -25,7 +25,6 @@ use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Services\IMementoOAuth2SerializerService;
-use Sokil\IsoCodes\IsoCodesFactory;
 use Exception;
 /**
  * Class RegisterController

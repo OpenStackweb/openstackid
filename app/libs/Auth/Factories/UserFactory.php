@@ -166,6 +166,18 @@ final class UserFactory
         if(isset($payload['email_verified']) && boolval($payload['email_verified']) === true && !$user->isEmailVerified())
             $user->verifyEmail();
 
+        if(isset($payload['full_name']))
+            $user->setFullName(trim($payload['full_name']));
+
+        if(isset($payload['external_id']))
+            $user->setExternalId(trim($payload['external_id']));
+
+        if(isset($payload['external_pic']))
+            $user->setExternalPic(trim($payload['external_pic']));
+
+        if(isset($payload['external_provider']))
+            $user->setExternalProvider(trim($payload['external_provider']));
+
         return $user;
     }
 }

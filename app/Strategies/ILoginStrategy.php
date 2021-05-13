@@ -11,9 +11,10 @@ interface ILoginStrategy
     public function  getLogin();
 
     /**
+     * @param array $params
      * @return mixed
      */
-    public function  postLogin();
+    public function  postLogin(array $params = []);
 
     /**
      * @return mixed

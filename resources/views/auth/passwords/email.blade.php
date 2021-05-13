@@ -35,7 +35,9 @@
             </div>
         @endif
         <div class="signup-form">
-            <form id="form-send-password-reset-link" method="POST" action="{{ URL::action('Auth\ForgotPasswordController@sendResetLinkEmail') }}">
+            <form id="form-send-password-reset-link"
+                  target="_self"
+                  method="POST" action="{{ URL::action('Auth\ForgotPasswordController@sendResetLinkEmail') }}">
                 @csrf
                 <h2>Forgot Password?</h2>
                 <p class="hint-text">You can reset your password here.</p>

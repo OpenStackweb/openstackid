@@ -50,6 +50,13 @@ final class EventServiceProvider extends ServiceProvider
     protected $listen = [
         'Illuminate\Database\Events\QueryExecuted' => [
         ],
+        \SocialiteProviders\Manager\SocialiteWasCalled::class => [
+            // ... other providers
+            'SocialiteProviders\\Facebook\\FacebookExtendSocialite@handle',
+            'SocialiteProviders\\Google\\GoogleExtendSocialite@handle',
+            'SocialiteProviders\\Apple\\AppleExtendSocialite@handle',
+            'SocialiteProviders\\LinkedIn\\LinkedInExtendSocialite@handle',
+        ],
     ];
 
     /**

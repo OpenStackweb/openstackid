@@ -156,7 +156,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $url = $response->getTargetUrl();
 
-        $response = $this->call('GET', $url);
+        $response = $this->call('GET', $url, [], [$response->cookie("openstackid_session")]);
 
         $this->assertResponseStatus(200);
 

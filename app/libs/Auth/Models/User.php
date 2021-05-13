@@ -307,6 +307,24 @@ class User extends BaseEntity
      */
     private $pic;
 
+    /**
+     * @ORM\Column(name="external_id", type="string")
+     * @var string
+     */
+    private $external_id;
+
+    /**
+     * @ORM\Column(name="external_provider", type="string")
+     * @var string
+     */
+    private $external_provider;
+
+    /**
+     * @ORM\Column(name="external_pic", type="string")
+     * @var string
+     */
+    private $external_pic;
+
     // relations
     /**
      * @ORM\OneToOne(targetEntity="App\libs\Auth\Models\UserRegistrationRequest", mappedBy="owner", cascade={"persist","remove"}, orphanRemoval=true)
@@ -418,6 +436,9 @@ class User extends BaseEntity
         $this->spam_type = self::SpamTypeNone;
         $this->company = null;
         $this->phone_number = null;
+        $this->external_id = null;
+        $this->external_provider = null;
+        $this->external_pic = null;
     }
 
     /**
@@ -829,6 +850,9 @@ class User extends BaseEntity
             if (!empty($this->pic)) {
                 return Storage::disk('swift')->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
             }
+            if(!empty($this->external_pic))
+                return $this->external_pic;
+
             return $this->getGravatarUrl();
         }
         catch (\Exception $ex) {
@@ -1784,6 +1808,63 @@ SQL;
     public function setJobTitle(string $job_title): void
     {
         $this->job_title = $job_title;
+    }
+
+    /**
+     * @return string
+     */
+    public function getExternalProvider(): ?string
+    {
+        return $this->external_provider;
+    }
+
+    /**
+     * @param string $external_provider
+     */
+    public function setExternalProvider(string $external_provider): void
+    {
+        $this->external_provider = $external_provider;
+    }
+
+    /**
+     * @return string
+     */
+    public function getExternalPic(): ?string
+    {
+        return $this->external_pic;
+    }
+
+    /**
+     * @param string $external_pic
+     */
+    public function setExternalPic(string $external_pic): void
+    {
+        $this->external_pic = $external_pic;
+    }
+
+    /**
+     * @return string
+     */
+    public function getExternalId(): string
+    {
+        return $this->external_id;
+    }
+
+    /**
+     * @param string $external_id
+     */
+    public function setExternalId(string $external_id): void
+    {
+        $this->external_id = $external_id;
+    }
+
+    /**
+     * @param string $full_name
+     */
+    public function setFullName(string $full_name):void{
+        $name_parts = explode(" ", $full_name);
+        $this->first_name = $name_parts[0];
+        $this->last_name = $name_parts[1];
     }
 
 }

@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Auth\SocialLoginProviders;
 use OpenId\OpenIdMessage;
 use OpenId\OpenIdProtocol;
 use OpenId\Requests\OpenIdAuthenticationRequest;
@@ -62,23 +64,27 @@ final class OpenIdLoginStrategy extends DefaultLoginStrategy
             } else {
                 $params['identity_select'] = true;
             }
-
+            $params['supported_providers'] = SocialLoginProviders::buildSupportedProviders();
             return View::make("auth.login", $params);
         }
         return Redirect::action("UserController@getProfile");
     }
 
-    public function  postLogin()
+    public function  postLogin(array $params = [])
     {
         //go to authentication flow again
         $msg = OpenIdMessage::buildFromMemento($this->memento_service->load());
+
+        $realm = "From ".  $msg->getParam(OpenIdProtocol::OpenIDProtocol_Realm);
+        if(isset($params['provider']))
+            $realm .= " using ".strtoupper($params['provider']);
 
         $this->user_action_service->addUserAction
         (
             $this->auth_service->getCurrentUser()->getId(),
             IPHelper::getUserIp(),
             IUserActionService::LoginAction,
-            $msg->getParam(OpenIdProtocol::OpenIDProtocol_Realm)
+            $realm
         );
 
         return Redirect::action("OpenId\OpenIdProviderController@endpoint");

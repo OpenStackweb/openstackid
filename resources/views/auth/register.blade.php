@@ -29,7 +29,9 @@
         </div>
     @endif
     <div class="col-xs-12 col-md-5 col-md-offset-3 signup-form">
-        <form id="form-registration" method="POST" autocomplete="off" action="{{ URL::action('Auth\RegisterController@register') }}">
+        <form id="form-registration"
+              target="_self"
+              method="POST" autocomplete="off" action="{{ URL::action('Auth\RegisterController@register') }}">
             @csrf
             <h2>Register</h2>
             <p class="hint-text">Create your account. It's free and only takes a minute.</p>

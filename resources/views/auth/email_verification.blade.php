@@ -34,7 +34,9 @@
             </div>
         @endif
         <div class="signup-form">
-            <form id="form-verification" method="POST" action="{{ URL::action('Auth\EmailVerificationController@resend') }}">
+            <form id="form-verification"
+                  target="_self"
+                  method="POST" action="{{ URL::action('Auth\EmailVerificationController@resend') }}">
                 @csrf
                 <h2>{{ __('Email Verification') }}</h2>
                 <div class="form-group">
