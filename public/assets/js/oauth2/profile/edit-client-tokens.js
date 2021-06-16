@@ -20,7 +20,7 @@ function updateAccessTokenList(page, page_size){
                 else{
                     $('#info-access-tokens').hide();
                     $('#table-access-tokens').show();
-                    var template   = $('<tbody><tr><td class="issued"></td><td class="scope"></td><td class="lifetime"></td><td><a title="Revoke Access Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-access-token" data-hint="access-token">Revoke</a></td></tr></tbody>');
+                    var template   = $('<tbody><tr><td class="issued"></td><td class="scope"></td><td class="lifetime"></td><td><a target="_self" title="Revoke Access Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-access-token" data-hint="access-token">Revoke</a></td></tr></tbody>');
                     var directives = {
                         'tr':{
                             'token<-context':{

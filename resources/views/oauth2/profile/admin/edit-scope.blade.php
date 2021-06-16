@@ -4,7 +4,7 @@
 @stop
 @section('content')
     @include('menu')
-    <a href='{!!  URL::action("AdminController@editApi",array("id"=>$scope->api_id)) !!}'>Go Back</a>
+    <a target="_self" href='{!!  URL::action("AdminController@editApi",array("id"=>$scope->api_id)) !!}'>Go Back</a>
     <legend>Edit API Scope - Id {!! $scope->id !!}</legend>
     <div class="row">
         <div class="col-md-6">

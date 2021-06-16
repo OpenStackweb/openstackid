@@ -88,7 +88,7 @@
     <div class="panel panel-default" style="padding-bottom:0px">
         <div class="panel-heading" role="tab" id="main_data_heading" style="margin-bottom:0px">
             <h4 class="panel-title">
-                <a role="button" class="head-button" data-toggle="collapse" data-parent="#accordion" href="#main_data" aria-expanded="true" aria-controls="main_data">
+                <a target="_self" role="button" class="head-button" data-toggle="collapse" data-parent="#accordion" href="#main_data" aria-expanded="true" aria-controls="main_data">
                     OAuth 2.0 Client Data
                 </a>
             </h4>
@@ -103,7 +103,7 @@
     <div class="panel panel-default" style="padding-bottom:0px">
         <div class="panel-heading" role="tab" id="allowed_scopes_heading" style="margin-bottom:0px">
             <h4 class="panel-title">
-                <a class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#allowed_scopes" aria-expanded="false" aria-controls="allowed_scopes">
+                <a target="_self" class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#allowed_scopes" aria-expanded="false" aria-controls="allowed_scopes">
                     Application Allowed Scopes
                 </a>
             </h4>
@@ -118,7 +118,7 @@
     <div class="panel panel-default" style="padding-bottom:0px">
         <div class="panel-heading" role="tab" id="grants_heading" style="margin-bottom:0px">
             <h4 class="panel-title">
-                <a class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#grants" aria-expanded="false" aria-controls="grants">
+                <a target="_self" class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#grants" aria-expanded="false" aria-controls="grants">
                     Application Grants
                 </a>
             </h4>
@@ -133,7 +133,7 @@
     <div class="panel panel-default" style="padding-bottom:0px">
         <div class="panel-heading" role="tab" id="security_heading" style="margin-bottom:0px">
             <h4 class="panel-title">
-                <a class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#security" aria-expanded="false" aria-controls="security">
+                <a target="_self" class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#security" aria-expanded="false" aria-controls="security">
                     Security Settings
                 </a>
             </h4>

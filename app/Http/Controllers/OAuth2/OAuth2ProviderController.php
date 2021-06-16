@@ -101,24 +101,32 @@ final class OAuth2ProviderController extends Controller
 
             return $response;
         } catch (OAuth2BaseException $ex1) {
+            $payload = [
+                'error' => $ex1->getError(),
+                'error_description' => $ex1->getMessage()
+            ];
+            if (request()->isJson()) {
+                return Response::json($payload, 400);
+            }
             return Response::view
             (
                 'errors.400',
-                [
-                    'error' => $ex1->getError(),
-                    'error_description' => $ex1->getMessage()
-                ],
+                $payload,
                 400
             );
         } catch (Exception $ex) {
             Log::error($ex);
+            $payload = [
+                'error' => "Bad Request",
+                'error_description' => "Generic Error"
+            ];
+            if (request()->isJson()) {
+                return Response::json($payload, 400);
+            }
             return Response::view
             (
                 'errors.400',
-                [
-                    'error' => "Bad Request",
-                    'error_description' => "Generic Error"
-                ],
+                $payload,
                 400
             );
         }

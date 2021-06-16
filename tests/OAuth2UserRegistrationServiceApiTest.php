@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2ProtectedApiTest;
 use App\libs\OAuth2\IUserScopes;
 /**
  * Class OAuth2UserRegistrationServiceApiTest

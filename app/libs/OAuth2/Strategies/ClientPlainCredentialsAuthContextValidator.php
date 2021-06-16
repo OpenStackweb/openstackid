@@ -40,7 +40,7 @@ final class ClientPlainCredentialsAuthContextValidator implements IClientAuthCon
             throw new InvalidClientAuthenticationContextException('client not set!');
 
         if($client->getTokenEndpointAuthInfo()->getAuthenticationMethod() !== $context->getAuthType())
-            throw new InvalidClientCredentials(sprintf('invalid token endpoint auth method %s', $context->getAuthType()));
+            throw new InvalidClientCredentials(sprintf('invalid token endpoint auth method %s (%s)', $context->getAuthType(), $client->getTokenEndpointAuthInfo()->getAuthenticationMethod()));
 
         if($client->getClientType() !== IClient::ClientType_Confidential)
             throw new InvalidClientCredentials(sprintf('invalid client type %s', $client->getClientType()));

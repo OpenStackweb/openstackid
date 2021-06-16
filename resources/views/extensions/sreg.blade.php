@@ -9,5 +9,5 @@
 </ul>
 @endif
 @if(!empty($policy_url))
-<a href='{!!$policy_url!!}' title="how the profile data will be used">Policy Url</a>
+<a target="_self" href='{!!$policy_url!!}' title="how the profile data will be used">Policy Url</a>
 @endif

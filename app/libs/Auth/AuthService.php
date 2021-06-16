@@ -11,29 +11,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
+use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
+use App\Services\AbstractService;
+use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
+use Models\OAuth2\Client;
+use Models\OAuth2\OAuth2OTP;
+use OAuth2\Exceptions\InvalidOTPException;
 use OAuth2\Models\IClient;
 use OAuth2\Services\IPrincipalService;
-use OpenId\Models\IOpenIdUser;
 use OpenId\Services\IUserService;
+use App\Services\Auth\IUserService as IAuthUserService;
 use utils\Base64UrlRepresentation;
+use Utils\Db\ITransactionService;
 use Utils\Services\IAuthService;
 use Utils\Services\ICacheService;
 use jwe\compression_algorithms\CompressionAlgorithms_Registry;
 use jwe\compression_algorithms\CompressionAlgorithmsNames;
 use Exception;
 use Illuminate\Support\Facades\Log;
+
 /**
  * Class AuthService
  * @package Auth
  */
-final class AuthService implements IAuthService
+final class AuthService extends AbstractService implements IAuthService
 {
     /**
      * @var IPrincipalService
@@ -54,24 +63,43 @@ final class AuthService implements IAuthService
     private $user_repository;
 
     /**
+     * @var IAuthUserService
+     */
+    private $auth_user_service;
+
+    /**
+     * @var IOAuth2OTPRepository
+     */
+    private $otp_repository;
+
+    /**
      * AuthService constructor.
      * @param IUserRepository $user_repository
+     * @param IOAuth2OTPRepository $otp_repository
      * @param IPrincipalService $principal_service
      * @param IUserService $user_service
      * @param ICacheService $cache_service
+     * @param IAuthUserService $auth_user_service
+     * @param ITransactionService $tx_service
      */
     public function __construct
     (
         IUserRepository $user_repository,
+        IOAuth2OTPRepository $otp_repository,
         IPrincipalService $principal_service,
         IUserService $user_service,
-        ICacheService $cache_service
+        ICacheService $cache_service,
+        IAuthUserService $auth_user_service,
+        ITransactionService $tx_service
     )
     {
-        $this->user_repository   = $user_repository;
+        parent::__construct($tx_service);
+        $this->user_repository = $user_repository;
         $this->principal_service = $principal_service;
-        $this->user_service      = $user_service;
-        $this->cache_service     = $cache_service;
+        $this->user_service = $user_service;
+        $this->cache_service = $cache_service;
+        $this->auth_user_service = $auth_user_service;
+        $this->otp_repository = $otp_repository;
     }
 
     /**
@@ -85,7 +113,7 @@ final class AuthService implements IAuthService
     /**
      * @return User|null
      */
-    public function getCurrentUser():?User
+    public function getCurrentUser(): ?User
     {
         return Auth::user();
     }
@@ -94,25 +122,96 @@ final class AuthService implements IAuthService
      * @param string $username
      * @param string $password
      * @param bool $remember_me
-     * @return mixed
+     * @return bool
+     * @throws AuthenticationException
      */
-    public function login($username, $password, $remember_me)
+    public function login(string $username, string $password, bool $remember_me): bool
     {
         Log::debug("AuthService::login");
-        $res = Auth::attempt(['username' => $username, 'password' => $password], $remember_me);
 
-        if ($res)
-        {
-            Log::debug("AuthService::login: clearing principal");
-            $this->principal_service->clear();
-            $this->principal_service->register
-            (
-                $this->getCurrentUser()->getId(),
-                time()
-            );
+        $this->last_login_error = "";
+        if (!Auth::attempt(['username' => $username, 'password' => $password], $remember_me)) {
+            throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
         }
 
-        return $res;
+        Log::debug("AuthService::login: clearing principal");
+        $this->principal_service->clear();
+        $this->principal_service->register
+        (
+            $this->getCurrentUser()->getId(),
+            time()
+        );
+
+        return true;
+    }
+
+    /**
+     * @param OAuth2OTP $otpClaim
+     * @param Client|null $client
+     * @return OAuth2OTP|null
+     * @throws AuthenticationException
+     */
+    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null): ?OAuth2OTP{
+
+        $otp = $this->tx_service->transaction(function() use($otpClaim, $client){
+            // find first db OTP by connection , by username (email/phone) number and client not redeemed
+            $otp = $this->otp_repository->getByConnectionAndUserNameNotRedeemed
+            (
+                $otpClaim->getConnection(),
+                $otpClaim->getUserName(),
+                $client
+            );
+            if(is_null($otp)){
+                // otp no emitted
+                throw new AuthenticationException("Non existent OTP.");
+            }
+            $otp->logRedeemAttempt();
+            return $otp;
+        });
+
+        return $this->tx_service->transaction(function() use($otp, $otpClaim, $client){
+
+            if (!$otp->isAlive()) {
+                throw new AuthenticationException("OTP is expired.");
+            }
+
+            if (!$otp->isValid()) {
+                throw new AuthenticationException( "OTP is not valid.");
+            }
+
+            if ($otp->getValue() != $otpClaim->getValue()) {
+                throw new AuthenticationException("OTP mismatch.");
+            }
+
+            if(!empty($otpClaim->getScope()) && !$otp->allowScope($otpClaim->getScope()))
+                throw new InvalidOTPException("OTP Requested scopes escalates former scopes.");
+
+            if (($otp->hasClient() && is_null($client)) ||
+                ($otp->hasClient() && !is_null($client) && $client->getClientId() != $otp->getClient()->getClientId())) {
+                throw new AuthenticationException("OTP audience mismatch.");
+            }
+
+            $user = $this->getUserByUsername($otp->getUserName());
+
+            if (is_null($user)) {
+                // we need to create a new one ( auto register)
+
+                Log::debug(sprintf("AuthService::loginWithOTP user %s does not exists ...", $otp->getUserName()));
+
+                $user = $this->auth_user_service->registerUser([
+                    'email' => $otp->getUserName(),
+                    'email_verified' => true,
+                ]);
+            }
+
+            $otp->setAuthTime(time());
+            $otp->setUserId($user->getId());
+            $otp->redeem();
+
+            Auth::login($user, false);
+
+            return $otp;
+        });
     }
 
     public function logout()
@@ -140,8 +239,7 @@ final class AuthService implements IAuthService
      */
     public function getUserAuthorizationResponse()
     {
-        if (Session::has("openid.authorization.response"))
-        {
+        if (Session::has("openid.authorization.response")) {
             $value = Session::get("openid.authorization.response");
 
             return $value;
@@ -153,8 +251,7 @@ final class AuthService implements IAuthService
 
     public function clearUserAuthorizationResponse()
     {
-        if (Session::has("openid.authorization.response"))
-        {
+        if (Session::has("openid.authorization.response")) {
             Session::remove("openid.authorization.response");
             Session::save();
         }
@@ -170,7 +267,7 @@ final class AuthService implements IAuthService
      * @param string $openid
      * @return User|null
      */
-    public function getUserByOpenId(string $openid):?User
+    public function getUserByOpenId(string $openid): ?User
     {
         return $this->user_repository->getByIdentifier($openid);
     }
@@ -179,7 +276,7 @@ final class AuthService implements IAuthService
      * @param string $username
      * @return null|User
      */
-    public function getUserByUsername(string $username):?User
+    public function getUserByUsername(string $username): ?User
     {
         return $this->user_repository->getByEmailOrName($username);
     }
@@ -188,7 +285,7 @@ final class AuthService implements IAuthService
      * @param int $id
      * @return null|User
      */
-    public function getUserById(int $id):?User
+    public function getUserById(int $id): ?User
     {
         return $this->user_repository->getById($id);
     }
@@ -212,23 +309,22 @@ final class AuthService implements IAuthService
 
     public function clearUserAuthenticationResponse()
     {
-        if (Session::has("openstackid.authentication.response"))
-        {
+        if (Session::has("openstackid.authentication.response")) {
             Session::remove("openstackid.authentication.response");
             Session::save();
         }
     }
 
     /**
-     * @param  string $user_id
+     * @param string $user_id
      * @return string
      */
-    public function unwrapUserId(string $user_id):string
+    public function unwrapUserId(string $user_id): string
     {
         // first try to get user by raw id
         $user = $this->getUserById(intval($user_id));
 
-        if(!is_null($user))
+        if (!is_null($user))
             return $user_id;
         // check if we have a wrapped user id
         try {
@@ -247,10 +343,10 @@ final class AuthService implements IAuthService
      * @param IClient $client
      * @return string
      */
-    public function wrapUserId(int $user_id, IClient $client):string
+    public function wrapUserId(int $user_id, IClient $client): string
     {
-       if($client->getSubjectType() === IClient::SubjectType_Public)
-           return $user_id;
+        if ($client->getSubjectType() === IClient::SubjectType_Public)
+            return $user_id;
 
         $wrapped_name = sprintf('%s:%s', $client->getClientId(), $user_id);
         return $this->encrypt($wrapped_name);
@@ -260,7 +356,7 @@ final class AuthService implements IAuthService
      * @param string $value
      * @return String
      */
-    private function encrypt(string $value):string
+    private function encrypt(string $value): string
     {
         return base64_encode(Crypt::encrypt($value));
     }
@@ -269,7 +365,7 @@ final class AuthService implements IAuthService
      * @param string $value
      * @return String
      */
-    private function decrypt(string $value):string
+    private function decrypt(string $value): string
     {
         $value = base64_decode($value);
         return Crypt::decrypt($value);
@@ -278,16 +374,16 @@ final class AuthService implements IAuthService
     /**
      * @return string
      */
-    public function getSessionId():string
+    public function getSessionId(): string
     {
-       return Session::getId();
+        return Session::getId();
     }
 
     /**
      * @param $client_id
      * @return void
      */
-    public function registerRPLogin(string $client_id):void
+    public function registerRPLogin(string $client_id): void
     {
 
         try {
@@ -299,15 +395,14 @@ final class AuthService implements IAuthService
                 $rps = $zlib->uncompress($rps);
                 $rps .= '|';
             }
-            if(is_null($rps)) $rps = "";
+            if (is_null($rps)) $rps = "";
 
             if (!str_contains($rps, $client_id))
                 $rps .= $client_id;
 
             $rps = $zlib->compress($rps);
             $rps = $this->encrypt($rps);
-        }
-        catch(Exception $ex){
+        } catch (Exception $ex) {
             Log::warning($ex);
             $rps = "";
         }
@@ -329,7 +424,7 @@ final class AuthService implements IAuthService
     /**
      * @return string[]
      */
-    public function getLoggedRPs():array
+    public function getLoggedRPs(): array
     {
         try {
             $rps = Cookie::get(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME);
@@ -350,29 +445,28 @@ final class AuthService implements IAuthService
      * @param string $jti
      * @throws Exception
      */
-    public function reloadSession(string $jti):void
+    public function reloadSession(string $jti): void
     {
-        Log::debug(sprintf("AuthService::reloadSession jti %s", $jti ));
+        Log::debug(sprintf("AuthService::reloadSession jti %s", $jti));
         $session_id = $this->cache_service->getSingleValue($jti);
 
-        Log::debug(sprintf("AuthService::reloadSession session_id %s", $session_id ));
-        if(empty($session_id))
+        Log::debug(sprintf("AuthService::reloadSession session_id %s", $session_id));
+        if (empty($session_id))
             throw new ReloadSessionException('session not found!');
 
-        if($this->cache_service->exists($session_id."invalid")){
+        if ($this->cache_service->exists($session_id . "invalid")) {
             // session was marked as void, check if we are authenticated
-            if(!Auth::check())
+            if (!Auth::check())
                 throw new ReloadSessionException('user not found!');
         }
 
         Session::setId(Crypt::decrypt($session_id));
         Session::start();
-        if(!Auth::check())
-        {
-            $user_id      = $this->principal_service->get()->getUserId();
-            Log::debug(sprintf("AuthService::reloadSession user_id %s", $user_id ));
-            $user         = $this->getUserById($user_id);
-            if(is_null($user))
+        if (!Auth::check()) {
+            $user_id = $this->principal_service->get()->getUserId();
+            Log::debug(sprintf("AuthService::reloadSession user_id %s", $user_id));
+            $user = $this->getUserById($user_id);
+            if (is_null($user))
                 throw new ReloadSessionException('user not found!');
             Auth::login($user);
         }
@@ -383,19 +477,21 @@ final class AuthService implements IAuthService
      * @param int $id_token_lifetime
      * @return string
      */
-    public function generateJTI(string $client_id, int $id_token_lifetime):string {
-        $session_id  = Crypt::encrypt(Session::getId());
-        $encoder     = new Base64UrlRepresentation();
-        $jti         = $encoder->encode(hash('sha512', $session_id.$client_id, true));
+    public function generateJTI(string $client_id, int $id_token_lifetime): string
+    {
+        $session_id = Crypt::encrypt(Session::getId());
+        $encoder = new Base64UrlRepresentation();
+        $jti = $encoder->encode(hash('sha512', $session_id . $client_id, true));
 
         $this->cache_service->addSingleValue($jti, $session_id, $id_token_lifetime);
 
         return $jti;
     }
 
-
-    public function invalidateSession():void {
-        $session_id  = Crypt::encrypt(Session::getId());
-        $this->cache_service->addSingleValue($session_id."invalid", $session_id);
+    public function invalidateSession(): void
+    {
+        $session_id = Crypt::encrypt(Session::getId());
+        $this->cache_service->addSingleValue($session_id . "invalid", $session_id);
     }
+
 }

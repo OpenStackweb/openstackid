@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use OAuth2\Requests\OAuth2PasswordlessAuthenticationRequest;
 use OAuth2\Exceptions\InvalidAuthenticationRequestException;
 use OAuth2\Exceptions\InvalidAuthorizationRequestException;
 use OAuth2\OAuth2Protocol;
@@ -33,8 +35,14 @@ final class OAuth2AuthorizationRequestFactory
 
         $auth_request = new OAuth2AuthorizationRequest($msg);
         $scope = $auth_request->getScope();
+        $response_type = $auth_request->getResponseType();
+
+        if($response_type == OAuth2Protocol::OAuth2Protocol_ResponseType_OTP){
+            return new OAuth2PasswordlessAuthenticationRequest($auth_request);
+        }
+
         if(!is_null($scope) && str_contains($scope, OAuth2Protocol::OpenIdConnect_Scope) ) {
-            $auth_request = new OAuth2AuthenticationRequest($auth_request);
+            return new OAuth2AuthenticationRequest($auth_request);
         }
 
         return  $auth_request;

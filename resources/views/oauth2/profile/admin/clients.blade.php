@@ -26,7 +26,7 @@
                       </div>
                   </td>
                   <td>
-                      {!! HTML::link(URL::action("Api\ClientApiController@unlock",array("id"=>$client->id)),'Unlock',array('class'=>'btn btn-primary unlock-client','data-client-id'=>$client->id,'title'=>'Unlocks given client')) !!}
+                      {!! HTML::link(URL::action("Api\ClientApiController@unlock",array("id"=>$client->id)),'Unlock',array('class'=>'btn btn-primary unlock-client','data-client-id'=>$client->id,'title'=>'Unlocks given client', 'target'=>'_self')) !!}
                   </td>
               </tr>
               @endforeach

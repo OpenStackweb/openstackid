@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use Auth\User;
 use Illuminate\Support\Facades\App;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
@@ -35,6 +36,9 @@ use jwt\impl\UnsecuredJWT;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Illuminate\Support\Facades\Session;
 use Database\Seeders\TestSeeder;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\URL;
+
 /**
  * Class OIDCProtocolTest
  * http://openid.net/wordpress-content/uploads/2015/02/OpenID-Connect-Conformance-Profiles.pdf
@@ -49,7 +53,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
     protected function prepareForTests()
     {
         parent::prepareForTests();
-        App::singleton(UtilsServiceCatalog::ServerConfigurationService, 'StubServerConfigurationService');
+        App::singleton(UtilsServiceCatalog::ServerConfigurationService, StubServerConfigurationService::class);
         $this->current_realm = Config::get('app.url');
         Session::start();
     }
@@ -99,9 +103,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             'response_type' => 'code',
             'scope' => 'openid profile email',
             OAuth2Protocol::OAuth2Protocol_LoginHint => ' sebastian@tipit.net ',
-            OAuth2Protocol::OAuth2Protocol_MaxAge    => 3200,
-            OAuth2Protocol::OAuth2Protocol_Prompt    => OAuth2Protocol::OAuth2Protocol_Prompt_Consent,
-            OAuth2Protocol::OAuth2Protocol_Display   => OAuth2Protocol::OAuth2Protocol_Display_Native
+            OAuth2Protocol::OAuth2Protocol_MaxAge => 3200,
+            OAuth2Protocol::OAuth2Protocol_Prompt => OAuth2Protocol::OAuth2Protocol_Prompt_Consent,
+            OAuth2Protocol::OAuth2Protocol_Display => OAuth2Protocol::OAuth2Protocol_Display_Native
         );
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
@@ -120,12 +124,12 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         // do login
         $response = $this->action('POST', "UserController@postLogin",
-            array
-            (
+            [
                 'username' => ' sebastian@tipit.net ',
                 'password' => ' 1qaz2wsx ',
-                '_token' => Session::token()
-            )
+                '_token' => Session::token(),
+                'flow' => 'password',
+            ]
         );
 
         $this->assertResponseStatus(302);
@@ -169,6 +173,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -254,6 +259,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -334,6 +340,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -447,6 +454,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -530,6 +538,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -554,7 +563,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $client_id = '%2E%2D%5F%7E87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client',
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg',
         $use_enc = true
-    ) {
+    )
+    {
 
 
         $params = array(
@@ -592,6 +602,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -701,7 +712,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client',
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg',
         $use_enc = true
-    ) {
+    )
+    {
 
 
         $params = array(
@@ -752,7 +764,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
-                '_token'   => Session::token()
+                'flow' => 'password',
+                '_token' => Session::token()
             )
         );
 
@@ -857,7 +870,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         return $access_token;
     }
 
-    public function testGetRefreshTokenWithPromptSetToConsentLogin(){
+    public function testGetRefreshTokenWithPromptSetToConsentLogin()
+    {
 
         $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
@@ -871,7 +885,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
                 OAuth2Protocol::OfflineAccess_Scope),
             OAuth2Protocol::OAuth2Protocol_LoginHint => 'sebastian@tipit.net',
             OAuth2Protocol::OAuth2Protocol_Nonce => 'test_nonce',
-            OAuth2Protocol::OAuth2Protocol_Prompt => sprintf('%s %s',OAuth2Protocol::OAuth2Protocol_Prompt_Login, OAuth2Protocol::OAuth2Protocol_Prompt_Consent),
+            OAuth2Protocol::OAuth2Protocol_Prompt => sprintf('%s %s', OAuth2Protocol::OAuth2Protocol_Prompt_Login, OAuth2Protocol::OAuth2Protocol_Prompt_Consent),
             OAuth2Protocol::OAuth2Protocol_MaxAge => 3200
         );
 
@@ -898,6 +912,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -1002,7 +1017,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     }
 
-    public function testFlowNativeDisplay(){
+    public function testFlowNativeDisplay()
+    {
 
         $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
@@ -1014,9 +1030,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             'scope' => sprintf('%s profile email address %s', OAuth2Protocol::OpenIdConnect_Scope, OAuth2Protocol::OfflineAccess_Scope),
             OAuth2Protocol::OAuth2Protocol_LoginHint => 'sebastian@tipit.net',
             OAuth2Protocol::OAuth2Protocol_Nonce => 'test_nonce',
-            OAuth2Protocol::OAuth2Protocol_Prompt => sprintf('%s %s',OAuth2Protocol::OAuth2Protocol_Prompt_Login, OAuth2Protocol::OAuth2Protocol_Prompt_Consent),
+            OAuth2Protocol::OAuth2Protocol_Prompt => sprintf('%s %s', OAuth2Protocol::OAuth2Protocol_Prompt_Login, OAuth2Protocol::OAuth2Protocol_Prompt_Consent),
             OAuth2Protocol::OAuth2Protocol_MaxAge => 3200,
-            OAuth2Protocol::OAuth2Protocol_Display   => OAuth2Protocol::OAuth2Protocol_Display_Native
+            OAuth2Protocol::OAuth2Protocol_Display => OAuth2Protocol::OAuth2Protocol_Display_Native
         );
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
@@ -1031,7 +1047,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $this->assertResponseStatus(412);
 
-        $json_response = json_decode($response->getContent(),true);
+        $json_response = json_decode($response->getContent(), true);
 
         // do login
         $response = $this->call($json_response['method'], $json_response['url'],
@@ -1039,6 +1055,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => $json_response['required_params_valid_values']["_token"]
             )
         );
@@ -1057,11 +1074,11 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $this->assertResponseStatus(412);
 
-        $json_response = json_decode($response->getContent(),true);
+        $json_response = json_decode($response->getContent(), true);
 
         $response = $this->call($json_response['method'], $json_response['url'], array(
             'trust' => 'AllowOnce',
-            '_token' =>  $json_response['required_params_valid_values']["_token"]
+            '_token' => $json_response['required_params_valid_values']["_token"]
         ));
 
         $this->assertResponseStatus(302);
@@ -1117,21 +1134,21 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertTrue(!empty($id_token));
     }
 
-    public function testGetRefreshTokenFromNativeAppNTimes($n=5)
+    public function testGetRefreshTokenFromNativeAppNTimes($n = 5)
     {
         $client_id = 'Jiz87D8/Vcvr6fvQbH4HyNgwKlfSyQ3x.android.openstack.client';
         $client_secret = '11c/6Y5N7kOtGKhg11c/6Y5N7kOtGKhg11c/6Y5N7kOtGKhg11c/6Y5N7kOtGKhgfdfdfdf';
 
         $params_auth_code = array
         (
-            'client_id'                              => $client_id,
-            'redirect_uri'                           => 'androipapp://oidc_endpoint_callback',
-            'response_type'                          => 'code',
-            'scope'                                  => sprintf('%s profile email address %s', OAuth2Protocol::OpenIdConnect_Scope, OAuth2Protocol::OfflineAccess_Scope),
+            'client_id' => $client_id,
+            'redirect_uri' => 'androipapp://oidc_endpoint_callback',
+            'response_type' => 'code',
+            'scope' => sprintf('%s profile email address %s', OAuth2Protocol::OpenIdConnect_Scope, OAuth2Protocol::OfflineAccess_Scope),
             OAuth2Protocol::OAuth2Protocol_LoginHint => 'sebastian@tipit.net',
-            OAuth2Protocol::OAuth2Protocol_Nonce     => 'test_nonce',
-            OAuth2Protocol::OAuth2Protocol_Prompt    => OAuth2Protocol::OAuth2Protocol_Prompt_Consent,
-            OAuth2Protocol::OAuth2Protocol_MaxAge    => 3200,
+            OAuth2Protocol::OAuth2Protocol_Nonce => 'test_nonce',
+            OAuth2Protocol::OAuth2Protocol_Prompt => OAuth2Protocol::OAuth2Protocol_Prompt_Consent,
+            OAuth2Protocol::OAuth2Protocol_MaxAge => 3200,
         );
 
         $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
@@ -1157,6 +1174,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -1280,9 +1298,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             $this->assertTrue(!empty($output['code']));
 
             $params = array(
-                'code'         => $output['code'],
+                'code' => $output['code'],
                 'redirect_uri' => 'androipapp://oidc_endpoint_callback',
-                'grant_type'   => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
+                'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
             );
 
             $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
@@ -1309,7 +1327,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             $this->assertTrue(!empty($refresh_token));
             $this->assertTrue(!empty($id_token));
             ++$iteration;
-        }while( $iteration < $n);
+        } while ($iteration < $n);
     }
 
     public function testTokenResponseModePost()
@@ -1354,6 +1372,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -1500,6 +1519,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -1638,6 +1658,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -1816,6 +1837,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -1967,6 +1989,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -2047,6 +2070,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -2103,7 +2127,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             'client_id' => $client_id,
             'redirect_uri' => 'https://www.test.com/oauth2',
             'response_type' => OAuth2Protocol::OAuth2Protocol_ResponseType_IdToken,
-            'scope' =>join(' ', [
+            'scope' => join(' ', [
                 OAuth2Protocol::OpenIdConnect_Scope,
                 'profile',
                 'email',
@@ -2131,6 +2155,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -2177,7 +2202,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         sleep(10);
 
         $params[OAuth2Protocol::OAuth2Protocol_Prompt] = OAuth2Protocol::OAuth2Protocol_Prompt_None;
-        $params['scope'] =join(' ', [
+        $params['scope'] = join(' ', [
             OAuth2Protocol::OpenIdConnect_Scope,
             'profile',
             'email',
@@ -2240,6 +2265,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -2376,6 +2402,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -2545,6 +2572,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -2651,6 +2679,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -2685,8 +2714,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $this->assertResponseStatus(302);
 
-        $url      = $response->getTargetUrl();
-        $comps    = @parse_url($url);
+        $url = $response->getTargetUrl();
+        $comps = @parse_url($url);
         $fragment = $comps['fragment'];
 
         $this->assertTrue(!empty($fragment));
@@ -2792,7 +2821,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $key->setId('public_key_2');
 
         $alg = new StringOrURI(JSONWebSignatureAndEncryptionAlgorithms::RS512);
-        $jws = JWSFactory::build( new JWS_ParamsSpecification($key,$alg, $claim_set) );
+        $jws = JWSFactory::build(new JWS_ParamsSpecification($key, $alg, $claim_set));
         // and sign with server private key
         $id_token_hint = $jws->toCompactSerialization();
 
@@ -2871,6 +2900,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -2988,6 +3018,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );
@@ -3095,6 +3126,7 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
             (
                 'username' => 'sebastian@tipit.net',
                 'password' => '1qaz2wsx',
+                'flow' => 'password',
                 '_token' => Session::token()
             )
         );

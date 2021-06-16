@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Http\Utils\UserIPHelperProvider;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -38,6 +39,7 @@ use OAuth2\GrantTypes\AuthorizationCodeGrantType;
 use OAuth2\GrantTypes\ClientCredentialsGrantType;
 use OAuth2\GrantTypes\HybridGrantType;
 use OAuth2\GrantTypes\ImplicitGrantType;
+use OAuth2\GrantTypes\PasswordlessGrantType;
 use OAuth2\GrantTypes\RefreshBearerTokenGrantType;
 use OAuth2\Models\IClient;
 use OAuth2\Repositories\IClientRepository;
@@ -64,6 +66,7 @@ use utils\factories\BasicJWTFactory;
 use Utils\Services\IAuthService;
 use Utils\Services\ICheckPointService;
 use Utils\Services\ILogService;
+
 /**
  * Class OAuth2Protocol
  * Implementation of @see http://tools.ietf.org/html/rfc6749
@@ -76,21 +79,23 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * @var OAuth2Request
      */
     private $last_request = null;
-    const OAuth2Protocol_Scope_Delimiter        = ' ';
+    const OAuth2Protocol_Scope_Delimiter = ' ';
     const OAuth2Protocol_ResponseType_Delimiter = ' ';
 
-    const OAuth2Protocol_GrantType_AuthCode               = 'authorization_code';
-    const OAuth2Protocol_GrantType_Implicit               = 'implicit';
-    const OAuth2Protocol_GrantType_Hybrid                 = 'hybrid';
+    const OAuth2Protocol_GrantType_AuthCode = 'authorization_code';
+    const OAuth2Protocol_GrantType_Passwordless = 'passwordless';
+    const OAuth2Protocol_GrantType_Implicit = 'implicit';
+    const OAuth2Protocol_GrantType_Hybrid = 'hybrid';
 
     const OAuth2Protocol_GrantType_ResourceOwner_Password = 'password';
-    const OAuth2Protocol_GrantType_ClientCredentials      = 'client_credentials';
-    const OAuth2Protocol_GrantType_RefreshToken           = 'refresh_token';
+    const OAuth2Protocol_GrantType_ClientCredentials = 'client_credentials';
+    const OAuth2Protocol_GrantType_RefreshToken = 'refresh_token';
 
-    const OAuth2Protocol_ResponseType_Code    = 'code';
-    const OAuth2Protocol_ResponseType_Token   = 'token';
+    const OAuth2Protocol_ResponseType_Code = 'code';
+    const OAuth2Protocol_ResponseType_OTP = 'otp';
+    const OAuth2Protocol_ResponseType_Token = 'token';
     const OAuth2Protocol_ResponseType_IdToken = 'id_token';
-    const OAuth2Protocol_ResponseType_None    = 'none';
+    const OAuth2Protocol_ResponseType_None = 'none';
 
     /**
      * The OAuth 2.0 specification allows for registration of space-separated response_type parameter values. If a
@@ -110,7 +115,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * In this mode, Authorization Response parameters are encoded in the query string added to the redirect_uri when
      * redirecting back to the Client.
      */
-    const OAuth2Protocol_ResponseMode_Query    = 'query';
+    const OAuth2Protocol_ResponseMode_Query = 'query';
 
     /**
      * In this mode, Authorization Response parameters are encoded in the fragment added to the redirect_uri when
@@ -127,9 +132,9 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * is intended to be used only once, the Authorization Server MUST instruct the User Agent (and any intermediaries)
      * not to store or reuse the content of the response.
      */
-    const OAuth2Protocol_ResponseMode_FormPost    = 'form_post';
+    const OAuth2Protocol_ResponseMode_FormPost = 'form_post';
 
-    const OAuth2Protocol_ResponseMode_Direct      =  'direct';
+    const OAuth2Protocol_ResponseMode_Direct = 'direct';
 
 
     static public $valid_response_modes = array
@@ -155,21 +160,21 @@ final class OAuth2Protocol implements IOAuth2Protocol
     static public function getDefaultResponseMode(array $response_type)
     {
 
-        if(count(array_diff($response_type, array(self::OAuth2Protocol_ResponseType_Code))) === 0)
+        if (count(array_diff($response_type, array(self::OAuth2Protocol_ResponseType_Code))) === 0)
             return self::OAuth2Protocol_ResponseMode_Query;
 
-        if(count(array_diff($response_type, array(self::OAuth2Protocol_ResponseType_Token))) === 0)
+        if (count(array_diff($response_type, array(self::OAuth2Protocol_ResponseType_Token))) === 0)
             return self::OAuth2Protocol_ResponseMode_Fragment;
         // http://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#Combinations
-        if(count(array_diff($response_type, array
-            (
-                self::OAuth2Protocol_ResponseType_Code,
-                self::OAuth2Protocol_ResponseType_Token
-            )
+        if (count(array_diff($response_type, array
+                (
+                    self::OAuth2Protocol_ResponseType_Code,
+                    self::OAuth2Protocol_ResponseType_Token
+                )
             )) === 0)
-        return self::OAuth2Protocol_ResponseMode_Fragment;
+            return self::OAuth2Protocol_ResponseMode_Fragment;
 
-        if(count(array_diff($response_type, array
+        if (count(array_diff($response_type, array
                 (
                     self::OAuth2Protocol_ResponseType_Code,
                     self::OAuth2Protocol_ResponseType_IdToken
@@ -177,7 +182,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             )) === 0)
             return self::OAuth2Protocol_ResponseMode_Fragment;
 
-        if(count(array_diff($response_type, array
+        if (count(array_diff($response_type, array
                 (
                     self::OAuth2Protocol_ResponseType_Token,
                     self::OAuth2Protocol_ResponseType_IdToken
@@ -185,7 +190,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             )) === 0)
             return self::OAuth2Protocol_ResponseMode_Fragment;
 
-        if(count(array_diff($response_type, array
+        if (count(array_diff($response_type, array
                 (
                     self::OAuth2Protocol_ResponseType_Code,
                     self::OAuth2Protocol_ResponseType_Token,
@@ -197,21 +202,43 @@ final class OAuth2Protocol implements IOAuth2Protocol
     }
 
 
-    const OAuth2Protocol_ClientId     = 'client_id';
-    const OAuth2Protocol_UserId       = 'user_id';
+    const OAuth2Protocol_ClientId = 'client_id';
+    const OAuth2Protocol_UserId = 'user_id';
     const OAuth2Protocol_ClientSecret = 'client_secret';
-    const OAuth2Protocol_Token        = 'token';
-    const OAuth2Protocol_TokenType    = 'token_type';
+    const OAuth2Protocol_Token = 'token';
+    const OAuth2Protocol_TokenType = 'token_type';
 
     // http://tools.ietf.org/html/rfc7009#section-2.1
-    const OAuth2Protocol_TokenType_Hint        = 'token_type_hint';
+    const OAuth2Protocol_TokenType_Hint = 'token_type_hint';
     const OAuth2Protocol_AccessToken_ExpiresIn = 'expires_in';
-    const OAuth2Protocol_RefreshToken          = 'refresh_token';
-    const OAuth2Protocol_AccessToken           = 'access_token';
-    const OAuth2Protocol_RedirectUri           = 'redirect_uri';
-    const OAuth2Protocol_Scope                 = 'scope';
-    const OAuth2Protocol_Audience              = 'audience';
-    const OAuth2Protocol_State                 = 'state';
+    const OAuth2Protocol_RefreshToken = 'refresh_token';
+    const OAuth2Protocol_AccessToken = 'access_token';
+    const OAuth2Protocol_RedirectUri = 'redirect_uri';
+    const OAuth2Protocol_Scope = 'scope';
+    const OAuth2Protocol_Audience = 'audience';
+    const OAuth2Protocol_State = 'state';
+
+    // passwordless
+
+    const OAuth2PasswordlessConnection = 'connection';
+    const OAuth2PasswordlessConnectionSMS = 'sms';
+    const OAuth2PasswordlessConnectionEmail = 'email';
+    const ValidOAuth2PasswordlessConnectionValues = [
+        self::OAuth2PasswordlessConnectionSMS,
+        self::OAuth2PasswordlessConnectionEmail
+    ];
+
+    const OAuth2PasswordlessSend = 'send';
+    const OAuth2PasswordlessSendCode = 'code';
+    const OAuth2PasswordlessSendLink = 'link';
+
+    const ValidOAuth2PasswordlessSendValues = [
+        self::OAuth2PasswordlessSendCode,
+        self::OAuth2PasswordlessSendLink,
+    ];
+
+    const OAuth2PasswordlessEmail = 'email';
+    const OAuth2PasswordlessPhoneNumber = 'phone_number';
 
     /**
      * @see http://openid.net/specs/openid-connect-session-1_0.html#CreatingUpdatingSessions
@@ -223,13 +250,13 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * JSON string that represents the End-User's login state at the OP. It MUST NOT contain the space (" ") character.
      * This value is opaque to the RP. This is REQUIRED if session management is supported.
      */
-    const OAuth2Protocol_Session_State         = 'session_state';
+    const OAuth2Protocol_Session_State = 'session_state';
     // http://openid.net/specs/openid-connect-core-1_0.html#TokenResponse
     // ID Token value associated with the authenticated session.
-    const OAuth2Protocol_IdToken               = 'id_token';
+    const OAuth2Protocol_IdToken = 'id_token';
 
     // http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
-    const OAuth2Protocol_Nonce                 = 'nonce';
+    const OAuth2Protocol_Nonce = 'nonce';
 
     /**
      * custom param - social login
@@ -242,7 +269,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * is requested as an Essential Claim, then this Claim is REQUIRED; otherwise, its inclusion is OPTIONAL.
      * (The auth_time Claim semantically corresponds to the OpenID 2.0 PAPE [OpenID.PAPE] auth_time response parameter.)
      */
-    const OAuth2Protocol_AuthTime              = 'auth_time';
+    const OAuth2Protocol_AuthTime = 'auth_time';
 
     /**
      * Access Token hash value. Its value is the base64url encoding of the left-most half of the hash of the octets of
@@ -267,35 +294,35 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * Specifies how the Authorization Server displays the authentication and consent user interface pages to
      * the End-User.
      */
-    const OAuth2Protocol_Display ='display';
+    const OAuth2Protocol_Display = 'display';
     /**
      * The Authorization Server SHOULD display the authentication and consent UI consistent with a full User Agent page
      * view. If the display parameter is not specified, this is the default display mode.
      * The Authorization Server MAY also attempt to detect the capabilities of the User Agent and present an
      * appropriate display.
      */
-    const OAuth2Protocol_Display_Page ='page';
+    const OAuth2Protocol_Display_Page = 'page';
     /**
      * The Authorization Server SHOULD display the authentication and consent UI consistent with a popup User Agent
      * window. The popup User Agent window should be of an appropriate size for a login-focused dialog and should not
      * obscure the entire window that it is popping up over.
      */
-    const OAuth2Protocol_Display_PopUp ='popup';
+    const OAuth2Protocol_Display_PopUp = 'popup';
     /**
      * The Authorization Server SHOULD display the authentication and consent UI consistent with a device that leverages
      * a touch interface.
      */
-    const OAuth2Protocol_Display_Touch ='touch';
+    const OAuth2Protocol_Display_Touch = 'touch';
     /**
      * The Authorization Server SHOULD display the authentication and consent UI consistent with a "feature phone"
      * type display.
      */
-    const OAuth2Protocol_Display_Wap ='wap';
+    const OAuth2Protocol_Display_Wap = 'wap';
 
     /**
      *  Extension: display the login/consent interaction like a json doc
      */
-    const OAuth2Protocol_Display_Native ='native';
+    const OAuth2Protocol_Display_Native = 'native';
 
     /**
      * @var array
@@ -363,14 +390,12 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     static public function getValidResponseTypes($flow = 'all')
     {
-        $code_flow =  array
-        (
+        $code_flow = [
             //OAuth2 / OIDC
-            array
-            (
+            [
                 self::OAuth2Protocol_ResponseType_Code
-            )
-        );
+            ]
+        ];
 
         $implicit_flow = array
         (
@@ -386,17 +411,17 @@ final class OAuth2Protocol implements IOAuth2Protocol
             ),
             array
             (
-                self::OAuth2Protocol_ResponseType_IdToken ,
+                self::OAuth2Protocol_ResponseType_IdToken,
                 self::OAuth2Protocol_ResponseType_Token
             )
         );
 
-        $hybrid_flow  = array
+        $hybrid_flow = array
         (
             array
             (
-               self::OAuth2Protocol_ResponseType_Code,
-               self::OAuth2Protocol_ResponseType_IdToken
+                self::OAuth2Protocol_ResponseType_Code,
+                self::OAuth2Protocol_ResponseType_IdToken
             ),
             array
             (
@@ -405,13 +430,13 @@ final class OAuth2Protocol implements IOAuth2Protocol
             ),
             array
             (
-                self::OAuth2Protocol_ResponseType_Code ,
+                self::OAuth2Protocol_ResponseType_Code,
                 self::OAuth2Protocol_ResponseType_IdToken,
                 self::OAuth2Protocol_ResponseType_Token
             )
         );
 
-        if($flow === 'all')
+        if ($flow === 'all')
             return array_merge
             (
                 $code_flow,
@@ -419,13 +444,20 @@ final class OAuth2Protocol implements IOAuth2Protocol
                 $hybrid_flow
             );
 
-        if($flow === OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode)
+        if ($flow === OAuth2Protocol::OAuth2Protocol_GrantType_Passwordless)
+            return [
+                [
+                    self::OAuth2Protocol_ResponseType_OTP
+                ]
+            ];
+
+        if ($flow === OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode)
             return $code_flow;
 
-        if($flow === OAuth2Protocol::OAuth2Protocol_GrantType_Implicit)
+        if ($flow === OAuth2Protocol::OAuth2Protocol_GrantType_Implicit)
             return $implicit_flow;
 
-        if($flow === OAuth2Protocol::OAuth2Protocol_GrantType_Hybrid)
+        if ($flow === OAuth2Protocol::OAuth2Protocol_GrantType_Hybrid)
             return $hybrid_flow;
 
         return [];
@@ -446,26 +478,25 @@ final class OAuth2Protocol implements IOAuth2Protocol
     {
         if
         (
-            !in_array
-            (
-                $flow, array
-                       (
-                            OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
-                            OAuth2Protocol::OAuth2Protocol_GrantType_Implicit,
-                            OAuth2Protocol::OAuth2Protocol_GrantType_Hybrid,
-                            'all'
-                       )
-            )
+        !in_array
+        (
+            $flow, [
+                OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
+                OAuth2Protocol::OAuth2Protocol_GrantType_Implicit,
+                OAuth2Protocol::OAuth2Protocol_GrantType_Hybrid,
+                OAuth2Protocol::OAuth2Protocol_GrantType_Passwordless,
+                'all'
+            ]
         )
-        return false;
+        )
+            return false;
 
         $flow_response_types = self::getValidResponseTypes($flow);
 
-        foreach($flow_response_types as $rt)
-        {
-            if(count($rt) !== count($response_type)) continue;
-            $diff =  array_diff($rt, $response_type);
-            if(count($diff) === 0) return true;
+        foreach ($flow_response_types as $rt) {
+            if (count($rt) !== count($response_type)) continue;
+            $diff = array_diff($rt, $response_type);
+            if (count($diff) === 0) return true;
         }
         return false;
     }
@@ -534,9 +565,9 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * through the sequence. If the value is force, then the user sees a consent page even if they
      * previously gave consent to your application for a given set of scopes.
      */
-    const OAuth2Protocol_Approval_Prompt       = 'approval_prompt';
+    const OAuth2Protocol_Approval_Prompt = 'approval_prompt';
     const OAuth2Protocol_Approval_Prompt_Force = 'force';
-    const OAuth2Protocol_Approval_Prompt_Auto  = 'auto';
+    const OAuth2Protocol_Approval_Prompt_Auto = 'auto';
 
     /**
      * Indicates whether your application needs to access an API when the user is not present at
@@ -544,8 +575,8 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * when the user is not present at the browser, then use offline. This will result in your application
      * obtaining a refresh token the first time your application exchanges an authorization code for a user.
      */
-    const OAuth2Protocol_AccessType         = 'access_type';
-    const OAuth2Protocol_AccessType_Online  = 'online';
+    const OAuth2Protocol_AccessType = 'access_type';
+    const OAuth2Protocol_AccessType_Online = 'online';
     const OAuth2Protocol_AccessType_Offline = 'offline';
 
     const OAuth2Protocol_GrantType = 'grant_type';
@@ -554,6 +585,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
     const OAuth2Protocol_ErrorUri = 'error_uri';
     const OAuth2Protocol_Error_InvalidRequest = 'invalid_request';
     const OAuth2Protocol_Error_UnauthorizedClient = 'unauthorized_client';
+    const OAuth2Protocol_Error_InvalidOTP = 'invalid_otp';
     const OAuth2Protocol_Error_RedirectUriMisMatch = 'redirect_uri_mismatch';
     const OAuth2Protocol_Error_AccessDenied = 'access_denied';
     const OAuth2Protocol_Error_UnsupportedResponseType = 'unsupported_response_type';
@@ -627,26 +659,26 @@ final class OAuth2Protocol implements IOAuth2Protocol
 
 
     const OAuth2Protocol_Error_Invalid_Recipient_Keys = 'invalid_recipient_keys';
-    const OAuth2Protocol_Error_Invalid_Server_Keys    = 'invalid_server_keys';
-    const OAuth2Protocol_Error_Not_Found_Server_Keys  = 'not_found_server_keys';
+    const OAuth2Protocol_Error_Invalid_Server_Keys = 'invalid_server_keys';
+    const OAuth2Protocol_Error_Not_Found_Server_Keys = 'not_found_server_keys';
 
 
     public static $valid_responses_types = array
     (
-        self::OAuth2Protocol_ResponseType_Code  => self::OAuth2Protocol_ResponseType_Code,
+        self::OAuth2Protocol_ResponseType_Code => self::OAuth2Protocol_ResponseType_Code,
         self::OAuth2Protocol_ResponseType_Token => self::OAuth2Protocol_ResponseType_Token
     );
 
     // http://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
 
     const TokenEndpoint_AuthMethod_ClientSecretBasic = 'client_secret_basic';
-    const TokenEndpoint_AuthMethod_ClientSecretPost  = 'client_secret_post';
-    const TokenEndpoint_AuthMethod_ClientSecretJwt   = 'client_secret_jwt';
-    const TokenEndpoint_AuthMethod_PrivateKeyJwt     = 'private_key_jwt';
-    const TokenEndpoint_AuthMethod_None              = 'none';
+    const TokenEndpoint_AuthMethod_ClientSecretPost = 'client_secret_post';
+    const TokenEndpoint_AuthMethod_ClientSecretJwt = 'client_secret_jwt';
+    const TokenEndpoint_AuthMethod_PrivateKeyJwt = 'private_key_jwt';
+    const TokenEndpoint_AuthMethod_None = 'none';
 
-    const OAuth2Protocol_ClientAssertionType         = 'client_assertion_type';
-    const OAuth2Protocol_ClientAssertion             = 'client_assertion';
+    const OAuth2Protocol_ClientAssertionType = 'client_assertion_type';
+    const OAuth2Protocol_ClientAssertion = 'client_assertion';
 
     public static $token_endpoint_auth_methods = array
     (
@@ -721,8 +753,8 @@ final class OAuth2Protocol implements IOAuth2Protocol
 
     /**
      * PKCE
-    * @see https://tools.ietf.org/html/rfc7636
-    **/
+     * @see https://tools.ietf.org/html/rfc7636
+     **/
 
     // auth request new params
 
@@ -835,31 +867,48 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     public function __construct
     (
-        ILogService    $log_service,
+        ILogService $log_service,
         IClientService $client_service,
         IClientRepository $client_repository,
-        ITokenService  $token_service,
-        IAuthService   $auth_service,
+        ITokenService $token_service,
+        IAuthService $auth_service,
         IOAuth2AuthenticationStrategy $auth_strategy,
         ICheckPointService $checkpoint_service,
-        IApiScopeService   $scope_service,
+        IApiScopeService $scope_service,
         IUserConsentService $user_consent_service,
         IServerPrivateKeyRepository $server_private_keys_repository,
         IOpenIDProviderConfigurationService $oidc_provider_configuration_service,
         IMementoOAuth2SerializerService $memento_service,
-        ISecurityContextService         $security_context_service,
-        IPrincipalService               $principal_service,
-        IServerPrivateKeyRepository     $server_private_key_repository,
-        IClientJWKSetReader             $jwk_set_reader_service,
-        UserIPHelperProvider            $ip_helper
+        ISecurityContextService $security_context_service,
+        IPrincipalService $principal_service,
+        IServerPrivateKeyRepository $server_private_key_repository,
+        IClientJWKSetReader $jwk_set_reader_service,
+        UserIPHelperProvider $ip_helper
     )
     {
 
-        $this->server_private_keys_repository      = $server_private_keys_repository;
+        $this->server_private_keys_repository = $server_private_keys_repository;
         $this->oidc_provider_configuration_service = $oidc_provider_configuration_service;
-        $this->memento_service                     = $memento_service;
+        $this->memento_service = $memento_service;
 
-        $authorization_code_grant_type    = new AuthorizationCodeGrantType
+        $passwordless_grant_type = new PasswordlessGrantType
+        (
+            $scope_service,
+            $client_service,
+            $client_repository,
+            $token_service,
+            $auth_service,
+            $auth_strategy,
+            $log_service,
+            $user_consent_service,
+            $this->memento_service,
+            $security_context_service,
+            $principal_service,
+            $server_private_key_repository,
+            $jwk_set_reader_service
+        );
+
+        $authorization_code_grant_type = new AuthorizationCodeGrantType
         (
             $scope_service,
             $client_service,
@@ -910,7 +959,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $jwk_set_reader_service
         );
 
-        $refresh_bearer_token_grant_type  = new RefreshBearerTokenGrantType
+        $refresh_bearer_token_grant_type = new RefreshBearerTokenGrantType
         (
             $client_service,
             $client_repository,
@@ -918,7 +967,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $log_service
         );
 
-        $client_credential_grant_type     = new ClientCredentialsGrantType
+        $client_credential_grant_type = new ClientCredentialsGrantType
         (
             $scope_service,
             $client_service,
@@ -927,24 +976,26 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $log_service
         );
 
-        $this->grant_types[$authorization_code_grant_type->getType()]   = $authorization_code_grant_type;
-        $this->grant_types[$implicit_grant_type->getType()]             = $implicit_grant_type;
+        // setting grants collection
+        $this->grant_types[$passwordless_grant_type->getType()] = $passwordless_grant_type;
+        $this->grant_types[$authorization_code_grant_type->getType()] = $authorization_code_grant_type;
+        $this->grant_types[$implicit_grant_type->getType()] = $implicit_grant_type;
         $this->grant_types[$refresh_bearer_token_grant_type->getType()] = $refresh_bearer_token_grant_type;
-        $this->grant_types[$client_credential_grant_type->getType()]    = $client_credential_grant_type;
-        $this->grant_types[$hybrid_grant_type->getType()]               = $hybrid_grant_type;
+        $this->grant_types[$client_credential_grant_type->getType()] = $client_credential_grant_type;
+        $this->grant_types[$hybrid_grant_type->getType()] = $hybrid_grant_type;
 
-        $this->log_service                = $log_service;
-        $this->checkpoint_service         = $checkpoint_service;
-        $this->client_service             = $client_service;
-        $this->client_repository          = $client_repository;
-        $this->auth_service               = $auth_service;
-        $this->principal_service          = $principal_service;
-        $this->token_service              = $token_service;
+        $this->log_service = $log_service;
+        $this->checkpoint_service = $checkpoint_service;
+        $this->client_service = $client_service;
+        $this->client_repository = $client_repository;
+        $this->auth_service = $auth_service;
+        $this->principal_service = $principal_service;
+        $this->token_service = $token_service;
 
-        $this->authorize_endpoint         = new AuthorizationEndpoint($this);
-        $this->token_endpoint             = new TokenEndpoint($this);
-        $this->revoke_endpoint            = new TokenRevocationEndpoint($this, $client_service, $client_repository, $token_service, $log_service);
-        $this->introspection_endpoint     = new TokenIntrospectionEndpoint
+        $this->authorize_endpoint = new AuthorizationEndpoint($this);
+        $this->token_endpoint = new TokenEndpoint($this);
+        $this->revoke_endpoint = new TokenRevocationEndpoint($this, $client_service, $client_repository, $token_service, $log_service);
+        $this->introspection_endpoint = new TokenIntrospectionEndpoint
         (
             $this,
             $client_service,
@@ -964,14 +1015,12 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     public function authorize(OAuth2Request $request = null)
     {
-        try
-        {
+        try {
             $this->last_request = $request;
 
             if (is_null($this->last_request)) throw new InvalidOAuth2Request;
 
-            if(!$this->last_request->isValid())
-            {
+            if (!$this->last_request->isValid()) {
                 // then check if we have a memento ....
                 if (!$this->memento_service->exists())
                     throw new InvalidOAuth2Request($this->last_request->getLastValidationError());
@@ -981,20 +1030,16 @@ final class OAuth2Protocol implements IOAuth2Protocol
                     OAuth2Message::buildFromMemento($this->memento_service->load())
                 );
 
-                if(!$this->last_request->isValid())
+                if (!$this->last_request->isValid())
                     throw new InvalidOAuth2Request($this->last_request->getLastValidationError());
 
             }
             return $this->authorize_endpoint->handle($this->last_request);
-        }
-        catch (UriNotAllowedException $ex1)
-        {
+        } catch (UriNotAllowedException $ex1) {
             $this->log_service->warning($ex1);
             $this->checkpoint_service->trackException($ex1);
             throw $ex1;
-        }
-        catch(OAuth2BaseException $ex2)
-        {
+        } catch (OAuth2BaseException $ex2) {
             $this->log_service->warning($ex2);
             $this->checkpoint_service->trackException($ex2);
 
@@ -1010,8 +1055,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
                 $ex2->getMessage(),
                 $redirect_uri
             );
-        }
-        catch (AbsentClientException $ex3){
+        } catch (AbsentClientException $ex3) {
             $this->log_service->warning($ex3);
             $this->checkpoint_service->trackException($ex3);
 
@@ -1026,8 +1070,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
                 $ex3->getMessage(),
                 $redirect_uri
             );
-        }
-        catch (AbsentCurrentUserException $ex4){
+        } catch (AbsentCurrentUserException $ex4) {
             $this->log_service->warning($ex4);
             $this->checkpoint_service->trackException($ex4);
 
@@ -1042,9 +1085,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
                 $ex4->getMessage(),
                 $redirect_uri
             );
-        }
-        catch (Exception $ex)
-        {
+        } catch (Exception $ex) {
             $this->log_service->error($ex);
             $this->checkpoint_service->trackException($ex);
 
@@ -1068,27 +1109,22 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     public function token(OAuth2Request $request = null)
     {
-        try
-        {
+        try {
             $this->last_request = $request;
 
             if (is_null($this->last_request))
                 throw new InvalidOAuth2Request;
 
-            if(!$this->last_request->isValid())
+            if (!$this->last_request->isValid())
                 throw new InvalidOAuth2Request($this->last_request->getLastValidationError());
 
             return $this->token_endpoint->handle($this->last_request);
-        }
-        catch(OAuth2BaseException $ex1)
-        {
+        } catch (OAuth2BaseException $ex1) {
             $this->log_service->warning($ex1);
             $this->checkpoint_service->trackException($ex1);
 
             return new OAuth2DirectErrorResponse($ex1->getError(), $ex1->getMessage());
-        }
-        catch (Exception $ex)
-        {
+        } catch (Exception $ex) {
             $this->log_service->error($ex);
             $this->checkpoint_service->trackException($ex);
 
@@ -1106,7 +1142,8 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * @param OAuth2Request $request
      * @return OAuth2Response
      */
-    public function revoke(OAuth2Request $request = null){
+    public function revoke(OAuth2Request $request = null)
+    {
 
         try {
             $this->last_request = $request;
@@ -1114,12 +1151,11 @@ final class OAuth2Protocol implements IOAuth2Protocol
             if (is_null($this->last_request))
                 throw new InvalidOAuth2Request;
 
-            if(!$this->last_request->isValid())
+            if (!$this->last_request->isValid())
                 throw new InvalidOAuth2Request($this->last_request->getLastValidationError());
 
             return $this->revoke_endpoint->handle($this->last_request);
-        }
-        catch (Exception $ex) {
+        } catch (Exception $ex) {
             $this->log_service->error($ex);
             $this->checkpoint_service->trackException($ex);
             //simple say "OK" and be on our way ...
@@ -1135,31 +1171,24 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     public function introspection(OAuth2Request $request = null)
     {
-        try
-        {
+        try {
             $this->last_request = $request;
 
             if (is_null($this->last_request))
                 throw new InvalidOAuth2Request;
 
-            if(!$this->last_request->isValid())
+            if (!$this->last_request->isValid())
                 throw new InvalidOAuth2Request($this->last_request->getLastValidationError());
 
             return $this->introspection_endpoint->handle($this->last_request);
-        }
-        catch(ExpiredAccessTokenException $ex1)
-        {
+        } catch (ExpiredAccessTokenException $ex1) {
             $this->log_service->warning($ex1);
             return new OAuth2DirectErrorResponse($ex1->getError(), $ex1->getMessage());
-        }
-        catch(OAuth2BaseException $ex2)
-        {
+        } catch (OAuth2BaseException $ex2) {
             $this->log_service->warning($ex2);
             $this->checkpoint_service->trackException($ex2);
             return new OAuth2DirectErrorResponse($ex2->getError(), $ex2->getMessage());
-        }
-        catch (Exception $ex)
-        {
+        } catch (Exception $ex) {
             $this->log_service->error($ex);
             $this->checkpoint_service->trackException($ex);
 
@@ -1183,13 +1212,12 @@ final class OAuth2Protocol implements IOAuth2Protocol
     static public function isClientAllowedToUseTokenEndpointAuth(IClient $client)
     {
         return $client->getClientType() === IClient::ClientType_Confidential ||
-               $client->getApplicationType() === IClient::ApplicationType_Native;
+            $client->getApplicationType() === IClient::ApplicationType_Native;
     }
 
     static public function getTokenEndpointAuthMethodsPerClientType(IClient $client)
     {
-        if($client->getClientType() == IClient::ClientType_Public)
-        {
+        if ($client->getClientType() == IClient::ClientType_Public) {
             return ArrayUtils::convert2Assoc
             (
                 array
@@ -1219,8 +1247,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     static public function getSigningAlgorithmsPerClientType(IClient $client)
     {
-        if($client->getClientType() == IClient::ClientType_Public)
-        {
+        if ($client->getClientType() == IClient::ClientType_Public) {
             return ArrayUtils::convert2Assoc
             (
                 array_merge
@@ -1254,18 +1281,17 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     static public function getKeyManagementAlgorithmsPerClientType(IClient $client)
     {
-        if($client->getClientType() == IClient::ClientType_Public)
-        {
+        if ($client->getClientType() == IClient::ClientType_Public) {
             return ArrayUtils::convert2Assoc
             (
-               array_diff
-               (
-                   self::$supported_key_management_algorithms,
-                   array
-                   (
-                       JSONWebSignatureAndEncryptionAlgorithms::Dir
-                   )
-               )
+                array_diff
+                (
+                    self::$supported_key_management_algorithms,
+                    array
+                    (
+                        JSONWebSignatureAndEncryptionAlgorithms::Dir
+                    )
+                )
             );
         }
         return ArrayUtils::convert2Assoc
@@ -1281,10 +1307,9 @@ final class OAuth2Protocol implements IOAuth2Protocol
     public function getJWKSDocument()
     {
         $keys = $this->server_private_keys_repository->getActives();
-        $set  = [];
+        $set = [];
 
-        foreach($keys as $private_key)
-        {
+        foreach ($keys as $private_key) {
             $jwk = RSAJWKFactory::build
             (
                 new RSAJWKPEMPrivateKeySpecification
@@ -1419,8 +1444,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     public function endSession(OAuth2Request $request = null)
     {
-        try
-        {
+        try {
             $this->log_service->debug_msg("OAuth2Protocol::endSession");
 
             $this->last_request = $request;
@@ -1430,54 +1454,54 @@ final class OAuth2Protocol implements IOAuth2Protocol
                 throw new InvalidOAuth2Request;
             }
 
-            if(!$this->last_request->isValid()) {
+            if (!$this->last_request->isValid()) {
                 $this->log_service->debug_msg(sprintf("OAuth2Protocol::endSession last request is invalid error %s", $this->last_request->getLastValidationError()));
                 throw new InvalidOAuth2Request($this->last_request->getLastValidationError());
             }
 
-            if(!$this->last_request instanceof OAuth2LogoutRequest) throw new InvalidOAuth2Request;
+            if (!$this->last_request instanceof OAuth2LogoutRequest) throw new InvalidOAuth2Request;
 
             $id_token_hint = $this->last_request->getIdTokenHint();
-            $client_id     = null;
-            $user_id       = null;
-            $user          = null;
+            $client_id = null;
+            $user_id = null;
+            $user = null;
 
-            if(!empty($id_token_hint)){
+            if (!empty($id_token_hint)) {
                 $jwt = BasicJWTFactory::build($id_token_hint);
 
-                if((!$jwt instanceof IJWT)) {
+                if ((!$jwt instanceof IJWT)) {
                     $this->log_service->debug_msg("OAuth2Protocol::endSession invalid id_token_hint!");
                     throw new InvalidOAuth2Request('invalid id_token_hint!');
                 }
 
                 $client_id = $jwt->getClaimSet()->getAudience()->getString();
-                $user_id   = $jwt->getClaimSet()->getSubject();
+                $user_id = $jwt->getClaimSet()->getSubject();
             }
-            if(empty($client_id)){
+            if (empty($client_id)) {
                 $client_id = $this->last_request->getClientId();
             }
 
-            if(is_null($client_id)) {
+            if (is_null($client_id)) {
                 $this->log_service->debug_msg("OAuth2Protocol::endSession client_id can not be inferred.");
                 throw new InvalidClientException('client_id can not be inferred.');
             }
 
             $client = $this->client_repository->getClientById($client_id);
 
-            if(is_null($client)){
+            if (is_null($client)) {
                 $this->log_service->debug_msg("OAuth2Protocol::endSession client not found!");
                 throw new InvalidClientException('Client not found!');
             }
 
             $redirect_logout_uri = $this->last_request->getPostLogoutRedirectUri();
-            $state               = $this->last_request->getState();
+            $state = $this->last_request->getState();
 
-            if(!empty($redirect_logout_uri) && !$client->isPostLogoutUriAllowed($redirect_logout_uri)) {
+            if (!empty($redirect_logout_uri) && !$client->isPostLogoutUriAllowed($redirect_logout_uri)) {
                 $this->log_service->debug_msg("OAuth2Protocol::endSession post_logout_redirect_uri not allowed!");
                 throw new InvalidOAuth2Request('post_logout_redirect_uri not allowed!');
             }
 
-            if(!is_null($user_id)){
+            if (!is_null($user_id)) {
                 // try to get the user from id token ( if its set )
                 $user_id = $this->auth_service->unwrapUserId(intval($user_id->getString()));
                 $user = $this->auth_service->getUserById($user_id);
@@ -1500,34 +1524,28 @@ final class OAuth2Protocol implements IOAuth2Protocol
                         $user->getId()
                     )
                 );
+
             }
 
-            if(!is_null($logged_user))
+            if (!is_null($logged_user))
                 $this->auth_service->logout();
 
-            if(!empty($redirect_logout_uri))
-            {
+            if (!empty($redirect_logout_uri)) {
                 return new OAuth2LogoutResponse($redirect_logout_uri, $state);
             }
 
             return null;
-        }
-        catch (UriNotAllowedException $ex1)
-        {
+        } catch (UriNotAllowedException $ex1) {
             $this->log_service->warning($ex1);
             $this->checkpoint_service->trackException($ex1);
 
             return new OAuth2DirectErrorResponse(OAuth2Protocol::OAuth2Protocol_Error_UnauthorizedClient);
-        }
-        catch(OAuth2BaseException $ex2)
-        {
+        } catch (OAuth2BaseException $ex2) {
             $this->log_service->warning($ex2);
             $this->checkpoint_service->trackException($ex2);
 
             return new OAuth2DirectErrorResponse($ex2->getError(), $ex2->getMessage());
-        }
-        catch (Exception $ex)
-        {
+        } catch (Exception $ex) {
             $this->log_service->error($ex);
             $this->checkpoint_service->trackException($ex);
 

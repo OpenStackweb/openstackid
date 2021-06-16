@@ -128,6 +128,7 @@ final class UserService extends AbstractService implements IUserService
             if(count($default_groups) > 0){
                 $payload['groups'] = $default_groups;
             }
+
             $user = UserFactory::build($payload);
 
             $this->user_repository->add($user);

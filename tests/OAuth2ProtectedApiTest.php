@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,6 @@ use Utils\Services\IAuthService;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
 use LaravelDoctrine\ORM\Facades\EntityManager;
-
 /**
  * Class OAuth2ProtectedApiTest
  */

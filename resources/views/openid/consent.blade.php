@@ -5,7 +5,7 @@
 
 @section('header_right')
 @if(Auth::check())
-Welcome, <a href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->getIdentifier()!!}</a>
+Welcome, <a target="_self" href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->getIdentifier()!!}</a>
 @endif
 @append
 

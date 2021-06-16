@@ -12,7 +12,7 @@
         <div class="well">
             <p> There was an error on your registration process.</p>
             <p> Please try it later.</p>
-            <p> Or go back to <a href="{!!URL::action("Auth\RegisterController@showRegistrationForm") !!}">Registration</a>.</p>
+            <p> Or go back to <a target="_self" href="{!!URL::action("Auth\RegisterController@showRegistrationForm") !!}">Registration</a>.</p>
         </div>
     </div>
 @endsection

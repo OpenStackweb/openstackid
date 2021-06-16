@@ -44,7 +44,8 @@ Route::group(array('middleware' => ['ssl']), function () {
 
         Route::group(array('prefix' => 'login'), function () {
             Route::get('', "UserController@getLogin");
-            Route::get('account-verify', "UserController@getAccount");
+            Route::get('account-verify', ['middleware' => ['csrf', 'throttle:account'], 'uses' => 'UserController@getAccount']);
+            Route::post('otp', ['middleware' => ['csrf', 'throttle:otp'], 'uses' => 'UserController@emitOTP']);
             Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
             Route::get('cancel', "UserController@cancelLogin");
             Route::group(array('prefix' => '{provider}'), function () {
@@ -56,7 +57,7 @@ Route::group(array('middleware' => ['ssl']), function () {
         // registration routes
         Route::group(array('prefix' => 'register'), function () {
             Route::get('', 'Auth\RegisterController@showRegistrationForm');
-            Route::post('', ['middleware' => 'csrf', 'uses' => 'Auth\RegisterController@register']);
+            Route::post('', ['middleware' => ['csrf'], 'uses' => 'Auth\RegisterController@register']);
         });
 
         Route::group(array('prefix' => 'verification'), function () {
@@ -100,7 +101,8 @@ Route::group(['namespace' => 'OAuth2', 'middleware' => ['ssl']], function () {
     Route::get('/.well-known/openid-configuration', "OAuth2ProviderController@discovery");
 });
 
-Route::group(['namespace' => 'OAuth2', 'prefix' => 'oauth2', 'middleware' => ['ssl']], function () {
+Route::group(['namespace' => 'OAuth2', 'prefix' => 'oauth2', 'middleware' => ['ssl','throttle:oauth2']], function () {
+
     Route::get('/check-session', "OAuth2ProviderController@checkSessionIFrame");
     Route::get('/end-session', "OAuth2ProviderController@endSession");
     Route::post('/end-session', "OAuth2ProviderController@endSession");
@@ -372,5 +374,4 @@ Route::group([
             Route::put('', "ServerPrivateKeyApiController@update");
         });
     });
-
 });

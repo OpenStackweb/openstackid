@@ -67,7 +67,7 @@ class Kernel extends HttpKernel
         'auth.basic'                               => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'ssl'                                      => \App\Http\Middleware\SSLMiddleware::class,
         'guest'                                    => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        'throttle'                                 => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'throttle'                                 => \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
         'csrf'                                     => \App\Http\Middleware\VerifyCsrfToken::class,
         'oauth2.endpoint'                          => \App\Http\Middleware\OAuth2BearerAccessTokenRequestValidator::class,
         'oauth2.currentuser.serveradmin'           => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdmin::class,

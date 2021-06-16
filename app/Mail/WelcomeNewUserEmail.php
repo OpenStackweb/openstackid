@@ -71,13 +71,13 @@ final class WelcomeNewUserEmail extends Mailable
     public function build()
     {
 
-        $subject = sprintf("%s email verification needed", Config::get('app.app_name'));
+        $subject = sprintf("Thank you for registering for an %s account", Config::get('app.app_name'));
         $view = 'emails.welcome_new_user_email';
 
         if(Config::get("app.tenant_name") == 'FNTECH') {
             $view = 'emails.welcome_new_user_email_fn';
-            $subject = sprintf("Thank you for registering for an %s account", Config::get('app.app_name'));
         }
+
         Log::debug(sprintf("WelcomeNewUserEmail::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)

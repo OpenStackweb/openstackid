@@ -675,6 +675,10 @@ final class ClientApiController extends APICRUDController
             'id_token_encrypted_response_alg' => 'sometimes|required|encrypted_alg',
             'id_token_encrypted_response_enc' => 'sometimes|required|encrypted_enc',
             'admin_users'                     => 'nullable|int_array',
+            'pkce_enabled'                    => 'sometimes|boolean',
+            'otp_enabled'                     => 'sometimes|boolean',
+            'otp_length'                      => 'sometimes|integer|min:4|max:8',
+            'otp_lifetime'                    => 'sometimes|integer|min:60|max:600',
         ];
     }
 

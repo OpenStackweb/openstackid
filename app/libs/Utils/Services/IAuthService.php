@@ -12,7 +12,10 @@
  * limitations under the License.
  **/
 
+use Auth\Exceptions\AuthenticationException;
 use Auth\User;
+use Models\OAuth2\Client;
+use Models\OAuth2\OAuth2OTP;
 use OAuth2\Models\IClient;
 use OpenId\Models\IOpenIdUser;
 /**
@@ -33,6 +36,8 @@ interface IAuthService
     const AuthenticationResponse_None        = "None";
     const AuthenticationResponse_Cancel      = "Cancel";
 
+    const AuthenticationFlowPassword = "password";
+    const AuthenticationFlowPasswordless = "otp";
     /**
      * @return bool
      */
@@ -47,9 +52,19 @@ interface IAuthService
      * @param string $username
      * @param string $password
      * @param bool $remember_me
-     * @return mixed
+     * @return bool
+     * @throws AuthenticationException
      */
-    public function login($username, $password, $remember_me);
+    public function login(string $username, string $password, bool $remember_me): bool;
+
+    /**
+     * @param OAuth2OTP $otpClaim
+     * @param Client|null $client
+     * @return OAuth2OTP|null
+     * @throws AuthenticationException
+     */
+    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null): ?OAuth2OTP;
+
 
     /**
      * @param string $username

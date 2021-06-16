@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +13,8 @@
  **/
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Api;
-use Tests\BrowserKitTestCase;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Illuminate\Support\Facades\Config;
 /**
  * Class ApiScopeTest
  */

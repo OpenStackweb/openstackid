@@ -11,6 +11,6 @@
 @section('content')
     <div class="container">
         <p> You successfully Verified Your Email Address !!!</p>
-        <p> Now proceed to <a href="{!! URL::action("UserController@getLogin") !!}">Login</a>.</p>
+        <p> Now proceed to <a target="_self" href="{!! URL::action("UserController@getLogin") !!}">Login</a>.</p>
     </div>
 @endsection

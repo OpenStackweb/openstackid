@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +12,13 @@
  * limitations under the License.
  **/
 use Auth\User;
-use Illuminate\Support\Facades\App;
 use OAuth2\OAuth2Protocol;
 use Utils\Services\IAuthService;
 use Utils\Services\UtilsServiceCatalog;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Illuminate\Support\Facades\DB;
 /**
  * Class OAuth2ProtocolTest
  * Test Suite for OAuth2 Protocol

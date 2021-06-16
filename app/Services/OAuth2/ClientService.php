@@ -273,7 +273,7 @@ final class ClientService extends AbstractService implements IClientService
 
         return $this->tx_service->transaction(function () use ($id, $payload) {
 
-            $editing_user      = $this->auth_service->getCurrentUser();
+            $editing_user = $this->auth_service->getCurrentUser();
 
             $client = $this->client_repository->getById($id);
 

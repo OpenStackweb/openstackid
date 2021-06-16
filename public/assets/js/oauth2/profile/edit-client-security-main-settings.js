@@ -24,6 +24,31 @@ jQuery(document).ready(function($){
         }
     });
 
+    if($("#otp_enabled") .is(":checked")){
+        $(".otp_controls").removeClass("hidden");
+        $("#otp_length").rules("add", {required:true, min:4, max:8});
+        $("#otp_lifetime").rules("add", {required:true, min:60, max:600});
+    }
+    else {
+        $(".otp_controls").addClass("hidden");
+        $("#otp_length").rules("remove");
+        $("#otp_lifetime").rules("remove");
+    }
+
+
+    $("#otp_enabled").change(function() {
+        if(this.checked) {
+           $(".otp_controls").removeClass("hidden");
+           $("#otp_length").rules("add", {required:true, min:4, max:8});
+           $("#otp_lifetime").rules("add", {required:true, min:60, max:600});
+           return true;
+        }
+        $(".otp_controls").addClass("hidden");
+        $("#otp_length").rules("remove");
+        $("#otp_lifetime").rules("remove");
+        return true;
+    });
+
     $('#token_endpoint_auth_method').change(function() {
         var auth_method = $(this).val();
 

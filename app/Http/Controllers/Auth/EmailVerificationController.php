@@ -15,6 +15,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request as LaravelRequest;
 use models\exceptions\EntityNotFoundException;
@@ -42,7 +43,7 @@ final class EmailVerificationController extends Controller
 
     public function showVerificationForm()
     {
-        return view('auth.email_verification');
+        return view('auth.email_verification', ['email' => Request::input("email", "")]);
     }
 
     /**

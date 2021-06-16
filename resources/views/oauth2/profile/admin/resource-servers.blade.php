@@ -24,7 +24,7 @@
     </div>
     <div class="row">
         <div class="col-md-12">
-            {!! HTML::link(URL::action("Api\ApiResourceServerController@create"),'Add Resource Server',array('class'=>'btn active btn-primary add-resource-server','title'=>'Adds a New Resource Server')) !!}
+            {!! HTML::link(URL::action("Api\ApiResourceServerController@create"),'Add Resource Server',array('class'=>'btn active btn-primary add-resource-server','title'=>'Adds a New Resource Server', 'target'=>'_self')) !!}
         </div>
     </div>
     <table id='table-resource-servers' class="table table-hover table-condensed">
@@ -53,8 +53,8 @@
             </td>
             <td width="25%">
                 &nbsp;
-                {!! HTML::link(URL::action("AdminController@editResourceServer",array("id"=>$resource_server->id)),'Edit',array('class'=>'btn btn-default active edit-resource-server','title'=>'Edits a Registered Resource Server')) !!}
-                {!! HTML::link(URL::action("Api\ApiResourceServerController@delete",array("id"=>$resource_server->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-resource-server','title'=>'Deletes a Registered Resource Server')) !!}
+                {!! HTML::link(URL::action("AdminController@editResourceServer",array("id"=>$resource_server->id)),'Edit',array('class'=>'btn btn-default active edit-resource-server','title'=>'Edits a Registered Resource Server', 'target'=>'_self')) !!}
+                {!! HTML::link(URL::action("Api\ApiResourceServerController@delete",array("id"=>$resource_server->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-resource-server','title'=>'Deletes a Registered Resource Server', 'target'=>'_self')) !!}
             </td>
         </tr>
         @endforeach

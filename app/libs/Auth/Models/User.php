@@ -480,14 +480,18 @@ class User extends BaseEntity
         return $this->identifier;
     }
 
-    public function getEmail()
+    public function getEmail():string
     {
         return $this->email;
     }
 
+    /**
+     * @return string|null
+     */
     public function getFullName(): ?string
     {
-        return $this->getFirstName() . " " . $this->getLastName();
+        $full_name = $this->getFirstName() . " " . $this->getLastName();
+        return !empty(trim($full_name)) ? $full_name : $this->email;
     }
 
     public function getFirstName()

@@ -13,12 +13,14 @@
  **/
 use OpenId\Exceptions\InvalidNonce;
 use OpenId\Helpers\OpenIdErrorMessages;
-use Utils\Model\Identifier;
+use Utils\Model\AbstractIdentifier;
+use Zend\Math\Rand;
+
 /**
  * Class OpenIdNonce
  * @package OpenId\Models
  */
-final class OpenIdNonce extends Identifier
+final class OpenIdNonce extends AbstractIdentifier
 {
     const NonceRegexFormat = '/(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)Z(.*)/';
     const NonceTimeFormat  = '%Y-%m-%dT%H:%M:%SZ';
@@ -139,7 +141,7 @@ final class OpenIdNonce extends Identifier
     /**
      * @return string
      */
-    public function getType()
+    public function getType():string
     {
         return 'nonce';
     }
@@ -150,5 +152,28 @@ final class OpenIdNonce extends Identifier
     public function toArray(): array
     {
         return [];
+    }
+
+    /*
+  * MAY contain additional ASCII characters in the range 33-126 inclusive (printable non-whitespace characters), as necessary to make each response unique
+  */
+    const NoncePopulation = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    /**
+     * Nonce Salt Length
+     */
+    const NonceSaltLength = 32;
+
+    /**
+     * @return string
+     * @throws InvalidNonce
+     */
+    public function generateValue(): string
+    {
+        $salt      = Rand::getString(self::NonceSaltLength, self::NoncePopulation);
+        $date_part = false;
+        do{ $date_part = gmdate('Y-m-d\TH:i:s\Z'); } while($date_part === false);
+        $raw_nonce = $date_part. $salt;
+        $this->setValue($raw_nonce);
+        return $this->value;
     }
 }

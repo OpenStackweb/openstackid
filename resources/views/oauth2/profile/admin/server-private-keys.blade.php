@@ -43,7 +43,7 @@
                 <h5 style="font-weight: bold">Private keys&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title="OIDC Server private keys for encryption/signing"></span></h5>
             </td>
             <td width="10%">
-                <a href="#" class="btn btn-default btn-sm active add-private-key">Add Private Key</a>
+                <a target="_self" href="#" class="btn btn-default btn-sm active add-private-key">Add Private Key</a>
             </td>
         </tr>
         <tr>
@@ -86,7 +86,7 @@
                         </div>
                     </div>
                 </td>
-                <td><a class="btn btn-default btn-sm active delete-private-key btn-delete" href="#" data-private-key-id="{!!$private_key->id!!}">Delete</a></td>
+                <td><a target="_self" class="btn btn-default btn-sm active delete-private-key btn-delete" href="#" data-private-key-id="{!!$private_key->id!!}">Delete</a></td>
             </tr>
         @endforeach
         </tbody>

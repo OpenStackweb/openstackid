@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,9 @@
 use OpenId\Services\OpenIdServiceCatalog;
 use Utils\Services\IAuthService;
 use OpenId\Repositories\IOpenIdTrustedSiteRepository;
-use OpenId\Models\IOpenIdUser;
 use Auth\User;
-use Tests\BrowserKitTestCase;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Mockery;
 /**
  * Class TrustedSitesServiceTest
  */

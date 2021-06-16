@@ -9,7 +9,7 @@ function loadResourceServers(){
             success: function (page,textStatus,jqXHR) {
                 //load data...
                 var items = page.data;
-                var template = $('<tbody><tr><td width="25%" class="fname"></td><td width="25%" class="hname"></td><td width="10%"class="ips"></td><td width="5%" class="resource-server-active"><input type="checkbox" class="resource-server-active-checkbox"></td><td width="25%">&nbsp;<a class="btn btn-default active edit-resource-server" title="Edits a Registered Resource Server">Edit</a>&nbsp;<a class="btn btn-default btn-delete active delete-resource-server" title="Deletes a Registered Resource Server">Delete</a></td></tr></tbody>');
+                var template = $('<tbody><tr><td width="25%" class="fname"></td><td width="25%" class="hname"></td><td width="10%"class="ips"></td><td width="5%" class="resource-server-active"><input type="checkbox" class="resource-server-active-checkbox"></td><td width="25%">&nbsp;<a target="_self" class="btn btn-default active edit-resource-server" title="Edits a Registered Resource Server">Edit</a>&nbsp;<a target="_self" class="btn btn-default btn-delete active delete-resource-server" title="Deletes a Registered Resource Server">Delete</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
                         'resource_server<-context':{

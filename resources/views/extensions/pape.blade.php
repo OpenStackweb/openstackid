@@ -1,4 +1,4 @@
 <p>PAPE</p>
 @foreach ($links as $link)
-<a href="#">{!!$link!!}</a>
+<a target="_self" href="#">{!!$link!!}</a>
 @endforeach

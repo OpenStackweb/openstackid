@@ -32,8 +32,10 @@
             appLogo: '{{  Config::get("app.logo_url") }}',
             formAction: '{{ URL::action("UserController@postLogin") }}',
             accountVerifyAction : '{{URL::action("UserController@getAccount")}}',
+            emitOtpAction : '{{URL::action("UserController@emitOTP")}}',
             authError: authError,
             captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
+            flow: 'password',
             thirdPartyProviders: [
                 @foreach($supported_providers as $provider => $label)
                 {label: "{{$label}}", name:"{{$provider}}"},
@@ -63,9 +65,12 @@
         @if(Session::has('user_verified'))
             config.user_verified = {{Session::get('user_verified')}};
         @endif
+        @if(Session::has('flow'))
+            config.flow = '{{Session::get('flow')}}';
+        @endif
 
         window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
-
+        window.EMIT_OTP_ENDPOINT = config.emitOtpAction;
     </script>
     {!! HTML::script('assets/login.js') !!}
 @append

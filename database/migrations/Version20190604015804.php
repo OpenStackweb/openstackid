@@ -13,6 +13,7 @@
  **/
 use Doctrine\Migrations\AbstractMigration;
 use Doctrine\DBAL\Schema\Schema as Schema;
+use Illuminate\Support\Facades\Log;
 use LaravelDoctrine\Migrations\Schema\Table;
 use LaravelDoctrine\Migrations\Schema\Builder;
 /**
@@ -289,6 +290,9 @@ create table if not exists oauth2_client
 	use_refresh_token tinyint(1) default '0' not null,
 	rotate_refresh_token tinyint(1) default '0' not null,
 	pkce_enabled tinyint(1) default '0' not null,
+	otp_enabled tinyint(1) default '0' not null,
+	otp_length int default '6' not null,
+	otp_lifetime int default '120' not null,
 	resource_server_id bigint unsigned null,
 	website text null,
 	application_type enum('WEB_APPLICATION', 'JS_CLIENT', 'SERVICE', 'NATIVE') default 'WEB_APPLICATION' null,
@@ -679,7 +683,12 @@ SQL;
             foreach (explode(";", $initial_state) as $sql_statement) {
                 $sql_statement = trim($sql_statement);
                 if (empty($sql_statement)) continue;
-                $this->addSql($sql_statement);
+                try {
+                    $this->addSql($sql_statement);
+                }
+                catch (\Exception $ex){
+                    Log::error($ex);
+                }
             }
         }
     }

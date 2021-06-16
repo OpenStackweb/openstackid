@@ -112,7 +112,7 @@
                 <input type="hidden" id="client_id" name="client_id" value="{{$client_id}}"/>
             @endif
         </form>
-        <div class="text-center">Already have an account? <a href="{!! URL::action('UserController@getLogin') !!}">Sign in</a></div>
+        <div class="text-center">Already have an account? <a target="_self" href="{!! URL::action('UserController@getLogin') !!}">Sign in</a></div>
     </div>
 </div>
 @endsection

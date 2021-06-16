@@ -29,7 +29,7 @@
                         <input  type="hidden" name="client_id" id="client_id" value="{!!$client_id!!}"/>
                         <div class="form-group">
                             {!! Form::submit('Yes ',array('id'=>'login','class'=>'btn active btn-primary')) !!}
-                            <a class="btn btn-danger active" href="{!! URL::action('OAuth2\OAuth2ProviderController@cancelLogout') !!}">No</a>
+                            <a target="_self" class="btn btn-danger active" href="{!! URL::action('OAuth2\OAuth2ProviderController@cancelLogout') !!}">No</a>
                         </div>
                     </fieldset>
                 {!! Form::close() !!}

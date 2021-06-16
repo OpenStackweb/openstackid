@@ -10,7 +10,7 @@
 
 @section('content')
 @include('menu')
-<a href="{!! URL::action("AdminController@listResourceServers") !!}">Go Back</a>
+<a target="_self" href="{!! URL::action("AdminController@listResourceServers") !!}">Go Back</a>
 <legend>Edit Resource Server - Id {!! $resource_server->id !!}</legend>
 <div class="row">
     <div class="col-md-12">
@@ -63,7 +63,7 @@
                                     <span id="client_secret">{!! $resource_server->getClient()->client_secret !!}</span>
                                 </div>
                                 <div class="col-lg-2">
-                                    {!! HTML::link(URL::action("Api\\ApiResourceServerController@regenerateClientSecret",array("id"=> $resource_server->id)),'Regenerate',array('class'=>'btn regenerate-client-secret btn-xs btn-default active btn-delete','title'=>'Regenerates Client Secret')) !!}
+                                    {!! HTML::link(URL::action("Api\\ApiResourceServerController@regenerateClientSecret",array("id"=> $resource_server->id)),'Regenerate',array('class'=>'btn regenerate-client-secret btn-xs btn-default active btn-delete','title'=>'Regenerates Client Secret', 'target'=>'_self')) !!}
                                 </div>
 
                             </div>
@@ -87,7 +87,7 @@
     <div class="col-md-12">
         <div class="row">
             <div class="col-md-12">
-                {!! HTML::link(URL::action("Api\\ApiController@create"),'Register API',array('class'=>'btn btn-primary active btn-sm add-api','title'=>'Adds a New API')) !!}
+                {!! HTML::link(URL::action("Api\\ApiController@create"),'Register API',array('class'=>'btn btn-primary active btn-sm add-api','title'=>'Adds a New API', 'target'=>'_self')) !!}
             </div>
         </div>
         <div class="row">
@@ -122,8 +122,8 @@
                             </td>
                             <td>
                                 &nbsp;
-                                {!! HTML::link(URL::action("AdminController@editApi",array("id"=>$api->id)),'Edit',array('class'=>'btn btn-default active edit-api','title'=>'Edits a Registered Resource Server API')) !!}
-                                {!! HTML::link(URL::action("Api\\ApiController@delete",array("id"=>$api->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-api','title'=>'Deletes a Registered Resource Server API'))!!}
+                                {!! HTML::link(URL::action("AdminController@editApi",array("id"=>$api->id)),'Edit',array('class'=>'btn btn-default active edit-api','title'=>'Edits a Registered Resource Server API', 'target'=>'_self')) !!}
+                                {!! HTML::link(URL::action("Api\\ApiController@delete",array("id"=>$api->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-api','title'=>'Deletes a Registered Resource Server API', 'target'=>'_self'))!!}
                             </td>
                         </tr>
                     @endforeach

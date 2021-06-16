@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
 * Copyright 2015 OpenStack Foundation
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,6 @@ use Utils\Services\UtilsServiceCatalog;
 use OpenId\Services\OpenIdServiceCatalog;
 use Auth\Repositories\IUserRepository;
 use Auth\IAuthenticationExtensionService;
-use Tests\TestCase;
 use Illuminate\Support\Facades\App;
 /**
  * Class CustomAuthProviderTest

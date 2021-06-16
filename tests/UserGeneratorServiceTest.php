@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use Auth\UserNameGeneratorService;
-use Tests\BrowserKitTestCase;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Auth\User;
 /**

@@ -28,6 +28,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
+use Models\OAuth2\OAuth2OTP;
+use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
+use OAuth2\OAuth2Message;
+use OAuth2\OAuth2Protocol;
 use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Repositories\IClientRepository;
 use OpenId\Services\IUserService;
@@ -170,7 +174,9 @@ final class UserController extends OpenIdController
         $this->security_context_service = $security_context_service;
 
         $this->middleware(function ($request, $next) {
-            Log::debug(sprintf("UserController::middleware"));
+
+            Log::debug(sprintf("UserController::middleware route %s %s", $request->getMethod(), $request->getRequestUri()));
+
             if ($this->openid_memento_service->exists()) {
                 //openid stuff
                 Log::debug(sprintf("UserController::middleware OIDC"));
@@ -232,16 +238,17 @@ final class UserController extends OpenIdController
     /**
      * @return \Illuminate\Http\JsonResponse|mixed
      */
-    public function getAccount(){
+    public function getAccount()
+    {
         try {
             $email = Request::input("email", "");
-            if(empty($email)){
+            if (empty($email)) {
                 throw new ValidationException("empty email.");
             }
 
             $user = $this->auth_service->getUserByUsername($email);
 
-            if(is_null($user))
+            if (is_null($user))
                 throw new EntityNotFoundException();
 
             return $this->ok(
@@ -250,16 +257,83 @@ final class UserController extends OpenIdController
                     'full_name' => $user->getFullName()
                 ]
             );
-        }
-        catch (ValidationException $ex){
+        } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412($ex->getMessages());
-        }
-        catch (EntityNotFoundException $ex){
+        } catch (EntityNotFoundException $ex) {
             Log::warning($ex);
             return $this->error404();
+        } catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
         }
-        catch (Exception $ex){
+    }
+
+    /**
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function emitOTP()
+    {
+        try {
+
+            $username = Request::input("username", "");
+            $connection = Request::input("connection", "");
+            $send = Request::input("send", "");
+
+            if (empty($username)) {
+                throw new ValidationException("empty username.");
+            }
+
+            if (empty($connection)) {
+                throw new ValidationException("empty username.");
+            }
+
+            if (empty($send)) {
+                throw new ValidationException("empty username.");
+            }
+
+            $client = null;
+
+            // check if we have a former oauth2 request
+            if ($this->oauth2_memento_service->exists()) {
+
+                Log::debug("UserController::getOTP exist a oauth auth request on session");
+
+                $oauth_auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build
+                (
+                    OAuth2Message::buildFromMemento($this->oauth2_memento_service->load())
+                );
+
+                if ($oauth_auth_request->isValid()) {
+
+                    $client_id = $oauth_auth_request->getClientId();
+
+                    $client = $this->client_repository->getClientById($client_id);
+                    if (is_null($client))
+                        throw new ValidationException("client does not exists");
+
+                    $this->oauth2_memento_service->serialize($oauth_auth_request->getMessage()->createMemento());
+                }
+            }
+
+            $otp = $this->token_service->createOTPFromPayload([
+                OAuth2Protocol::OAuth2PasswordlessConnection => $connection,
+                OAuth2Protocol::OAuth2PasswordlessSend => $send,
+                OAuth2Protocol::OAuth2PasswordlessEmail => ($connection == OAuth2Protocol::OAuth2PasswordlessConnectionEmail) ? $username : null,
+                OAuth2Protocol::OAuth2PasswordlessPhoneNumber => ($connection == OAuth2Protocol::OAuth2PasswordlessConnectionSMS) ? $username : null
+            ], $client);
+
+            return $this->created([
+                'otp_length' => $otp->getLength(),
+                'otp_lifetime' => $otp->getLifetime(),
+            ]);
+        } catch (ValidationException $ex) {
+            Log::warning($ex);
+            return $this->error412($ex->getMessages());
+        } catch (EntityNotFoundException $ex) {
+            Log::warning($ex);
+            return $this->error404();
+        } catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }
@@ -271,6 +345,7 @@ final class UserController extends OpenIdController
         $login_attempts                    = 0;
         $username                          = '';
         $user = null;
+
         try
         {
 
@@ -279,7 +354,7 @@ final class UserController extends OpenIdController
             if (isset($data['username']))
                 $data['username'] = trim($data['username']);
 
-            if(isset($data['password']))
+            if (isset($data['password']))
                 $data['password'] = trim($data['password']);
 
             $login_attempts = intval(Request::input('login_attempts'));
@@ -287,52 +362,90 @@ final class UserController extends OpenIdController
             $rules = [
                 'username' => 'required|email',
                 'password' => 'required',
+                'flow' => 'required|in:otp,password',
+                'connection' => 'sometimes|string|in:sms,email',
             ];
 
-            if ($login_attempts >= $max_login_attempts_2_show_captcha)
-            {
+            if ($login_attempts >= $max_login_attempts_2_show_captcha) {
                 $rules['g-recaptcha-response'] = 'required|recaptcha';
             }
             // Create a new validator instance.
             $validator = Validator::make($data, $rules);
 
             if ($validator->passes()) {
+
                 $username = $data['username'];
                 $password = $data['password'];
+                $flow     = $data['flow'];
                 $remember = Request::input("remember");
                 $remember = !is_null($remember);
+                $connection = $data['connection'] ?? null;
 
-                if ($this->auth_service->login($username, $password, $remember))
-                {
-                    return $this->login_strategy->postLogin();
+                try {
+                    if ($flow == "password" && $this->auth_service->login($username, $password, $remember)) {
+                        return $this->login_strategy->postLogin();
+                    }
+
+                    if ($flow == "otp") {
+
+                        $client = null;
+
+                        // check if we have a former oauth2 request
+                        if ($this->oauth2_memento_service->exists()) {
+
+                            Log::debug("UserController::getOTP exist a oauth auth request on session");
+
+                            $oauth_auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build
+                            (
+                                OAuth2Message::buildFromMemento($this->oauth2_memento_service->load())
+                            );
+
+                            if ($oauth_auth_request->isValid()) {
+
+                                $client_id = $oauth_auth_request->getClientId();
+
+                                $client = $this->client_repository->getClientById($client_id);
+                                if (is_null($client))
+                                    throw new ValidationException("client does not exists");
+
+                                $this->oauth2_memento_service->serialize($oauth_auth_request->getMessage()->createMemento());
+                            }
+                        }
+
+                        $otpClaim = OAuth2OTP::fromParams($username, $connection, $password);
+                        $this->auth_service->loginWithOTP($otpClaim, $client);
+                        return $this->login_strategy->postLogin();
+                    }
+                } catch (AuthenticationException $ex) {
+                    // failed login attempt...
+
+                    $user = $this->auth_service->getUserByUsername($username);
+                    if (!is_null($user)) {
+                        $login_attempts = $user->getLoginFailedAttempt();
+                    }
+
+                    return $this->login_strategy->errorLogin
+                    (
+                        [
+                            'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                            'login_attempts' => $login_attempts,
+                            'error_message' => $ex->getMessage(),
+                            'user_fullname' => !is_null($user) ? $user->getFullName() : "",
+                            'user_pic' => !is_null($user) ? $user->getPic(): "",
+                            'user_verified' => true,
+                            'username' => $username,
+                            'flow' => $flow
+                        ]
+                    );
                 }
 
-                //failed login attempt...
-                $user = $this->auth_service->getUserByUsername($username);
-
-                if (!is_null($user)) {
-                    $login_attempts = $user->getLoginFailedAttempt();
-                }
-
-                return $this->login_strategy->errorLogin
-                (
-                    [
-                        'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                        'login_attempts'                    => $login_attempts,
-                        'error_message'                     => "We are sorry, your username or password does not match an existing record.",
-                        'user_fullname'                     => $user->getFullName(),
-                        'user_pic'                          => $user->getPic(),
-                        'user_verified'                     => true,
-                        'username'                          => $username,
-                    ]
-                );
             }
 
             // validator errors
             $response_data =    [
                 'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
                 'login_attempts'                    => $login_attempts,
-                'validator'                         => $validator
+                'validator'                         => $validator,
             ];
 
             if(!is_null($user)){
@@ -376,9 +489,14 @@ final class UserController extends OpenIdController
         }
     }
 
+    /**
+     * @return \Illuminate\Http\Response|mixed
+     */
     public function getConsent()
     {
         if (is_null($this->consent_strategy)) {
+
+            Log::error(sprintf("UserController::getConsent consent strategy is null. request %s %s", Request::method(), Request::path()));
             return Response::view
             (
                 'errors.400',
@@ -389,10 +507,12 @@ final class UserController extends OpenIdController
                 400
             );
         }
-
         return $this->consent_strategy->getConsent();
     }
 
+    /**
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|mixed
+     */
     public function postConsent()
     {
         try {
@@ -405,7 +525,9 @@ final class UserController extends OpenIdController
             $validator = Validator::make($data, $rules);
             if ($validator->passes()) {
                 if (is_null($this->consent_strategy)) {
-                    Log::warning(sprintf("UserController::postConsent consent strategy is null"));
+
+                    Log::error(sprintf("UserController::postConsent consent strategy is null. request %s %s", Request::method(), Request::path()));
+
                     return Response::view
                     (
                         'errors.400',
@@ -463,7 +585,6 @@ final class UserController extends OpenIdController
             $pic_url = str_contains($pic_url, 'http') ? $pic_url : $assets_url . $pic_url;
 
             $params = [
-
                 'show_fullname' => $user->getShowProfileFullName(),
                 'username' => $user->getFullName(),
                 'show_email' => $user->getShowProfileEmail(),

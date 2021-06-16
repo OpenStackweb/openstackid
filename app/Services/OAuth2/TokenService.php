@@ -14,7 +14,13 @@
 
 use App\Http\Utils\IUserIPHelperProvider;
 use App\libs\Auth\Models\IGroupSlugs;
+use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
+use App\Models\OAuth2\Factories\OTPFactory;
 use App\Services\AbstractService;
+use App\Services\Auth\IUserService;
+use App\Strategies\OTP\OTPChannelStrategyFactory;
+use App\Strategies\OTP\OTPTypeBuilderStrategyFactory;
+use Auth\Exceptions\AuthenticationException;
 use Auth\User;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -23,6 +29,9 @@ use jwt\IBasicJWT;
 use jwt\impl\JWTClaimSet;
 use jwt\JWTClaim;
 use models\exceptions\ValidationException;
+use Models\OAuth2\Client;
+use Models\OAuth2\OAuth2OTP;
+use OAuth2\Exceptions\InvalidOTPException;
 use OAuth2\Models\AccessToken;
 use Models\OAuth2\AccessToken as AccessTokenDB;
 use Models\OAuth2\RefreshToken as RefreshTokenDB;
@@ -48,6 +57,7 @@ use OAuth2\Repositories\IRefreshTokenRepository;
 use OAuth2\Repositories\IResourceServerRepository;
 use OAuth2\Requests\OAuth2AuthenticationRequest;
 use OAuth2\Requests\OAuth2AuthorizationRequest;
+use OAuth2\Requests\OAuth2PasswordlessAuthenticationRequest;
 use OAuth2\Services\IApiScopeService;
 use OAuth2\Services\ITokenService;
 use OAuth2\OAuth2Protocol;
@@ -66,7 +76,7 @@ use Utils\Exceptions\UnacquiredLockException;
 use utils\json_types\JsonValue;
 use utils\json_types\NumericDate;
 use utils\json_types\StringOrURI;
-use Utils\Model\Identifier;
+use Utils\Model\AbstractIdentifier;
 use Utils\Services\IAuthService;
 use Utils\Services\ICacheService;
 use Utils\Services\IdentifierGenerator;
@@ -101,6 +111,10 @@ final class TokenService extends AbstractService implements ITokenService
      */
     private $client_service;
     /**
+     * @var IUserService
+     */
+    private $user_service;
+    /**
      * @var ILockManagerService
      */
     private $lock_manager_service;
@@ -123,15 +137,7 @@ final class TokenService extends AbstractService implements ITokenService
     /**
      * @var IdentifierGenerator
      */
-    private $auth_code_generator;
-    /**
-     * @var IdentifierGenerator
-     */
-    private $access_token_generator;
-    /**
-     * @var IdentifierGenerator
-     */
-    private $refresh_token_generator;
+    private $identifier_generator;
 
     /**
      * @var IServerPrivateKeyRepository
@@ -187,6 +193,34 @@ final class TokenService extends AbstractService implements ITokenService
      */
     private $ip_helper;
 
+    /**
+     * @var IOAuth2OTPRepository
+     */
+    private $otp_repository;
+
+    /**
+     * TokenService constructor.
+     * @param IClientService $client_service
+     * @param ILockManagerService $lock_manager_service
+     * @param IServerConfigurationService $configuration_service
+     * @param ICacheService $cache_service
+     * @param IAuthService $auth_service
+     * @param IUserConsentService $user_consent_service
+     * @param IdentifierGenerator $identifier_generator
+     * @param IServerPrivateKeyRepository $server_private_key_repository
+     * @param IClientJWKSetReader $jwk_set_reader_service
+     * @param ISecurityContextService $security_context_service
+     * @param IPrincipalService $principal_service
+     * @param IdTokenBuilder $id_token_builder
+     * @param IClientRepository $client_repository
+     * @param IAccessTokenRepository $access_token_repository
+     * @param IRefreshTokenRepository $refresh_token_repository
+     * @param IResourceServerRepository $resource_server_repository
+     * @param IUserIPHelperProvider $ip_helper
+     * @param IApiScopeService $scope_service
+     * @param IUserService $user_service
+     * @param ITransactionService $tx_service
+     */
     public function __construct
     (
         IClientService $client_service,
@@ -195,9 +229,7 @@ final class TokenService extends AbstractService implements ITokenService
         ICacheService $cache_service,
         IAuthService $auth_service,
         IUserConsentService $user_consent_service,
-        IdentifierGenerator $auth_code_generator,
-        IdentifierGenerator $access_token_generator,
-        IdentifierGenerator $refresh_token_generator,
+        IdentifierGenerator $identifier_generator,
         IServerPrivateKeyRepository $server_private_key_repository,
         IClientJWKSetReader $jwk_set_reader_service,
         ISecurityContextService $security_context_service,
@@ -207,8 +239,10 @@ final class TokenService extends AbstractService implements ITokenService
         IAccessTokenRepository $access_token_repository,
         IRefreshTokenRepository $refresh_token_repository,
         IResourceServerRepository $resource_server_repository,
+        IOAuth2OTPRepository $otp_repository,
         IUserIPHelperProvider $ip_helper,
         IApiScopeService $scope_service,
+        IUserService $user_service,
         ITransactionService $tx_service
     )
     {
@@ -220,9 +254,7 @@ final class TokenService extends AbstractService implements ITokenService
         $this->cache_service = $cache_service;
         $this->auth_service = $auth_service;
         $this->user_consent_service = $user_consent_service;
-        $this->auth_code_generator = $auth_code_generator;
-        $this->access_token_generator = $access_token_generator;
-        $this->refresh_token_generator = $refresh_token_generator;
+        $this->identifier_generator = $identifier_generator;
         $this->server_private_key_repository = $server_private_key_repository;
         $this->jwk_set_reader_service = $jwk_set_reader_service;
         $this->security_context_service = $security_context_service;
@@ -234,6 +266,8 @@ final class TokenService extends AbstractService implements ITokenService
         $this->resource_server_repository = $resource_server_repository;
         $this->ip_helper = $ip_helper;
         $this->scope_service = $scope_service;
+        $this->user_service = $user_service;
+        $this->otp_repository = $otp_repository;
 
         Event::listen('oauth2.client.delete', function ($client_id) {
             $this->revokeClientRelatedTokens($client_id);
@@ -248,13 +282,13 @@ final class TokenService extends AbstractService implements ITokenService
      * Creates a brand new authorization code
      * @param OAuth2AuthorizationRequest $request
      * @param bool $has_previous_user_consent
-     * @return Identifier
+     * @return AbstractIdentifier
      */
     public function createAuthorizationCode
     (
         OAuth2AuthorizationRequest $request,
         bool $has_previous_user_consent = false
-    ): Identifier
+    ): AbstractIdentifier
     {
 
         $user = $this->auth_service->getCurrentUser();
@@ -276,7 +310,7 @@ final class TokenService extends AbstractService implements ITokenService
             $prompt = $request->getPrompt(true);
         }
 
-        $code = $this->auth_code_generator->generate
+        $code = $this->identifier_generator->generate
         (
             AuthorizationCode::create
             (
@@ -354,7 +388,7 @@ final class TokenService extends AbstractService implements ITokenService
     public function createAccessToken(AuthorizationCode $auth_code, $redirect_uri = null)
     {
 
-        $access_token = $this->access_token_generator->generate
+        $access_token = $this->identifier_generator->generate
         (
             AccessToken::create
             (
@@ -462,7 +496,7 @@ final class TokenService extends AbstractService implements ITokenService
     public function createAccessTokenFromParams($client_id, $scope, $audience, $user_id = null)
     {
 
-        $access_token = $this->access_token_generator->generate(AccessToken::createFromParams
+        $access_token = $this->identifier_generator->generate(AccessToken::createFromParams
         (
             $scope,
             $client_id,
@@ -559,7 +593,7 @@ final class TokenService extends AbstractService implements ITokenService
             }
 
             //create new access token
-            $access_token = $this->access_token_generator->generate
+            $access_token = $this->identifier_generator->generate
             (
                 AccessToken::createFromRefreshToken
                 (
@@ -830,7 +864,7 @@ final class TokenService extends AbstractService implements ITokenService
      */
     public function createRefreshToken(AccessToken &$access_token, $refresh_cache = false)
     {
-        $refresh_token = $this->refresh_token_generator->generate(
+        $refresh_token = $this->identifier_generator->generate(
             RefreshToken::create(
                 $access_token,
                 $this->configuration_service->getConfigValue('OAuth2.RefreshToken.Lifetime')
@@ -1485,4 +1519,146 @@ final class TokenService extends AbstractService implements ITokenService
         return $this->getAccessToken($db_access_token->getValue(), true);
     }
 
+    private function postCreateOTP(OAuth2OTP $otp,?Client $client):OAuth2OTP{
+        if(!is_null($client)){
+            // invalidate not redeemed former ones
+            $codes = $otp->getConnection() == OAuth2Protocol::OAuth2PasswordlessConnectionEmail ?
+                $client->getOTPGrantsByEmailNotRedeemed($otp->getUserName()):
+                $client->getOTPGrantsByPhoneNumberNotRedeemed($otp->getUserName());
+            foreach ($codes as $code){
+                if($code->getValue() == $otp->getValue()) continue;
+                $client->removeOTPGrant($code);
+            }
+        }
+        // create channel and value to send ( depending on connection and send params )
+        OTPChannelStrategyFactory::build($otp->getConnection())->send
+        (
+            OTPTypeBuilderStrategyFactory::build($otp->getSend()),
+            $otp
+        );
+        return $otp;
+    }
+    /**
+     * @param OAuth2PasswordlessAuthenticationRequest $request
+     * @param Client|null $client
+     * @return OAuth2OTP
+     * @throws Exception
+     */
+    public function createOTPFromRequest(OAuth2PasswordlessAuthenticationRequest $request, ?Client $client):OAuth2OTP{
+        return $this->tx_service->transaction(function() use($request, $client){
+
+            return $this->postCreateOTP
+            (
+                OTPFactory::buildFromRequest($request, $this->identifier_generator, $client),
+                $client
+            );
+
+        });
+    }
+
+    /**
+     * @param array $payload
+     * @param Client|null $client
+     * @return OAuth2OTP
+     * @throws Exception
+     */
+    public function createOTPFromPayload(array $payload, ?Client $client):OAuth2OTP{
+        return $this->tx_service->transaction(function() use($payload, $client){
+
+            $otp = $this->postCreateOTP
+            (
+                OTPFactory::buildFromPayload($payload, $this->identifier_generator, $client),
+                $client
+            );
+            if(is_null($client)){
+                foreach($this->otp_repository->getByUserNameNotRedeemed($otp->getUserName()) as $formerOTP){
+                    $this->otp_repository->delete($formerOTP);
+                }
+                $this->otp_repository->add($otp);
+            }
+            return $otp;
+        });
+    }
+
+
+    /**
+     * @param OAuth2OTP $otp
+     * @param Client|null $client
+     * @return AccessToken
+     * @throws Exception
+     */
+    public function createAccessTokenFromOTP(OAuth2OTP &$otp, ?Client $client): AccessToken
+    {
+
+        try {
+            $otp = $this->auth_service->loginWithOTP($otp, $client);
+            // build current audience ...
+            $audience = $this->scope_service->getStrAudienceByScopeNames
+            (
+                explode
+                (
+                    OAuth2Protocol::OAuth2Protocol_Scope_Delimiter,
+                    $otp->getScope()
+                )
+            );
+
+            $access_token = $this->identifier_generator->generate
+            (
+                AccessToken::createFromOTP
+                (
+                    $otp,
+                    ! is_null($client) ? $client->getClientId() : null,
+                    $audience,
+                    $this->configuration_service->getConfigValue('OAuth2.AccessToken.Lifetime')
+                )
+            );
+
+            return $this->tx_service->transaction(function() use($access_token, $client){
+                // TODO; move to a factory
+                $value = $access_token->getValue();
+                $hashed_value = Hash::compute('sha256', $value);
+
+                $access_token_db = new AccessTokenDB();
+                $access_token_db->setValue($hashed_value);
+                $access_token_db->setFromIp($this->ip_helper->getCurrentUserIpAddress());
+                $access_token_db->setLifetime($access_token->getLifetime());
+                $access_token_db->setScope($access_token->getScope());
+                $access_token_db->setAudience($access_token->getAudience());
+                $access_token_db->setClient($client);
+                $access_token_db->setOwner($this->auth_service->getCurrentUser());
+
+                $this->access_token_repository->add($access_token_db);
+
+                //check if use refresh tokens...
+
+                if
+                (
+                    $client->useRefreshToken() &&
+                    $client->isPasswordlessEnabled() &&
+                    str_contains($access_token->getScope(), OAuth2Protocol::OfflineAccess_Scope)
+                ) {
+                    Log::debug('TokenService::createAccessTokenFromOTP creating refresh token ...');
+                    $this->createRefreshToken($access_token);
+                }
+
+                $this->storesAccessTokenOnCache($access_token);
+                // stores brand new access token hash value on a set by client id...
+                {
+                    if (!is_null($client))
+                        $this->cache_service->addMemberSet($client->getClientId() . TokenService::ClientAccessTokenPrefixList, $hashed_value);
+
+                    $this->cache_service->incCounter
+                    (
+                        $client->getClientId() . TokenService::ClientAccessTokensQty,
+                        TokenService::ClientAccessTokensQtyLifetime
+                    );
+                }
+
+                return $access_token;
+            });
+        }
+        catch (AuthenticationException $ex){
+            throw new InvalidOTPException($ex->getMessage());
+        }
+    }
 }

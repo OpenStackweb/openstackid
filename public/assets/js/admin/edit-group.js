@@ -1,6 +1,6 @@
 // constructor
 function GroupMembersCrud(urls, perPage) {
-    var actions = '<a class="btn btn-default btn-md active delete-item">Remove</a>';
+    var actions = '<a target="_self" class="btn btn-default btn-md active delete-item">Remove</a>';
     this.urls = urls;
     var _this = this;
     var templatePage = $('<tbody><tr>' +

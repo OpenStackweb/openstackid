@@ -42,7 +42,7 @@ final class ClientPKCEAuthContextValidator implements IClientAuthContextValidato
             throw new InvalidClientAuthenticationContextException('client not set!');
 
         if ($client->getTokenEndpointAuthInfo()->getAuthenticationMethod() !== $context->getAuthType())
-            throw new InvalidClientCredentials(sprintf('invalid token endpoint auth method %s', $context->getAuthType()));
+            throw new InvalidClientCredentials(sprintf('invalid token endpoint auth method %s (%s)', $context->getAuthType(), $client->getTokenEndpointAuthInfo()->getAuthenticationMethod()));
 
         if ($client->getClientType() !== IClient::ClientType_Public)
             throw new InvalidClientCredentials(sprintf('invalid client type %s', $client->getClientType()));
@@ -51,6 +51,6 @@ final class ClientPKCEAuthContextValidator implements IClientAuthContextValidato
 
         Log::debug(sprintf("ClientPKCEAuthContextValidator::validate client id %s - provide client id %s", $client->getClientId(), $providedClientId));
 
-        return $client->getClientId() === $providedClientId && $client->isPKCEEnabled();
+        return $client->getClientId() === $providedClientId && ( $client->isPKCEEnabled() || $client->isPasswordlessEnabled());
     }
 }

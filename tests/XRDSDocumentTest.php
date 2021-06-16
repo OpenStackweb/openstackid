@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,6 @@
  **/
 use OpenId\Xrds\XRDSDocumentBuilder;
 use OpenId\Xrds\XRDSService;
-use Tests\BrowserKitTestCase;
 /**
  * Class XRDSDocumentTest
  */

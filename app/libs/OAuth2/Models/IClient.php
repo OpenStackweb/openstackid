@@ -324,4 +324,9 @@ interface IClient extends IEntity
      * @return bool
      */
     public function isPKCEEnabled():bool;
+
+    /**
+     * @return bool
+     */
+    public function isPasswordlessEnabled():bool;
 }

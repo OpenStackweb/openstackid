@@ -385,7 +385,7 @@ class AdminController extends Controller {
         if(is_null($endpoint)) return Response::view('errors.404', [], 404);
         $user   = $this->auth_service->getCurrentUser();
         $selected_scopes = [];
-        $list = $endpoint->getScopes();
+        $list = $endpoint->getScope();
         foreach($list as $selected_scope){
             $selected_scopes[] = $selected_scope->getId();
         }

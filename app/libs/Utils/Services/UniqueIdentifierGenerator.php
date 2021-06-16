@@ -17,7 +17,7 @@ use Zend\Crypt\Hash;
  * Class UniqueIdentifierGenerator
  * @package Utils\Services
  */
-abstract class UniqueIdentifierGenerator implements IdentifierGenerator
+class UniqueIdentifierGenerator implements IdentifierGenerator
 {
 
     /**
@@ -37,20 +37,13 @@ abstract class UniqueIdentifierGenerator implements IdentifierGenerator
      * @param Identifier $identifier
      * @return Identifier
      */
-    public function generate(Identifier $identifier){
-
+    public function generate(Identifier $identifier):Identifier{
         do
         {
-            $key = sprintf("%s.%s", $identifier->getType(), Hash::compute('sha256', $this->_generate($identifier)->getValue()));
+            $key = sprintf("%s.%s", $identifier->getType(), Hash::compute('sha256', $identifier->generateValue()));
         }
         while(!$this->cache_service->addSingleValue($key, $key));
         return $identifier;
     }
-
-    /**
-     * @param Identifier $identifier
-     * @return Identifier
-     */
-    abstract protected function _generate(Identifier $identifier);
 
 }

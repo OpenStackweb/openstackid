@@ -10,7 +10,7 @@ function loadApis(){
             if(items.length > 0){
                 $('#info-apis').hide();
                 $('#table-apis').show();
-                var template = $('<tbody><tr><td class="image"><img height="24" width="24"/></td><td width="60%" class="name"></td><td><input type="checkbox" class="api-active-checkbox"></td><td>&nbsp;<a class="btn btn-default active edit-api" title="Edits a Registered Resource Server API">Edit</a>&nbsp;<a class="btn btn-default btn-delete active delete-api" title="Deletes a Registered Resource Server API">Delete</a></td></tr></tbody>');
+                var template = $('<tbody><tr><td class="image"><img height="24" width="24"/></td><td width="60%" class="name"></td><td><input type="checkbox" class="api-active-checkbox"></td><td>&nbsp;<a target="_self" class="btn btn-default active edit-api" title="Edits a Registered Resource Server API">Edit</a>&nbsp;<a target="_self" class="btn btn-default btn-delete active delete-api" title="Deletes a Registered Resource Server API">Delete</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
                         'api<-context':{

@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,7 @@ use OpenId\Helpers\AssociationFactory;
 use OpenId\OpenIdProtocol;
 use Utils\Services\UtilsServiceCatalog;
 use Utils\Exceptions\UnacquiredLockException;
-use Tests\BrowserKitTestCase;
+use Mockery;
 /**
  * Class AssociationServiceTest
  */

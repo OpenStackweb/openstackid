@@ -6,7 +6,7 @@
 
 @section('content')
     @include('menu')
-    <a href="{!! URL::action("AdminController@listApiScopeGroups") !!}">Go Back</a>
+    <a target="_self" href="{!! URL::action("AdminController@listApiScopeGroups") !!}">Go Back</a>
     <legend>Edit Api Scope Group - Id {!! $group->id !!}</legend>
     <div class="row">
         <div class="col-md-12">

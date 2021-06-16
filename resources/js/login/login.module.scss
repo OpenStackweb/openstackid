@@ -8,14 +8,25 @@ $base-color:#3fa2f7;
   color: $base-color;
 }
 
+
+.error_label{
+  color: red;
+}
+
+p > a {
+  text-decoration: underline !important;
+}
+
 .inner_container {
     display: flex;
     margin-top: 64px;
     padding-bottom: 20%;
     flex-direction: column;
+    h1.app_logo_container {
+      text-align: center;
+    }
     .app_logo{
       max-width: 40%;
-      float: right;
       margin-bottom: 15%;
     }
     .continue_btn{
@@ -71,4 +82,9 @@ $base-color:#3fa2f7;
 
 .valid_user_name_chip{
   float: right;
+}
+
+.otp_p {
+  margin: 0;
+  padding: 0;
 }

@@ -14,6 +14,7 @@
 
 use App\libs\Utils\URLUtils;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 use Models\OAuth2\Client;
 use Models\OAuth2\ResourceServer;
 use OAuth2\Models\IClient;
@@ -199,14 +200,32 @@ final class ClientFactory
                 $client->disablePCKE();
         }
 
+        if(isset($payload['otp_enabled'])) {
+            $otp_enabled = boolval($payload['otp_enabled']);
+            if($otp_enabled)
+                $client->enablePasswordless();
+            else
+                $client->disablePasswordless();
+        }
+
+        if(isset($payload['otp_length'])){
+            $client->setOtpLength(intval($payload['otp_length']));
+        }
+
+        if(isset($payload['otp_lifetime'])){
+            $client->setOtpLifetime(intval($payload['otp_lifetime']));
+        }
+
         $scope_repository = App::make(IApiScopeRepository::class);
         //add default scopes
         foreach ($scope_repository->getDefaults() as $default_scope) {
+            Log::debug(sprintf("ClientFactory::populate processing scope %s", $default_scope->getName()));
             if
             (
                 $default_scope->getName() === OAuth2Protocol::OfflineAccess_Scope
                 && !$client->canRequestRefreshTokens()
             ) {
+                Log::debug(sprintf("ClientFactory::populate skipping scope %s", $default_scope->getName()));
                 continue;
             }
             $client->addScope($default_scope);

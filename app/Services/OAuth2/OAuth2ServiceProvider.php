@@ -13,13 +13,13 @@
  **/
 
 use App\Http\Utils\IUserIPHelperProvider;
+use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
+use App\Services\Auth\IUserService;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
-use OAuth2\Services\AccessTokenGenerator;
-use OAuth2\Services\AuthorizationCodeGenerator;
 use OAuth2\Services\IApiScopeService;
 use OAuth2\Services\OAuth2ServiceCatalog;
-use OAuth2\Services\RefreshTokenGenerator;
+use Utils\Services\IdentifierGenerator;
 use Utils\Services\UtilsServiceCatalog;
 use Illuminate\Support\Facades\App;
 /**
@@ -70,9 +70,7 @@ final class OAuth2ServiceProvider extends ServiceProvider implements DeferrableP
                 App::make(UtilsServiceCatalog::CacheService),
                 App::make(UtilsServiceCatalog::AuthenticationService),
                 App::make(OAuth2ServiceCatalog::UserConsentService),
-                new AuthorizationCodeGenerator(App::make(UtilsServiceCatalog::CacheService)),
-                new AccessTokenGenerator(App::make(UtilsServiceCatalog::CacheService)),
-                new RefreshTokenGenerator(App::make(UtilsServiceCatalog::CacheService)),
+                App::make(IdentifierGenerator::class),
                 App::make(\OAuth2\Repositories\IServerPrivateKeyRepository::class),
                 new HttpIClientJWKSetReader,
                 App::make(OAuth2ServiceCatalog::SecurityContextService),
@@ -82,9 +80,11 @@ final class OAuth2ServiceProvider extends ServiceProvider implements DeferrableP
                 App::make(\OAuth2\Repositories\IAccessTokenRepository::class),
                 App::make(\OAuth2\Repositories\IRefreshTokenRepository::class),
                 App::make(\OAuth2\Repositories\IResourceServerRepository::class),
+                App::make(IOAuth2OTPRepository::class),
                 App::make(IUserIPHelperProvider::class),
                 App::make(IApiScopeService::class),
-                App::make(UtilsServiceCatalog::TransactionService)
+                App::make(IUserService::class),
+                App::make(UtilsServiceCatalog::TransactionService),
             );
         });
 
@@ -95,6 +95,7 @@ final class OAuth2ServiceProvider extends ServiceProvider implements DeferrableP
     public function provides()
     {
         return [
+            IdentifierGenerator::class,
             \OAuth2\IResourceServerContext::class,
             OAuth2ServiceCatalog::ClientCredentialGenerator,
             OAuth2ServiceCatalog::ClientService,

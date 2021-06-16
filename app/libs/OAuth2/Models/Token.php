@@ -15,13 +15,13 @@ use DateInterval;
 use DateTime;
 use DateTimeZone;
 use Utils\IPHelper;
-use Utils\Model\Identifier;
+use Utils\Model\AbstractIdentifier;
 /**
  * Class Token
  * Defines the common behavior for all emitted tokens
  * @package OAuth2\Models
  */
-abstract class Token extends Identifier
+abstract class Token extends AbstractIdentifier
 {
 
     const DefaultByteLength = 32;
@@ -54,6 +54,9 @@ abstract class Token extends Identifier
      * @var bool
      */
     protected $is_hashed;
+    /**
+     * @var
+     */
     protected $user_id;
 
     public function __construct($len = self::DefaultByteLength)
@@ -141,4 +144,5 @@ abstract class Token extends Identifier
 
 
     public abstract function fromJSON($json);
-} 
+
+}

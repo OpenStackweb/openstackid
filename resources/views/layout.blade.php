@@ -23,7 +23,7 @@
     <div class="container">
         <header class="row header">
             <div class="col-md-5">
-                <h1 id="logo"><a href="/">{!! Config::get('app.tenant_name') !!}</a></h1>
+                <h1 id="logo"><a href="/" target="_self" >{!! Config::get('app.tenant_name') !!}</a></h1>
             </div>
             <div class="col-md-7">
                 @yield('header_right')

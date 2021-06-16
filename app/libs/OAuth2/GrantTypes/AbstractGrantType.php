@@ -90,10 +90,10 @@ abstract class AbstractGrantType implements IGrantType
      */
     public function completeFlow(OAuth2Request $request)
     {
-        //get client credentials from request..
+        // get client credentials from request..
         $this->client_auth_context = $this->client_service->getCurrentClientAuthInfo();
 
-        //retrieve client from storage..
+        // retrieve client from storage..
         $this->current_client = $this->client_repository->getClientById($this->client_auth_context->getId());
 
         if (is_null($this->current_client))
