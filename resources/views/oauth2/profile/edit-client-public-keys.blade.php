@@ -10,7 +10,7 @@
                 <h5 style="font-weight: bold">Public keys&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></h5>
             </td>
             <td width="10%">
-                <a href="#" class="btn btn-default btn-sm active add-public-key">Add Public Key</a>
+                <a target="_self" href="#" class="btn btn-default btn-sm active add-public-key">Add Public Key</a>
             </td>
         </tr>
         <tr>
@@ -53,7 +53,7 @@
                 </div>
             </div>
         </td>
-        <td><a class="btn btn-default btn-sm active delete-public-key" href="#" data-public-key-id="{!!$public_key->id!!}">Delete</a></td>
+        <td><a target="_self" class="btn btn-default btn-sm active delete-public-key" href="#" data-public-key-id="{!!$public_key->id!!}">Delete</a></td>
     </tr>
     @endforeach
     </tbody>

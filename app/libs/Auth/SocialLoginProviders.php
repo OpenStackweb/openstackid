@@ -27,7 +27,7 @@ final class SocialLoginProviders
         self::Facebook,
         self::Apple,
         self::LinkedIn,
-        self::Google
+        //self::Google
     ];
 
     /**
@@ -42,11 +42,10 @@ final class SocialLoginProviders
      * @return string[]
      */
     public static function buildSupportedProviders():array{
-        return [
-            self::Facebook => "Facebook",
-            self::Apple => "Apple",
-            self::LinkedIn => "LinkedIn",
-            self::Google => "Google",
-        ];
+        $res = [];
+        foreach(self::ValidProviders as $provider){
+            $res[$provider] = ucfirst($provider);
+        }
+        return $res;
     }
 }

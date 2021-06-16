@@ -15,6 +15,8 @@ use App\Models\Utils\BaseEntity;
 use App\Repositories\IServerConfigurationRepository;
 use App\Services\Utils\DoctrineTransactionService;
 use Illuminate\Contracts\Support\DeferrableProvider;
+use Utils\Services\IdentifierGenerator;
+use Utils\Services\UniqueIdentifierGenerator;
 use Utils\Services\UtilsServiceCatalog;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\App;
@@ -31,6 +33,8 @@ final class UtilsProvider extends ServiceProvider implements DeferrableProvider 
      */
     public function register()
     {
+        App::singleton(IdentifierGenerator::class, UniqueIdentifierGenerator::class);
+
         App::singleton(UtilsServiceCatalog::CacheService, RedisCacheService::class);
 	    App::singleton(UtilsServiceCatalog::TransactionService, function(){
             return new DoctrineTransactionService(BaseEntity::EntityManager);
@@ -55,12 +59,14 @@ final class UtilsProvider extends ServiceProvider implements DeferrableProvider 
             return new ExternalUrlService();
         });
 
+
     }
 
     public function provides()
     {
         return
             [
+                IdentifierGenerator::class,
                 UtilsServiceCatalog::CacheService,
                 UtilsServiceCatalog::TransactionService,
                 UtilsServiceCatalog::LogService,

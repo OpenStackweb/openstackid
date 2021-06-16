@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Config;
 use Models\OpenId\OpenIdTrustedSite;
 use OpenId\Extensions\Implementations\OpenIdSREGExtension_1_0;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Illuminate\Support\Facades\Auth;
 /**
  * Class OpenIdProtocolTest
  * Test Suite for OpenId Protocol

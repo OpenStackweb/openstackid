@@ -22,5 +22,5 @@ interface IdentifierGenerator {
      * @param Identifier $identifier
      * @return Identifier
      */
-    public function generate(Identifier $identifier);
+    public function generate(Identifier $identifier):Identifier;
 }

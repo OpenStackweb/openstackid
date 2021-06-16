@@ -10,11 +10,41 @@
                            id="pkce_enabled">
                     Use PCKE?
                     &nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle"
-                                aria-hidden="true" title="Use Proof Key for Code Exchange instead of a Client Secret ( Public Clients)"></span>
+                                aria-hidden="true" title="Use Proof Key for Code Exchange instead of a Client Secret (Public Clients)"></span>
                 </label>
             </div>
     </div>
     @endif
+    <div class="form-group">
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox"
+                           @if ($client->otp_enabled)
+                           checked
+                           @endif
+                           id="otp_enabled">
+                    Use Passwordless?
+                    &nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle"
+                                aria-hidden="true" title="Use Passwordless Authentication"></span>
+                </label>
+            </div>
+    </div>
+        <div class="form-group hidden otp_controls">
+            <label for="otp_length">OTP Length
+                <span class="glyphicon glyphicon-info-sign accordion-toggle"
+                                                                                aria-hidden="true"
+                                                                                title="One Time Password Length"></span></label>
+            <input type="number" name="otp_length" class="form-control" id="otp_length"
+                   value="{!!$client->otp_length!!}">
+        </div>
+        <div class="form-group hidden otp_controls">
+            <label for="otp_lifetime">OTP LifeTime (Seconds)
+                <span class="glyphicon glyphicon-info-sign accordion-toggle"
+                                                    aria-hidden="true"
+                                                    title="One Time Password span lifetime in seconds"></span></label>
+            <input type="number" name="otp_lifetime" class="form-control" id="otp_lifetime"
+                   value="{!!$client->otp_lifetime!!}">
+        </div>
     <div class="form-group">
         <label for="default_max_age">Default Max. Age (optional)&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle"
         aria-hidden="true"

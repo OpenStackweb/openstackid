@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
 * Copyright 2015 OpenStack Foundation
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +16,9 @@ use jwk\JSONWebKeyPublicKeyUseValues;
 use Models\OAuth2\Client;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
 use LaravelDoctrine\ORM\Facades\EntityManager;
-use Tests\BrowserKitTestCase;
 use Auth\User;
+use Illuminate\Support\Facades\Config;
+use TestKeys;
 /**
  * Class ClientPublicKeyApiTest
  */

@@ -11,6 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use Models\OAuth2\OAuth2OTP;
+use OAuth2\OAuth2Protocol;
+use Zend\Math\Rand;
 /**
  * Class AccessToken
  * @see http://tools.ietf.org/html/rfc6749#section-1.4
@@ -22,6 +25,11 @@ class AccessToken extends Token {
      * @var AuthorizationCode
      */
     private $auth_code;
+
+    /**
+     * @var OAuth2OTP
+     */
+    private $otp;
 
     /**
      * @var RefreshToken
@@ -40,7 +48,7 @@ class AccessToken extends Token {
      * @param int $lifetime
      * @return AccessToken
      */
-    public static function create(AuthorizationCode $auth_code,  $lifetime = 3600){
+    public static function create(AuthorizationCode $auth_code, $lifetime = 3600){
         $instance               = new self();
         $instance->user_id      = $auth_code->getUserId();
         $instance->scope        = $auth_code->getScope();
@@ -48,6 +56,25 @@ class AccessToken extends Token {
         $instance->client_id    = $auth_code->getClientId();
         $instance->auth_code    = $auth_code->getValue();
         $instance->audience     = $auth_code->getAudience();
+        $instance->lifetime     = intval($lifetime);
+        $instance->is_hashed    = false;
+        return $instance;
+    }
+
+    /**
+     * @param OAuth2OTP $otp
+     * @param string $client_id
+     * @param string $audience
+     * @param int $lifetime
+     * @return AccessToken
+     */
+    public static function createFromOTP(OAuth2OTP $otp,string $client_id, string $audience, $lifetime = 3600){
+        $instance               = new self();
+        $instance->otp          = $otp;
+        $instance->scope        = $otp->getScope();
+        // client id (oauth2) not client identifier
+        $instance->client_id    = $client_id;
+        $instance->audience     = $audience;
         $instance->lifetime     = intval($lifetime);
         $instance->is_hashed    = false;
         return $instance;
@@ -130,7 +157,7 @@ class AccessToken extends Token {
     /**
      * @return string
      */
-    public function getType()
+    public function getType():string
     {
         return 'access_token';
     }
@@ -141,5 +168,30 @@ class AccessToken extends Token {
     public function toArray(): array
     {
        return [];
+    }
+
+    /**
+     * @return OAuth2OTP
+     */
+    public function getOtp(): ?OAuth2OTP
+    {
+        return $this->otp;
+    }
+
+    /**
+     * @return int
+     */
+    public function getUserId()
+    {
+        if(!is_null($this->otp)){
+            $this->user_id = $this->otp->getUserId();
+        }
+        return intval($this->user_id);
+    }
+
+    public function generateValue(): string
+    {
+        $this->value = Rand::getString($this->len, OAuth2Protocol::VsChar);
+        return $this->value;
     }
 }

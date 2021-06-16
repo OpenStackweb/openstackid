@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,6 @@ use OpenId\Helpers\AssocHandleGenerator;
 use OpenId\Helpers\OpenIdCryptoHelper;
 use OpenId\Requests\OpenIdDHAssociationSessionRequest;
 use Zend\Crypt\PublicKey\DiffieHellman;
-use Tests\TestCase;
 /**
  * Class DiffieHellmanTest
  */

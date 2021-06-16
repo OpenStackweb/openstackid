@@ -6,7 +6,7 @@
 
 @section('content')
     @include('menu')
-    <a href='{!! URL::action("AdminController@editApi", ["id"=>$endpoint->api_id]) !!}'>Go Back</a>
+    <a target="_self" href='{!! URL::action("AdminController@editApi", ["id"=>$endpoint->api_id]) !!}'>Go Back</a>
     <legend>@lang("messages.edit_endpoint_title", ["id" => $endpoint->id])</legend>
     <div class="row-fluid">
         <div class="span6">

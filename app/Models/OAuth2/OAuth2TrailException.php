@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use App\Models\Utils\BaseEntity;
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOAuth2TrailExceptionRepository")

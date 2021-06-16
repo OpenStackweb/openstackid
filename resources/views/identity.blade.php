@@ -25,7 +25,7 @@
                     <div class="row email-row">
                         <div class="col-md-4">
                             <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
-                            <a href="mailto:{!! $email !!}">{!! $email !!}</a>
+                            <a target="_blank" href="mailto:{!! $email !!}">{!! $email !!}</a>
                         </div>
                     </div>
                 @endif
@@ -38,8 +38,8 @@
         </div>
         <div class="row">
             <div class="col-md-12">
-                <a class="btn btn-default btn-sm active" href="{!! URL::action('UserController@getProfile') !!}">Manage account</a>
-                <a class="btn btn-default btn-sm active" href="{!! URL::action('UserController@logout') !!}">logout</a>
+                <a target="_self" class="btn btn-default btn-sm active" href="{!! URL::action('UserController@getProfile') !!}">Manage account</a>
+                <a target="_self" class="btn btn-default btn-sm active" href="{!! URL::action('UserController@logout') !!}">logout</a>
             </div>
         </div>
         @if( $show_fullname === 0 && $show_email===0 && $show_pic === 0)

@@ -14,16 +14,18 @@
 
 use Auth\User;
 use jwt\IBasicJWT;
+use Models\OAuth2\Client;
+use Models\OAuth2\OAuth2OTP;
 use OAuth2\Exceptions\InvalidAuthorizationCodeException;
 use OAuth2\Exceptions\ReplayAttackException;
 use OAuth2\Models\AuthorizationCode;
 use OAuth2\Models\AccessToken;
 use OAuth2\Models\RefreshToken;
-use OAuth2\OAuth2Protocol;
 use OAuth2\Exceptions\InvalidAccessTokenException;
 use OAuth2\Exceptions\InvalidGrantTypeException;
 use OAuth2\Requests\OAuth2AuthorizationRequest;
-use Utils\Model\Identifier;
+use OAuth2\Requests\OAuth2PasswordlessAuthenticationRequest;
+use Utils\Model\AbstractIdentifier;
 
 /**
  * Interface ITokenService
@@ -37,13 +39,13 @@ interface ITokenService {
      * Creates a brand new authorization code
      * @param OAuth2AuthorizationRequest $request
      * @param bool $has_previous_user_consent
-     * @return Identifier
+     * @return AbstractIdentifier
      */
     public function createAuthorizationCode
     (
         OAuth2AuthorizationRequest $request,
         bool $has_previous_user_consent = false
-    ):Identifier;
+    ):AbstractIdentifier;
 
 
     /**
@@ -157,7 +159,7 @@ interface ITokenService {
      * @param bool $is_hashed
      * @return bool
      */
-    public function clearAccessTokensForRefreshToken($value,$is_hashed = false);
+    public function clearAccessTokensForRefreshToken($value, $is_hashed = false);
 
     /**
      * Mark a given refresh token as void
@@ -192,4 +194,31 @@ interface ITokenService {
         AccessToken $access_token    = null,
         AuthorizationCode $auth_code = null
     );
+
+    /**
+     * @param OAuth2PasswordlessAuthenticationRequest $request
+     * @param Client|null $client
+     * @return OAuth2OTP
+     * @throws \Exception
+     */
+    public function createOTPFromRequest(OAuth2PasswordlessAuthenticationRequest $request, ?Client $client):OAuth2OTP;
+
+    /**
+     * @param array $payload
+     * @param Client|null $client
+     * @return OAuth2OTP
+     * @throws \Exception
+     */
+    public function createOTPFromPayload(array $payload, ?Client $client):OAuth2OTP;
+
+    /**
+     * @param OAuth2OTP $otp
+     * @param Client|null $client
+     * @return AccessToken
+     */
+    public function createAccessTokenFromOTP
+    (
+       OAuth2OTP &$otp,
+        ?Client $client
+    ):AccessToken;
 }

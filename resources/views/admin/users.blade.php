@@ -9,7 +9,7 @@
     <legend>Users</legend>
     <div class="row">
        <div class="col-md-12">
-           {!! HTML::link( null,'Add New User',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add an user']) !!}
+           {!! HTML::link( null,'Add New User',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add an user', 'target'=>'_self']) !!}
        </div>
     </div>
     <div class="row">

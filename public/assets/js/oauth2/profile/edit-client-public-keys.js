@@ -222,7 +222,7 @@
                             '</div>'+
                             '</div>'+
                             '</td>'+
-                            '<td><a class="btn btn-default btn-sm active delete-public-key btn-delete" href="#">Delete</a></td>'+
+                            '<td><a target="_self" class="btn btn-default btn-sm active delete-public-key btn-delete" href="#">Delete</a></td>'+
                             '</tr>'+
                             '</tbody>');
 

@@ -14,6 +14,7 @@
 
 use Utils\IPHelper;
 use OAuth2\OAuth2Protocol;
+use Zend\Math\Rand;
 
 /**
  * Class AuthorizationCode
@@ -313,7 +314,7 @@ class AuthorizationCode extends Token
     /**
      * @return string
      */
-    public function getType()
+    public function getType():string
     {
         return 'auth_code';
     }
@@ -384,4 +385,9 @@ class AuthorizationCode extends Token
         return $this->code_challenge_method;
     }
 
+    public function generateValue(): string
+    {
+        $this->value = Rand::getString($this->len, OAuth2Protocol::VsChar);
+        return $this->value;
+    }
 }

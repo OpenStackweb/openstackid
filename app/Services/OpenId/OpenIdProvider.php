@@ -15,8 +15,8 @@
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
-use OpenId\Services\NonceUniqueIdentifierGenerator;
 use OpenId\Services\OpenIdServiceCatalog;
+use Utils\Services\IdentifierGenerator;
 use Utils\Services\UtilsServiceCatalog;
 /**
  * Class OpenIdProvider
@@ -44,7 +44,7 @@ final class OpenIdProvider extends ServiceProvider implements DeferrableProvider
                 App::make(UtilsServiceCatalog::LockManagerService),
                 App::make(UtilsServiceCatalog::CacheService),
                 App::make(UtilsServiceCatalog::ServerConfigurationService),
-                new NonceUniqueIdentifierGenerator(App::make(UtilsServiceCatalog::CacheService))
+                App::make(IdentifierGenerator::class),
             );
         });
     }

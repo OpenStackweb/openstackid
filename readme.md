@@ -33,6 +33,10 @@ chmod 777 vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serial
 
 Laravel may require some permissions to be configured: folders within storage and vendor require write access by the web server.   
 
+## validate schema
+
+php artisan doctrine:schema:validate
+
 ## create schema
 
 php artisan doctrine:schema:create --sql --em=model > model.sql

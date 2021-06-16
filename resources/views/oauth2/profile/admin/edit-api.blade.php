@@ -6,7 +6,7 @@
 
 @section('content')
 @include('menu')
-<a href='{!! URL::action("AdminController@editResourceServer",array("id"=>$api->resource_server_id)) !!}'>@lang("messages.edit_api_go_back")</a>
+<a target="_self" href='{!! URL::action("AdminController@editResourceServer",array("id"=>$api->resource_server_id)) !!}'>@lang("messages.edit_api_go_back")</a>
 <legend>@lang("messages.edit_api_title", array("id" => $api->id))</legend>
 
 <div class="row">
@@ -54,7 +54,7 @@
         </div>
         <div class="row">
             <div class="col-md-12">
-                {!! HTML::link(URL::action("Api\ApiScopeController@create",null),'Register Scope',array('class'=>'btn active btn-primary add-scope','title'=>'Adds a New API Scope')) !!}
+                {!! HTML::link(URL::action("Api\ApiScopeController@create",null),'Register Scope',array('class'=>'btn active btn-primary add-scope','title'=>'Adds a New API Scope', 'target'=>'_self')) !!}
             </div>
         </div>
         <div class="row">
@@ -96,8 +96,8 @@
                         </td>
                         <td width="15%">
                             &nbsp;
-                            {!! HTML::link(URL::action("AdminController@editScope",array("id"=>$scope->id)),'Edit',array('class'=>'btn btn-default active edit-scope','title'=>'Edits a Registered API Scope')) !!}
-                            {!! HTML::link(URL::action("Api\ApiScopeController@delete",array("id"=>$scope->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-scope','title'=>'Deletes a Registered API Scope'))!!}
+                            {!! HTML::link(URL::action("AdminController@editScope",array("id"=>$scope->id)),'Edit',array('class'=>'btn btn-default active edit-scope','title'=>'Edits a Registered API Scope', 'target'=>'_self')) !!}
+                            {!! HTML::link(URL::action("Api\ApiScopeController@delete",array("id"=>$scope->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-scope','title'=>'Deletes a Registered API Scope', 'target'=>'_self'))!!}
                         </td>
                     </tr>
                     @endforeach
@@ -129,7 +129,7 @@
         </div>
         <div class="row">
             <div class="col-md-12">
-                {!! HTML::link(URL::action("Api\\ApiEndpointController@create",null),'Register Endpoint',array('class'=>'btn active btn-primary add-endpoint','title'=>'Adds a New API Endpoint')) !!}
+                {!! HTML::link(URL::action("Api\\ApiEndpointController@create",null),'Register Endpoint',array('class'=>'btn active btn-primary add-endpoint','title'=>'Adds a New API Endpoint', 'target'=>'_self')) !!}
             </div>
         </div>
         <div class="row">
@@ -159,8 +159,8 @@
                         <td width="5%">{!!$endpoint->http_method!!}</td>
                         <td width="15%">
                             &nbsp;
-                            {!! HTML::link(URL::action("AdminController@editEndpoint",array("id"=>$endpoint->id)),'Edit',array('class'=>'btn btn-default active edit-endpoint','title'=>'Edits a Registered API Endpoint')) !!}
-                            {!! HTML::link(URL::action("Api\ApiEndpointController@delete",array("id"=>$endpoint->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-endpoint','title'=>'Deletes a Registered API Endpoint'))!!}
+                            {!! HTML::link(URL::action("AdminController@editEndpoint",array("id"=>$endpoint->id)),'Edit',array('class'=>'btn btn-default active edit-endpoint','title'=>'Edits a Registered API Endpoint', 'target'=>'_self')) !!}
+                            {!! HTML::link(URL::action("Api\ApiEndpointController@delete",array("id"=>$endpoint->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-endpoint','title'=>'Deletes a Registered API Endpoint', 'target'=>'_self'))!!}
                         </td>
                     </tr>
                     @endforeach

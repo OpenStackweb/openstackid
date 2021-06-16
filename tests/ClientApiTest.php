@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
 * Copyright 2015 OpenStack Foundation
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@ use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class ClientApiTest
  */
-class ClientApiTest extends \Tests\BrowserKitTestCase {
+class ClientApiTest extends BrowserKitTestCase {
 
     private $current_realm;
 

@@ -40,7 +40,9 @@
                 @csrf
                 <h2>{{ __('Email Verification') }}</h2>
                 <div class="form-group">
-                    <input type="email" class="form-control" id="email" name="email"
+                    <input type="email" class="form-control" id="email"
+                           name="email"
+                           value="{{$email}}"
                            placeholder="Email" required="required" autocomplete="username">
                 </div>
                 <div class="form-group">

@@ -1,7 +1,7 @@
 // constructor
 function UsersCrud(urls, perPage) {
-    var actions = '<a class="btn btn-default btn-md active edit-item">Edit</a>' +
-        '&nbsp;<a class="btn btn-default btn-md active delete-item">Delete</a>';
+    var actions = '<a target="_self" class="btn btn-default btn-md active edit-item">Edit</a>' +
+        '&nbsp;<a target="_self" class="btn btn-default btn-md active delete-item">Delete</a>';
     this.urls = urls;
     var _this = this;
     var templatePage = $('<tbody><tr>' +

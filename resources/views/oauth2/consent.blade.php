@@ -12,7 +12,7 @@
     @if(Auth::check())
         <div class="row">
             <div class="col-md-6 col-md-offset-8">
-                Welcome, <a href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->getIdentifier()!!}</a>
+                Welcome, <a target="_self" href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->getIdentifier()!!}</a>
             </div>
         </div>
     @endif

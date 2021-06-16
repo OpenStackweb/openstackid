@@ -1,4 +1,4 @@
-<?php
+<?php namespace Tests;
 /**
  * Copyright 2015 Openstack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,6 @@
  **/
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
-use Tests\BrowserKitTestCase;
 /**
  * Class OpenStackIDBaseTest
  */

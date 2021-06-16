@@ -213,7 +213,7 @@
                             </div>
 
                             <div class="form-group col-xs-10 col-sm-4 col-md-12 col-lg-12">
-                                <a href="#" class="change-password-link">Change Password</a>
+                                <a target="_self" href="#" class="change-password-link">Change Password</a>
                             </div>
                             <div id="password_container">
                                 <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
@@ -299,7 +299,7 @@
                                                 <td width="50%">{!! $site->getRealm() !!}</td>
                                                 <td width="10%">{!! $site->getAuthorizationPolicy()!!}</td>
                                                 <td width="20%">{!! $site->getUITrustedData() !!}</td>
-                                                <td width="10%">{!! HTML::link(URL::action("UserController@deleteTrustedSite",["id"=>$site->getId()]),'Delete',array('class'=>'btn btn-default btn-md active btn-delete del-realm','title'=>'Deletes a decision about a particular trusted site,')) !!}</td>
+                                                <td width="10%">{!! HTML::link(URL::action("UserController@deleteTrustedSite",["id"=>$site->getId()]),'Delete',array('class'=>'btn btn-default btn-md active btn-delete del-realm','title'=>'Deletes a decision about a particular trusted site,', 'target'=>'_self')) !!}</td>
                                             </tr>
                                             @endforeach
                                     </tbody>

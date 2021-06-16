@@ -9,7 +9,7 @@
     <legend>Groups</legend>
     <div class="row">
         <div class="col-md-12">
-            {!! HTML::link( null,'Add New Group',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add a Group']) !!}
+            {!! HTML::link( null,'Add New Group',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add a Group', 'target'=>'_self']) !!}
         </div>
     </div>
     <div class="row">

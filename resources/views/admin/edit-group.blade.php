@@ -8,7 +8,7 @@
     @include('menu')
     <div class="row">
         <div class="col-xs-12">
-            <a href='{!! URL::action("AdminController@listGroups") !!}'><i class="fa fa-chevron-circle-left"></i> Go Back</a>
+            <a target="_self" href='{!! URL::action("AdminController@listGroups") !!}'><i class="fa fa-chevron-circle-left"></i> Go Back</a>
         </div>
     </div>
     <div class="row">

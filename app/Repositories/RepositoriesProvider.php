@@ -21,6 +21,7 @@ use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
 use App\libs\Auth\Repositories\IWhiteListedIPRepository;
+use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use App\libs\OAuth2\Repositories\IOAuth2TrailExceptionRepository;
 use App\Models\Repositories\IDisqusSSOProfileRepository;
 use App\Models\Repositories\IRocketChatSSOProfileRepository;
@@ -44,6 +45,7 @@ use Models\OAuth2\ApiScope;
 use Models\OAuth2\ApiScopeGroup;
 use Models\OAuth2\Client;
 use Models\OAuth2\ClientPublicKey;
+use Models\OAuth2\OAuth2OTP;
 use Models\OAuth2\OAuth2TrailException;
 use Models\OAuth2\RefreshToken;
 use Models\OAuth2\ResourceServer;
@@ -253,6 +255,13 @@ final class RepositoriesProvider extends ServiceProvider implements DeferrablePr
             }
         );
 
+        App::singleton(
+            IOAuth2OTPRepository::class,
+            function () {
+                return EntityManager::getRepository(OAuth2OTP::class);
+            }
+        );
+
     }
 
     public function provides()
@@ -284,6 +293,7 @@ final class RepositoriesProvider extends ServiceProvider implements DeferrablePr
             IDisqusSSOProfileRepository::class,
             IRocketChatSSOProfileRepository::class,
             IStreamChatSSOProfileRepository::class,
+            IOAuth2OTPRepository::class,
         ];
     }
 }

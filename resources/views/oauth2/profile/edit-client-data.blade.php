@@ -36,7 +36,7 @@
                 <div class="col-md-12">
                     <label for="client_secret" class="label-client-secret">Client Secret</label>
                     @if ($client->isOwner(Auth::user()))
-                        {!! HTML::link(URL::action("Api\\ClientApiController@regenerateClientSecret",array("id"=>$client->id)),'Regenerate',array('class'=>'btn btn-default btn-xs active regenerate-client-secret','title'=>'Regenerates Client Secret')) !!}
+                        {!! HTML::link(URL::action("Api\\ClientApiController@regenerateClientSecret",array("id"=>$client->id)),'Regenerate',array('class'=>'btn btn-default btn-xs active regenerate-client-secret','title'=>'Regenerates Client Secret', 'target'=>'_self')) !!}
                     @endif
                     <div id="client_secret" class="input-group">
                          <input type="text" class="form-control input-monospace input-sm"

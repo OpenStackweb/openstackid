@@ -15,8 +15,8 @@ function loadScopes(){
                     '<td width="5%" class="default"><input type="checkbox" class="scope-default-checkbox"></td>' +
                     '<td width="5%" class="system"><input type="checkbox" class="scope-system-checkbox"></td>' +
                     '<td width="15%">&nbsp;' +
-                    '<a class="btn btn btn-default active edit-scope" title="Edits a Registered API Scope">Edit</a>&nbsp;' +
-                    '<a class="btn btn-default btn-delete active delete-scope" title="Deletes a Registered API Scope">Delete</a>' +
+                    '<a target="_self" class="btn btn btn-default active edit-scope" title="Edits a Registered API Scope">Edit</a>&nbsp;' +
+                    '<a target="_self" class="btn btn-default btn-delete active delete-scope" title="Deletes a Registered API Scope">Delete</a>' +
                     '</td></tr></tbody>');
                 var directives = {
                     'tr':{
@@ -97,8 +97,8 @@ function loadEndpoints(){
                     '<td width="45%" class="route"></td>' +
                     '<td width="5%" class="method"></td>' +
                     '<td width="15%">&nbsp;' +
-                    '<a class="btn btn-default active edit-endpoint" title="Edits a Registered API Endpoint">Edit</a>&nbsp;' +
-                    '<a class="btn btn-default btn-delete active  delete-endpoint" title="Deletes a Registered API Endpoint">Delete</a>' +
+                    '<a target="_self" class="btn btn-default active edit-endpoint" title="Edits a Registered API Endpoint">Edit</a>&nbsp;' +
+                    '<a target="_self" class="btn btn-default btn-delete active  delete-endpoint" title="Deletes a Registered API Endpoint">Delete</a>' +
                     '</td></tr></tbody>');
                 var directives = {
                     'tr':{

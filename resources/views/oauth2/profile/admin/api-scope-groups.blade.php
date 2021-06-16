@@ -17,7 +17,7 @@
 
     <div class="row">
         <div class="col-md-12">
-            {!! HTML::link(URL::action("Api\ApiScopeGroupController@create"),'Add Api Scope Group',array('class'=>'btn active btn-primary add-api-scope-group','title'=>'Adds a New Api Scope Group')) !!}
+            {!! HTML::link(URL::action("Api\ApiScopeGroupController@create"),'Add Api Scope Group',array('class'=>'btn active btn-primary add-api-scope-group','title'=>'Adds a New Api Scope Group', 'target'=>'_self')) !!}
         </div>
     </div>
 
@@ -43,8 +43,8 @@
                 </td>
                 <td>
                     &nbsp;
-                    {!! HTML::link(URL::action("AdminController@editApiScopeGroup",array("id"=>$group->id)),'Edit',array('class'=>'btn btn-default active edit-api-scope-group','title'=>'Edit a Registered Api Scope Group')) !!}
-                    {!! HTML::link(URL::action("Api\ApiScopeGroupController@delete",array("id"=>$group->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-api-scope-group','title'=>'Deletes a Registered Api Scope Group')) !!}
+                    {!! HTML::link(URL::action("AdminController@editApiScopeGroup",array("id"=>$group->id)),'Edit',array('class'=>'btn btn-default active edit-api-scope-group','title'=>'Edit a Registered Api Scope Group', 'target '=>'_self')) !!}
+                    {!! HTML::link(URL::action("Api\ApiScopeGroupController@delete",array("id"=>$group->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-api-scope-group','title'=>'Deletes a Registered Api Scope Group', 'target'=>'_self')) !!}
                 </td>
             </tr>
         @endforeach

@@ -15,6 +15,7 @@
 use App\libs\Utils\URLUtils;
 use Auth\User;
 use Doctrine\Common\Collections\Criteria;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use jwa\cryptographic_algorithms\ContentEncryptionAlgorithms_Registry;
 use jwa\cryptographic_algorithms\DigitalSignatures_MACs_Registry;
@@ -89,6 +90,24 @@ class Client extends BaseEntity implements IClient
      * @var bool
      */
     private $pkce_enabled;
+
+    /**
+     * @ORM\Column(name="otp_enabled", type="boolean")
+     * @var bool
+     */
+    private $otp_enabled;
+
+    /**
+     * @ORM\Column(name="otp_length", type="integer")
+     * @var int
+     */
+    private $otp_length;
+
+    /**
+     * @ORM\Column(name="otp_lifetime", type="integer")
+     * @var int
+     */
+    private $otp_lifetime;
 
     /**
      * @ORM\Column(name="locked", type="boolean")
@@ -343,13 +362,13 @@ class Client extends BaseEntity implements IClient
     private $admin_users;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\RefreshToken", mappedBy="client", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\RefreshToken", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true)
      * @var ArrayCollection
      */
     private $refresh_tokens;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="client", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true)
      * @var ArrayCollection
      */
     private $access_tokens;
@@ -365,6 +384,12 @@ class Client extends BaseEntity implements IClient
     private $scopes;
 
     /**
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\OAuth2OTP", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true)
+     * @var ArrayCollection
+     */
+    private $otp_grants;
+
+    /**
      * Client constructor.
      */
     public function __construct()
@@ -374,6 +399,7 @@ class Client extends BaseEntity implements IClient
         $this->access_tokens = new ArrayCollection();
         $this->refresh_tokens = new ArrayCollection();
         $this->admin_users = new ArrayCollection();
+        $this->otp_grants = new ArrayCollection();
         $this->scopes = new ArrayCollection();
         $this->locked = false;
         $this->active = false;
@@ -399,6 +425,9 @@ class Client extends BaseEntity implements IClient
         $this->max_refresh_token_issuance_basis = 0;
         $this->max_refresh_token_issuance_qty = 0;
         $this->pkce_enabled = false;
+        $this->otp_enabled = false;
+        $this->otp_lifetime = intval(Config::get("otp.lifetime"));
+        $this->otp_length = intval(Config::get("otp.length"));
     }
 
     public static  $valid_app_types = [
@@ -443,7 +472,9 @@ class Client extends BaseEntity implements IClient
             $this->getApplicationType() == IClient::ApplicationType_Native ||
             $this->getApplicationType() == IClient::ApplicationType_Web_App ||
             // PCKE
-            $this->pkce_enabled;
+            $this->pkce_enabled ||
+            // Passwordless
+            $this->otp_enabled;
     }
 
     /**
@@ -1603,4 +1634,107 @@ class Client extends BaseEntity implements IClient
         }
         $this->pkce_enabled = false;
     }
+
+    /**
+     * @return bool
+     */
+    public function isPasswordlessEnabled(): bool
+    {
+        return $this->otp_enabled;
+    }
+
+    public function enablePasswordless(): void
+    {
+        $this->otp_enabled = true;
+        $this->otp_length = intval(Config::get("otp.length"));
+        $this->otp_lifetime = intval(Config::get("otp.lifetime"));
+    }
+
+    public function disablePasswordless(): void
+    {
+        $this->otp_enabled = false;
+    }
+
+    /**
+     * @return int
+     */
+    public function getOtpLength(): int
+    {
+        $res = $this->otp_length;
+        if(is_null($res)){
+            $res = intval(Config::get("otp.length"));
+        }
+        return $res;
+    }
+
+    /**
+     * @param int $otp_length
+     */
+    public function setOtpLength(int $otp_length): void
+    {
+        $this->otp_length = $otp_length;
+    }
+
+    /**
+     * @return int
+     */
+    public function getOtpLifetime(): int
+    {
+        $res = $this->otp_lifetime;
+
+        if(is_null($res)){
+            $res = intval(Config::get("otp.lifetime"));
+        }
+        return $res;
+    }
+
+    /**
+     * @param int $otp_lifetime
+     */
+    public function setOtpLifetime(int $otp_lifetime): void
+    {
+        $this->otp_lifetime = $otp_lifetime;
+    }
+
+    public function getOTPGrantsByEmailNotRedeemed(string $email){
+        $criteria = Criteria::create();
+        $criteria->where(Criteria::expr()->eq('email', trim($email)));
+        $criteria->where(Criteria::expr()->isNull("redeemed_at"));
+        return $this->otp_grants->matching($criteria);
+    }
+
+    public function getOTPGrantsByPhoneNumberNotRedeemed(string $phone_number){
+        $criteria = Criteria::create();
+        $criteria->where(Criteria::expr()->eq('phone_number', trim($phone_number)));
+        $criteria->where(Criteria::expr()->isNull("redeemed_at"));
+        return $this->otp_grants->matching($criteria);
+    }
+
+    public function addOTPGrant(OAuth2OTP $otp){
+        if($this->otp_grants->contains($otp)) return;
+        $this->otp_grants->add($otp);
+        $otp->setClient($this);
+    }
+
+    public function removeOTPGrant(OAuth2OTP $otp){
+        if(!$this->otp_grants->contains($otp)) return;
+        $this->otp_grants->removeElement($otp);
+        $otp->clearClient();
+    }
+
+    public function getOTPByValue(string $value):?OAuth2OTP{
+        $criteria = Criteria::create();
+        $criteria->where(Criteria::expr()->eq('value', trim($value)));
+        $res = $this->otp_grants->matching($criteria)->first();
+        return !$res ? null : $res;
+    }
+
+    /**
+     * @param string $value
+     * @return bool
+     */
+    public function hasOTP(string $value):bool{
+        return !is_null($this->getOTPByValue($value));
+    }
+
 }

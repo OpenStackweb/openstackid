@@ -13,7 +13,12 @@
  **/
 use Illuminate\Routing\Router;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+
 /**
  * Class RouteServiceProvider
  * @package App\Providers
@@ -38,6 +43,28 @@ final class RouteServiceProvider extends ServiceProvider
     public function boot()
     {
         parent::boot();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Configure the rate limiters for the application.
+     *
+     * @return void
+     */
+    protected function configureRateLimiting()
+    {
+        RateLimiter::for('account', function (Request $request) {
+            return Limit::perMinute(5)->by(optional($request->user())->id ?: $request->ip());
+        });
+
+        RateLimiter::for('otp', function (Request $request) {
+            return Limit::perMinute(10)->by(optional($request->user())->id ?: $request->ip());
+        });
+
+        RateLimiter::for('oauth2', function (Request $request) {
+            $maxAttempts = App::environment() == "testing" ? PHP_INT_MAX : 50;
+            return Limit::perMinute($maxAttempts)->by(optional($request->user())->id ?: $request->ip());
+        });
     }
 
     /**

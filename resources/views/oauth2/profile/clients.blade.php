@@ -11,7 +11,7 @@
                           title="Users can keep track of their registered applications and manage them"></span>&nbsp;Registered
                 Applications
             </legend>
-            {!! HTML::link(URL::action("Api\ClientApiController@create"),'Register Application',['class'=>'btn btn-primary btn-md active add-client','title'=>'Adds a Registered Application']) !!}
+            {!! HTML::link(URL::action("Api\ClientApiController@create"),'Register Application',['class'=>'btn btn-primary btn-md active add-client','title'=>'Adds a Registered Application', 'target'=>'_self']) !!}
             @if (count($clients)>0)
                 <table id='tclients' class="table table-hover table-condensed">
                     <thead>
@@ -51,9 +51,9 @@
                             <td>{!! $client->getUpdatedAt()->format("Y-m-d H:i:s") !!}</td>
                             <td>{!! $client->getEditedByNice() !!}</td>
                             <td>&nbsp;
-                                {!! HTML::link(URL::action("AdminController@editRegisteredClient",array("id"=>$client->getId())),'Edit',array('class'=>'btn btn-default btn-md active edit-client','title'=>'Edits a Registered Application')) !!}
+                                {!! HTML::link(URL::action("AdminController@editRegisteredClient",array("id"=>$client->getId())),'Edit',array('class'=>'btn btn-default btn-md active edit-client','title'=>'Edits a Registered Application', 'target'=>'_self')) !!}
                                 @if ($client->canDelete(Auth::user()))
-                                {!! HTML::link(URL::action("Api\ClientApiController@delete",array("id"=>$client->getId())),'Delete',array('class'=>'btn btn-default btn-md active del-client','title'=>'Deletes a Registered Application')) !!}</td>
+                                {!! HTML::link(URL::action("Api\ClientApiController@delete",array("id"=>$client->getId())),'Delete',array('class'=>'btn btn-default btn-md active del-client','title'=>'Deletes a Registered Application', 'target'=>'_self')) !!}</td>
                                 @endif
                         </tr>
                     @endforeach

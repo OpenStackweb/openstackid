@@ -20,7 +20,7 @@ function updateAccessTokenList(page, page_size){
             else{
                 $('#info-access-tokens').hide();
                 $('#table-access-tokens').show();
-                var template   = $('<tbody><tr><td class="app_type"></td><td class="issued"></td><td class="app_name"></td><td class="scope"></td><td class="lifetime"></td><td><a title="Revoke Access Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-access-token" data-hint="access-token">Revoke</a></td></tr></tbody>');
+                var template   = $('<tbody><tr><td class="app_type"></td><td class="issued"></td><td class="app_name"></td><td class="scope"></td><td class="lifetime"></td><td><a target="_self" title="Revoke Access Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-access-token" data-hint="access-token">Revoke</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
                         'token<-context':{
@@ -74,7 +74,7 @@ function updateRefreshTokenList(page, page_size){
             else{
                 $('#info-refresh-tokens').hide();
                 $('#table-refresh-tokens').show();
-                var template   = $('<tbody><tr><td class="app_type"></td><td class="issued"></td><td class="app_name"></td><td class="scope"></td><td class="lifetime"></td><td><a title="Revoke Refresh Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-refresh-token" data-hint="refresh-token">Revoke</a></td></tr></tbody>');
+                var template   = $('<tbody><tr><td class="app_type"></td><td class="issued"></td><td class="app_name"></td><td class="scope"></td><td class="lifetime"></td><td><a target="_self" title="Revoke Refresh Token" class="btn btn-default btn-md active btn-delete revoke-token revoke-refresh-token" data-hint="refresh-token">Revoke</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
                         'token<-context':{

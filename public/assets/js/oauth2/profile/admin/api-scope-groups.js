@@ -11,7 +11,7 @@ function loadGroups(){
                 var groups     = page.data;
 
                 if(groups.length > 0) {
-                    var template = $('<tbody><tr><td class="name"></td><td class="group-active"><input type="checkbox" class="api-scope-group-active-checkbox"></td><td>&nbsp;<a class="btn btn-default active edit-api-scope-group" title="Edit a Registered Group">Edit</a>&nbsp;<a class="btn btn-default btn-delete active delete-api-scope-group" title="Deletes a Registered Group">Delete</a></td></tr></tbody>');
+                    var template = $('<tbody><tr><td class="name"></td><td class="group-active"><input type="checkbox" class="api-scope-group-active-checkbox"></td><td>&nbsp;<a target="_self" class="btn btn-default active edit-api-scope-group" title="Edit a Registered Group">Edit</a>&nbsp;<a target="_self" class="btn btn-default btn-delete active delete-api-scope-group" title="Deletes a Registered Group">Delete</a></td></tr></tbody>');
                     var directives = {
                         'tr': {
                             'group<-context': {

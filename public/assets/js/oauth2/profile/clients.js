@@ -9,7 +9,7 @@ function loadClients(){
             success: function (page,textStatus,jqXHR) {
                 //load data...
                 var clients = page.data;
-                var template = $('<tbody><tr><td class="admin-app"></td><td class="app-name"></td><td class="client-type"></td><td class="client-active"><input type="checkbox" class="app-active-checkbox"></td><td class="client-locked"><input type="checkbox" disabled="disabled" class="app-locked-checkbox"></td><td class="client-modified"></td><td class="client-modified-by"></td><td class="client-actions">&nbsp;<a class="btn btn-default btn-md active edit-client" title="Edits a Registered Application">Edit</a>&nbsp;<a class="btn btn-default btn-md active del-client" title="Deletes a Registered Application">Delete</a></td></tr></tbody>');
+                var template = $('<tbody><tr><td class="admin-app"></td><td class="app-name"></td><td class="client-type"></td><td class="client-active"><input type="checkbox" class="app-active-checkbox"></td><td class="client-locked"><input type="checkbox" disabled="disabled" class="app-locked-checkbox"></td><td class="client-modified"></td><td class="client-modified-by"></td><td class="client-actions">&nbsp;<a target="_self" class="btn btn-default btn-md active edit-client" title="Edits a Registered Application">Edit</a>&nbsp;<a target="_self" class="btn btn-default btn-md active del-client" title="Deletes a Registered Application">Delete</a></td></tr></tbody>');
                 var directives = {
                     'tr':{
                         'client<-context':{

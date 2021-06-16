@@ -11,7 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use OAuth2\OAuth2Protocol;
 use Utils\IPHelper;
+use Zend\Math\Rand;
+
 /**
  * Class RefreshToken
  * @see http://tools.ietf.org/html/rfc6749#section-1.5
@@ -81,7 +85,7 @@ class RefreshToken extends Token {
     /**
      * @return string
      */
-    public function getType()
+    public function getType():string
     {
         return 'refresh_token';
     }
@@ -92,5 +96,11 @@ class RefreshToken extends Token {
     public function toArray(): array
     {
         return [];
+    }
+
+    public function generateValue(): string
+    {
+        $this->value = Rand::getString($this->len, OAuth2Protocol::VsChar);
+        return $this->value;
     }
 }
