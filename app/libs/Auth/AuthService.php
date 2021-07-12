@@ -225,14 +225,21 @@ final class AuthService implements IAuthService
      */
     public function unwrapUserId(string $user_id):string
     {
+        // first try to get user by raw id
         $user = $this->getUserById(intval($user_id));
 
         if(!is_null($user))
             return $user_id;
-
-        $unwrapped_name = $this->decrypt($user_id);
-        $parts          = explode(':', $unwrapped_name);
-        return intval($parts[1]);
+        // check if we have a wrapped user id
+        try {
+            $unwrapped_name = $this->decrypt($user_id);
+            $parts = explode(':', $unwrapped_name);
+            return intval($parts[1]);
+        }
+        catch (Exception $ex){
+            Log::warning($ex);
+        }
+        return $user_id;
     }
 
     /**
@@ -323,14 +330,17 @@ final class AuthService implements IAuthService
      */
     public function getLoggedRPs():array
     {
-        $rps  = Cookie::get(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME);
-        $zlib = CompressionAlgorithms_Registry::getInstance()->get(CompressionAlgorithmsNames::ZLib);
-
-        if(!empty($rps))
-        {
-            $rps = $this->decrypt($rps);
-            $rps = $zlib->uncompress($rps);
-            return explode('|', $rps);
+        try {
+            $rps = Cookie::get(IAuthService::LOGGED_RELAYING_PARTIES_COOKIE_NAME);
+            $zlib = CompressionAlgorithms_Registry::getInstance()->get(CompressionAlgorithmsNames::ZLib);
+            if (!empty($rps)) {
+                $rps = $this->decrypt($rps);
+                $rps = $zlib->uncompress($rps);
+                return explode('|', $rps);
+            }
+        }
+        catch (Exception $ex){
+            Log::warning($ex);
         }
         return [];
     }
