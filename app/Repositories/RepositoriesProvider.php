@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\libs\Auth\Models\SpamEstimatorFeed;
 use App\libs\Auth\Models\UserRegistrationRequest;
 use App\libs\Auth\Repositories\IBannedIPRepository;
@@ -66,6 +67,7 @@ use OAuth2\Repositories\IServerPrivateKeyRepository;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use OpenId\Repositories\IOpenIdAssociationRepository;
 use OpenId\Repositories\IOpenIdTrustedSiteRepository;
+
 /**
  * Class RepositoriesProvider
  * @package Repositories
@@ -74,37 +76,38 @@ final class RepositoriesProvider extends ServiceProvider
 {
     protected $defer = true;
 
-    public function boot(){
+    public function boot()
+    {
     }
 
-    public function register(){
+    public function register()
+    {
 
         App::singleton(IGroupRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(Group::class);
             }
         );
 
         App::singleton(IUserPasswordResetRequestRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(UserPasswordResetRequest::class);
-            })
-        ;
+            });
 
         App::singleton(IServerExtensionRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(ServerExtension::class);
             }
         );
 
         App::singleton(IOpenIdTrustedSiteRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(OpenIdTrustedSite::class);
             }
         );
 
         App::singleton(IOpenIdAssociationRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(OpenIdAssociation::class);
             }
         );
@@ -112,141 +115,141 @@ final class RepositoriesProvider extends ServiceProvider
         // doctrine repos
 
         App::singleton(IServerConfigurationRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(ServerConfiguration::class);
             }
         );
 
         App::singleton(IUserExceptionTrailRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(UserExceptionTrail::class);
             }
         );
 
         App::singleton(IBannedIPRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(BannedIP::class);
             }
         );
 
-        App::singleton(IWhiteListedIPRepository::class, function (){
+        App::singleton(IWhiteListedIPRepository::class, function () {
             return EntityManager::getRepository(WhiteListedIP::class);
         });
 
         App::singleton(IUserRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(User::class);
             }
         );
 
         App::singleton(
             IResourceServerRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(ResourceServer::class);
             }
         );
 
         App::singleton(
             IApiRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(Api::class);
             }
         );
 
         App::singleton(
             IApiEndpointRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(ApiEndpoint::class);
             }
         );
 
         App::singleton(
-           IClientRepository::class,
-            function(){
+            IClientRepository::class,
+            function () {
                 return EntityManager::getRepository(Client::class);
             }
         );
 
         App::singleton(
             IAccessTokenRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(AccessToken::class);
             }
         );
 
         App::singleton(
             IRefreshTokenRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(RefreshToken::class);
             }
         );
 
         App::singleton(
             IApiScopeRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(ApiScope::class);
             }
         );
 
         App::singleton(
             IApiScopeGroupRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(ApiScopeGroup::class);
             }
         );
 
         App::singleton(
             IOAuth2TrailExceptionRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(OAuth2TrailException::class);
             }
         );
 
         App::singleton(
             IClientPublicKeyRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(ClientPublicKey::class);
             }
         );
 
         App::singleton(
             IServerPrivateKeyRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(ServerPrivateKey::class);
             }
         );
 
         App::singleton(
             IUserRegistrationRequestRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(UserRegistrationRequest::class);
             }
         );
 
         App::singleton(
             ISpamEstimatorFeedRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(SpamEstimatorFeed::class);
             }
         );
 
         App::singleton(
             IDisqusSSOProfileRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(DisqusSSOProfile::class);
             }
         );
 
         App::singleton(
             IRocketChatSSOProfileRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(RocketChatSSOProfile::class);
             }
         );
 
         App::singleton(
             IStreamChatSSOProfileRepository::class,
-            function(){
+            function () {
                 return EntityManager::getRepository(StreamChatSSOProfile::class);
             }
         );
@@ -256,27 +259,32 @@ final class RepositoriesProvider extends ServiceProvider
     public function provides()
     {
         return [
-            IServerConfigurationRepository::class,
             IGroupRepository::class,
-            IOpenIdAssociationRepository::class,
+            IUserPasswordResetRequestRepository::class,
+            IServerExtensionRepository::class,
             IOpenIdTrustedSiteRepository::class,
+            IOpenIdAssociationRepository::class,
+            IServerConfigurationRepository::class,
+            IUserExceptionTrailRepository::class,
+            IBannedIPRepository::class,
+            IWhiteListedIPRepository::class,
             IUserRepository::class,
+            IResourceServerRepository::class,
+            IApiRepository::class,
+            IApiEndpointRepository::class,
+            IClientRepository::class,
+            IAccessTokenRepository::class,
+            IRefreshTokenRepository::class,
+            IApiScopeRepository::class,
+            IApiScopeGroupRepository::class,
+            IOAuth2TrailExceptionRepository::class,
             IClientPublicKeyRepository::class,
             IServerPrivateKeyRepository::class,
-            IClientRepository::class,
-            IApiScopeGroupRepository::class,
-            IApiEndpointRepository::class,
-            IRefreshTokenRepository::class,
-            IAccessTokenRepository::class,
-            IApiScopeRepository::class,
-            IApiRepository::class,
-            IResourceServerRepository::class,
-            IWhiteListedIPRepository::class,
             IUserRegistrationRequestRepository::class,
             ISpamEstimatorFeedRepository::class,
             IDisqusSSOProfileRepository::class,
             IRocketChatSSOProfileRepository::class,
-            IStreamChatSSOProfileRepository::class,
+            IStreamChatSSOProfileRepository::class
         ];
     }
 }
