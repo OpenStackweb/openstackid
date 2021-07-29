@@ -348,10 +348,10 @@ final class UserService extends AbstractService implements IUserService
 
             $formerRequest = $this->user_registration_request_repository->getByEmail($email);
             if(!is_null($formerRequest)){
-                if($formerRequest->isRedeem()){
-                    throw new ValidationException(sprintf("There is already a former registration request for email %s.", $email));
+                if(!$formerRequest->isRedeem()){
+                    return $formerRequest;
                 }
-                return $formerRequest;
+                $this->user_registration_request_repository->delete($formerRequest);
             }
             $request = UserRegistrationRequestFactory::build($payload);
             $generator = new RandomGenerator();

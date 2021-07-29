@@ -24,7 +24,7 @@ use Models\OAuth2\Client;
 class UserRegistrationRequest extends BaseEntity
 {
     /**
-     * @ORM\OneToOne(targetEntity="Auth\User")
+     * @ORM\OneToOne(targetEntity="Auth\User", inversedBy="registration_request")
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id", nullable=true)
      * @var User
      */

@@ -15,6 +15,7 @@ use App\Events\UserCreated;
 use App\Events\UserLocked;
 use App\Events\UserSpamStateUpdated;
 use App\libs\Auth\Models\IGroupSlugs;
+use App\libs\Auth\Models\UserRegistrationRequest;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Illuminate\Support\Facades\Event;
 use App\Events\UserEmailVerified;
@@ -307,6 +308,11 @@ class User extends BaseEntity
     private $pic;
 
     // relations
+    /**
+     * @ORM\OneToOne(targetEntity="App\libs\Auth\Models\UserRegistrationRequest", mappedBy="owner", cascade={"persist","remove"}, orphanRemoval=tru)
+     * @var UserRegistrationRequest
+     */
+    private $registration_request;
 
     /**
      * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"})
