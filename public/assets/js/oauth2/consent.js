@@ -1,5 +1,7 @@
 jQuery(document).ready(function($){
 
+    $('body').ajax_loader();
+
     $('.glyphicon-info-sign').popover({html:true,placement:'bottom'});
 
     $(':not(#anything)').on('click', function (e) {
@@ -33,4 +35,6 @@ jQuery(document).ready(function($){
         $('.btn-consent-action').attr('disabled', 'disabled');
         return true;
     });
+
+    $('body').ajax_loader('stop');
 });
