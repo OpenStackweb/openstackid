@@ -1,5 +1,7 @@
 (function( $ ){
 
+    $('body').ajax_loader();
+
     $(document).ready(function($){
 
 
@@ -51,6 +53,8 @@
             $('.btn-primary').attr('disabled', 'disabled');
             return true;
         });
+
+        $('body').ajax_loader('stop');
 
     });
 

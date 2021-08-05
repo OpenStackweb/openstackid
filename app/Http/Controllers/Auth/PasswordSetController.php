@@ -62,6 +62,7 @@ final class PasswordSetController extends Controller
     }
 
     /**
+     * GET action
      * @param $token
      * @param LaravelRequest $request
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View

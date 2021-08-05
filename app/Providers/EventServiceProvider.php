@@ -21,7 +21,6 @@ use App\Jobs\PublishUserCreated;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\Mail\UserLockedEmail;
 use App\Mail\UserPasswordResetMail;
-use App\Mail\WelcomeNewUserEmail;
 use Auth\User;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use App\Mail\UserEmailVerificationSuccess;
@@ -73,8 +72,17 @@ final class EventServiceProvider extends ServiceProvider
         {
             $repository   = App::make(IUserRepository::class);
             $user         = $repository->getById($event->getUserId());
-            if(is_null($user)) return;
-            Mail::queue(new UserEmailVerificationSuccess($user));
+            if(is_null($user) || !$user instanceof User) return;
+
+            $reset_password_link = null;
+
+            if(!$user->hasPasswordSet()){
+                $service = App::make(IUserService::class);
+                $request = $service->generatePasswordResetRequest($user->getEmail());
+                $reset_password_link = $request->getResetLink();
+            }
+
+            Mail::queue(new UserEmailVerificationSuccess($user, $reset_password_link));
         });
 
         Event::listen(UserCreated::class, function($event)
@@ -97,7 +105,15 @@ final class EventServiceProvider extends ServiceProvider
             }
             else{
                 // email is already verified
-                Mail::queue(new UserEmailVerificationSuccess($user));
+                $reset_password_link = null;
+
+                if(!$user->hasPasswordSet()){
+                    $service = App::make(IUserService::class);
+                    $request = $service->generatePasswordResetRequest($user->getEmail());
+                    $reset_password_link = $request->getResetLink();
+                }
+
+                Mail::queue(new UserEmailVerificationSuccess($user, $reset_password_link));
             }
 
             try {

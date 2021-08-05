@@ -50,6 +50,13 @@ final class UserEmailVerificationRequest extends Mailable
     public $bio_link;
 
     /**
+     * The subject of the message.
+     *
+     * @var string
+     */
+    public $subject;
+
+    /**
      * UserEmailVerificationRequest constructor.
      * @param User $user
      * @param string $verification_link
@@ -70,16 +77,15 @@ final class UserEmailVerificationRequest extends Mailable
     public function build()
     {
 
-        $subject = sprintf("%s email verification needed", Config::get('app.app_name'));
+        $this->subject = sprintf("[%s] Email verification required", Config::get('app.app_name'));
         $view = 'emails.auth.email_verification_request';
         if(Config::get("app.tenant_name") == 'FNTECH') {
             $view = 'emails.auth.email_verification_request_fn';
-            $subject = sprintf("%s email verification needed", Config::get('app.app_name'));
         }
         Log::debug(sprintf("UserEmailVerificationRequest::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
-            ->subject($subject)
+            ->subject($this->subject)
             ->view($view);
     }
 }

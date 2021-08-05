@@ -1871,4 +1871,10 @@ SQL;
         $this->last_name = $name_parts[1];
     }
 
+    /**
+     * @return bool
+     */
+    public function hasPasswordSet():bool{
+        return !empty($this->password);
+    }
 }

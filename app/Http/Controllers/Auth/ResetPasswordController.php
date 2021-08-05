@@ -14,6 +14,7 @@
 use App\Http\Controllers\Controller;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\Services\Auth\IUserService;
+use Auth\Exceptions\UserPasswordResetRequestVoidException;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -61,6 +62,7 @@ final class ResetPasswordController extends Controller
      */
     public function showResetForm($token)
     {
+        $request = null;
         try {
             $request = $this->user_password_reset_request_repository->getByToken($token);
 
@@ -68,7 +70,7 @@ final class ResetPasswordController extends Controller
                 throw new EntityNotFoundException(sprintf("Request not found for token %s.", $token));
 
             if(!$request->isValid())
-                throw new ValidationException("Request is void.");
+                throw new UserPasswordResetRequestVoidException("Request is void.");
 
             if($request->isRedeem()){
                 throw new ValidationException("Request is already redeem.");
@@ -79,6 +81,17 @@ final class ResetPasswordController extends Controller
                     'token' => $token,
                     'email' => $request->getOwner()->getEmail()
                 ]);
+        }
+        catch (UserPasswordResetRequestVoidException $ex){
+            Log::warning($ex);
+            $params = [
+                'email' => ''
+            ];
+
+            if(!is_null($request)){
+                $params['email'] = $request->getOwner()->getEmail();
+            }
+            return view("auth.passwords.reset_error_void", $params);
         }
         catch (EntityNotFoundException $ex){
             Log::warning($ex);

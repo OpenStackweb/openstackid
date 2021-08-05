@@ -63,7 +63,16 @@ final class ForgotPasswordController extends Controller
             $params = [
                 "redirect_uri" => '',
                 "client_id"    => '',
+                'email' => ''
             ];
+
+            if($request->has("email")){
+                $email = trim($request->get("email"));
+                if (filter_var($email, FILTER_VALIDATE_EMAIL) !== FALSE) {
+                    $params['email'] = $email;
+                }
+            }
+
             // check if we have explicit params at query string
             if ($request->has("redirect_uri") && $request->has("client_id")) {
                 $redirect_uri = $request->get("redirect_uri");

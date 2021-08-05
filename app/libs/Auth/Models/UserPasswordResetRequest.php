@@ -51,11 +51,19 @@ class UserPasswordResetRequest extends BaseEntity
      */
     private $redeem_at;
 
+    /**
+     * @var string
+     */
+    private $reset_link;
 
+    /**
+     * UserPasswordResetRequest constructor.
+     */
     public function __construct()
     {
         parent::__construct();
-        $this->lifetime = Config::get("auth.password_reset_lifetime", 10 * 60);
+        $this->lifetime = Config::get("auth.password_reset_lifetime", 600);
+        $this->reset_link = null;
     }
 
     /**
@@ -156,7 +164,8 @@ class UserPasswordResetRequest extends BaseEntity
      * @return bool
      */
     public function isValid():bool{
-        $void_date = $this->created_at->add(new \DateInterval('PT'.$this->lifetime.'S'));
+        $created_date = clone $this->created_at;
+        $void_date = $created_date->add(new \DateInterval('PT'.$this->lifetime.'S'));
         $now = new \DateTime('now', new \DateTimeZone('UTC'));
         return $void_date > $now;
     }
@@ -167,4 +176,21 @@ class UserPasswordResetRequest extends BaseEntity
     public function inserted($args){
         Event::dispatch(new UserPasswordResetRequestCreated($this->getId()));
     }
+
+    /**
+     * @return string|null
+     */
+    public function getResetLink(): ?string
+    {
+        return $this->reset_link;
+    }
+
+    /**
+     * @param string $reset_link
+     */
+    public function setResetLink(string $reset_link): void
+    {
+        $this->reset_link = $reset_link;
+    }
+
 }

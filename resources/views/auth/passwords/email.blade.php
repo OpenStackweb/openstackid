@@ -1,6 +1,6 @@
 @extends('layout')
 @section('title')
-    <title>Welcome to {{ Config::get('app.app_name') }} - Sign Up </title>
+    <title>Welcome to {{ Config::get('app.app_name') }} - Reset your Password </title>
 @append
 @section('scripts')
     {!! HTML::style('assets/css/auth/email.css') !!}
@@ -42,12 +42,17 @@
                 <h2>Forgot Password?</h2>
                 <p class="hint-text">You can reset your password here.</p>
                 <div class="form-group">
-                    <input type="email" class="form-control" id="email" name="email" placeholder="Email" required="required"  autocomplete="username">
+                    <input type="email"
+                           class="form-control"
+                           id="email" name="email"
+                           placeholder="Email" required="required"
+                           value="{!! $email !!}"
+                           autocomplete="username"/>
                 </div>
                 <div class="form-group">
                     <div class="recaptcha-container" >
                         {!! Recaptcha::render(['id'=>'captcha', 'class'=>'input-block-level', 'callback'=>'verifyCaptchaCallback']) !!}
-                        <input type="hidden"name="g_recaptcha_hidden" id="g_recaptcha_hidden">
+                        <input type="hidden"name="g_recaptcha_hidden" id="g_recaptcha_hidden"/>
                     </div>
                 </div>
                 <div class="form-group">
