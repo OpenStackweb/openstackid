@@ -1,5 +1,7 @@
 (function( $ ){
 
+    $('body').ajax_loader();
+
     $(document).ready(function($){
 
         var form = $('#form-send-password-reset-link');
@@ -35,6 +37,9 @@
             }
 
         });
+
+        $('body').ajax_loader('stop');
+
     });
 
 // End of closure.

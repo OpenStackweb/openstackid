@@ -109,7 +109,7 @@ const PasswordInputForm = ({
                 }}
             />
             {passwordError &&
-                <p  className={styles.error_label} dangerouslySetInnerHTML={{__html: passwordError}}></p>
+                <p className={styles.error_label} dangerouslySetInnerHTML={{__html: passwordError}}></p>
             }
             <FormControlLabel
                 disabled={disableInput}
@@ -214,6 +214,7 @@ const OTPInputForm = ({
 }
 
 const HelpLinks = ({
+                       userName,
                        showEmitOtpAction,
                        forgotPasswordAction,
                        showForgotPasswordAction,
@@ -224,6 +225,10 @@ const HelpLinks = ({
                        appName,
                        emitOtpAction
 }) => {
+    if(userName){
+        forgotPasswordAction = `${forgotPasswordAction}?email=${encodeURIComponent(userName)}`;
+    }
+
     return (
         <>
             <hr className={styles.separator}/>
@@ -548,6 +553,7 @@ class LoginPage extends React.Component {
                                     createAccountAction={(this.state.user_name) ? `${this.props.createAccountAction}?email=${encodeURIComponent(this.state.user_name)}`: this.props.createAccountAction}
                                 />
                                 <HelpLinks
+                                    userName={this.state.user_name}
                                     appName={this.props.appName}
                                     forgotPasswordAction={this.props.forgotPasswordAction}
                                     verifyEmailAction={this.props.verifyEmailAction}
@@ -583,6 +589,7 @@ class LoginPage extends React.Component {
                             handleEmitOtpAction={this.handleEmitOtpAction}
                         />
                         <HelpLinks
+                            userName={this.state.user_name}
                             appName={this.props.appName}
                             forgotPasswordAction={this.props.forgotPasswordAction}
                             verifyEmailAction={this.props.verifyEmailAction}

@@ -100,4 +100,5 @@ return [
 
     // in seconds
     'password_reset_lifetime' => env('AUTH_PASSWORD_RESET_LIFETIME', 600),
+    'verification_email_lifetime' => env ("AUTH_VERIFICATION_EMAIL_LIFETIME", 600),
 ];

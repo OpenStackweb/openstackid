@@ -1,4 +1,5 @@
 (function( $ ){
+    $('body').ajax_loader();
 
     $(document).ready(function($){
 
@@ -66,7 +67,10 @@
             return true;
         });
 
+        $('body').ajax_loader('stop');
     });
+
+
 
 // End of closure.
 }( jQuery ));

@@ -46,6 +46,13 @@ final class UserPasswordResetRequestMail extends Mailable
     public $user_fullname;
 
     /**
+     * The subject of the message.
+     *
+     * @var string
+     */
+    public $subject;
+
+    /**
      * UserEmailVerificationRequest constructor.
      * @param User $user
      * @param string $reset_link
@@ -64,13 +71,11 @@ final class UserPasswordResetRequestMail extends Mailable
      */
     public function build()
     {
-        $subject = Config::get("mail.reset_password_email_subject");
-        if(empty($subject))
-            $subject = sprintf("[%s] Reset Password Notification", Config::get('app.app_name'));
+      $this->subject = sprintf("[%s] Reset Password Notification", Config::get('app.app_name'));
         Log::debug(sprintf("UserPasswordResetRequestMail::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
-            ->subject($subject)
+            ->subject($this->subject)
             ->view('emails.auth.reset_password_request');
     }
 }

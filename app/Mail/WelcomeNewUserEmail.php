@@ -28,7 +28,7 @@ final class WelcomeNewUserEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $tries = 1;
+    public $tries = 2;
 
     /**
      * @var string
@@ -51,16 +51,42 @@ final class WelcomeNewUserEmail extends Mailable
     public $bio_link;
 
     /**
+     * @var string
+     */
+    public $reset_password_link;
+
+    /**
+     * minutes
+     * @var int
+     */
+    public $reset_password_link_lifetime;
+
+    /**
+     * The subject of the message.
+     *
+     * @var string
+     */
+    public $subject;
+
+    /**
      * WelcomeNewUserEmail constructor.
      * @param User $user
      * @param string|null $verification_link
+     * @param string|null $reset_password_link
      */
-    public function __construct(User $user, ?string $verification_link)
+    public function __construct
+    (
+        User $user,
+        ?string $verification_link,
+        ?string $reset_password_link
+    )
     {
         $this->user_email = $user->getEmail();
         $this->user_fullname = $user->getFullName();
         $this->verification_link = $verification_link;
         $this->bio_link = URL::action("UserController@getLogin");
+        $this->reset_password_link = $reset_password_link;
+        $this->reset_password_link_lifetime = Config::get("auth.password_reset_lifetime")/60;
     }
 
     /**
@@ -71,7 +97,7 @@ final class WelcomeNewUserEmail extends Mailable
     public function build()
     {
 
-        $subject = sprintf("Thank you for registering for an %s account", Config::get('app.app_name'));
+        $this->subject = sprintf('[%1$s] You now have an %1$s', Config::get('app.app_name'));
         $view = 'emails.welcome_new_user_email';
 
         if(Config::get("app.tenant_name") == 'FNTECH') {
@@ -81,7 +107,7 @@ final class WelcomeNewUserEmail extends Mailable
         Log::debug(sprintf("WelcomeNewUserEmail::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
-            ->subject($subject)
+            ->subject($this->subject)
             ->view($view);
     }
 

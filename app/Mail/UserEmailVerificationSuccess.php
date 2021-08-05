@@ -39,13 +39,38 @@ class UserEmailVerificationSuccess extends Mailable
     public $user_fullname;
 
     /**
-     * UserEmailVerificationRequest constructor.
-     * @param User $user
+     * @var string
      */
-    public function __construct(User $user)
+    public $reset_password_link;
+
+    /**
+     * minutes
+     * @var int
+     */
+    public $reset_password_link_lifetime;
+
+    /**
+     * The subject of the message.
+     *
+     * @var string
+     */
+    public $subject;
+
+    /**
+     * UserEmailVerificationSuccess constructor.
+     * @param User $user
+     * @param string|null $reset_password_link
+     */
+    public function __construct
+    (
+        User $user,
+        ?string $reset_password_link
+    )
     {
         $this->user_email = $user->getEmail();
         $this->user_fullname = $user->getFullName();
+        $this->reset_password_link = $reset_password_link;
+        $this->reset_password_link_lifetime = Config::get("auth.password_reset_lifetime")/60;
     }
 
     /**
@@ -55,13 +80,11 @@ class UserEmailVerificationSuccess extends Mailable
      */
     public function build()
     {
-        $subject = Config::get("mail.verification_sucessfull_email_subject");
-        if(empty($subject))
-            $subject = sprintf("Success! %s email verified", Config::get('app.app_name'));
+        $this->subject = sprintf('[%1$s] %1$s Verified', Config::get('app.app_name'));
         Log::debug(sprintf("UserEmailVerificationSuccess::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
-            ->subject($subject)
+            ->subject($this->subject)
             ->view('emails.auth.email_verification_request_success');
     }
 }

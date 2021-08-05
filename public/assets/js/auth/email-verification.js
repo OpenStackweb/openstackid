@@ -1,5 +1,7 @@
 (function( $ ){
 
+    $('body').ajax_loader();
+
     $(document).ready(function($){
 
         var form = $('#form-verification');
@@ -27,7 +29,10 @@
             return true;
         });
 
+        $('body').ajax_loader('stop');
     });
+
+
 
 // End of closure.
 }( jQuery ));

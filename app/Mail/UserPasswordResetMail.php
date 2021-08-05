@@ -40,6 +40,13 @@ final class UserPasswordResetMail extends Mailable
     public $user_fullname;
 
     /**
+     * The subject of the message.
+     *
+     * @var string
+     */
+    public $subject;
+
+    /**
      * UserPasswordResetMail constructor.
      * @param User $user
      */
@@ -56,13 +63,11 @@ final class UserPasswordResetMail extends Mailable
      */
     public function build()
     {
-        $subject = Config::get("mail.reset_password_success_email_subject");
-        if(empty($subject))
-            $subject = sprintf("[%s] Your Password Reset was successful", Config::get('app.app_name'));
+       $this->subject = sprintf("[%s] Your Password Reset was successful", Config::get('app.app_name'));
         Log::debug(sprintf("UserPasswordResetMail::build to %s", $this->user_email));
         return $this->from(Config::get("mail.from"))
             ->to($this->user_email)
-            ->subject($subject)
+            ->subject($this->subject)
             ->view('emails.auth.reset_password_successfull');
     }
 }

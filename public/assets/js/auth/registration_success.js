@@ -1,4 +1,5 @@
 (function( $ ){
+    $('body').ajax_loader();
 
     $(document).ready(function($){
 
@@ -8,6 +9,7 @@
             setTimeout(function(){ window.location = href; }, 10000);
         }
 
+        $('body').ajax_loader('stop');
     });
 
 // End of closure.

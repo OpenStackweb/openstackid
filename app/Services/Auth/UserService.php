@@ -24,6 +24,7 @@ use App\Mail\UserEmailVerificationRequest;
 use App\Mail\UserPasswordResetRequestMail;
 use App\Mail\WelcomeNewUserEmail;
 use App\Services\AbstractService;
+use Auth\Exceptions\UserPasswordResetRequestVoidException;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
@@ -204,17 +205,22 @@ final class UserService extends AbstractService implements IUserService
      */
     public function sendWelcomeEmail(User $user):?string {
 
-        return $this->tx_service->transaction(function() use($user){
+            return $this->tx_service->transaction(function() use($user){
+                $reset_password_link = null;
+                $verification_link = null;
 
-            $verification_link = null;
+                if(!$user->isEmailVerified())
+                   $verification_link = $this->generateVerificationLink($user);
 
-            if(!$user->isEmailVerified())
-               $verification_link = $this->generateVerificationLink($user);
+                if(!$user->hasPasswordSet()){
+                    $request = $this->generatePasswordResetRequest($user->getEmail());
+                    $reset_password_link = $request->getResetLink();
+                }
 
-            Mail::queue(new WelcomeNewUserEmail($user, $verification_link));
+                Mail::queue(new WelcomeNewUserEmail($user, $verification_link, $reset_password_link));
 
-            return $verification_link;
-        });
+                return $verification_link;
+            });
     }
 
     /**
@@ -265,15 +271,14 @@ final class UserService extends AbstractService implements IUserService
     }
 
     /**
-     * @param array $payload
-     * @throws ValidationException
-     * @throws EntityNotFoundException
+     * @param string $email
      * @return UserPasswordResetRequest
+     * @throws \Exception
      */
-    public function requestPasswordReset(array $payload): UserPasswordResetRequest
-    {
-        return $this->tx_service->transaction(function() use($payload) {
-            $user = $this->user_repository->getByEmailOrName(trim($payload['email']));
+    public function generatePasswordResetRequest(string $email):UserPasswordResetRequest{
+        return $this->tx_service->transaction(function() use($email) {
+
+            $user = $this->user_repository->getByEmailOrName(trim($email));
             if(is_null($user) || !$user->isEmailVerified())
                 throw new EntityNotFoundException("User not found.");
 
@@ -290,7 +295,30 @@ final class UserService extends AbstractService implements IUserService
 
             $reset_link = URL::route("password.reset", ["token" => $token]);
 
-            Mail::queue(new UserPasswordResetRequestMail($user, $reset_link));
+            $request->setResetLink($reset_link);
+
+            return $request;
+        });
+    }
+    /**
+     * @param array $payload
+     * @throws ValidationException
+     * @throws EntityNotFoundException
+     * @return UserPasswordResetRequest
+     */
+    public function requestPasswordReset(array $payload): UserPasswordResetRequest
+    {
+        $request = $this->generatePasswordResetRequest(trim($payload['email']));
+
+        return $this->tx_service->transaction(function() use($payload) {
+
+            $user = $this->user_repository->getByEmailOrName(trim($payload['email']));
+            if(is_null($user) || !$user->isEmailVerified())
+                throw new EntityNotFoundException("User not found.");
+
+            $request = $this->generatePasswordResetRequest($user->getEmail());
+
+            Mail::queue(new UserPasswordResetRequestMail($user, $request->getResetLink()));
 
             return $request;
         });
@@ -312,7 +340,7 @@ final class UserService extends AbstractService implements IUserService
                 throw new EntityNotFoundException("request not found");
 
             if(!$request->isValid())
-                throw new ValidationException("request is void");
+                throw new UserPasswordResetRequestVoidException("request is void");
 
             if($request->isRedeem()){
                 throw new ValidationException("request is already redeem");

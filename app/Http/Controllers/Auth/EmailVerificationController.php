@@ -41,9 +41,16 @@ final class EmailVerificationController extends Controller
         $this->user_service = $user_service;
     }
 
-    public function showVerificationForm()
+    public function showVerificationForm(LaravelRequest $request)
     {
-        return view('auth.email_verification', ['email' => Request::input("email", "")]);
+        $params = ['email' => ''];
+        if($request->has("email")){
+            $email = trim($request->get("email"));
+            if (filter_var($email, FILTER_VALIDATE_EMAIL) !== FALSE) {
+                $params['email'] = $email;
+            }
+        }
+        return view('auth.email_verification', $params);
     }
 
     /**

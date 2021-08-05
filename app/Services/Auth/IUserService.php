@@ -105,4 +105,11 @@ interface IUserService
      * @return string|null
      */
     public function sendWelcomeEmail(User $user):?string;
+
+    /**
+     * @param string $email
+     * @return UserPasswordResetRequest
+     * @throws \Exception
+     */
+    public function generatePasswordResetRequest(string $email):UserPasswordResetRequest;
 }

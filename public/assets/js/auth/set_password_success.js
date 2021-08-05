@@ -1,5 +1,7 @@
 (function( $ ){
 
+    $('body').ajax_loader();
+
     $(document).ready(function($){
 
         var redirect = $('#redirect_url');
@@ -15,6 +17,7 @@
 
         setTimeout(function(){ window.location = '/accounts/user/profile'; }, 3000);
 
+        $('body').ajax_loader('stop');
     });
 
 // End of closure.
