@@ -201,14 +201,6 @@ class OAuth2AuthorizationRequest extends OAuth2Request
                 $this->last_validation_error = 'invalid response_mode';
                 return false;
             }
-
-            $default_response_mode = OAuth2Protocol::getDefaultResponseMode($this->getResponseType(false));
-
-            if($default_response_mode === $response_mode)
-            {
-                $this->last_validation_error = 'invalid response_mode';
-                return false;
-            }
         }
 
         // PCKE validation
