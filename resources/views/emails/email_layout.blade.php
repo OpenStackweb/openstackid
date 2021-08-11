@@ -111,7 +111,7 @@
                                         <tbody>
                                         <tr>
                                             <td style="width:125px;">
-                                                <img height="auto" src="{{Config::get('app.logo_url')}}" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px;" width="125" />
+                                                <img height="auto" src="{{Config::get('app.email_url')}}" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px;" width="125" />
                                             </td>
                                         </tr>
                                         </tbody>

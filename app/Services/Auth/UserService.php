@@ -11,7 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Events\UserPasswordResetSuccessful;
+use App\Jobs\PublishUserCreated;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Factories\UserRegistrationRequestFactory;
 use App\libs\Auth\Models\SpamEstimatorFeed;
@@ -21,6 +23,7 @@ use App\libs\Auth\Repositories\ISpamEstimatorFeedRepository;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
 use App\Mail\UserEmailVerificationRequest;
+use App\Mail\UserEmailVerificationSuccess;
 use App\Mail\UserPasswordResetRequestMail;
 use App\Mail\WelcomeNewUserEmail;
 use App\Services\AbstractService;
@@ -29,6 +32,8 @@ use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Auth\UserPasswordResetRequest;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -38,6 +43,7 @@ use models\exceptions\ValidationException;
 use models\utils\RandomGenerator;
 use OAuth2\Repositories\IClientRepository;
 use Utils\Db\ITransactionService;
+
 /**
  * Class UserService
  * @package App\Services\Auth
@@ -114,29 +120,31 @@ final class UserService extends AbstractService implements IUserService
 
     /**
      * @param array $payload
-     * @throws ValidationException
      * @return User
+     * @throws ValidationException
      */
     public function registerUser(array $payload): User
     {
-        return $this->tx_service->transaction(function() use($payload){
+        return $this->tx_service->transaction(function () use ($payload) {
+
             $email = trim($payload['email']);
             $former_user = $this->user_repository->getByEmailOrName($email);
-            if(!is_null($former_user))
+            if (!is_null($former_user))
                 throw new ValidationException(sprintf("email %s belongs to another user !!!", $email));
 
             $default_groups = $this->group_repository->getDefaultOnes();
-            if(count($default_groups) > 0){
+            if (count($default_groups) > 0) {
                 $payload['groups'] = $default_groups;
             }
 
             $user = UserFactory::build($payload);
-
+            $this->generateIdentifier($user);
             $this->user_repository->add($user);
 
             $formerRequest = $this->user_registration_request_repository->getByEmail($email);
-            if(!is_null($formerRequest)){
-                if(!$formerRequest->isRedeem()){
+
+            if (!is_null($formerRequest)) {
+                if (!$formerRequest->isRedeem()) {
                     $formerRequest->redeem();
                 }
             }
@@ -147,15 +155,15 @@ final class UserService extends AbstractService implements IUserService
 
     /**
      * @param string $token
-     * @throws ValidationException
-     * @throws EntityNotFoundException
      * @return User
+     * @throws EntityNotFoundException
+     * @throws ValidationException
      */
     public function verifyEmail(string $token): User
     {
-        return $this->tx_service->transaction(function() use($token){
+        return $this->tx_service->transaction(function () use ($token) {
             $user = $this->user_repository->getByVerificationEmailToken($token);
-            if(is_null($user))
+            if (is_null($user))
                 throw new EntityNotFoundException();
             $user->verifyEmail();
             return $user;
@@ -164,18 +172,18 @@ final class UserService extends AbstractService implements IUserService
 
     /**
      * @param array $payload
-     * @throws ValidationException
-     * @throws EntityNotFoundException
      * @return User
+     * @throws EntityNotFoundException
+     * @throws ValidationException
      */
     public function resendVerificationEmail(array $payload): User
     {
-        return $this->tx_service->transaction(function() use($payload){
-                $email = trim($payload['email']);
-                $user = $this->user_repository->getByEmailOrName($email);
-                if(is_null($user))
-                    throw new EntityNotFoundException();
-                return $this->sendVerificationEmail($user);
+        return $this->tx_service->transaction(function () use ($payload) {
+            $email = trim($payload['email']);
+            $user = $this->user_repository->getByEmailOrName($email);
+            if (is_null($user))
+                throw new EntityNotFoundException();
+            return $this->sendVerificationEmail($user);
         });
     }
 
@@ -183,9 +191,10 @@ final class UserService extends AbstractService implements IUserService
      * @param User $user
      * @return string
      */
-    private function generateVerificationLink(User $user):string{
+    private function generateVerificationLink(User $user): string
+    {
 
-        return $this->tx_service->transaction(function() use($user) {
+        return $this->tx_service->transaction(function () use ($user) {
 
             //generate unique token
             do {
@@ -200,45 +209,38 @@ final class UserService extends AbstractService implements IUserService
 
     /**
      * @param User $user
-     * @return string|null
-     * @throws \Exception
+     * @return void
      */
-    public function sendWelcomeEmail(User $user):?string {
+    public function sendWelcomeEmail(User $user): void
+    {
 
-            return $this->tx_service->transaction(function() use($user){
-                $reset_password_link = null;
-                $verification_link = null;
+        $this->tx_service->transaction(function () use ($user) {
+            $reset_password_link = null;
 
-                if(!$user->isEmailVerified())
-                   $verification_link = $this->generateVerificationLink($user);
+            if (!$user->hasPasswordSet()) {
+                $request = $this->generatePasswordResetRequest($user->getEmail());
+                $reset_password_link = $request->getResetLink();
+            }
 
-                if(!$user->hasPasswordSet()){
-                    $request = $this->generatePasswordResetRequest($user->getEmail());
-                    $reset_password_link = $request->getResetLink();
-                }
+            Mail::queue(new WelcomeNewUserEmail($user, $reset_password_link));
 
-                Mail::queue(new WelcomeNewUserEmail($user, $verification_link, $reset_password_link));
-
-                return $verification_link;
-            });
+        });
     }
 
     /**
      * @param User $user
-     * @param string|null $verification_link
      * @return User
      * @throws \Exception
      */
-    public function sendVerificationEmail(User $user, string $verification_link = null): User
+    public function sendVerificationEmail(User $user): User
     {
-        return $this->tx_service->transaction(function() use($user, $verification_link){
+        return $this->tx_service->transaction(function () use ($user) {
 
-            if(empty($verification_link))
-                $verification_link = $this->generateVerificationLink($user);
+            $verification_link = $this->generateVerificationLink($user);
 
-           Mail::queue(new UserEmailVerificationRequest($user, $verification_link));
+            Mail::queue(new UserEmailVerificationRequest($user, $verification_link));
 
-           return $user;
+            return $user;
         });
     }
 
@@ -249,15 +251,14 @@ final class UserService extends AbstractService implements IUserService
      */
     public function generateIdentifier(User $user): User
     {
-        return $this->tx_service->transaction(function() use($user) {
-            $fragment_nbr          = 1;
+        return $this->tx_service->transaction(function () use ($user) {
+            if($user->hasIdentifier()) return $user;
+            $fragment_nbr = 1;
             $this->name_generator_service->generate($user);
             $identifier = $original_identifier = $user->getIdentifier();
-            do
-            {
+            do {
                 $old_user = $this->user_repository->getByIdentifier($identifier);
-                if(!is_null($old_user))
-                {
+                if (!is_null($old_user)) {
                     $identifier = $original_identifier . IUserNameGeneratorService::USER_NAME_CHAR_CONNECTOR . $fragment_nbr;
                     $fragment_nbr++;
                     continue;
@@ -275,21 +276,22 @@ final class UserService extends AbstractService implements IUserService
      * @return UserPasswordResetRequest
      * @throws \Exception
      */
-    public function generatePasswordResetRequest(string $email):UserPasswordResetRequest{
-        return $this->tx_service->transaction(function() use($email) {
+    public function generatePasswordResetRequest(string $email): UserPasswordResetRequest
+    {
+        return $this->tx_service->transaction(function () use ($email) {
 
             $user = $this->user_repository->getByEmailOrName(trim($email));
-            if(is_null($user) || !$user->isEmailVerified())
+            if (is_null($user) || !$user->isEmailVerified())
                 throw new EntityNotFoundException("User not found.");
 
             $request = new UserPasswordResetRequest();
             $request->setOwner($user);
 
-            do{
+            do {
                 $token = $request->generateToken();
                 $former_request = $this->request_reset_password_repository->getByToken($token);
-                if(is_null($former_request)) break;
-            }while(1);
+                if (is_null($former_request)) break;
+            } while (1);
 
             $user->addPasswordResetRequest($request);
 
@@ -300,20 +302,21 @@ final class UserService extends AbstractService implements IUserService
             return $request;
         });
     }
+
     /**
      * @param array $payload
-     * @throws ValidationException
-     * @throws EntityNotFoundException
      * @return UserPasswordResetRequest
+     * @throws EntityNotFoundException
+     * @throws ValidationException
      */
     public function requestPasswordReset(array $payload): UserPasswordResetRequest
     {
         $request = $this->generatePasswordResetRequest(trim($payload['email']));
 
-        return $this->tx_service->transaction(function() use($payload) {
+        return $this->tx_service->transaction(function () use ($payload) {
 
             $user = $this->user_repository->getByEmailOrName(trim($payload['email']));
-            if(is_null($user) || !$user->isEmailVerified())
+            if (is_null($user) || !$user->isEmailVerified())
                 throw new EntityNotFoundException("User not found.");
 
             $request = $this->generatePasswordResetRequest($user->getEmail());
@@ -327,22 +330,22 @@ final class UserService extends AbstractService implements IUserService
     /**
      * @param string $token
      * @param string $new_password
-     * @throws ValidationException
-     * @throws EntityNotFoundException
      * @return User
+     * @throws EntityNotFoundException
+     * @throws ValidationException
      */
     public function resetPassword(string $token, string $new_password): User
     {
-        return $this->tx_service->transaction(function() use($token, $new_password) {
+        return $this->tx_service->transaction(function () use ($token, $new_password) {
             $request = $this->request_reset_password_repository->getByToken($token);
 
-            if(is_null($request))
+            if (is_null($request))
                 throw new EntityNotFoundException("request not found");
 
-            if(!$request->isValid())
+            if (!$request->isValid())
                 throw new UserPasswordResetRequestVoidException("request is void");
 
-            if($request->isRedeem()){
+            if ($request->isRedeem()) {
                 throw new ValidationException("request is already redeem");
             }
 
@@ -363,21 +366,21 @@ final class UserService extends AbstractService implements IUserService
      */
     public function createRegistrationRequest(string $client_id, array $payload): UserRegistrationRequest
     {
-        return $this->tx_service->transaction(function() use($client_id, $payload) {
+        return $this->tx_service->transaction(function () use ($client_id, $payload) {
 
-            $client      = $this->client_repository->getClientById($client_id);
-            if(is_null($client))
+            $client = $this->client_repository->getClientById($client_id);
+            if (is_null($client))
                 throw new EntityNotFoundException("client not found!");
 
-            $email       = $payload['email'];
+            $email = $payload['email'];
             $former_user = $this->user_repository->getByEmailOrName($email);
 
-            if(!is_null($former_user))
+            if (!is_null($former_user))
                 throw new ValidationException(sprintf("There is another user already with email %s.", $email));
 
             $formerRequest = $this->user_registration_request_repository->getByEmail($email);
-            if(!is_null($formerRequest)){
-                if(!$formerRequest->isRedeem()){
+            if (!is_null($formerRequest)) {
+                if (!$formerRequest->isRedeem()) {
                     return $formerRequest;
                 }
                 $this->user_registration_request_repository->delete($formerRequest);
@@ -385,19 +388,19 @@ final class UserService extends AbstractService implements IUserService
             $request = UserRegistrationRequestFactory::build($payload);
             $generator = new RandomGenerator();
 
-            do{
+            do {
 
                 $hash = md5(
-                    $request->getEmail().
-                    $request->getFirstName().
-                    $request->getLastName().
+                    $request->getEmail() .
+                    $request->getFirstName() .
+                    $request->getLastName() .
                     $generator->randomToken());
 
                 $former_registration_request = $this->user_registration_request_repository->getByHash($hash);
                 $request->setHash($hash);
-                if(is_null($former_registration_request)) break;
+                if (is_null($former_registration_request)) break;
 
-            } while(1);
+            } while (1);
 
             $request->setClient($client);
             $this->user_registration_request_repository->add($request);
@@ -414,16 +417,16 @@ final class UserService extends AbstractService implements IUserService
     public function setPassword(string $token, string $new_password): UserRegistrationRequest
     {
 
-        return $this->tx_service->transaction(function() use($token, $new_password) {
+        return $this->tx_service->transaction(function () use ($token, $new_password) {
 
             $request = $this->user_registration_request_repository->getByHash($token);
 
-            if(is_null($request)) {
+            if (is_null($request)) {
                 Log::warning(sprintf("UserService::setPassword registration request %s not found.", $token));
                 throw new EntityNotFoundException("Request not found.");
             }
 
-            if($request->isRedeem()){
+            if ($request->isRedeem()) {
                 Log::warning(sprintf("UserService::setPassword registration request %s already redeem.", $token));
                 throw new ValidationException("Request is already redeem.");
             }
@@ -431,15 +434,15 @@ final class UserService extends AbstractService implements IUserService
             $email = $request->getEmail();
 
             $former_user = $this->user_repository->getByEmailOrName($email);
-            if(!is_null($former_user))
+            if (!is_null($former_user))
                 throw new ValidationException(sprintf("User %s already exists!.", $email));
 
             $user = UserFactory::build([
-                'first_name'     => $request->getFirstName(),
-                'last_name'      => $request->getLastName(),
-                'email'          => $email,
-                'password'       => $new_password,
-                'active'         => true,
+                'first_name' => $request->getFirstName(),
+                'last_name' => $request->getLastName(),
+                'email' => $email,
+                'password' => $new_password,
+                'active' => true,
                 'email_verified' => true,
             ]);
 
@@ -456,18 +459,79 @@ final class UserService extends AbstractService implements IUserService
      */
     public function recalculateUserSpamType(User $user): void
     {
-        $this->tx_service->transaction(function() use($user) {
+        $this->tx_service->transaction(function () use ($user) {
             $this->spam_estimator_feed_repository->deleteByEmail($user->getEmail());
-            switch($user->getSpamType()){
+            switch ($user->getSpamType()) {
                 case User::SpamTypeSpam:
-                        $feed = SpamEstimatorFeed::buildFromUser($user, User::SpamTypeSpam);
-                        $this->spam_estimator_feed_repository->add($feed);
+                    $feed = SpamEstimatorFeed::buildFromUser($user, User::SpamTypeSpam);
+                    $this->spam_estimator_feed_repository->add($feed);
                     break;
                 case User::SpamTypeHam:
                     $feed = SpamEstimatorFeed::buildFromUser($user, User::SpamTypeHam);
                     $this->spam_estimator_feed_repository->add($feed);
                     break;
             }
+        });
+    }
+
+    /**
+     * @param int $user_id
+     * @return User|null
+     * @throws \Exception
+     */
+    public function sendSuccessfulVerificationEmail(int $user_id): ?User
+    {
+        return $this->tx_service->transaction(function() use($user_id){
+
+            $user = $this->user_repository->getById($user_id);
+            if(is_null($user) || !$user instanceof User) return null;
+
+            $reset_password_link = null;
+
+            if(!$user->hasPasswordSet()){
+                $service = App::make(IUserService::class);
+                $request = $service->generatePasswordResetRequest($user->getEmail());
+                $reset_password_link = $request->getResetLink();
+            }
+
+            Mail::queue(new UserEmailVerificationSuccess($user, $reset_password_link));
+
+            $this->sendWelcomeEmail($user);
+
+            return $user;
+        });
+    }
+
+    /**
+     * @param int $user_id
+     * @return User|null
+     * @throws \Exception
+     */
+    public function initializeUser(int $user_id): ?User
+    {
+        return $this->tx_service->transaction(function() use($user_id) {
+
+            $user = $this->user_repository->getById($user_id);
+            if(is_null($user) || !$user instanceof User) return null;
+
+            if(!$user->isEmailVerified()) {
+                $this->sendVerificationEmail($user);
+                return $user;
+            }
+
+            // email is already verified
+
+            $this->sendWelcomeEmail($user);
+
+            try {
+                if(Config::get("queue.enable_message_broker", false) == true)
+                    PublishUserCreated::dispatch($user)->onConnection('message_broker');
+            }
+            catch (\Exception $ex){
+                Log::warning($ex);
+            }
+
+            return $user;
         });
     }
 }

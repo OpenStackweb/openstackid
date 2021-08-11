@@ -47,11 +47,10 @@ interface IUserService
 
     /**
      * @param User $user
-     * @param string|null $verification_link
      * @throws ValidationException
      * @return User
      */
-    public function sendVerificationEmail(User $user, string $verification_link = null): User;
+    public function sendVerificationEmail(User $user): User;
 
     /**
      * @param User $user
@@ -102,9 +101,9 @@ interface IUserService
 
     /**
      * @param User $user
-     * @return string|null
+     * @return void
      */
-    public function sendWelcomeEmail(User $user):?string;
+    public function sendWelcomeEmail(User $user):void;
 
     /**
      * @param string $email
@@ -112,4 +111,16 @@ interface IUserService
      * @throws \Exception
      */
     public function generatePasswordResetRequest(string $email):UserPasswordResetRequest;
+
+    /**
+     * @param int $user_id
+     * @return User|null
+     */
+    public function sendSuccessfulVerificationEmail(int $user_id):?User;
+
+    /**
+     * @param int $user_id
+     * @return User|null
+     */
+    public function initializeUser(int $user_id):?User;
 }

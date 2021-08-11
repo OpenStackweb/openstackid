@@ -57,6 +57,11 @@ class UserEmailVerificationSuccess extends Mailable
     public $subject;
 
     /**
+     * @var bool
+     */
+    public $user_is_complete;
+
+    /**
      * UserEmailVerificationSuccess constructor.
      * @param User $user
      * @param string|null $reset_password_link
@@ -71,6 +76,10 @@ class UserEmailVerificationSuccess extends Mailable
         $this->user_fullname = $user->getFullName();
         $this->reset_password_link = $reset_password_link;
         $this->reset_password_link_lifetime = Config::get("auth.password_reset_lifetime")/60;
+        $this->user_is_complete = !empty($user->getFirstName()) &&
+            !empty($user->getLastName()) &&
+            !empty($user->getCompany()) &&
+            !empty($user->getCountry());
     }
 
     /**
