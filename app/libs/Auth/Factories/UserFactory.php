@@ -163,8 +163,11 @@ final class UserFactory
         if(isset($payload['public_profile_show_email']))
             $user->setPublicProfileShowEmail(boolval($payload['public_profile_show_email']));
 
-        if(isset($payload['email_verified']) && boolval($payload['email_verified']) === true && !$user->isEmailVerified())
-            $user->verifyEmail();
+        if(isset($payload['email_verified']) && boolval($payload['email_verified']) === true && !$user->isEmailVerified()) {
+            // we have this variable to bypass email UserEmailVerified
+            $send_email_verified_notice = isset($payload['send_email_verified_notice']) ? boolval($payload['send_email_verified_notice']):true;
+            $user->verifyEmail($send_email_verified_notice);
+        }
 
         if(isset($payload['full_name']))
             $user->setFullName(trim($payload['full_name']));

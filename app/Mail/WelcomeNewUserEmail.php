@@ -43,11 +43,6 @@ final class WelcomeNewUserEmail extends Mailable
     /**
      * @var string
      */
-    public $verification_link;
-
-    /**
-     * @var string
-     */
     public $bio_link;
 
     /**
@@ -69,22 +64,29 @@ final class WelcomeNewUserEmail extends Mailable
     public $subject;
 
     /**
+     * @var bool
+     */
+    public $user_is_complete;
+
+    /**
      * WelcomeNewUserEmail constructor.
      * @param User $user
-     * @param string|null $verification_link
      * @param string|null $reset_password_link
      */
     public function __construct
     (
         User $user,
-        ?string $verification_link,
         ?string $reset_password_link
     )
     {
         $this->user_email = $user->getEmail();
         $this->user_fullname = $user->getFullName();
-        $this->verification_link = $verification_link;
         $this->bio_link = URL::action("UserController@getLogin");
+        $this->user_is_complete = !empty($user->getFirstName()) &&
+                                  !empty($user->getLastName()) &&
+                                  !empty($user->getCompany()) &&
+                                  !empty($user->getCountry());
+
         $this->reset_password_link = $reset_password_link;
         $this->reset_password_link_lifetime = Config::get("auth.password_reset_lifetime")/60;
     }

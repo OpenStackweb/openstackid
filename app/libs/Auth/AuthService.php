@@ -198,10 +198,15 @@ final class AuthService extends AbstractService implements IAuthService
 
                 Log::debug(sprintf("AuthService::loginWithOTP user %s does not exists ...", $otp->getUserName()));
 
-                $user = $this->auth_user_service->registerUser([
-                    'email' => $otp->getUserName(),
-                    'email_verified' => true,
-                ]);
+                $user = $this->auth_user_service->registerUser
+                (
+                    [
+                        'email' => $otp->getUserName(),
+                        'email_verified' => true,
+                        // dont send email
+                        'send_email_verified_notice' => false
+                    ]
+                );
             }
 
             $otp->setAuthTime(time());

@@ -15,23 +15,16 @@
             </td>
         </tr>
         @endif
+        @if(!$user_is_complete)
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">
-                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">If you have not entered your first name, last name, company, and country please <a href="{!! URL::action("UserController@getLogin") !!}" target="_blank">do so in your profile now</a>. You may also update your photo, add a bio, and provide other information you may wish to share.</div>
+                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">If you have not entered your first name, last name, company, and country please <a href="{!! URL::action("UserController@getLogin") !!}" target="_blank">do so in your profile now</a>. You may also update your photo, add a bio, and provide other information you wish to share.</div>
             </td>
         </tr>
-        @if($verification_link)
-            <tr>
-                <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">
-                    <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">
-                        In order to verify your email, please click the verification link: <a href="{!! $verification_link !!}" target="_blank">Verify Email Address.</a>
-                    </div>
-                </td>
-            </tr>
         @endif
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">
-                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">Your {!! Config::get('app.app_name') !!} can be used to access all {!! Config::get('app.tenant_name') !!} apps necessary to interact with the event.  In order for the apps to operate, each one will ask permission for your information or the authority to use your {!! Config::get('app.app_name') !!}.</div>
+                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">Your {!! Config::get('app.app_name') !!} can be used to access all {!! Config::get('app.tenant_name') !!} apps necessary to interact with the event. In order for the apps to operate, each one will ask for permission to access your information and/or request the authority to use your {!! Config::get('app.app_name') !!}.</div>
             </td>
         </tr>
         <tr>

@@ -70,59 +70,17 @@ final class EventServiceProvider extends ServiceProvider
 
         Event::listen(UserEmailVerified::class, function($event)
         {
-            $repository   = App::make(IUserRepository::class);
-            $user         = $repository->getById($event->getUserId());
-            if(is_null($user) || !$user instanceof User) return;
-
-            $reset_password_link = null;
-
-            if(!$user->hasPasswordSet()){
-                $service = App::make(IUserService::class);
-                $request = $service->generatePasswordResetRequest($user->getEmail());
-                $reset_password_link = $request->getResetLink();
-            }
-
-            Mail::queue(new UserEmailVerificationSuccess($user, $reset_password_link));
+            $service   = App::make(IUserService::class);
+            if(is_null($service) || !$service instanceof IUserService) return;
+            $service->sendSuccessfulVerificationEmail($event->getUserId());
         });
 
         Event::listen(UserCreated::class, function($event)
         {
-            $repository   = App::make(IUserRepository::class);
-            $user         = $repository->getById($event->getUserId());
-            if(is_null($user)) return;
-            if(! $user instanceof User) return;
-            $user_service = App::make(IUserService::class);
-            if(!$user_service instanceof IUserService) return;
-
-            $user_service->generateIdentifier($user);
-
-            $verification_link = $user_service->sendWelcomeEmail($user);
-
-            if(!$user->isEmailVerified()) {
-
-                if (!$user->hasCreator())
-                    $user_service->sendVerificationEmail($user, $verification_link);
-            }
-            else{
-                // email is already verified
-                $reset_password_link = null;
-
-                if(!$user->hasPasswordSet()){
-                    $service = App::make(IUserService::class);
-                    $request = $service->generatePasswordResetRequest($user->getEmail());
-                    $reset_password_link = $request->getResetLink();
-                }
-
-                Mail::queue(new UserEmailVerificationSuccess($user, $reset_password_link));
-            }
-
-            try {
-                if(Config::get("queue.enable_message_broker", false) == true)
-                    PublishUserCreated::dispatch($user)->onConnection('message_broker');
-            }
-            catch (\Exception $ex){
-                Log::warning($ex);
-            }
+            // new user created
+            $service = App::make(IUserService::class);
+            if(is_null($service) || !$service instanceof IUserService) return;
+            $service->initializeUser($event->getUserId());
         });
 
         Event::listen(UserSpamStateUpdated::class, function($event)

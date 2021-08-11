@@ -103,13 +103,14 @@ final class SocialLoginController extends Controller
                 Log::debug(sprintf("SocialLoginController::callback provider %s user does not exists for email %s, creating ...", $provider, $social_user->getEmail()));
                 // if does not exists , registered it with email verified and active
 
-
                 $user = $this->user_service->registerUser([
                     'email' => $social_user->getEmail(),
                     'full_name' => $social_user->getName(),
                     'external_pic' => $social_user->getAvatar(),
                     'external_id' => $social_user->getId(),
                     'email_verified' => true,
+                    // dont send email
+                    'send_email_verified_notice' => false,
                     'active' => true,
                     'external_provider' => $provider
                 ]);

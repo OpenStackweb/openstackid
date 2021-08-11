@@ -1516,26 +1516,23 @@ SQL;
     }
 
     /**
+     * @param bool $send_email_verified_notice
      * @return $this
      * @throws \Exception
      */
-    public function verifyEmail()
+    public function verifyEmail(bool $send_email_verified_notice = true)
     {
         if (!$this->email_verified) {
+
             Log::debug(sprintf("User::verifyEmail verifying email %s", $this->email));
             $this->email_verified      = true;
             $this->spam_type           = self::SpamTypeHam;
             $this->active              = true;
             $this->lock                = false;
             $this->email_verified_date = new \DateTime('now', new \DateTimeZone('UTC'));
-            Event::dispatch(new UserEmailVerified(
-                    $this->getId()
-                )
-            );
-            Event::dispatch(new UserSpamStateUpdated(
-                    $this->getId()
-                )
-            );
+            if($send_email_verified_notice)
+                Event::dispatch(new UserEmailVerified($this->getId()));
+            Event::dispatch(new UserSpamStateUpdated($this->getId()));
         }
         return $this;
     }
@@ -1876,5 +1873,12 @@ SQL;
      */
     public function hasPasswordSet():bool{
         return !empty($this->password);
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasIdentifier():bool{
+        return !empty($this->identifier);
     }
 }
