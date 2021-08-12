@@ -11,8 +11,8 @@
 @section('content')
     <div class="container">
         <div class="well">
-            <p> You successfully registered !!!</p>
-            <p> You will be receiving a confirmation email shortly, please check your inbox.</p>
+            <p> Thank you for creation an {!! Config::get("app.app_name") !!}. You will be receiving an email to verify your email address and
+            then another one confirming you have successfully created your {!! Config::get("app.app_name") !!} after your email is verified.</p>
             @if($redirect_uri)
                 <p>Now you will be redirected to <a id="redirect_url" name="redirect_url" href="{{$redirect_uri}}">{{$redirect_uri}}</a></p>
             @else
