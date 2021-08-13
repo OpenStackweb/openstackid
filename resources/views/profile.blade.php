@@ -27,6 +27,7 @@
                               enctype="multipart/form-data"
                               method="post"
                               style="padding-bottom: 20px"
+                              target="_self"
                               action='{!!URL::action("Api\\UserApiController@updateMe") !!}'>
                             @method('PUT')
                             @csrf
@@ -216,6 +217,7 @@
                                 <a target="_self" href="#" class="change-password-link">Change Password</a>
                             </div>
                             <div id="password_container">
+                                @if($user->hasPasswordSet())
                                 <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
                                     <input type="password" class="form-control" id="current_password" name="current_password"
                                            autocomplete="new-password"
@@ -223,7 +225,7 @@
                                            data-lpignore="true"
                                     >
                                 </div>
-
+                                @endif
                                 <div class="form-group password-container col-xs-10 col-sm-4 col-md-12 col-lg-12">
                                     <input type="password" class="form-control" id="password" name="password"
                                            autocomplete="new-password"
@@ -369,7 +371,6 @@
         var current_language = '{!!$user->language!!}';
         var current_country  = '{!!$user->country_iso_code!!}';
         var current_gender   = '{!! $user->gender !!}';
-
     </script>
     {!! HTML::script('assets/simplemde/simplemde.min.js') !!}
     {!! HTML::style('assets/simplemde/simplemde.min.css') !!}

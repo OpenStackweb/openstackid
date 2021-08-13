@@ -251,7 +251,8 @@ final class UserService extends AbstractService implements IUserService
             $should_ask_4_cur_password_validation = !(!is_null($current_user) &&
                                          $user->getId() != $current_user->getId() && // is not the same user as current user
                                          ($current_user->isAdmin() || $current_user->isSuperAdmin()) && // current user should be admin
-                                         (!$user->isAdmin() && !$user->isSuperAdmin()));// user to update is not admin
+                                         (!$user->isAdmin() && !$user->isSuperAdmin())) // user to update is not admin
+                                         && $user->hasPasswordSet();
 
             if($should_ask_4_cur_password_validation) {
                 if (isset($payload["password"]) && !empty($payload["password"])) {

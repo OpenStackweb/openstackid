@@ -1,4 +1,6 @@
 <?php namespace App\Http\Controllers;
+use Auth\User;
+
 /**
  * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,11 +23,11 @@ final class UserValidationRulesFactory
 {
     /**
      * @param array $data
-     * @param bool $update
-     * @param bool $is_admin
-     * @return array
+     * @param false $update
+     * @param User|null $currentUser
+     * @return string[]
      */
-    public static function build(array $data, $update = false, $is_admin = false){
+    public static function build(array $data, $update = false, ?User $currentUser = null){
 
         if($update){
             $rules =  [
@@ -65,7 +67,7 @@ final class UserValidationRulesFactory
                 'public_profile_show_email' => 'sometimes|boolean',
             ];
 
-            if(!$is_admin){
+            if(!is_null($currentUser) && !$currentUser->isAdmin() && $currentUser->hasPasswordSet()){
                 $rules['current_password'] = 'required_with:password';
             }
 

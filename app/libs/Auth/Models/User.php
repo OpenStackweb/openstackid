@@ -646,7 +646,7 @@ class User extends BaseEntity
      */
     public function isAdmin(): bool
     {
-        return $this->belongToGroup(IGroupSlugs::AdminGroup);
+        return $this->belongToGroup(IGroupSlugs::SuperAdminGroup) || $this->belongToGroup(IGroupSlugs::AdminGroup);
     }
 
     /**
