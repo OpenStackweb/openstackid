@@ -349,7 +349,7 @@ class PasswordlessGrantType extends InteractiveGrantType
 
             return $response;
         } catch (InvalidOTPException $ex) {
-            $this->log_service->error($ex);
+            $this->log_service->warning($ex);
             $this->security_context_service->clear();
             throw new InvalidRedeemOTPException
             (

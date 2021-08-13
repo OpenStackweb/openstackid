@@ -21,7 +21,9 @@ function UsersCrud(urls, perPage) {
                 'td.user-identifier': 'user.identifier',
                 'td.user-fname': 'user.first_name',
                 'td.user-lname': 'user.last_name',
-                'td.user-email': 'user.email',
+                'td.user-email': function(arg){
+                    return arg.item.email.replace("<","").replace(">", "");
+                },
                 'td.user-spam-type': 'user.spam_type',
                 'td.user-last-login': function (arg) {
                     if (arg.item.last_login_date == null) return 'N/A';

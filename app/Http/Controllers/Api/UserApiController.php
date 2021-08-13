@@ -188,7 +188,7 @@ final class UserApiController extends APICRUDController
      */
     protected function getUpdatePayloadValidationRules(): array
     {
-        return UserValidationRulesFactory::build([], true, true);
+        return UserValidationRulesFactory::build([], true, Auth::user());
     }
 
     protected function curateUpdatePayload(array $payload): array
@@ -218,7 +218,7 @@ final class UserApiController extends APICRUDController
      */
     protected function getCreatePayloadValidationRules(): array
     {
-        return UserValidationRulesFactory::build([], false, true);
+        return UserValidationRulesFactory::build([], false, Auth::user());
     }
 
     /**
