@@ -61,11 +61,6 @@ final class UserService extends AbstractService implements IUserService
     private $group_repository;
 
     /**
-     * @var IUserNameGeneratorService
-     */
-    private $name_generator_service;
-
-    /**
      * @var IUserPasswordResetRequestRepository
      */
     private $request_reset_password_repository;
@@ -86,6 +81,11 @@ final class UserService extends AbstractService implements IUserService
     private $spam_estimator_feed_repository;
 
     /**
+     * @var IUserIdentifierGeneratorService
+     */
+    private $identifier_service;
+
+    /**
      * UserService constructor.
      * @param IUserRepository $user_repository
      * @param IGroupRepository $group_repository
@@ -93,7 +93,7 @@ final class UserService extends AbstractService implements IUserService
      * @param IUserRegistrationRequestRepository $user_registration_request_repository
      * @param IClientRepository $client_repository
      * @param ISpamEstimatorFeedRepository $spam_estimator_feed_repository
-     * @param IUserNameGeneratorService $name_generator_service
+     * @param IUserIdentifierGeneratorService $identifier_service
      * @param ITransactionService $tx_service
      */
     public function __construct
@@ -104,18 +104,18 @@ final class UserService extends AbstractService implements IUserService
         IUserRegistrationRequestRepository $user_registration_request_repository,
         IClientRepository $client_repository,
         ISpamEstimatorFeedRepository $spam_estimator_feed_repository,
-        IUserNameGeneratorService $name_generator_service,
+        IUserIdentifierGeneratorService $identifier_service,
         ITransactionService $tx_service
     )
     {
         parent::__construct($tx_service);
         $this->user_repository = $user_repository;
         $this->group_repository = $group_repository;
-        $this->name_generator_service = $name_generator_service;
         $this->request_reset_password_repository = $request_reset_password_repository;
         $this->user_registration_request_repository = $user_registration_request_repository;
         $this->spam_estimator_feed_repository = $spam_estimator_feed_repository;
         $this->client_repository = $client_repository;
+        $this->identifier_service = $identifier_service;
     }
 
     /**
@@ -138,7 +138,7 @@ final class UserService extends AbstractService implements IUserService
             }
 
             $user = UserFactory::build($payload);
-            $this->generateIdentifier($user);
+            $this->identifier_service->generateIdentifier($user);
             $this->user_repository->add($user);
 
             $formerRequest = $this->user_registration_request_repository->getByEmail($email);
@@ -239,33 +239,6 @@ final class UserService extends AbstractService implements IUserService
             $verification_link = $this->generateVerificationLink($user);
 
             Mail::queue(new UserEmailVerificationRequest($user, $verification_link));
-
-            return $user;
-        });
-    }
-
-    /**
-     * @param User $user
-     * @return User
-     * @throws \Exception
-     */
-    public function generateIdentifier(User $user): User
-    {
-        return $this->tx_service->transaction(function () use ($user) {
-            if($user->hasIdentifier()) return $user;
-            $fragment_nbr = 1;
-            $this->name_generator_service->generate($user);
-            $identifier = $original_identifier = $user->getIdentifier();
-            do {
-                $old_user = $this->user_repository->getByIdentifier($identifier);
-                if (!is_null($old_user)) {
-                    $identifier = $original_identifier . IUserNameGeneratorService::USER_NAME_CHAR_CONNECTOR . $fragment_nbr;
-                    $fragment_nbr++;
-                    continue;
-                }
-                $user->setIdentifier($identifier);
-                break;
-            } while (1);
 
             return $user;
         });
@@ -445,7 +418,7 @@ final class UserService extends AbstractService implements IUserService
                 'active' => true,
                 'email_verified' => true,
             ]);
-
+            $this->identifier_service->generateIdentifier($user);
             $request->setOwner($user);
             $request->redeem();
             $this->user_repository->add($user);

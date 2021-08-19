@@ -19,10 +19,12 @@ use App\Services\Auth\GroupService;
 use App\Services\Auth\IDisqusSSOService;
 use App\Services\Auth\IGroupService;
 use App\Services\Auth\IRocketChatSSOService;
+use App\Services\Auth\IUserIdentifierGeneratorService;
 use App\Services\Auth\IUserService;
 use App\Services\Auth\RocketChatSSOService;
 use App\Services\Auth\StreamChatSSOService;
 use App\Services\Auth\IStreamChatSSOService;
+use App\Services\Auth\UserIdentifierGeneratorService;
 use App\Services\Auth\UserService;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
@@ -43,6 +45,7 @@ final class ServicesProvider extends ServiceProvider implements DeferrableProvid
 
     public function register(){
 
+        App::singleton(IUserIdentifierGeneratorService::class, UserIdentifierGeneratorService::class);
         App::singleton(\Services\IUserActionService::class, \Services\UserActionService::class);
         App::singleton(\Services\SecurityPolicies\DelayCounterMeasure::class,  \Services\SecurityPolicies\DelayCounterMeasure::class);
         App::singleton(\Services\SecurityPolicies\LockUserCounterMeasure::class, \Services\SecurityPolicies\LockUserCounterMeasure::class);
@@ -116,6 +119,7 @@ final class ServicesProvider extends ServiceProvider implements DeferrableProvid
             IRocketChatSSOService::class,
             IRocketChatAPI::class,
             IStreamChatSSOService::class,
+            IUserIdentifierGeneratorService::class,
         ];
     }
 }

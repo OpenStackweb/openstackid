@@ -53,12 +53,6 @@ interface IUserService
     public function sendVerificationEmail(User $user): User;
 
     /**
-     * @param User $user
-     * @return User
-     */
-    public function generateIdentifier(User $user):User;
-
-    /**
      * @param array $payload
      * @throws ValidationException
      * @throws EntityNotFoundException
