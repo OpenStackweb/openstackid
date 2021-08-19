@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Events\UserEmailUpdated;
 use App\Events\UserPasswordResetSuccessful;
 use App\Jobs\PublishUserDeleted;
@@ -18,6 +19,7 @@ use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\Services\AbstractService;
+use App\Services\Auth\IUserIdentifierGeneratorService;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
@@ -36,6 +38,7 @@ use Utils\Db\ITransactionService;
 use Utils\Services\ILogService;
 use Utils\Services\IServerConfigurationService;
 use App\libs\Utils\FileSystem\FileNameSanitizer;
+
 /**
  * Class UserService
  * @package Services\OpenId
@@ -43,7 +46,7 @@ use App\libs\Utils\FileSystem\FileNameSanitizer;
 final class UserService extends AbstractService implements IUserService
 {
 
-     /**
+    /**
      * @var IUserRepository
      */
     private $repository;
@@ -73,6 +76,11 @@ final class UserService extends AbstractService implements IUserService
     private $server_ctx;
 
     /**
+     * @var IUserIdentifierGeneratorService
+     */
+    private $identifier_service;
+
+    /**
      * UserService constructor.
      * @param IUserRepository $repository
      * @param IGroupRepository $group_repository
@@ -81,6 +89,7 @@ final class UserService extends AbstractService implements IUserService
      * @param IServerConfigurationService $configuration_service
      * @param ILogService $log_service
      * @param IResourceServerContext $server_ctx
+     * @param IUserIdentifierGeneratorService $identifier_service
      */
     public function __construct
     (
@@ -90,16 +99,18 @@ final class UserService extends AbstractService implements IUserService
         ITransactionService $tx_service,
         IServerConfigurationService $configuration_service,
         ILogService $log_service,
-        IResourceServerContext $server_ctx
+        IResourceServerContext $server_ctx,
+        IUserIdentifierGeneratorService $identifier_service
     )
     {
         parent::__construct($tx_service);
-        $this->repository            = $repository;
-        $this->group_repository      = $group_repository;
-        $this->user_name_generator   = $user_name_generator;
+        $this->repository = $repository;
+        $this->group_repository = $group_repository;
+        $this->user_name_generator = $user_name_generator;
         $this->configuration_service = $configuration_service;
-        $this->log_service           = $log_service;
+        $this->log_service = $log_service;
         $this->server_ctx = $server_ctx;
+        $this->identifier_service = $identifier_service;
     }
 
     /**
@@ -107,11 +118,11 @@ final class UserService extends AbstractService implements IUserService
      * @return User
      * @throws EntityNotFoundException
      */
-    public function updateLastLoginDate(int $user_id):User
+    public function updateLastLoginDate(int $user_id): User
     {
-        return $this->tx_service->transaction(function() use($user_id){
+        return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
             $user->updateLastLoginDate();
             return $user;
         });
@@ -122,11 +133,11 @@ final class UserService extends AbstractService implements IUserService
      * @return User
      * @throws EntityNotFoundException
      */
-    public function updateFailedLoginAttempts(int $user_id):User
+    public function updateFailedLoginAttempts(int $user_id): User
     {
-         return $this->tx_service->transaction(function() use($user_id){
+        return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
             $user->updateLoginFailedAttempt();
             return $user;
         });
@@ -137,11 +148,11 @@ final class UserService extends AbstractService implements IUserService
      * @return User
      * @throws EntityNotFoundException
      */
-    public function lockUser(int $user_id):User
+    public function lockUser(int $user_id): User
     {
-        return $this->tx_service->transaction(function() use($user_id){
+        return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
             return $user->lock();
         });
     }
@@ -151,11 +162,11 @@ final class UserService extends AbstractService implements IUserService
      * @return void
      * @throws EntityNotFoundException
      */
-    public function unlockUser(int $user_id):User
+    public function unlockUser(int $user_id): User
     {
-        return $this->tx_service->transaction(function() use($user_id){
+        return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
             return $user->unlock();
         });
     }
@@ -170,16 +181,16 @@ final class UserService extends AbstractService implements IUserService
      * @throws EntityNotFoundException
      * @throws ValidationException
      */
-    public function saveProfileInfo($user_id, $show_pic, $show_full_name, $show_email, $identifier):User
+    public function saveProfileInfo($user_id, $show_pic, $show_full_name, $show_email, $identifier): User
     {
 
-        return $this->tx_service->transaction(function() use($user_id, $show_pic, $show_full_name, $show_email, $identifier){
+        return $this->tx_service->transaction(function () use ($user_id, $show_pic, $show_full_name, $show_email, $identifier) {
             $user = $this->repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
 
             $former_user = $this->repository->getByIdentifier($identifier);
 
-            if(!is_null($former_user) && $former_user->getId() != $user_id){
+            if (!is_null($former_user) && $former_user->getId() != $user_id) {
                 throw new ValidationException("there is already another user with that openid identifier");
             }
 
@@ -200,30 +211,30 @@ final class UserService extends AbstractService implements IUserService
      */
     public function create(array $payload): IEntity
     {
-        return $this->tx_service->transaction(function() use($payload){
-            if(isset($payload["email"])){
+        return $this->tx_service->transaction(function () use ($payload) {
+            if (isset($payload["email"])) {
                 $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
-                if(!is_null($former_user))
+                if (!is_null($former_user))
                     throw new ValidationException(sprintf("email %s already belongs to another user", $payload["email"]));
             }
 
-            if(isset($payload["identifier"]) && !empty($payload["identifier"])){
+            if (isset($payload["identifier"]) && !empty($payload["identifier"])) {
                 $former_user = $this->repository->getByIdentifier(trim($payload["identifier"]));
-                if(!is_null($former_user))
+                if (!is_null($former_user))
                     throw new ValidationException(sprintf("identifier %s already belongs to another user", $payload["identifier"]));
             }
 
             $user = UserFactory::build($payload);
 
-            if(isset($payload['groups'])){
-                foreach($payload['groups'] as $group_id) {
+            if (isset($payload['groups'])) {
+                foreach ($payload['groups'] as $group_id) {
                     $group = $this->group_repository->getById($group_id);
-                    if(is_null($group))
+                    if (is_null($group))
                         throw new EntityNotFoundException("group not found");
                     $user->addToGroup($group);
                 }
             }
-
+            $this->identifier_service->generateIdentifier($user);
             $this->repository->add($user);
 
             return $user;
@@ -239,22 +250,22 @@ final class UserService extends AbstractService implements IUserService
      */
     public function update(int $id, array $payload): IEntity
     {
-        $user = $this->tx_service->transaction(function() use($id, $payload){
+        $user = $this->tx_service->transaction(function () use ($id, $payload) {
 
             $user = $this->repository->getById($id);
-            if(is_null($user) || !$user instanceof User)
+            if (is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
 
             $former_email = $user->getEmail();
             $former_password = $user->getPassword();
-            $current_user = !empty($this->server_ctx->getCurrentUserId()) ? $this->repository->getById($this->server_ctx->getCurrentUserId()):Auth::user();
+            $current_user = !empty($this->server_ctx->getCurrentUserId()) ? $this->repository->getById($this->server_ctx->getCurrentUserId()) : Auth::user();
             $should_ask_4_cur_password_validation = !(!is_null($current_user) &&
-                                         $user->getId() != $current_user->getId() && // is not the same user as current user
-                                         ($current_user->isAdmin() || $current_user->isSuperAdmin()) && // current user should be admin
-                                         (!$user->isAdmin() && !$user->isSuperAdmin())) // user to update is not admin
-                                         && $user->hasPasswordSet();
+                    $user->getId() != $current_user->getId() && // is not the same user as current user
+                    ($current_user->isAdmin() || $current_user->isSuperAdmin()) && // current user should be admin
+                    (!$user->isAdmin() && !$user->isSuperAdmin())) // user to update is not admin
+                && $user->hasPasswordSet();
 
-            if($should_ask_4_cur_password_validation) {
+            if ($should_ask_4_cur_password_validation) {
                 if (isset($payload["password"]) && !empty($payload["password"])) {
                     // changing password
                     if (!isset($payload['current_password']))
@@ -266,37 +277,37 @@ final class UserService extends AbstractService implements IUserService
                 }
             }
 
-            if(isset($payload["email"]) && !empty($payload["email"])){
+            if (isset($payload["email"]) && !empty($payload["email"])) {
                 $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
-                if(!is_null($former_user) && $former_user->getId() != $id)
+                if (!is_null($former_user) && $former_user->getId() != $id)
                     throw new ValidationException(sprintf("email %s already belongs to another user", $payload["email"]));
             }
 
-            if(isset($payload["identifier"]) && !empty($payload["identifier"])){
+            if (isset($payload["identifier"]) && !empty($payload["identifier"])) {
                 $former_user = $this->repository->getByIdentifier(trim($payload["identifier"]));
-                if(!is_null($former_user) && $former_user->getId() != $id)
+                if (!is_null($former_user) && $former_user->getId() != $id)
                     throw new ValidationException(sprintf("identifier %s already belongs to another user", $payload["identifier"]));
             }
 
             $user = UserFactory::populate($user, $payload);
 
-            if(isset($payload['groups'])){
+            if (isset($payload['groups'])) {
                 $user->clearGroups();
-                foreach($payload['groups'] as $group_id) {
+                foreach ($payload['groups'] as $group_id) {
                     $group = $this->group_repository->getById($group_id);
-                    if(is_null($group))
+                    if (is_null($group))
                         throw new EntityNotFoundException("group not found");
                     $user->addToGroup($group);
                 }
             }
 
-            if($former_email != $user->getEmail()){
-                Log::warning(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email , $user->getEmail()));
+            if ($former_email != $user->getEmail()) {
+                Log::warning(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email, $user->getEmail()));
                 $user->clearEmailVerification();
                 Event::dispatch(new UserEmailUpdated($user->getId()));
             }
 
-            if($former_password != $user->getPassword()){
+            if ($former_password != $user->getPassword()) {
                 Log::warning(sprintf("UserService::update use id %s - password changed", $id));
                 Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
             }
@@ -304,10 +315,9 @@ final class UserService extends AbstractService implements IUserService
         });
 
         try {
-            if(Config::get("queue.enable_message_broker", false) == true)
+            if (Config::get("queue.enable_message_broker", false) == true)
                 PublishUserUpdated::dispatch($user)->onConnection('message_broker');
-        }
-        catch (\Exception $ex){
+        } catch (\Exception $ex) {
             Log::warning($ex);
         }
 
@@ -321,16 +331,15 @@ final class UserService extends AbstractService implements IUserService
      */
     public function delete(int $id): void
     {
-        $this->tx_service->transaction(function() use($id) {
+        $this->tx_service->transaction(function () use ($id) {
             $user = $this->repository->getById($id);
-            if(is_null($user) || !$user instanceof User)
+            if (is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
 
             try {
-                if(Config::get("queue.enable_message_broker", false) == true)
+                if (Config::get("queue.enable_message_broker", false) == true)
                     PublishUserDeleted::dispatch($user)->onConnection('message_broker');
-            }
-            catch (\Exception $ex){
+            } catch (\Exception $ex) {
                 Log::warning($ex);
             }
 
@@ -344,12 +353,12 @@ final class UserService extends AbstractService implements IUserService
      */
     public function updateProfilePhoto($user_id, UploadedFile $file, $max_file_size = 10485760): User
     {
-        $user = $this->tx_service->transaction(function() use($user_id, $file, $max_file_size) {
+        $user = $this->tx_service->transaction(function () use ($user_id, $file, $max_file_size) {
 
             $allowed_extensions = ['png', 'jpg', 'jpeg'];
 
             $user = $this->repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User)
+            if (is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
             $fileName = $file->getClientOriginalName();
             $fileExt = $file->extension() ?? pathinfo($fileName, PATHINFO_EXTENSION);
@@ -357,7 +366,7 @@ final class UserService extends AbstractService implements IUserService
             Log::debug(sprintf("UserService::updateProfilePhoto user %s fileName %s fileExt %s", $user_id, $fileName, $fileExt));
 
             if (!in_array($fileExt, $allowed_extensions)) {
-                throw new ValidationException(sprintf( "file does not has a valid extension (%s).", join(",", $allowed_extensions)));
+                throw new ValidationException(sprintf("file does not has a valid extension (%s).", join(",", $allowed_extensions)));
             }
             if ($file->getSize() > $max_file_size) {
                 throw new ValidationException(sprintf("file exceeds max_file_size (%s MB).", ($max_file_size / 1024) / 1024));
@@ -376,10 +385,9 @@ final class UserService extends AbstractService implements IUserService
         });
 
         try {
-            if(Config::get("queue.enable_message_broker", false) == true)
+            if (Config::get("queue.enable_message_broker", false) == true)
                 PublishUserUpdated::dispatch($user)->onConnection('message_broker');
-        }
-        catch (\Exception $ex){
+        } catch (\Exception $ex) {
             Log::warning($ex);
         }
 
