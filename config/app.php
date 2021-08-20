@@ -237,4 +237,6 @@ return [
     'help_email' => env('HELP_EMAIL', 'support@openstack.org'),
     'code_of_conduct_link' => env("CODE_OF_CONDUCT_LINK","https://www.openstack.org/legal/community-code-of-conduct"),
     'app_info' => env("APP_INFO_TEXT"),
+    "homepage_info" => env("APP_HOME_PAGE_INFO_TEXT", "Once you're signed in, you can manage your trusted sites, change
+                        your settings and more."),
 ];
