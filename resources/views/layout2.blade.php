@@ -11,11 +11,6 @@
     {!! HTML::style('assets/bootstrap-tagsinput/bootstrap-tagsinput.css') !!}
     {!! HTML::style('assets/sweetalert2/sweetalert2.css') !!}
     @yield('css')
-    <style type="text/css">
-        #logo a {
-            background: url("{!!  Config::get('app.logo_url') !!}") no-repeat scroll left center rgba(0, 0, 0, 0);
-        }
-    </style>
     {!! HTML::script('assets/__common__.js')!!}
     {!! HTML::script('assets/index.js')!!}
     {!! HTML::script('assets/js/ajax.utils.js')!!}
@@ -33,7 +28,9 @@
     <div class="container">
         <header class="row header">
             <div class="col-md-5">
-                <h1 id="logo"><a href="/">{!! Config::get('app.tenant_name') !!}</a></h1>
+                <p id="logo">
+                    <a href="/" target="_self" ><img src="{!!  Config::get('app.logo_url') !!}"></a>
+                </p>
             </div>
             <div class="col-md-7">
                 @yield('header_right')
