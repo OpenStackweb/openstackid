@@ -7,11 +7,11 @@ body {
     padding-top: 1em;
 }
 
-#logo a {
+#logo img {
     display: block;
-    height: 54px;
-    margin-top: 8px;
-    text-indent: -1000em;
+    max-width: 100px;
+    max-height: 54px;
+    margin: 0 auto;
 }
 
 .panel-heading {
