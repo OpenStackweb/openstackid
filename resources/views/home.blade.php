@@ -26,8 +26,8 @@
                             </div>
                         </div>
                     </div>
-                    <p class="text-info margin-top-20">Once you're signed in, you can manage your trusted sites, change
-                        your settings and more.</p>
+                    <p class="margin-top-20"><span class="glyphicon glyphicon-info-sign pointable" aria-hidden="true"
+                                                   title=""></span>&nbsp{!! Config::get("app.homepage_info") !!}</p>
                 </div>
             </div>
         </div>
