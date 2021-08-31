@@ -50,7 +50,7 @@
     "laravelcollective/html": "6.2.*",
     "php-opencloud/openstack": "dev-feature/guzzle_7_x",
     "phpseclib/phpseclib": "2.0.11",
-    "predis/predis": "v1.1.6",
+    "predis/predis": "v1.1.7",
     "s-ichikawa/laravel-sendgrid-driver": "~3.0",
     "smarcet/jose4php": "1.0.17",
     "socialiteproviders/apple": "^5.0",
