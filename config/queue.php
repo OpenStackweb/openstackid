@@ -20,7 +20,7 @@ return [
     |
     */
 
-    'default' => env('QUEUE_DRIVER', 'database'),
+    'default' => env('QUEUE_DRIVER', 'redis'),
     'enable_message_broker' => env("ENABLE_MESSAGE_BROKER", false),
     /*
     |--------------------------------------------------------------------------
@@ -46,10 +46,11 @@ return [
         // redis
         'redis' => [
             'driver' => 'redis',
-            'connection' => 'default',
-            'queue' => 'default',
-            'expire' => 60,
-            'block_for' => 5,
+            'connection' => 'worker',
+            'queue' => env('REDIS_QUEUE', 'default'),
+            'retry_after' => 90,
+            'block_for' => null,
+            'after_commit' => false,
         ],
         // ...
 

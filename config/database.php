@@ -136,5 +136,13 @@ return [
             'timeout'    => env('REDIS_TIMEOUT', 30.0)
         ],
 
+        'worker' => [
+            'host'       => env('REDIS_HOST'),
+            'port'       => env('REDIS_PORT'),
+            'database'   => 2,
+            'password'   => env('REDIS_PASSWORD'),
+            'timeout'    => env('REDIS_TIMEOUT', 30.0)
+        ],
+
     ],
 ];
