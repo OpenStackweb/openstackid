@@ -43,7 +43,7 @@
     "laravel-doctrine/extensions": "1.4.*",
     "laravel-doctrine/migrations": "2.3.*",
     "laravel-doctrine/orm": "1.7.*",
-    "laravel/framework": "^8.0",
+    "laravel/framework": "8.50.0",
     "laravel/helpers": "^1.4",
     "laravel/socialite": "^5.2",
     "laravel/tinker": "^2.5",
