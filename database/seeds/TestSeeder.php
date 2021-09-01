@@ -258,7 +258,7 @@ PPK;
                 'groups' => [
                     $super_admin_group
                 ],
-               'identifier' => '1',
+               'identifier' => 'sebastian.marcet',
             ],
             [
                 'first_name' => 'Márton',
@@ -396,6 +396,8 @@ PPK;
         DB::table('openid_associations')->delete();
         DB::table('user_actions')->delete();
         DB::table('user_groups')->delete();
+        DB::table('user_password_reset_request')->delete();
+        DB::table('oauth2_otp')->delete();
         DB::table('users')->delete();
         DB::table('groups')->delete();
 

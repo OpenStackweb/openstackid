@@ -37,7 +37,7 @@ final class OAuth2ClientTests extends TestCase
         $this->redis->flushall();
     }
 
-    public function testGetClient($appName = 'Call For Presentations'): Client
+    public function testGetClient($appName = 'oauth2_test_app'): Client
     {
         $repo = EntityManager::getRepository(Client::class);
         $client = $repo->getByApplicationName($appName);

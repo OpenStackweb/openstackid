@@ -65,7 +65,8 @@ final class ClientAuthContextValidatorFactory
             break;
             case OAuth2Protocol::TokenEndpoint_AuthMethod_None:
             {
-                return new ClientPKCEAuthContextValidator;
+                if($context->getClient()->isPKCEEnabled())
+                    return new ClientPKCEAuthContextValidator;
             }
             break;
             case OAuth2Protocol::TokenEndpoint_AuthMethod_ClientSecretJwt:
