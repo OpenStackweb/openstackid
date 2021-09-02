@@ -1,5 +1,4 @@
-openstack-member-spammer-estimator==1.0.2
-pkg-resources==0.0.0
+openstack-member-spammer-estimator==1.0.3
 attrs==19.3.0
 configparser==4.0.2
 HTMLParser==0.0.2
