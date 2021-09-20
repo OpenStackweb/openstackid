@@ -93,6 +93,12 @@ class User extends BaseEntity
     private $public_profile_show_email;
 
     /**
+     * @ORM\Column(name="public_profile_allow_chat_with_me", options={"default":0}, type="boolean")
+     * @var bool
+     */
+    private $public_profile_allow_chat_with_me;
+
+    /**
      * @ORM\Column(name="last_login_date", type="datetime")
      * @var \DateTime
      */
@@ -417,6 +423,7 @@ class User extends BaseEntity
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
         $this->public_profile_show_fullname = false;
+        $this->public_profile_allow_chat_with_me = false;
         $this->password = "";
         $this->identifier = null;
         $this->gender_specify = "";
@@ -982,6 +989,22 @@ class User extends BaseEntity
     public function setPublicProfileShowEmail(bool $public_profile_show_email): void
     {
         $this->public_profile_show_email = $public_profile_show_email;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPublicProfileAllowChatWithMe(): bool
+    {
+        return $this->public_profile_allow_chat_with_me;
+    }
+
+    /**
+     * @param bool $public_profile_allow_chat_with_me
+     */
+    public function setPublicProfileAllowChatWithMe(bool $public_profile_allow_chat_with_me): void
+    {
+        $this->public_profile_allow_chat_with_me = $public_profile_allow_chat_with_me;
     }
 
     /**
