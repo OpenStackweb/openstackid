@@ -17,11 +17,13 @@ use Auth\User;
 use OAuth2\Models\IClient;
 use OAuth2\OAuth2Protocol;
 use Utils\Http\HttpContentType;
+
 /**
  * Class OAuth2AccessTokenValidationResponse
  * @package OAuth2\Responses
  */
-class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse {
+class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse
+{
 
     /**
      * @param array|int $access_token
@@ -48,40 +50,43 @@ class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse {
         // Successful Responses: A server receiving a valid request MUST send a
         // response with an HTTP status code of 200.
         parent::__construct(self::HttpOkResponse, HttpContentType::Json);
-        $this[OAuth2Protocol::OAuth2Protocol_AccessToken]           = $access_token;
-        $this[OAuth2Protocol::OAuth2Protocol_ClientId]              = $client->getClientId();
-        $this['application_type']                                   = $client->getApplicationType();
-        $this[OAuth2Protocol::OAuth2Protocol_TokenType]             = 'Bearer';
-        $this[OAuth2Protocol::OAuth2Protocol_Scope]                 = $scope;
-        $this[OAuth2Protocol::OAuth2Protocol_Audience]              = $audience;
+        $this[OAuth2Protocol::OAuth2Protocol_AccessToken] = $access_token;
+        $this[OAuth2Protocol::OAuth2Protocol_ClientId] = $client->getClientId();
+        $this['application_type'] = $client->getApplicationType();
+        $this[OAuth2Protocol::OAuth2Protocol_TokenType] = 'Bearer';
+        $this[OAuth2Protocol::OAuth2Protocol_Scope] = $scope;
+        $this[OAuth2Protocol::OAuth2Protocol_Audience] = $audience;
         $this[OAuth2Protocol::OAuth2Protocol_AccessToken_ExpiresIn] = $expires_in;
 
-        if(!is_null($user))
-        {
+        if (!is_null($user)) {
             // user info if present
             $this[OAuth2Protocol::OAuth2Protocol_UserId] = $user->getId();
-            $this['user_identifier']                     = $user->getIdentifier();
-            $this['user_email']                          = $user->getEmail();
-            $this['user_first_name']                     = $user->getFirstName();
-            $this['user_last_name']                      = $user->getLastName();
-            $this['user_language']                       = $user->getLanguage();
-            $this['user_country']                        = $user->getCountry();
-            $this['user_email_verified']                 = $user->isEmailVerified();
-            $this['user_pic']                            = $user->getPic();
+            $this['user_identifier'] = $user->getIdentifier();
+            $this['user_email'] = $user->getEmail();
+            $this['user_first_name'] = $user->getFirstName();
+            $this['user_last_name'] = $user->getLastName();
+            $this['user_language'] = $user->getLanguage();
+            $this['user_country'] = $user->getCountry();
+            $this['user_email_verified'] = $user->isEmailVerified();
+            $this['user_pic'] = $user->getPic();
+            $this["user_public_profile_show_fullname"] = $user->isPublicProfileShowFullname();
+            $this['user_public_profile_show_email'] = $user->isPublicProfileShowEmail();
+            $this['user_public_profile_show_photo'] = $user->isPublicProfileShowPhoto();
+            $this['user_public_profile_allow_chat_with_me'] = $user->isPublicProfileAllowChatWithMe();
             // default empty value
-            $user_groups                                = [];
-            foreach ($user->getGroups() as $group){
+            $user_groups = [];
+            foreach ($user->getGroups() as $group) {
                 $user_groups[] = SerializerRegistry::getInstance()->getSerializer($group)->serialize();
             }
 
             $this['user_groups'] = $user_groups;
         }
 
-        if(count($allowed_urls)){
+        if (count($allowed_urls)) {
             $this['allowed_return_uris'] = implode(' ', $allowed_urls);
         }
 
-        if(count($allowed_origins)){
+        if (count($allowed_origins)) {
             $this['allowed_origins'] = implode(' ', $allowed_origins);
         }
     }
