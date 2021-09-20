@@ -269,6 +269,15 @@
                                     />&nbsp;Show Email on Public Profile?
                                 </label>
                             </div>
+                            <div class="checkbox col-xs-10 col-sm-4 col-md-12 col-lg-12">
+                                <label>
+                                    <input type="checkbox" id="public_profile_allow_chat_with_me" name="public_profile_allow_chat_with_me"
+                                           @if($user->public_profile_allow_chat_with_me)
+                                           checked
+                                            @endif
+                                    />&nbsp;Allow people to chat with me?
+                                </label>
+                            </div>
                             <button type="submit" class="btn btn-default btn-lg btn-primary">Save</button>
                             <input type="hidden" name="id" id="id" value="{!! $user->id !!}"/>
                         </form>
