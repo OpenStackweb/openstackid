@@ -251,6 +251,7 @@
                                     />&nbsp;Show Full name on Public Profile?
                                 </label>
                             </div>
+                            @if( Config::get('app.show_public_profile_show_photo') )
                             <div class="checkbox col-xs-10 col-sm-4 col-md-12 col-lg-12">
                                 <label>
                                     <input type="checkbox" id="public_profile_show_photo" name="public_profile_show_photo"
@@ -260,6 +261,7 @@
                                     />&nbsp;Show Pic on Public Profile?
                                 </label>
                             </div>
+                            @endif
                             <div class="checkbox col-xs-10 col-sm-4 col-md-12 col-lg-12">
                                 <label>
                                     <input type="checkbox" id="public_profile_show_email" name="public_profile_show_email"
