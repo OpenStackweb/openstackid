@@ -443,17 +443,19 @@ class LoginPage extends React.Component {
     onValidateEmail(ev) {
 
         ev.preventDefault();
+        let {user_name} = this.state;
+        user_name = user_name.trim();
 
-        if (this.state.user_name == '') {
+        if (user_name == '') {
             return false;
         }
 
-        if (!emailValidator(this.state.user_name)) {
+        if (!emailValidator(user_name)) {
             return false;
         }
 
         this.setState({...this.state, disableInput: true});
-        verifyAccount(this.state.user_name).then((payload) => {
+        verifyAccount(user_name).then((payload) => {
             let {response} = payload;
 
             this.setState({
