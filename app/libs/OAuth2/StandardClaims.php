@@ -20,6 +20,8 @@ abstract class StandardClaims
 
     const ShowFullName = 'public_profile_show_fullname';
 
+    const AllowChatWithMe = 'public_profile_allow_chat_with_me';
+
     /**
      * Given name(s) or first name(s) of the End-User. Note that in some cultures, people can have multiple given names;
      * all can be present, with the names being separated by space characters.

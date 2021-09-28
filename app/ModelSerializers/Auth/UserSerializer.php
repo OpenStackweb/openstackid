@@ -48,7 +48,11 @@ final class PrivateUserSerializer extends BaseUserSerializer
         'Identifier' => 'identifier:json_string',
         'LastLoginDate' => 'last_login_date:datetime_epoch',
         'Active' => 'active:json_boolean',
-        'EmailVerified' => 'email_verified:json_boolean'
+        'EmailVerified' => 'email_verified:json_boolean',
+        'PublicProfileShowEmail' => 'public_profile_show_email:json_boolean',
+        'PublicProfileAllowChatWithMe' => 'public_profile_allow_chat_with_me:json_boolean',
+        'PublicProfileShowFullname' => 'public_profile_show_fullname:json_boolean',
+        'PublicProfileShowPhoto' => 'public_profile_show_photo:json_boolean'
     ];
 
     /**
