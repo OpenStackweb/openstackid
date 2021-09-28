@@ -155,6 +155,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
                 $data[StandardClaims::JobTitle] = $current_user->getJobTitle();
                 $data[StandardClaims::ShowPicture] = $current_user->isPublicProfileShowPhoto();
                 $data[StandardClaims::ShowFullName] = $current_user->isPublicProfileShowFullname();
+                $data[StandardClaims::AllowChatWithMe] = $current_user->isPublicProfileAllowChatWithMe();
                 $user_groups = [];
 
                 foreach ($current_user->getGroups() as $group) {
@@ -210,6 +211,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowFullName, new JsonValue($user->isPublicProfileShowFullname())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::Company, new StringOrURI($user->getCompany())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::JobTitle, new StringOrURI($user->getJobTitle())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::AllowChatWithMe, new JsonValue($user->isPublicProfileAllowChatWithMe())));
 
         $user_groups = [];
 
