@@ -447,6 +447,7 @@ class User extends BaseEntity
         $this->external_id = null;
         $this->external_provider = null;
         $this->external_pic = null;
+        $this->public_profile_allow_chat_with_me = false;
     }
 
     /**
