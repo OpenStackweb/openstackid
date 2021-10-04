@@ -1887,8 +1887,10 @@ SQL;
      */
     public function setFullName(string $full_name):void{
         $name_parts = explode(" ", $full_name);
-        $this->first_name = $name_parts[0];
-        $this->last_name = $name_parts[1];
+        if(count($name_parts) > 0)
+            $this->first_name = $name_parts[0];
+        if(count($name_parts) > 1)
+            $this->last_name = $name_parts[1];
     }
 
     /**
