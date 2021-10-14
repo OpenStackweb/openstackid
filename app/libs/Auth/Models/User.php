@@ -17,6 +17,7 @@ use App\Events\UserSpamStateUpdated;
 use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\Auth\Models\UserRegistrationRequest;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Event;
 use App\Events\UserEmailVerified;
 use Doctrine\Common\Collections\Criteria;
@@ -860,12 +861,16 @@ class User extends BaseEntity
     {
         try {
             if (!empty($this->pic)) {
-                return Storage::disk('swift')->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
+                $storage = Storage::disk('swift');
+                if(!is_null($storage))
+                    return $storage->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
             }
             if(!empty($this->external_pic))
                 return $this->external_pic;
-
             return $this->getGravatarUrl();
+        }
+        catch(RequestException $ex1){
+            Log::warning($ex1);
         }
         catch (\Exception $ex) {
             Log::warning($ex);
