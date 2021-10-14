@@ -14,6 +14,7 @@
 use Illuminate\Support\Facades\Auth;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
+use OAuth2\Requests\OAuth2AuthenticationRequest;
 use OAuth2\Services\IMementoOAuth2SerializerService;
 use OAuth2\Services\ISecurityContextService;
 use Services\IUserActionService;
@@ -77,7 +78,7 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
         return $response_strategy->getLoginResponse([
-            'provider' => $auth_request->getProvider()
+            'provider' => $auth_request instanceof OAuth2AuthenticationRequest ? $auth_request->getProvider() : null
         ]);
     }
 
