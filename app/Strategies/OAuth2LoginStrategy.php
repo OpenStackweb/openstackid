@@ -78,7 +78,7 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
         return $response_strategy->getLoginResponse([
-            'provider' => $auth_request instanceof OAuth2AuthenticationRequest ? $auth_request->getProvider() : null
+            'provider' => $auth_request->getProvider()
         ]);
     }
 

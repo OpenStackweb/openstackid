@@ -232,4 +232,9 @@ class OAuth2AuthorizationRequest extends OAuth2Request
     public function getCodeChallengeMethod():?string{
         return $this->getParam(OAuth2Protocol::PKCE_CodeChallengeMethod);
     }
+
+    public function getProvider():?string{
+        return $this->getParam(OAuth2Protocol::OAuth2Protocol_Provider);
+    }
+
 }

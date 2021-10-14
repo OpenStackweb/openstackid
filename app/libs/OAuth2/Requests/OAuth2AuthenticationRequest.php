@@ -112,10 +112,6 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
         return str_contains($this->getScope(), OAuth2Protocol::OfflineAccess_Scope);
     }
 
-    public function getProvider():?string{
-        return $this->getParam(OAuth2Protocol::OAuth2Protocol_Provider);
-    }
-
     /**
      * @param OAuth2AuthorizationRequest $auth_request
      */
