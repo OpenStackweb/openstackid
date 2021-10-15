@@ -18,6 +18,7 @@ use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\Auth\Models\UserRegistrationRequest;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use App\Events\UserEmailVerified;
 use Doctrine\Common\Collections\Criteria;
@@ -860,13 +861,21 @@ class User extends BaseEntity
     public function getPic(): string
     {
         try {
+            $pic_key = sprintf("%s_user_pic", $this->id);
+            $pic = Cache::get($pic_key);
+            if(!empty($pic)) return $pic;
+
             if (!empty($this->pic)) {
                 $storage = Storage::disk('swift');
-                if(!is_null($storage))
-                    return $storage->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
+                if(!is_null($storage)) {
+                    $pic = $storage->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
+                    Cache::forever($pic_key, $pic);
+                    return $pic;
+                }
             }
-            if(!empty($this->external_pic))
+            if(!empty($this->external_pic)){
                 return $this->external_pic;
+            }
             return $this->getGravatarUrl();
         }
         catch(RequestException $ex1){
@@ -883,6 +892,8 @@ class User extends BaseEntity
      */
     public function setPic(string $pic){
         $this->pic = $pic;
+        $pic_key = sprintf("%s_user_pic", $this->id);
+        Cache::forget($pic_key);
     }
 
     /**
