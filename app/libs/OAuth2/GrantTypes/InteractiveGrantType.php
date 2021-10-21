@@ -268,13 +268,28 @@ abstract class InteractiveGrantType extends AbstractGrantType
             }
 
             // check for former user consents
+            Log::debug(sprintf("InteractiveGrant::handle trying to get former consent client %s (%s) scopes %s", $client->getApplicationName(), $client_id, $scope));
             $former_user_consent   = $user->findFirstConsentByClientAndScopes($client, $scope);
             $auto_approval         = $approval_prompt == OAuth2Protocol::OAuth2Protocol_Approval_Prompt_Auto;
             $has_former_consent    = !is_null($former_user_consent);
             $should_prompt_consent = $this->shouldPromptConsent($request);
 
+            Log::debug
+            (
+                sprintf
+                (
+                    "InteractiveGrant::handle client %s (%s) authorization_response %s has_former_consent %b should_prompt_consent %b",
+                    $client->getApplicationName(),
+                    $client_id,
+                    $authorization_response,
+                    $has_former_consent,
+                    $should_prompt_consent
+                )
+            );
+
             if((!$should_prompt_consent && $has_former_consent && $auto_approval) || $authorization_response == IAuthService::AuthorizationResponse_AllowOnce) {
                 // emit response ...
+                Log::debug("InteractiveGrant::handle bypassing consent");
                 $this->auth_service->registerRPLogin($client_id);
                 //save positive consent
                 if (is_null($former_user_consent)) {
@@ -291,7 +306,18 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 throw new InteractionRequiredException;
 
             $this->memento_service->serialize($request->getMessage()->createMemento());
-            $this->log_service->debug_msg(sprintf("Doing consent ... authorization_response %s should_prompt_consent %s",$authorization_response, $should_prompt_consent));
+            Log::debug
+            (
+                sprintf
+                (
+                    "InteractiveGrant::handle doing consent client %s (%s) authorization_response %s has_former_consent %b should_prompt_consent %b",
+                    $client->getApplicationName(),
+                    $client_id,
+                    $authorization_response,
+                    $has_former_consent,
+                    $should_prompt_consent
+                )
+            );
             return $this->auth_strategy->doConsent($request);
         }
         catch(Exception $ex)
@@ -542,7 +568,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
      * @param OAuth2AuthorizationRequest $request
      * @return bool
      */
-    protected function shouldPromptConsent(OAuth2AuthorizationRequest $request)
+    protected function shouldPromptConsent(OAuth2AuthorizationRequest $request):bool
     {
         if
         (

@@ -216,7 +216,7 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
      * @param string $param_name
      * @return bool
      */
-    public function isProcessedParam($param_name){
+    public function isProcessedParam(string $param_name):bool{
         $res = explode(' ', $this->getParam('processed_params'));
         return in_array($param_name, $res);
     }
@@ -225,7 +225,7 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
      * @param string $param_name
      * @return $this
      */
-    public function markParamAsProcessed($param_name)
+    public function markParamAsProcessed(string $param_name)
     {
         $res = $this->getParam('processed_params');
         if(!empty($res))
