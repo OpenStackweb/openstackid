@@ -184,7 +184,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
      */
     public function setScope(?string $scope): void
     {
-        $this->scope = $scope;
+        $this->scope =  !empty($scope) ? trim($scope):null;
     }
 
     /**
@@ -200,7 +200,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
      */
     public function setEmail(?string $email): void
     {
-        $this->email = $email;
+        $this->email =  !empty($email) ? trim($email):null;
     }
 
     /**
@@ -216,7 +216,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
      */
     public function setPhoneNumber(?string $phone_number): void
     {
-        $this->phone_number = $phone_number;
+        $this->phone_number =  !empty($phone_number) ? trim($phone_number):null;
     }
 
     /**
@@ -232,7 +232,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
      */
     public function setNonce(?string $nonce): void
     {
-        $this->nonce = $nonce;
+        $this->nonce = !empty($nonce) ? trim($nonce): null;
     }
 
     /**
@@ -248,7 +248,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
      */
     public function setRedirectUrl(?string $redirect_url): void
     {
-        $this->redirect_url = $redirect_url;
+        $this->redirect_url = !empty($redirect_url) ? trim($redirect_url) :null;
     }
 
     /**

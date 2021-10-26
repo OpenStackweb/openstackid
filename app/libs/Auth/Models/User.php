@@ -1277,6 +1277,8 @@ class User extends BaseEntity
      */
     public function setPassword(string $password): void
     {
+        $password = trim($password);
+
         if(empty($this->password_enc)){
             $this->password_enc = AuthHelper::AlgNative;
         }
@@ -1510,6 +1512,7 @@ SQL;
      */
     public function setEmail(string $email): void
     {
+        $email = trim($email);
         if (!empty($this->email) && $email != $this->email) {
             //we are setting a new email
             $this->clearResetPasswordRequests();

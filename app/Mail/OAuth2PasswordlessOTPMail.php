@@ -62,8 +62,8 @@ class OAuth2PasswordlessOTPMail extends Mailable
         int $lifetime
     )
     {
-        $this->email = $to;
-        $this->otp = $otp;
+        $this->email = trim($to);
+        $this->otp = trim($otp);
         $this->lifetime = $lifetime / 60;
     }
     /**
