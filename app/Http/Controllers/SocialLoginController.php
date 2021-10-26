@@ -96,8 +96,25 @@ final class SocialLoginController extends Controller
             $social_user = Socialite::driver($provider)->user();
             // try to get user by primary email from our db
             Log::debug(sprintf("SocialLoginController::callback provider %s trying to get user using email %s", $provider, $social_user->getEmail()));
+            $user_email = $social_user->getEmail();
 
-            $user = $this->auth_service->getUserByUsername($social_user->getEmail());
+            if(is_null($user_email))
+            {
+                Log::error
+                (
+                    sprintf
+                    (
+                        "SocialLoginController::callback user email is null provider %s user id %s user name %s user nick name %s",
+                        $provider,
+                        $social_user->getId(),
+                        $social_user->getName(),
+                        $social_user->getNickname()
+                    )
+                );
+                throw new ValidationException("User email is null");
+            }
+
+            $user = $this->auth_service->getUserByUsername($user_email);
 
             if (is_null($user)) {
                 Log::debug(sprintf("SocialLoginController::callback provider %s user does not exists for email %s, creating ...", $provider, $social_user->getEmail()));
