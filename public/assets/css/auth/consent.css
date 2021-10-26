@@ -1,0 +1,12 @@
+.consents-container{
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.consents-footer{
+    padding-top: 20px;
+}
+
+.consents-footer button{
+    padding: 10px;
+}

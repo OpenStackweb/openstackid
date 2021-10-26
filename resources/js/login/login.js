@@ -42,7 +42,7 @@ const EmailInputForm = ({onValidateEmail, onHandleUserNameChange, disableInput, 
                 fullWidth
                 disabled={disableInput}
                 label="Email Address"
-                autoFocus
+                autoFocus={true}
                 onChange={onHandleUserNameChange}
                 error={emailError != ""}
                 helperText={emailError}
@@ -90,6 +90,7 @@ const PasswordInputForm = ({
                 margin="normal"
                 required
                 fullWidth
+                autoFocus={true}
                 label="Enter Your Password"
                 autoComplete="current-password"
                 onChange={onUserPasswordChange}
@@ -163,6 +164,7 @@ const OTPInputForm = ({
                 margin="normal"
                 required
                 fullWidth
+                autoFocus={true}
                 label="Enter Your verification code"
                 autoComplete="new-password"
                 error={passwordError != ""}
