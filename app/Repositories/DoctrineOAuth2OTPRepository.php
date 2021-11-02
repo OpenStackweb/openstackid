@@ -23,7 +23,7 @@ class DoctrineOAuth2OTPRepository
     implements IOAuth2OTPRepository
 {
 
-    protected function getBaseEntity()
+    protected function getBaseEntity(): string
     {
        return OAuth2OTP::class;
     }
@@ -60,8 +60,11 @@ class DoctrineOAuth2OTPRepository
             $query->join("e.client", "c")->andWhere("c.id = :client_id")
                 ->setParameter("client_id", $client->getId());
         }
+        // try to get the latest one
         $query->addOrderBy("e.id", "DESC");
-        return $query->getQuery()->getOneOrNullResult();
+        return $query->getQuery()
+            ->setMaxResults(1)
+            ->getOneOrNullResult();
     }
 
     /**
