@@ -496,7 +496,7 @@ final class UserController extends OpenIdController
     {
         if (is_null($this->consent_strategy)) {
 
-            Log::error(sprintf("UserController::getConsent consent strategy is null. request %s %s", Request::method(), Request::path()));
+            Log::warning(sprintf("UserController::getConsent consent strategy is null. request %s %s", Request::method(), Request::path()));
             return Response::view
             (
                 'errors.400',
