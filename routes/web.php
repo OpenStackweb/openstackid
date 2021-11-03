@@ -101,7 +101,7 @@ Route::group(['namespace' => 'OAuth2', 'middleware' => ['ssl']], function () {
     Route::get('/.well-known/openid-configuration', "OAuth2ProviderController@discovery");
 });
 
-Route::group(['namespace' => 'OAuth2', 'prefix' => 'oauth2', 'middleware' => ['ssl','throttle:oauth2']], function () {
+Route::group(['namespace' => 'OAuth2', 'prefix' => 'oauth2', 'middleware' => ['ssl']], function () {
 
     Route::get('/check-session', "OAuth2ProviderController@checkSessionIFrame");
     Route::get('/end-session', "OAuth2ProviderController@endSession");
