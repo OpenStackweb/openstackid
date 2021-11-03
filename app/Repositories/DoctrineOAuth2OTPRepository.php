@@ -36,15 +36,13 @@ class DoctrineOAuth2OTPRepository
     /**
      * @param string $connection
      * @param string $user_name
-     * @param string $value
      * @param Client|null $client
      * @return OAuth2OTP|null
      */
-    public function getByConnectionAndUserNameNotRedeemed
+    public function getLatestByConnectionAndUserNameNotRedeemed
     (
         string $connection,
         string $user_name,
-        string $value,
         ?Client $client
     ):?OAuth2OTP
     {
@@ -55,9 +53,7 @@ class DoctrineOAuth2OTPRepository
             ->where("e.connection = (:connection)")
             ->andWhere("(e.email = (:user_name) or e.phone_number = (:user_name))")
             ->andWhere("e.redeemed_at is null")
-            ->andWhere('e.value = :value')
             ->setParameter("connection", $connection)
-            ->setParameter("value", $value)
             ->setParameter("user_name", $user_name);
         // add client id condition
         if(!is_null($client)){
