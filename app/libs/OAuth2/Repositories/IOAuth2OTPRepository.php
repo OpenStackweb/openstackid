@@ -30,6 +30,7 @@ interface IOAuth2OTPRepository extends IBaseRepository
     /**
      * @param string $connection
      * @param string $user_name
+     * @param string $value
      * @param Client|null $client
      * @return OAuth2OTP|null
      */
@@ -37,6 +38,7 @@ interface IOAuth2OTPRepository extends IBaseRepository
     (
         string $connection,
         string $user_name,
+        string $value,
         ?Client $client
     ):?OAuth2OTP;
 

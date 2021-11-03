@@ -1519,25 +1519,6 @@ final class TokenService extends AbstractService implements ITokenService
         return $this->getAccessToken($db_access_token->getValue(), true);
     }
 
-    private function postCreateOTP(OAuth2OTP $otp,?Client $client):OAuth2OTP{
-        if(!is_null($client)){
-            // invalidate not redeemed former ones
-            $codes = $otp->getConnection() == OAuth2Protocol::OAuth2PasswordlessConnectionEmail ?
-                $client->getOTPGrantsByEmailNotRedeemed($otp->getUserName()):
-                $client->getOTPGrantsByPhoneNumberNotRedeemed($otp->getUserName());
-            foreach ($codes as $code){
-                if($code->getValue() == $otp->getValue()) continue;
-                $client->removeOTPGrant($code);
-            }
-        }
-        // create channel and value to send ( depending on connection and send params )
-        OTPChannelStrategyFactory::build($otp->getConnection())->send
-        (
-            OTPTypeBuilderStrategyFactory::build($otp->getSend()),
-            $otp
-        );
-        return $otp;
-    }
     /**
      * @param OAuth2PasswordlessAuthenticationRequest $request
      * @param Client|null $client
@@ -1545,15 +1526,28 @@ final class TokenService extends AbstractService implements ITokenService
      * @throws Exception
      */
     public function createOTPFromRequest(OAuth2PasswordlessAuthenticationRequest $request, ?Client $client):OAuth2OTP{
-        return $this->tx_service->transaction(function() use($request, $client){
 
-            return $this->postCreateOTP
+        $otp = $this->tx_service->transaction(function() use($request, $client){
+            $otp = OTPFactory::buildFromRequest($request, $this->identifier_generator, $client);
+
+            if(is_null($client)){
+                $this->otp_repository->add($otp);
+            }
+
+            return $otp;
+        });
+
+        return $this->tx_service->transaction(function() use($otp){
+            // create channel and value to send ( depending on connection and send params )
+            OTPChannelStrategyFactory::build($otp->getConnection())->send
             (
-                OTPFactory::buildFromRequest($request, $this->identifier_generator, $client),
-                $client
+                OTPTypeBuilderStrategyFactory::build($otp->getSend()),
+                $otp
             );
 
+            return $otp;
         });
+
     }
 
     /**
@@ -1563,21 +1557,28 @@ final class TokenService extends AbstractService implements ITokenService
      * @throws Exception
      */
     public function createOTPFromPayload(array $payload, ?Client $client):OAuth2OTP{
-        return $this->tx_service->transaction(function() use($payload, $client){
+        $otp = $this->tx_service->transaction(function() use($payload, $client){
 
-            $otp = $this->postCreateOTP
-            (
-                OTPFactory::buildFromPayload($payload, $this->identifier_generator, $client),
-                $client
-            );
+            $otp = OTPFactory::buildFromPayload($payload, $this->identifier_generator, $client);
+
             if(is_null($client)){
-                foreach($this->otp_repository->getByUserNameNotRedeemed($otp->getUserName()) as $formerOTP){
-                    $this->otp_repository->delete($formerOTP);
-                }
                 $this->otp_repository->add($otp);
             }
+
             return $otp;
         });
+
+        return $this->tx_service->transaction(function() use($otp){
+            // create channel and value to send ( depending on connection and send params )
+            OTPChannelStrategyFactory::build($otp->getConnection())->send
+            (
+                OTPTypeBuilderStrategyFactory::build($otp->getSend()),
+                $otp
+            );
+
+            return $otp;
+        });
+
     }
 
 
