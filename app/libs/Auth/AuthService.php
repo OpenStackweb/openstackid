@@ -153,18 +153,34 @@ final class AuthService extends AbstractService implements IAuthService
      */
     public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null): ?OAuth2OTP{
 
+        Log::debug(sprintf("AuthService::loginWithOTP otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
+
         $otp = $this->tx_service->transaction(function() use($otpClaim, $client){
+
             // find first db OTP by connection , by username (email/phone) number and client not redeemed
             $otp = $this->otp_repository->getByConnectionAndUserNameNotRedeemed
             (
                 $otpClaim->getConnection(),
                 $otpClaim->getUserName(),
+                $otpClaim->getValue(),
                 $client
             );
+
             if(is_null($otp)){
                 // otp no emitted
+                Log::warning
+                (
+                    sprintf
+                    (
+                        "AuthService::loginWithOTP otp %s user %s grant not found",
+                        $otpClaim->getValue(),
+                        $otpClaim->getUserName()
+                    )
+                );
+
                 throw new AuthenticationException("Non existent OTP.");
             }
+
             $otp->logRedeemAttempt();
             return $otp;
         });
@@ -213,6 +229,20 @@ final class AuthService extends AbstractService implements IAuthService
             $otp->setUserId($user->getId());
             $otp->redeem();
 
+            $grants2Revoke = $this->otp_repository->getByUserNameNotRedeemed
+            (
+                $otpClaim->getUserName(),
+                $client
+            );
+            foreach ($grants2Revoke as $otp2Revoke){
+                try {
+                    Log::debug(sprintf("AuthService::loginWithOTP revoking otp %s ", $otp2Revoke->getValue()));
+                    $otp2Revoke->redeem();
+                }
+                catch (Exception $ex){
+                    Log::warning($ex);
+                }
+            }
             Auth::login($user, false);
 
             return $otp;

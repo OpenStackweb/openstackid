@@ -200,7 +200,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
      */
     public function setEmail(?string $email): void
     {
-        $this->email =  !empty($email) ? trim($email):null;
+        $this->email =  !empty($email) ? strtolower(trim($email)):null;
     }
 
     /**
@@ -349,6 +349,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
     const MaxRedeemAttempts = 3;
 
     public function logRedeemAttempt():void{
+        Log::debug(sprintf("OAuth2OTP::logRedeemAttempt trying to mark redeem attempt for %s ", $this->value));
         if($this->redeemed_attempts < self::MaxRedeemAttempts){
             $this->redeemed_attempts = $this->redeemed_attempts + 1;
             Log::debug(sprintf("OAuth2OTP::logRedeemAttempt redeemed_attempts %s", $this->redeemed_attempts));
