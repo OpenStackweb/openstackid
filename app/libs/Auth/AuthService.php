@@ -157,13 +157,12 @@ final class AuthService extends AbstractService implements IAuthService
 
         $otp = $this->tx_service->transaction(function() use($otpClaim, $client){
 
-            // find first db OTP by connection , by username (email/phone) number and client not redeemed
-            $otp = $this->otp_repository->getByConnectionAndUserNameNotRedeemed
+            // find latest db OTP by connection , by username (email/phone) number and client not redeemed
+            $otp = $this->otp_repository->getLatestByConnectionAndUserNameNotRedeemed
             (
                 $otpClaim->getConnection(),
                 $otpClaim->getUserName(),
-                $otpClaim->getValue(),
-                $client
+               $client
             );
 
             if(is_null($otp)){
@@ -229,15 +228,18 @@ final class AuthService extends AbstractService implements IAuthService
             $otp->setUserId($user->getId());
             $otp->redeem();
 
+            // revoke former ones
             $grants2Revoke = $this->otp_repository->getByUserNameNotRedeemed
             (
                 $otpClaim->getUserName(),
                 $client
             );
+
             foreach ($grants2Revoke as $otp2Revoke){
                 try {
                     Log::debug(sprintf("AuthService::loginWithOTP revoking otp %s ", $otp2Revoke->getValue()));
-                    $otp2Revoke->redeem();
+                    if($otp2Revoke->getValue() !== $otpClaim->getValue())
+                        $otp2Revoke->redeem();
                 }
                 catch (Exception $ex){
                     Log::warning($ex);
