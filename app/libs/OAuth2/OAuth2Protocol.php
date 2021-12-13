@@ -1338,7 +1338,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * @see http://openid.net/specs/openid-connect-discovery-1_0.html
      * @return string
      */
-    public function getDiscoveryDocument()
+    public function getDiscoveryDocument():string
     {
         $builder = new DiscoveryDocumentBuilder();
 

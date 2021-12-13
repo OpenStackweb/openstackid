@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use OAuth2\Discovery\IOpenIDProviderConfigurationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
@@ -24,8 +25,11 @@ final class OpenIDProviderConfigurationService implements IOpenIDProviderConfigu
     /**
      * @return string
      */
-    public function getIssuerUrl()
+    public function getIssuerUrl():string
     {
+        $request = request();
+        if(!is_null($request))
+            return $request->getSchemeAndHttpHost();
         return Config::get('app.url');
     }
 
