@@ -245,8 +245,11 @@ class ServerConfigurationService
     /**
      * @return string
      */
-    public function getSiteUrl()
+    public function getSiteUrl():string
     {
+        $request = request();
+        if(!is_null($request))
+            return $request->getSchemeAndHttpHost();
         return Config::get('app.url');
     }
 }

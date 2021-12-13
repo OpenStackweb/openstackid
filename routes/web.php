@@ -44,8 +44,8 @@ Route::group(array('middleware' => ['ssl']), function () {
 
         Route::group(array('prefix' => 'login'), function () {
             Route::get('', "UserController@getLogin");
-            Route::get('account-verify', ['middleware' => ['csrf', 'throttle:account'], 'uses' => 'UserController@getAccount']);
-            Route::post('otp', ['middleware' => ['csrf', 'throttle:otp'], 'uses' => 'UserController@emitOTP']);
+            Route::get('account-verify', [ 'uses' => 'UserController@getAccount']);
+            Route::post('otp', ['middleware' => ['csrf'], 'uses' => 'UserController@emitOTP']);
             Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
             Route::get('cancel', "UserController@cancelLogin");
             Route::group(array('prefix' => '{provider}'), function () {
