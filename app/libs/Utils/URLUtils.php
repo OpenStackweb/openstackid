@@ -53,11 +53,11 @@ final class URLUtils
      * @return bool
      */
     public static function isHTTPS(string $uri):bool{
-        if(!filter_var($uri, FILTER_VALIDATE_URL)) return null;
+        if(!filter_var($uri, FILTER_VALIDATE_URL)) return false;
         $parts = @parse_url($uri);
         if ($parts == false)
         {
-            return null;
+            return false;
         }
         return $parts['scheme'] === 'https';
     }
