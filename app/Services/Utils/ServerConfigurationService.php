@@ -249,7 +249,9 @@ class ServerConfigurationService
     {
         $request = request();
         if(!is_null($request))
-            return $request->getSchemeAndHttpHost();
+        {
+            return 'https://'.$request->getHttpHost();
+        }
         return Config::get('app.url');
     }
 }
