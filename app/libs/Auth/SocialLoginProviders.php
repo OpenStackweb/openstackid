@@ -1,4 +1,6 @@
 <?php namespace App\libs\Auth;
+use Illuminate\Support\Facades\Config;
+
 /**
  * Copyright 2021 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,12 +24,14 @@ final class SocialLoginProviders
     const Apple = "apple";
     const LinkedIn = "linkedin";
     const Google = "google";
+    const OKTA = 'okta';
 
     const ValidProviders = [
         self::Facebook,
         self::Apple,
         self::LinkedIn,
         //self::Google
+        self::OKTA,
     ];
 
     /**
@@ -39,12 +43,22 @@ final class SocialLoginProviders
     }
 
     /**
+     * @param string $provider
+     * @return bool
+     */
+    public static function isEnabledProvider(string $provider):bool{
+        return !empty(Config::get("services.".$provider.".client_id", null)) &&
+        !empty(Config::get("services.".$provider.".client_secret", null));
+    }
+
+    /**
      * @return string[]
      */
     public static function buildSupportedProviders():array{
         $res = [];
         foreach(self::ValidProviders as $provider){
-            $res[$provider] = ucfirst($provider);
+            if(self::isEnabledProvider($provider))
+                $res[$provider] = ucfirst($provider);
         }
         return $res;
     }

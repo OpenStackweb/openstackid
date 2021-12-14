@@ -92,6 +92,8 @@ final class SocialLoginController extends Controller
             // validate provider
             if(!SocialLoginProviders::isSupportedProvider($provider))
                 throw new ValidationException(sprintf("Provider %s is not supported.", $provider));
+            if(!SocialLoginProviders::isEnabledProvider($provider))
+                throw new ValidationException(sprintf("Provider %s is not enabled.", $provider));
 
             $social_user = Socialite::driver($provider)->user();
             // try to get user by primary email from our db
@@ -100,7 +102,7 @@ final class SocialLoginController extends Controller
 
             if(is_null($user_email))
             {
-                Log::error
+                Log::warning
                 (
                     sprintf
                     (
