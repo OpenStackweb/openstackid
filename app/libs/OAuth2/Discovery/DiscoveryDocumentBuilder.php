@@ -261,7 +261,8 @@ final class DiscoveryDocumentBuilder
      */
     public function addAvailableThirdPartyIdentityProviders(){
         foreach(SocialLoginProviders::ValidProviders as $provider)
-            $this->addArrayValue("third_party_identity_providers", $provider);
+            if(SocialLoginProviders::isEnabledProvider($provider))
+                $this->addArrayValue("third_party_identity_providers", $provider);
         return $this;
     }
 
