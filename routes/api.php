@@ -27,13 +27,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'users'], function () {
     Route::get('', 'OAuth2UserApiController@getAll');
-    Route::get('/{id}', 'OAuth2UserApiController@get');
+    Route::group(['prefix' => '{id}}'], function () {
+        Route::get('', 'OAuth2UserApiController@get');
+        Route::put('', 'OAuth2UserApiController@update');
+    });
 
     Route::group(['prefix' => 'me'], function () {
         Route::get('', 'OAuth2UserApiController@me');
-        Route::match(['options', 'put'], '', 'OAuth2UserApiController@UpdateMe');
+        Route::match(['options', 'put'], '', 'OAuth2UserApiController@updateMe');
         Route::group(['prefix' => 'pic'], function () {
-            Route::match(['options', 'put'], '', 'OAuth2UserApiController@UpdateMyPic');
+            Route::match(['options', 'put'], '', 'OAuth2UserApiController@updateMyPic');
         });
     });
 

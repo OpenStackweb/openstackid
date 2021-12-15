@@ -28,4 +28,5 @@ interface IUserScopes
     const SSO = 'sso';
     const MeRead = 'me/read';
     const MeWrite = 'me/write';
+    const Write = 'users/write';
 }
