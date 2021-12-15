@@ -55,6 +55,7 @@ final class EventServiceProvider extends ServiceProvider
             'SocialiteProviders\\Google\\GoogleExtendSocialite@handle',
             'SocialiteProviders\\Apple\\AppleExtendSocialite@handle',
             'SocialiteProviders\\LinkedIn\\LinkedInExtendSocialite@handle',
+            'SocialiteProviders\\Okta\\OktaExtendSocialite@handle'
         ],
     ];
 

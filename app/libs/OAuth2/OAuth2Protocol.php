@@ -1434,6 +1434,8 @@ final class OAuth2Protocol implements IOAuth2Protocol
             ->addDisplayValueSupported(self::OAuth2Protocol_Display_Wap)
             ->addDisplayValueSupported(self::OAuth2Protocol_Display_Native)
             ->addAvailableThirdPartyIdentityProviders()
+            ->addAllowsNativeAuth()
+            ->addAllowsOTPAuth()
             ->render();
     }
 

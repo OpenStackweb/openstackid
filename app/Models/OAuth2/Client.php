@@ -362,13 +362,13 @@ class Client extends BaseEntity implements IClient
     private $admin_users;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\RefreshToken", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\RefreshToken", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $refresh_tokens;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $access_tokens;
@@ -384,7 +384,7 @@ class Client extends BaseEntity implements IClient
     private $scopes;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\OAuth2OTP", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\OAuth2OTP", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $otp_grants;

@@ -45,6 +45,7 @@
             verifyEmailAction:'{{ URL::action("Auth\EmailVerificationController@showVerificationForm") }}',
             helpAction:'mailto:{!! Config::get("app.help_email") !!}',
             createAccountAction:'{{ URL::action("Auth\RegisterController@showRegistrationForm") }}',
+            allowNativeAuth: parseInt('{{ Config::get("auth.allows_native_auth", 1) }}') === 1 ? true: false,
         }
 
         @if(Session::has('max_login_attempts_2_show_captcha'))

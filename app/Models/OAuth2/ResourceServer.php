@@ -48,7 +48,7 @@ class ResourceServer extends BaseEntity
     private $active;
 
     /**
-     * @ORM\OneToMany(targetEntity="Api", mappedBy="resource_server", cascade={"persist"})
+     * @ORM\OneToMany(targetEntity="Api", mappedBy="resource_server", cascade={"persist"}, fetch="EXTRA_LAZY")
      * @var Api[]
      */
     private $apis;

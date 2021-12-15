@@ -1,5 +1,6 @@
 <?php namespace OAuth2\Discovery;
 use App\libs\Auth\SocialLoginProviders;
+use Illuminate\Support\Facades\Config;
 
 /**
  * Copyright 2015 OpenStack Foundation
@@ -263,6 +264,16 @@ final class DiscoveryDocumentBuilder
         foreach(SocialLoginProviders::ValidProviders as $provider)
             if(SocialLoginProviders::isEnabledProvider($provider))
                 $this->addArrayValue("third_party_identity_providers", $provider);
+        return $this;
+    }
+
+    public function addAllowsNativeAuth(){
+        $this->set["allows_native_auth"] = boolval(Config::get("auth.allows_native_auth", 1));
+        return $this;
+    }
+
+    public function addAllowsOTPAuth(){
+        $this->set["allows_otp_auth"] = boolval(Config::get("auth.allows_opt_auth", 1));
         return $this;
     }
 
