@@ -68,7 +68,7 @@ class RefreshToken extends BaseEntity {
     private $friendly_scopes;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="refresh_token", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="refresh_token", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      *
      */

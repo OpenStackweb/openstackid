@@ -57,6 +57,7 @@
     "socialiteproviders/facebook": "^4.1",
     "socialiteproviders/google": "^4.1",
     "socialiteproviders/linkedin": "^4.1",
+    "socialiteproviders/okta": "^4.1",
     "sokil/php-isocodes": "^3.0",
     "vladimir-yuldashev/laravel-queue-rabbitmq": "v11.3.*",
     "zendframework/zend-crypt": "3.3.0",

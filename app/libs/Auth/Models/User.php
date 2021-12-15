@@ -348,62 +348,62 @@ class User extends BaseEntity
     private $created_by;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="owner", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $access_tokens;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\RefreshToken", mappedBy="owner", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\RefreshToken", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $refresh_tokens;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\Client", mappedBy="user", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\Client", mappedBy="user", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $clients;
 
     /**
-     * @ORM\ManyToMany(targetEntity="Models\OAuth2\Client", mappedBy="admin_users")
+     * @ORM\ManyToMany(targetEntity="Models\OAuth2\Client", mappedBy="admin_users", fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $managed_clients;
 
     /**
-     * @ORM\OneToMany(targetEntity="Auth\UserPasswordResetRequest", mappedBy="owner", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Auth\UserPasswordResetRequest", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $reset_password_requests;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OpenId\OpenIdTrustedSite", mappedBy="owner", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OpenId\OpenIdTrustedSite", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $trusted_sites;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\UserConsent", mappedBy="owner", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\OAuth2\UserConsent", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $consents;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\UserAction", mappedBy="owner", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Models\UserAction", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $actions;
 
     /**
-     * @ORM\OneToMany(targetEntity="Auth\Affiliation", mappedBy="owner", cascade={"persist"}, orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="Auth\Affiliation", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $affiliations;
 
     /**
      * Many Users have Many Groups.
-     * @ORM\ManyToMany(targetEntity="Auth\Group", inversedBy="users", cascade={"persist"})
+     * @ORM\ManyToMany(targetEntity="Auth\Group", inversedBy="users", cascade={"persist"}, fetch="EXTRA_LAZY")
      * @ORM\JoinTable(name="user_groups",
      *      joinColumns={@ORM\JoinColumn(name="user_id", referencedColumnName="id")},
      *      inverseJoinColumns={@ORM\JoinColumn(name="group_id", referencedColumnName="id")})
@@ -411,7 +411,7 @@ class User extends BaseEntity
     private $groups;
 
     /**
-     * @ORM\ManyToMany(targetEntity="Models\OAuth2\ApiScopeGroup", mappedBy="users")
+     * @ORM\ManyToMany(targetEntity="Models\OAuth2\ApiScopeGroup", mappedBy="users", fetch="EXTRA_LAZY")
      */
     private $scope_groups;
 

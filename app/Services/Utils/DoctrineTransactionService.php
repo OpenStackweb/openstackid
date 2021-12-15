@@ -88,12 +88,16 @@ final class DoctrineTransactionService implements ITransactionService
                 Log::warning($ex);
                 $retry++;
                 if ($retry === self::MaxRetries) {
+                    $em->close();
+                    $con->rollBack();
+                    Registry::resetManager($this->manager_name);
                     throw $ex;
                 }
             } catch (Exception $ex) {
                 Log::warning("rolling back transaction");
                 $em->close();
                 $con->rollBack();
+                Registry::resetManager($this->manager_name);
                 Log::warning($ex);
                 throw $ex;
             }

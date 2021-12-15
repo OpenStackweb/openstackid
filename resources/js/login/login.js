@@ -316,10 +316,10 @@ const ExistingAccountActions = ({emitOtpAction, onAuthenticate, disableInput}) =
  );
 }
 
-const ThirdPartyIdentityProviders = ({thirdPartyProviders, formAction, disableInput}) => {
+const ThirdPartyIdentityProviders = ({thirdPartyProviders, formAction, disableInput, allowNativeAuth}) => {
     return(
         <>
-            <DividerWithText>Or</DividerWithText>
+            {allowNativeAuth && <DividerWithText>Or</DividerWithText>}
             {
                 thirdPartyProviders.map((provider) => {
                     return (
@@ -359,6 +359,7 @@ class LoginPage extends React.Component {
             showPassword: false,
             disableInput: false,
             authFlow: props.flow,
+            allowNativeAuth: props.allowNativeAuth,
         }
 
         if(this.state.errors.password && this.state.errors.password.includes("is not yet verified")){
@@ -529,14 +530,18 @@ class LoginPage extends React.Component {
                     </Typography>
                     {!this.state.user_verified &&
                     <>
-                        <EmailInputForm
-                            onValidateEmail={this.onValidateEmail}
-                            onHandleUserNameChange={this.onHandleUserNameChange}
-                            disableInput={this.state.disableInput}
-                            emailError={this.state.errors.email}/>
-                        { this.state.errors.email == '' &&
+                        {this.state.allowNativeAuth &&
+                        <>
+                            <EmailInputForm
+                                onValidateEmail={this.onValidateEmail}
+                                onHandleUserNameChange={this.onHandleUserNameChange}
+                                disableInput={this.state.disableInput}
+                                emailError={this.state.errors.email}/>
+                            {this.state.errors.email == '' &&
                             <p>If you have just registered for an event or don't know your password, enter your email
                                 address and you'll be able to request a single-use login code.</p>
+                            }
+                        </>
                         }
                         { this.state.errors.email == '' &&
                           this.props.thirdPartyProviders.length > 0 &&
@@ -544,6 +549,7 @@ class LoginPage extends React.Component {
                                 thirdPartyProviders={this.props.thirdPartyProviders}
                                 formAction={this.props.formAction}
                                 disableInput={this.state.disableInput}
+                                allowNativeAuth={this.state.allowNativeAuth}
                             />
                         }
                         {

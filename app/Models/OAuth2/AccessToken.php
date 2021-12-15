@@ -16,7 +16,6 @@ use DateTime;
 use DateInterval;
 use DateTimeZone;
 use App\Models\Utils\BaseEntity;
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineAccessTokenRepository")
@@ -89,7 +88,6 @@ class AccessToken extends BaseEntity {
     public function __construct()
     {
         parent::__construct();
-        $this->refresh_tokens = new ArrayCollection();
     }
 
     /**

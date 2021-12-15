@@ -54,7 +54,7 @@ class Group extends BaseEntity
 
     /**
      * Many Groups have Many Users.
-     * @ORM\ManyToMany(targetEntity="User", mappedBy="groups")
+     * @ORM\ManyToMany(targetEntity="User", mappedBy="groups", fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
     private $users;
