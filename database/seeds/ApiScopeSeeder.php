@@ -33,7 +33,6 @@ class ApiScopeSeeder extends Seeder {
         $this->seedSSOScopes();
     }
 
-
     private function seedUsersScopes(){
 
         SeedUtils::seedScopes([
@@ -78,6 +77,14 @@ class ApiScopeSeeder extends Seeder {
                 'name'               => IUserScopes::MeWrite,
                 'short_description'  => 'Allows access to write your Profile',
                 'description'        => 'Allows access to write your Profile',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => false,
+            ],
+            [
+                'name'               => IUserScopes::Write,
+                'short_description'  => 'Allows access to write Users Profile',
+                'description'        => 'Allows access to write Users Profile',
                 'system'             => false,
                 'default'            => false,
                 'groups'             => false,

@@ -160,7 +160,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         ]);
     }
 
-     public function UpdateMe(){
+    private function _update($id){
         try {
             if(!Request::isJson()) return $this->error400();
             if(!$this->resource_server_context->getCurrentUserId()){
@@ -175,7 +175,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
                 throw $ex->setMessages($validation->messages()->toArray());
             }
 
-            $user = $this->openid_user_service->update($this->resource_server_context->getCurrentUserId(), $this->curateUpdatePayload($payload));
+            $user = $this->openid_user_service->update($id, $this->curateUpdatePayload($payload));
 
             return $this->updated(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
         }
@@ -195,7 +195,15 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         }
     }
 
-    public function UpdateMyPic(LaravelRequest $request){
+    public function updateMe(){
+        return $this->_update($this->resource_server_context->getCurrentUserId());
+    }
+
+    public function update($id){
+       return $this->_update($id);
+    }
+
+    public function updateMyPic(LaravelRequest $request){
         try {
             if (!$this->resource_server_context->getCurrentUserId()) {
                 return $this->error403();

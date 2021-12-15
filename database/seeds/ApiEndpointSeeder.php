@@ -29,7 +29,6 @@ class ApiEndpointSeeder extends Seeder
         $this->seedSSOEndpoints();
     }
 
-
     private function seedUsersEndpoints()
     {
         SeedUtils::seedApiEndpoints('users', [
@@ -91,6 +90,15 @@ class ApiEndpointSeeder extends Seeder
                     'http_method' => 'PUT',
                     'scopes' => [
                         \App\libs\OAuth2\IUserScopes::MeWrite
+                    ],
+                ],
+                [
+                    'name' => 'update-user',
+                    'active' => true,
+                    'route' => '/api/v1/users/{id}',
+                    'http_method' => 'PUT',
+                    'scopes' => [
+                        \App\libs\OAuth2\IUserScopes::Write
                     ],
                 ],
                 [
