@@ -81,7 +81,7 @@ class UserRegistrationRequest extends BaseEntity
 
     public function __construct()
     {
-        parent:$this->__construct();
+        parent::__construct();
         $this->email = '';
         $this->first_name = '';
         $this->last_name = '';
