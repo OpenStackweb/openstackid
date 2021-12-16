@@ -413,12 +413,12 @@ final class UserService extends AbstractService implements IUserService
                 throw new ValidationException(sprintf("User %s already exists!.", $email));
 
             $user = UserFactory::build([
-                'first_name' => $request->getFirstName() ?? ($payload['first_name'] ?? ''),
-                'last_name' => $request->getLastName() ?? ($payload['last_name'] ?? ''),
-                'company' => $request->getCompany() ?? ( $payload['company'] ?? ''),
+                'first_name' => isset($payload['first_name']) && !empty($payload['first_name']) ? trim($payload['first_name']): $request->getFirstName(),
+                'last_name' =>  isset($payload['last_name']) &&  !empty($payload['last_name']) ? trim($payload['last_name']) : $request->getLastName(),
+                'company' => isset($payload['company']) && !empty($payload['company']) ? trim($payload['company']) : $request->getCompany(),
+                'country_iso_code' => isset($payload['country_iso_code']) && !empty($payload['country_iso_code']) ? trim($payload['country_iso_code']) : '',
                 'email' => $email,
                 'password' => $new_password,
-                'active' => true,
                 'email_verified' => true,
             ]);
 

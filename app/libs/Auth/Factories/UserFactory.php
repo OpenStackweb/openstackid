@@ -46,7 +46,6 @@ final class UserFactory
         if(isset($payload['first_name']))
             $user->setFirstName(trim($payload['first_name']));
 
-
         if(isset($payload['last_name']))
             $user->setLastName(trim($payload['last_name']));
 
