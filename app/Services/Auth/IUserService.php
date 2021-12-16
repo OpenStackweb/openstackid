@@ -72,11 +72,12 @@ interface IUserService
     /**
      * @param string $token
      * @param string $new_password
+     * @param array $payload
      * @throws ValidationException
      * @throws EntityNotFoundException
      * @return UserRegistrationRequest
      */
-    public function setPassword(string $token, string $new_password):UserRegistrationRequest;
+    public function setPassword(string $token, string $new_password, array $payload = []):UserRegistrationRequest;
 
     /**
      * @param string $client_id

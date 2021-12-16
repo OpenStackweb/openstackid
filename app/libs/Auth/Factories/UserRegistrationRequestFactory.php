@@ -42,6 +42,9 @@ final class UserRegistrationRequestFactory
         if(isset($payload['last_name']))
             $request->setLastName(trim($payload['last_name']));
 
+        if(isset($payload['company']))
+            $request->setCompany(trim($payload['company']));
+
         if(isset($payload['country']))
             $request->setCountryIsoCode(trim($payload['country']));
 
