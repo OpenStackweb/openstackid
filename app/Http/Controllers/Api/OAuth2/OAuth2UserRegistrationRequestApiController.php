@@ -56,8 +56,9 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
 
             // Creates a Validator instance and validates the data.
             $validation = Validator::make($payload, [
-                'first_name'               => 'required|string|max:255',
-                'last_name'                => 'required|string|max:255',
+                'first_name'               => 'nullable|sometimes|string|max:100',
+                'last_name'                => 'nullable|sometimes|string|max:100',
+                'company'                  => 'nullable|sometimes|string|max:100',
                 'email'                    => 'required|string|email|max:255',
                 'country'                  => 'sometimes|required|string|country_iso_alpha2_code',
             ]);

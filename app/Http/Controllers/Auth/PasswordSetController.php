@@ -11,7 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Http\Controllers\Controller;
+use App\Http\Utils\CountryList;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +23,7 @@ use Illuminate\Http\Request as LaravelRequest;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\Repositories\IClientRepository;
+
 /**
  * Class PasswordSetController
  * @package App\Http\Controllers\Auth
@@ -51,8 +54,8 @@ final class PasswordSetController extends Controller
     public function __construct
     (
         IUserRegistrationRequestRepository $user_registration_request_repository,
-        IClientRepository $client_repository,
-        IUserService $user_service
+        IClientRepository                  $client_repository,
+        IUserService                       $user_service
     )
     {
         $this->middleware('guest');
@@ -73,26 +76,26 @@ final class PasswordSetController extends Controller
 
             $user_registration_request = $this->user_registration_request_repository->getByHash($token);
 
-            if(is_null($user_registration_request))
+            if (is_null($user_registration_request))
                 throw new EntityNotFoundException("request not found");
 
-            if($user_registration_request->isRedeem()) {
+            if ($user_registration_request->isRedeem()) {
 
                 // check redirect uri
-                if($request->has("redirect_uri") && $request->has("client_id")){
+                if ($request->has("redirect_uri") && $request->has("client_id")) {
                     $redirect_uri = $request->get("redirect_uri");
-                    $client_id    = $request->get("client_id");
-                    $client       = $this->client_repository->getClientById($client_id);
+                    $client_id = $request->get("client_id");
+                    $client = $this->client_repository->getClientById($client_id);
 
-                    if(is_null($client))
+                    if (is_null($client))
                         throw new ValidationException("client does not exists");
 
-                    if(!$client->isUriAllowed($redirect_uri))
+                    if (!$client->isUriAllowed($redirect_uri))
                         throw new ValidationException(sprintf("redirect_uri %s is not allowed on associated client", $redirect_uri));
 
-                    $params['client_id']    = $client_id;
+                    $params['client_id'] = $client_id;
                     $params['redirect_uri'] = $redirect_uri;
-                    $params['email']        = $user_registration_request->getEmail();
+                    $params['email'] = $user_registration_request->getEmail();
 
                     return view("auth.passwords.set_success", $params);
                 }
@@ -101,36 +104,37 @@ final class PasswordSetController extends Controller
             }
 
             $params = [
-                "email"        => $user_registration_request->getEmail(),
-                "token"        => $token,
+                "email" => $user_registration_request->getEmail(),
+                "first_name" => $user_registration_request->getFirstName(),
+                "last_name" => $user_registration_request->getLastName(),
+                "company" => $user_registration_request->getCompany(),
+                "token" => $token,
+                'countries'    => CountryList::getCountries(),
                 "redirect_uri" => '',
-                "client_id"    => '',
+                "client_id" => '',
             ];
 
-            if($request->has("redirect_uri") && $request->has("client_id")){
+            if ($request->has("redirect_uri") && $request->has("client_id")) {
                 $redirect_uri = $request->get("redirect_uri");
-                $client_id    = $request->get("client_id");
+                $client_id = $request->get("client_id");
 
                 $client = $this->client_repository->getClientById($client_id);
-                if(is_null($client))
+                if (is_null($client))
                     throw new ValidationException("client does not exists");
 
-                if(!$client->isUriAllowed($redirect_uri))
+                if (!$client->isUriAllowed($redirect_uri))
                     throw new ValidationException(sprintf("redirect_uri %s is not allowed on associated client", $redirect_uri));
 
                 $params['redirect_uri'] = $redirect_uri;
-                $params['client_id']    = $client_id;
+                $params['client_id'] = $client_id;
             }
 
             return view('auth.passwords.set', $params);
-        }
-        catch(EntityNotFoundException $ex){
+        } catch (EntityNotFoundException $ex) {
             Log::warning($ex);
-        }
-        catch(ValidationException $ex){
+        } catch (ValidationException $ex) {
             Log::warning($ex);
-        }
-        catch (\Exception $ex){
+        } catch (\Exception $ex) {
             Log::error($ex);
         }
         return view('auth.passwords.set_error');
@@ -139,15 +143,19 @@ final class PasswordSetController extends Controller
     /**
      * Get a validator for an incoming registration request.
      *
-     * @param  array  $data
+     * @param array $data
      * @return \Illuminate\Contracts\Validation\Validator
      */
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'token'                    => 'required',
-            'password'                 => 'required|string|confirmed|password_policy',
-            'g-recaptcha-response'     => 'required|recaptcha',
+            'token' => 'required',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'company' => 'sometimes|string|max:100',
+            'country_iso_code' => 'required|string|country_iso_alpha2_code',
+            'password' => 'required|string|confirmed|password_policy',
+            'g-recaptcha-response' => 'required|recaptcha',
         ]);
     }
 
@@ -158,60 +166,85 @@ final class PasswordSetController extends Controller
     public function setPassword(LaravelRequest $request)
     {
         try {
-            $payload   = $request->all();
+            $payload = $request->all();
             $validator = $this->validator($payload);
 
             if (!$validator->passes()) {
                 return back()
-                    ->withInput($request->only(['token','client_id', 'redirect_uri', 'email']))
+                    ->withInput($request->only
+                    (
+                        ['token',
+                            'client_id',
+                            'redirect_uri',
+                            'email',
+                            'first_name',
+                            'last_name',
+                            'company',
+                            'country_iso_code'
+                        ])
+                    )
                     ->withErrors($validator);
             }
 
-            $user_registration_request = $this->user_service->setPassword($payload['token'], $payload['password']);
+            $user_registration_request = $this->user_service->setPassword
+            (
+                $payload['token'],
+                $payload['password'],
+                $payload
+            );
+
             $params = [
-                'client_id'    => '',
+                'client_id' => '',
                 'redirect_uri' => '',
-                'email'        => '',
+                'email' => '',
             ];
 
             // check redirect uri with associated client
-            if($request->has("redirect_uri") && $request->has("client_id")){
+            if ($request->has("redirect_uri") && $request->has("client_id")) {
                 $redirect_uri = $request->get("redirect_uri");
-                $client_id    = $request->get("client_id");
-                $client       = $this->client_repository->getClientById($client_id);
+                $client_id = $request->get("client_id");
+                $client = $this->client_repository->getClientById($client_id);
 
-                if(is_null($client))
+                if (is_null($client))
                     throw new ValidationException("client does not exists");
 
-                if(!$client->isUriAllowed($redirect_uri))
+                if (!$client->isUriAllowed($redirect_uri))
                     throw new ValidationException(sprintf("redirect_uri %s is not allowed on associated client", $redirect_uri));
 
-                $params['client_id']    = $client_id;
+                $params['client_id'] = $client_id;
                 $params['redirect_uri'] = $redirect_uri;
-                $params['email']        = $user_registration_request->getEmail();
+                $params['email'] = $user_registration_request->getEmail();
             }
 
             Auth::login($user_registration_request->getOwner(), true);
 
             return view("auth.passwords.set_success", $params);
-        }
-        catch (EntityNotFoundException $ex){
+        } catch (EntityNotFoundException $ex) {
             Log::warning($ex);
-        }
-        catch (ValidationException $ex){
+        } catch (ValidationException $ex) {
             Log::warning($ex);
-            foreach ($ex->getMessages() as $message){
+            foreach ($ex->getMessages() as $message) {
                 $validator->getMessageBag()->add('validation', $message);
             }
             return back()
-                ->withInput($request->only(['token','client_id', 'redirect_uri', 'email']))
+                ->withInput($request->only
+                (
+                    [
+                        'token',
+                        'client_id',
+                        'redirect_uri',
+                        'email',
+                        'first_name',
+                        'last_name',
+                        'company',
+                        'country_iso_code'
+                    ]
+                ))
                 ->withErrors($validator);
-        }
-        catch(\Exception $ex){
+        } catch (\Exception $ex) {
             Log::warning($ex);
         }
 
         return view("auth.passwords.reset_error");
-
     }
 }

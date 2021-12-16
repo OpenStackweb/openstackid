@@ -367,6 +367,7 @@ final class UserService extends AbstractService implements IUserService
                     $request->getEmail() .
                     $request->getFirstName() .
                     $request->getLastName() .
+                    $request->getCompany().
                     $generator->randomToken());
 
                 $former_registration_request = $this->user_registration_request_repository->getByHash($hash);
@@ -384,13 +385,14 @@ final class UserService extends AbstractService implements IUserService
     /**
      * @param string $token
      * @param string $new_password
+     * @param array $payload
      * @return UserRegistrationRequest
      * @throws \Exception
      */
-    public function setPassword(string $token, string $new_password): UserRegistrationRequest
+    public function setPassword(string $token, string $new_password, array $payload = []): UserRegistrationRequest
     {
 
-        return $this->tx_service->transaction(function () use ($token, $new_password) {
+        return $this->tx_service->transaction(function () use ($token, $new_password, $payload) {
 
             $request = $this->user_registration_request_repository->getByHash($token);
 
@@ -411,13 +413,15 @@ final class UserService extends AbstractService implements IUserService
                 throw new ValidationException(sprintf("User %s already exists!.", $email));
 
             $user = UserFactory::build([
-                'first_name' => $request->getFirstName(),
-                'last_name' => $request->getLastName(),
+                'first_name' => $request->getFirstName() ?? ($payload['first_name'] ?? ''),
+                'last_name' => $request->getLastName() ?? ($payload['last_name'] ?? ''),
+                'company' => $request->getCompany() ?? ( $payload['company'] ?? ''),
                 'email' => $email,
                 'password' => $new_password,
                 'active' => true,
                 'email_verified' => true,
             ]);
+
             $this->identifier_service->generateIdentifier($user);
             $request->setOwner($user);
             $request->redeem();

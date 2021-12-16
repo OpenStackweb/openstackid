@@ -4,7 +4,6 @@
 
     $(document).ready(function($){
 
-
         var options = {};
 
         options.ui =
@@ -24,11 +23,24 @@
             };
 
         $(':password').pwstrength(options);
+        $('#country_iso_code').chosen({width: '100%', height: '34px'});
 
         var form = $('#form-password-set');
 
         var validator = form.validate({
             rules: {
+                first_name: {
+                    required: true,
+                },
+                last_name: {
+                    required: true,
+                },
+                company: {
+                    required: true,
+                },
+                "country_iso_code": {
+                    required: true,
+                },
                 password: {
                     required: true,
                     minlength: 8

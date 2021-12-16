@@ -62,6 +62,12 @@ class UserRegistrationRequest extends BaseEntity
     private $last_name;
 
     /**
+     * @ORM\Column(name="company", type="string")
+     * @var string
+     */
+    private $company;
+
+    /**
      * @var \DateTime
      * @ORM\Column(name="redeem_at", nullable=true, type="datetime")
      */
@@ -72,6 +78,16 @@ class UserRegistrationRequest extends BaseEntity
      * @var string
      */
     private $country_iso_code;
+
+    public function __construct()
+    {
+        parent:$this->__construct();
+        $this->email = '';
+        $this->first_name = '';
+        $this->last_name = '';
+        $this->company = '';
+        $this->country_iso_code = '';
+    }
 
     /**
      * @return User
@@ -124,7 +140,7 @@ class UserRegistrationRequest extends BaseEntity
     /**
      * @return string
      */
-    public function getFirstName(): string
+    public function getFirstName():?string
     {
         return $this->first_name;
     }
@@ -140,7 +156,7 @@ class UserRegistrationRequest extends BaseEntity
     /**
      * @return string
      */
-    public function getLastName(): string
+    public function getLastName():?string
     {
         return $this->last_name;
     }
@@ -151,6 +167,15 @@ class UserRegistrationRequest extends BaseEntity
     public function setLastName(string $last_name): void
     {
         $this->last_name = $last_name;
+    }
+
+
+    public function getCompany():?string{
+        return $this->company;
+    }
+
+    public function setCompany(string $company):void{
+        $this->company = $company;
     }
 
     /**
@@ -172,7 +197,7 @@ class UserRegistrationRequest extends BaseEntity
     /**
      * @return string
      */
-    public function getCountryIsoCode(): string
+    public function getCountryIsoCode():?string
     {
         return $this->country_iso_code;
     }
