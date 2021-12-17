@@ -354,10 +354,11 @@ final class UserService extends AbstractService implements IUserService
             $formerRequest = $this->user_registration_request_repository->getByEmail($email);
             if (!is_null($formerRequest)) {
                 if (!$formerRequest->isRedeem()) {
-                    return $formerRequest;
+                    return UserRegistrationRequestFactory::populate($formerRequest, $payload);
                 }
                 $this->user_registration_request_repository->delete($formerRequest);
             }
+
             $request = UserRegistrationRequestFactory::build($payload);
             $generator = new RandomGenerator();
 
@@ -379,6 +380,28 @@ final class UserService extends AbstractService implements IUserService
             $request->setClient($client);
             $this->user_registration_request_repository->add($request);
             return $request;
+        });
+    }
+
+    /**
+     * @param int $id
+     * @param array $payload
+     * @return UserRegistrationRequest
+     * @throws \Exception
+     */
+    public function updateRegistrationRequest(int $id, array $payload):UserRegistrationRequest{
+        return $this->tx_service->transaction(function () use ($id, $payload) {
+
+            $formerRequest = $this->user_registration_request_repository->getById($id);
+            if (is_null($formerRequest) || !$formerRequest instanceof UserRegistrationRequest) {
+                 throw new EntityNotFoundException(sprintf("User Registration Request %s not found", $id));
+            }
+
+            if ($formerRequest->isRedeem()) {
+                throw new ValidationException(sprintf("User Registration Request %s is already redeemed.", $id));
+            }
+
+            return UserRegistrationRequestFactory::populate($formerRequest, $payload);
         });
     }
 

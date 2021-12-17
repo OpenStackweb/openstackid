@@ -125,6 +125,24 @@ class ApiEndpointSeeder extends Seeder
                     \App\libs\OAuth2\IUserScopes::Registration
                 ],
             ],
+            [
+                'name' => 'user-registration-request-get-all',
+                'active' => true,
+                'route' => '/api/v1/user-registration-requests',
+                'http_method' => 'GET',
+                'scopes'      => [
+                    \App\libs\OAuth2\IUserScopes::Registration
+                ],
+            ],
+            [
+                'name' => 'user-registration-request-update',
+                'active' => true,
+                'route' => '/api/v1/user-registration-requests/{id}',
+                'http_method' => 'PUT',
+                'scopes'      => [
+                    \App\libs\OAuth2\IUserScopes::Registration
+                ],
+            ],
         ]);
     }
 

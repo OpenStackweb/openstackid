@@ -118,4 +118,12 @@ interface IUserService
      * @return User|null
      */
     public function initializeUser(int $user_id):?User;
+
+    /**
+     * @param int $id
+     * @param array $payload
+     * @return UserRegistrationRequest
+     * @throws \Exception
+     */
+    public function updateRegistrationRequest(int $id, array $payload):UserRegistrationRequest;
 }

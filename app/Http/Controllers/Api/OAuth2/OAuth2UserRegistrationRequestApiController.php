@@ -11,6 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Controllers\GetAllTrait;
+use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
 use App\ModelSerializers\SerializerRegistry;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Log;
@@ -27,27 +30,73 @@ use Utils\Services\ILogService;
 final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedController
 {
 
+    use GetAllTrait;
+
     /**
      * @var IUserService
      */
     private $user_service;
 
     /**
+     * @param IUserRegistrationRequestRepository $repository
      * @param IUserService $user_service
      * @param IResourceServerContext $resource_server_context
      * @param ILogService $log_service
      */
     public function __construct
     (
+        IUserRegistrationRequestRepository  $repository,
         IUserService $user_service,
         IResourceServerContext $resource_server_context,
         ILogService $log_service
     )
     {
         parent::__construct($resource_server_context, $log_service);
+        $this->repository = $repository;
         $this->user_service = $user_service;
     }
 
+    protected function getAllSerializerType(): string
+    {
+        return SerializerRegistry::SerializerType_Public;
+    }
+
+    /**
+     * @return array
+     */
+    protected function getFilterRules(): array
+    {
+        return [
+            'first_name' => ['=@', '=='],
+            'last_name' => ['=@', '=='],
+            'email' => ['=@', '=='],
+            'is_redeemed' => ['==']
+        ];
+    }
+
+    public function getOrderRules(): array
+    {
+        return [
+            'id',
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    protected function getFilterValidatorRules(): array
+    {
+        return [
+            'first_name' => 'sometimes|required|string',
+            'last_name' => 'sometimes|required|string',
+            'email' => 'sometimes|required|email',
+            'is_redeemed' => 'sometimes|required|boolean'
+        ];
+    }
+
+    /**
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
     public function register(){
         try {
 
@@ -79,6 +128,55 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
             );
 
             return $this->created(SerializerRegistry::getInstance()->getSerializer($registration_request)->serialize());
+        }
+        catch (ValidationException $ex1) {
+            Log::warning($ex1);
+            return $this->error412([$ex1->getMessage()]);
+        }
+        catch(EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(['message'=> $ex2->getMessage()]);
+        }
+        catch (\Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
+
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function update($id){
+        try {
+
+            if(!Request::isJson()) return $this->error400();
+            $payload = Request::json()->all();
+            // Creates a Validator instance and validates the data.
+            $validation = Validator::make($payload, [
+                'first_name'               => 'nullable|sometimes|string|max:100',
+                'last_name'                => 'nullable|sometimes|string|max:100',
+                'company'                  => 'nullable|sometimes|string|max:100',
+                'country'                  => 'nullable|sometimes|required|string|country_iso_alpha2_code',
+            ]);
+
+            if ($validation->fails()) {
+                $messages = $validation->messages()->toArray();
+
+                return $this->error412
+                (
+                    $messages
+                );
+            }
+
+            $registration_request = $this->user_service->updateRegistrationRequest
+            (
+                intval($id),
+                $payload
+            );
+
+            return $this->updated(SerializerRegistry::getInstance()->getSerializer($registration_request)->serialize());
         }
         catch (ValidationException $ex1) {
             Log::warning($ex1);
