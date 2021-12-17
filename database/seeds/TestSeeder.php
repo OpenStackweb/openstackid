@@ -1417,6 +1417,14 @@ PPK;
                 'system'             => false,
                 'default'            => false,
                 'active'             => true,
+            ],
+            [
+                'name'               => IUserScopes::Write,
+                'short_description'  => 'Allows access to write Users Profile',
+                'description'        => 'Allows access to write Users Profile',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => false,
             ]
         ];
 
@@ -1717,6 +1725,19 @@ PPK;
                 'api'             => $users,
                 'http_method' => 'PUT',
             ],
+            [
+                'name' => 'update-my-user-pic',
+                'active' => true,
+                'route' => '/api/v1/users/me/pic',
+                'api'             => $users,
+                'http_method' => 'PUT',
+            ],
+            [
+                'name' => 'update-user',
+                'active' => true,
+                'route' => '/api/v1/users/{id}',
+                'http_method' => 'PUT',
+            ],
         ];
 
         foreach($api_scope_payloads as $payload) {
@@ -1729,6 +1750,7 @@ PPK;
         $email_scope   = $api_scope_repository->findOneBy(['name' => 'email']);
         $address_scope = $api_scope_repository->findOneBy(['name' => 'address']);
         $me_write = $api_scope_repository->findOneBy(['name' => IUserScopes::MeWrite]);
+        $write = $api_scope_repository->findOneBy(['name' => IUserScopes::Write]);
 
         foreach($api_scope_payloads as $payload) {
             $endpoint = $endpoint_repository->findOneBy(['name' => $payload['name']]);
@@ -1736,6 +1758,7 @@ PPK;
             $endpoint->addScope($email_scope);
             $endpoint->addScope($profile_scope);
             $endpoint->addScope($me_write);
+            $endpoint->addScope($write);
             EntityManager::persist($endpoint);
         }
 
@@ -1748,13 +1771,25 @@ PPK;
         $api = $api_repository->findOneBy(['name' => 'user-registration']);
 
         $api_scope_payloads = [
-            array(
+            [
                 'name'            => 'request-user-registration',
                 'active'          =>  true,
                 'api'             => $api,
                 'route'           => '/api/v1/user-registration-requests',
                 'http_method'     => 'POST'
-            ),
+            ],
+            [
+                'name' => 'user-registration-request-get-all',
+                'active' => true,
+                'route' => '/api/v1/user-registration-requests',
+                'http_method' => 'GET',
+            ],
+            [
+                'name' => 'user-registration-request-update',
+                'active' => true,
+                'route' => '/api/v1/user-registration-requests/{id}',
+                'http_method' => 'PUT',
+            ],
         ];
 
         foreach($api_scope_payloads as $payload) {
