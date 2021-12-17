@@ -1,6 +1,6 @@
 <?php namespace Database\Migrations;
 /**
- * Copyright 2021 OpenStack Foundation
+ * Copyright 2017 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,41 +11,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use App\libs\OAuth2\IUserScopes;
 use Database\Seeders\SeedUtils;
 use Doctrine\Migrations\AbstractMigration;
 use Doctrine\DBAL\Schema\Schema as Schema;
 /**
- * Class Version20211215145907
+ * Class Version20211217173208
  * @package Database\Migrations
  */
-class Version20211215145907 extends AbstractMigration
+class Version20211217173208 extends AbstractMigration
 {
     /**
      * @param Schema $schema
      */
     public function up(Schema $schema): void
     {
-        SeedUtils::seedScopes([
+        SeedUtils::seedApiEndpoints('user-registration', [
             [
-                'name'               => IUserScopes::Write,
-                'short_description'  => 'Allows access to write Users Profile',
-                'description'        => 'Allows access to write Users Profile',
-                'system'             => false,
-                'default'            => false,
-                'groups'             => false,
-            ],
-
-        ], 'users');
-
-        SeedUtils::seedApiEndpoints('users', [
-            [
-                'name' => 'update-user',
+                'name' => 'user-registration-request-get-all',
                 'active' => true,
-                'route' => '/api/v1/users/{id}',
+                'route' => '/api/v1/user-registration-requests',
+                'http_method' => 'GET',
+                'scopes'      => [
+                    \App\libs\OAuth2\IUserScopes::Registration
+                ],
+            ],
+            [
+                'name' => 'user-registration-request-update',
+                'active' => true,
+                'route' => '/api/v1/user-registration-requests/{id}',
                 'http_method' => 'PUT',
-                'scopes' => [
-                    \App\libs\OAuth2\IUserScopes::Write
+                'scopes'      => [
+                    \App\libs\OAuth2\IUserScopes::Registration
                 ],
             ],
         ]);

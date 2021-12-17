@@ -13,6 +13,8 @@
  **/
 use App\libs\Auth\Models\UserRegistrationRequest;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
+use utils\DoctrineCaseFilterMapping;
+use utils\DoctrineSwitchFilterMapping;
 /**
  * Class DoctrineUserRegistrationRequestRepository
  * @package App\Repositories
@@ -20,6 +22,39 @@ use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
 final class DoctrineUserRegistrationRequestRepository
     extends ModelDoctrineRepository implements IUserRegistrationRequestRepository
 {
+
+    /**
+     * @return array
+     */
+    protected function getOrderMappings(): array
+    {
+        return [
+            'email' => 'e.email',
+            'id' => 'e.id'
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    protected function getFilterMappings(): array
+    {
+        return [
+            'first_name'  => 'e.first_name:json_string',
+            'last_name'   => 'e.last_name:json_string',
+            'email'       => 'e.email:json_string',
+            'is_redeemed' =>  new DoctrineSwitchFilterMapping([
+                'true' => new DoctrineCaseFilterMapping(
+                    'true',
+                    "e.redeem_at is not null"
+                ),
+                'false' => new DoctrineCaseFilterMapping(
+                    'false',
+                    "e.redeem_at is null"
+                ),
+            ]),
+        ];
+    }
 
     /**
      * @return string

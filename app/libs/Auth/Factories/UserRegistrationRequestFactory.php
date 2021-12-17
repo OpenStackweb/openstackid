@@ -33,6 +33,7 @@ final class UserRegistrationRequestFactory
      * @return UserRegistrationRequest
      */
     public static function populate(UserRegistrationRequest $request, array $payload):UserRegistrationRequest{
+
         if(isset($payload['email']))
             $request->setEmail(trim($payload['email']));
 
