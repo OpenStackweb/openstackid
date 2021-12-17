@@ -1726,17 +1726,11 @@ PPK;
                 'http_method' => 'PUT',
             ],
             [
-                'name' => 'update-my-user-pic',
-                'active' => true,
-                'route' => '/api/v1/users/me/pic',
-                'api'             => $users,
-                'http_method' => 'PUT',
-            ],
-            [
                 'name' => 'update-user',
                 'active' => true,
                 'route' => '/api/v1/users/{id}',
                 'http_method' => 'PUT',
+                'api'             => $users,
             ],
         ];
 
@@ -1783,12 +1777,14 @@ PPK;
                 'active' => true,
                 'route' => '/api/v1/user-registration-requests',
                 'http_method' => 'GET',
+                'api'             => $api,
             ],
             [
                 'name' => 'user-registration-request-update',
                 'active' => true,
                 'route' => '/api/v1/user-registration-requests/{id}',
                 'http_method' => 'PUT',
+                'api'             => $api,
             ],
         ];
 
