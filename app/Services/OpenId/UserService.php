@@ -253,6 +253,7 @@ final class UserService extends AbstractService implements IUserService
         $user = $this->tx_service->transaction(function () use ($id, $payload) {
 
             $user = $this->repository->getById($id);
+
             if (is_null($user) || !$user instanceof User)
                 throw new EntityNotFoundException("user not found");
 

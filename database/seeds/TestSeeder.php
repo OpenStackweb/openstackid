@@ -1425,6 +1425,15 @@ PPK;
                 'system'             => false,
                 'default'            => false,
                 'groups'             => false,
+            ],
+            [
+                'name'               => IUserScopes::ReadAll,
+                'short_description'  => 'Allows access to read all User Profiles',
+                'description'        => 'Allows access to read all User Profiles',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => false,
+                'active'             => true,
             ]
         ];
 
@@ -1691,46 +1700,46 @@ PPK;
 
         $api_scope_payloads = [
            [
-                'name'            => 'get-user-info',
-                'active'          =>  true,
-                'api'          => $users,
-                'route'           => '/api/v1/users/me',
-                'http_method'     => 'GET'
+                'name'          => 'get-user-info',
+                'active'        =>  true,
+                'api'           => $users,
+                'route'         => '/api/v1/users/me',
+                'http_method'   => 'GET'
             ],
             [
-                'name'            => 'get-user-claims-get',
-                'active'          =>  true,
-                'api'             => $users,
-                'route'           => '/api/v1/users/info',
-                'http_method'     => 'GET'
+                'name'          => 'get-user-claims-get',
+                'active'        =>  true,
+                'api'           => $users,
+                'route'         => '/api/v1/users/info',
+                'http_method'   => 'GET'
             ],
             [
-                'name'            => 'get-user-claims-post',
-                'active'          =>  true,
-                'api'             => $users,
-                'route'           => '/api/v1/users/info',
-                'http_method'     => 'POST'
+                'name'          => 'get-user-claims-post',
+                'active'        =>  true,
+                'api'           => $users,
+                'route'         => '/api/v1/users/info',
+                'http_method'   => 'POST'
             ],
             [
-                'name' => 'update-my-user',
-                'active' => true,
-                'route' => '/api/v1/users/me',
-                'api'             => $users,
-                'http_method' => 'PUT',
+                'name'          => 'update-my-user',
+                'active'        => true,
+                'route'         => '/api/v1/users/me',
+                'api'           => $users,
+                'http_method'   => 'PUT',
             ],
             [
-                'name' => 'update-my-user-pic',
-                'active' => true,
-                'route' => '/api/v1/users/me/pic',
-                'api'             => $users,
-                'http_method' => 'PUT',
+                'name'          => 'update-my-user-pic',
+                'active'        => true,
+                'route'         => '/api/v1/users/me/pic',
+                'api'           => $users,
+                'http_method'   => 'PUT',
             ],
             [
-                'name' => 'update-user',
-                'active' => true,
-                'route' => '/api/v1/users/{id}',
-                'http_method' => 'PUT',
-                'api'             => $users,
+                'name'          => 'update-user',
+                'active'        => true,
+                'route'         => '/api/v1/users/{id}',
+                'api'           => $users,
+                'http_method'   => 'PUT',
             ],
         ];
 
