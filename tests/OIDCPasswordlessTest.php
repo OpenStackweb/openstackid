@@ -229,6 +229,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
     }
 
     public function testCodeEmailFlowConsecutiveOTP(){
+
         $scope = sprintf('%s profile email address',
             OAuth2Protocol::OpenIdConnect_Scope,
         );
@@ -251,6 +252,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
 
         $this->assertResponseStatus(200);
         $otp1 = null;
+
         Mail::assertNotQueued(OAuth2PasswordlessOTPMail::class, function(OAuth2PasswordlessOTPMail $email) use(&$otp1){
             $otp1 = $email->otp;
         });
@@ -286,7 +288,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
         $repository = EntityManager::getRepository(OAuth2OTP::class);
 
         $otp1 = $repository->getByValue($otp1);
-        $this->assertTrue(is_null($otp1));
+        $this->assertTrue(!is_null($otp1));
         $otp2 = $repository->getByValue($otp2);
         $this->assertTrue(!is_null($otp2));
     }
