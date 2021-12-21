@@ -25,8 +25,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        $this->call('OpenIdExtensionsSeeder');
-        $this->call('ServerConfigurationSeeder');
+        $this->call(OpenIdExtensionsSeeder::class);
+        $this->call(ServerConfigurationSeeder::class);
 
         DB::table('oauth2_api_endpoint_api_scope')->delete();
         DB::table('oauth2_client_api_scope')->delete();
@@ -35,9 +35,9 @@ class DatabaseSeeder extends Seeder
         DB::table('oauth2_api')->delete();
         DB::table('oauth2_resource_server')->delete();
 
-        $this->call('ResourceServerSeeder');
-        $this->call('ApiSeeder');
-        $this->call('ApiScopeSeeder');
-        $this->call('ApiEndpointSeeder');
+        $this->call(ResourceServerSeeder::class);
+        $this->call(ApiSeeder::class);
+        $this->call(ApiScopeSeeder::class);
+        $this->call(ApiEndpointSeeder::class);
     }
 }

@@ -51,38 +51,13 @@ final class ServicesTests extends TestCase
         $this->redis->flushall();
     }
 
-    public function testConsentService(){
-        $service = App::make(IUserConsentService::class);
-        $client_repository = EntityManager::getRepository(Client::class);
-        $client = $client_repository->getById(106);
-
-        $consent = $service->getOneByUserAndClientAndScopes(
-            763,
-            $client->getClientId(),
-            "openid offline_access profile https://openstackid-resources.openstack.org/summits/read https://openstackid-resources.openstack.org/summits/write https://openstackid-resources.openstack.org/summits/read-external-orders https://openstackid-resources.openstack.org/summits/confirm-external-orders"
-        );
-    }
-
     public function testServerExtensionsService(){
         $service = App::make(IServerExtensionsService::class);
         $this->assertTrue($service instanceof IServerExtensionsService);
         $extensions = $service->getAllActiveExtensions();
 
         $this->assertTrue(!is_null($extensions));
-        $this->assertTrue(count($extensions));
+        $this->assertTrue(count($extensions) > 0);
     }
 
-    public function testBlackListPolicy(){
-
-        $ip_helper_mock = Mockery::mock(IUserIPHelperProvider::class);
-        $ip_helper_mock->shouldReceive('getCurrentUserIpAddress')->andReturn("174.1.1.1");
-
-        $this->app->instance(IUserIPHelperProvider::class, $ip_helper_mock);
-
-        $delay_counter_measure = App::make(\Services\SecurityPolicies\DelayCounterMeasure::class);
-        $blacklist_security_policy = App::make(\Services\SecurityPolicies\BlacklistSecurityPolicy::class);
-        $blacklist_security_policy->setCounterMeasure($delay_counter_measure);
-        $ex = new ReplayAttackException();
-        $blacklist_security_policy->apply($ex);
-    }
 }
