@@ -39,7 +39,7 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
         $response = $this->action
         (
             "PUT",
-            "Api\\OAuth2\\OAuth2UserApiController@UpdateMe",
+            "Api\\OAuth2\\OAuth2UserApiController@updateMe",
             $params,
             [],
             [],

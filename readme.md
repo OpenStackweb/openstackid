@@ -72,3 +72,10 @@ php artisan db:seed --force --env={env}
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash
 
 nvm use
+
+# Tests
+
+php artisan view:clear
+php artisan cache:clear
+
+./vendor/bin/phpunit

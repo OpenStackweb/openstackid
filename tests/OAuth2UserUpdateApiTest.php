@@ -66,16 +66,9 @@ final class OAuth2UserUpdateApiTest extends OAuth2ProtectedApiTest
 
     protected function getScopes()
     {
-        $scope = [
-            //"openid",
-            //"address",
-            //"email",
-            "profile",
-            //IUserScopes::MeRead,
-            //IUserScopes::MeWrite,
-            //IUserScopes::Write,
-        ];                                      //TODO: review endpoint scopes configuration
-
-        return $scope;
+        return [
+            "openid",
+            IUserScopes::Write,
+        ];
     }
 }
