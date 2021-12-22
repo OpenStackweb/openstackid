@@ -1,13 +1,27 @@
 $border-color: #e3e3e3;
+$base-color-light:#f3f3f3;
 $base-color:#3fa2f7;
+$text-dark-color:#0a1f31;
 
 .main_container{
-  border: solid 1px $border-color;
   margin-top: 10%;
   margin-bottom: 10%;
-  color: $base-color;
 }
 
+.banner{
+  border: solid 1px $border-color;
+  margin-bottom: 40px;
+  color: $text-dark-color;
+  background-color: $base-color-light;
+  .prepend_grid_item{
+    background-color: $base-color;
+  }
+}
+
+.login_container{
+  border: solid 1px $border-color;
+  color: $base-color;
+}
 
 .error_label{
   color: red;
