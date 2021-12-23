@@ -383,15 +383,15 @@ class AdminController extends Controller {
     public function editEndpoint($id){
         $endpoint = $this->endpoint_repository->getById($id);
         if(is_null($endpoint)) return Response::view('errors.404', [], 404);
-        $user   = $this->auth_service->getCurrentUser();
         $selected_scopes = [];
-        $list = $endpoint->getScope();
+        $list = $endpoint->getScopes();
         foreach($list as $selected_scope){
             $selected_scopes[] = $selected_scope->getId();
         }
-        return View::make('oauth2.profile.admin.edit-endpoint',array(
+        return View::make('oauth2.profile.admin.edit-endpoint',[
             'endpoint' => $endpoint ,
-            'selected_scopes' => $selected_scopes));
+            'selected_scopes' => $selected_scopes
+        ]);
     }
 
     /**

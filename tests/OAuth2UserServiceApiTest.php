@@ -94,6 +94,20 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
         $this->assertTrue($headers->has("Access-Control-Allow-Headers"));
     }
 
+    public function testGetAllWithoutFilter(){
+        $response = $this->action("GET", "Api\OAuth2\OAuth2UserApiController@getAll",
+            [],
+            [],
+            [],
+            [],
+            array("HTTP_Authorization" => " Bearer " .$this->access_token));
+
+        $this->assertResponseStatus(200);
+        $content   = $response->getContent();
+        $page = json_decode($content);
+        $this->assertTrue($page->total > 0);
+    }
+
     protected function getScopes()
     {
         $scope = array(
@@ -101,6 +115,7 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
             IUserService::UserProfileScope_Email,
             IUserService::UserProfileScope_Profile,
             IUserScopes::MeWrite,
+            IUserScopes::ReadAll
         );
 
         return $scope;
