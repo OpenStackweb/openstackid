@@ -46,13 +46,15 @@
             helpAction:'mailto:{!! Config::get("app.help_email") !!}',
             createAccountAction:'{{ URL::action("Auth\RegisterController@showRegistrationForm") }}',
             allowNativeAuth: parseInt('{{ Config::get("auth.allows_native_auth", 1) }}') === 1 ? true: false,
+            showInfoBanner: parseInt('{{ Config::get("app.show_info_banner", 0) }}') === 1 ? true: false,
+            infoBannerContent: '{!! html_entity_decode(Config::get("app.info_banner_content")) !!}',
         }
 
         @if(Session::has('max_login_attempts_2_show_captcha'))
             config.maxLoginAttempts2ShowCaptcha = {{Session::get("max_login_attempts_2_show_captcha")}};
         @endif
 
-       @if(Session::has('login_attempts'))
+        @if(Session::has('login_attempts'))
             config.loginAttempts = {{Session::get("login_attempts")}};
         @endif
 

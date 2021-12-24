@@ -5,7 +5,6 @@ import ReCAPTCHA from "react-google-recaptcha";
 import ReactDOM from 'react-dom';
 import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';
-import ButtonBase from '@material-ui/core/ButtonBase';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import TextField from '@material-ui/core/TextField';
 import Link from '@material-ui/core/Link';
@@ -16,7 +15,7 @@ import Chip from '@material-ui/core/Chip';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
 import { verifyAccount, emitOTP } from './actions';
-import { MuiThemeProvider, createTheme } from '@material-ui/core/styles';
+import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import DividerWithText from '../components/divider_with_text';
 import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
@@ -24,6 +23,7 @@ import InputAdornment from '@material-ui/core/InputAdornment';
 import IconButton from '@material-ui/core/IconButton';
 import { emailValidator } from '../validator';
 import Grid from '@material-ui/core/Grid';
+import InfoOutlinedIcon from '@material-ui/icons/InfoOutlined';
 import Swal from 'sweetalert2'
 
 const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput, emailError }) => {
@@ -361,6 +361,8 @@ class LoginPage extends React.Component {
             disableInput: false,
             authFlow: props.flow,
             allowNativeAuth: props.allowNativeAuth,
+            showInfoBanner: props.showInfoBanner,
+            infoBannerContent: props.infoBannerContent,
         }
 
         if (this.state.errors.password && this.state.errors.password.includes("is not yet verified")) {
@@ -519,25 +521,22 @@ class LoginPage extends React.Component {
     render() {
         return (
             <Container component="main" maxWidth="xs" className={styles.main_container}>
-                <Grid container className={styles.banner}>
-                    <Grid item xs={1} className={styles.prepend_grid_item} container justifyContent="center" alignItems="center">
-                        ¡
+                <CssBaseline />
+                {this.state.showInfoBanner && <Grid container className={styles.banner}
+                    component={Paper} elevation={0}>
+                    <Grid item xs={1} className={styles.prepend_grid_item} container
+                        justifyContent="center" alignItems="center">
+                        <InfoOutlinedIcon />
                     </Grid>
-                    <Grid item xs={11} sm container>
-                        <Grid item xs container direction="column" spacing={2}>
+                    <Grid item xs={11} className={styles.append_grid_item} container>
+                        <Grid item xs container direction="column" spacing={1}>
                             <Grid item xs>
-                                <Typography gutterBottom variant="subtitle1" component="div">
-                                    OpenStackID is now OpenInfraID!
-                                </Typography>
-                                <Typography variant="body2">
-                                    Same auth, new name. Use your existing login to access OpenStack and OpenInfra services. Need help? Contact us.
-                                </Typography>
+                                <div dangerouslySetInnerHTML={{ __html: this.state.infoBannerContent }} />
                             </Grid>
                         </Grid>
                     </Grid>
-                </Grid>
+                </Grid>}
                 <Container className={styles.login_container}>
-                    <CssBaseline />
                     <div className={styles.inner_container}>
                         <Typography component="h1" className={styles.app_logo_container}>
                             <a href={window.location.href}><img className={styles.app_logo} alt="appLogo" src={this.props.appLogo} /></a>
@@ -664,7 +663,7 @@ class LoginPage extends React.Component {
 }
 
 // Or Create your Own theme:
-const theme = createTheme({
+const theme = createMuiTheme({
     palette: {
         primary: {
             main: '#3fa2f7'

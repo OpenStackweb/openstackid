@@ -1,26 +1,36 @@
 $border-color: #e3e3e3;
-$base-color-light:#f3f3f3;
 $base-color:#3fa2f7;
-$text-dark-color:#0a1f31;
+$banner-base-color: #28A4DB;
+$banner-base-color-light:#EFF5F8;
+$text-color-dark:#0a1f31;
 
 .main_container{
-  margin-top: 10%;
+  margin-top: 5%;
   margin-bottom: 10%;
+  max-width: 544px !important;
 }
 
 .banner{
-  border: solid 1px $border-color;
+  border: 2px solid $banner-base-color;
   margin-bottom: 40px;
-  color: $text-dark-color;
-  background-color: $base-color-light;
+  color: $text-color-dark;
   .prepend_grid_item{
-    background-color: $base-color;
+    color: $banner-base-color-light;
+    background-color: $banner-base-color;
+  }
+  .append_grid_item{
+    background-color: $banner-base-color-light;
+    padding: 10px 5px 10px 15px;
+    a {
+      color: $banner-base-color;
+    }
   }
 }
 
 .login_container{
   border: solid 1px $border-color;
   color: $base-color;
+  background-color: white;
 }
 
 .error_label{
