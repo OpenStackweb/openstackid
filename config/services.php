@@ -64,6 +64,6 @@ return [
         'client_id' => env('OKTA_CLIENT_ID'),
         'client_secret' => env('OKTA_CLIENT_SECRET'),
         'base_url' => env("OKTA_BASE_URL"),
-        'redirect' => env('LINKEDIN_REDIRECT_URI')
+        'redirect' => env('OKTA_REDIRECT_URI')
     ],
 ];
