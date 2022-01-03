@@ -268,7 +268,7 @@ final class DiscoveryDocumentBuilder
     }
 
     public function addAllowsNativeAuth(){
-        $this->set["allows_native_auth"] = boolval(Config::get("auth.allows_native_auth", 1));
+        $this->set["allows_native_auth"] = boolval(Config::get("auth.allows_native_on_config", 1));
         return $this;
     }
 

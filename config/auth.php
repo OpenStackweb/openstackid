@@ -102,5 +102,6 @@ return [
     'password_reset_lifetime' => env('AUTH_PASSWORD_RESET_LIFETIME', 600),
     'verification_email_lifetime' => env ("AUTH_VERIFICATION_EMAIL_LIFETIME", 600),
     'allows_native_auth' => env('AUTH_ALLOWS_NATIVE_AUTH', 1),
+    'allows_native_on_config' => env('AUTH_ALLOWS_NATIVE_AUTH_CONFIG', 1),
     'allows_opt_auth' => env('AUTH_ALLOWS_OTP_AUTH', 1),
 ];
