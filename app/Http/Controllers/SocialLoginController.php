@@ -73,6 +73,10 @@ final class SocialLoginController extends Controller
             Log::debug(sprintf("SocialLoginController::redirect provider %s", $provider));
             if(!SocialLoginProviders::isSupportedProvider($provider))
                 throw new ValidationException(sprintf("Provider %s is not supported.", $provider));
+            // if we already logged in ... continue flow
+            if(Auth::check()){
+                return $this->login_strategy->postLogin([ 'provider'=> $provider ]);
+            }
             return Socialite::driver($provider)->redirect();
         }
         catch (\Exception $ex){
