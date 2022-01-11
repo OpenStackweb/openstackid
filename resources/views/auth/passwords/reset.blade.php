@@ -3,7 +3,9 @@
     <title>Welcome to {{ Config::get("app.app_name") }} - Reset Your Password </title>
 @append
 @section('scripts')
+    {!! HTML::style('assets/chosen-js/chosen.css') !!}
     {!! HTML::style('assets/css/auth/email.css') !!}
+    {!! HTML::script('assets/chosen-js/chosen.jquery.js') !!}
     {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
     {!! HTML::script('assets/js/auth/set_password.js') !!}
     <script type="application/javascript">
