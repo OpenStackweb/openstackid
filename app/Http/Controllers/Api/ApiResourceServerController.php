@@ -117,7 +117,7 @@ final class ApiResourceServerController extends APICRUDController
     protected function getUpdatePayloadValidationRules(): array
     {
         return [
-            'host' => 'sometimes|required|host|max:255',
+            'host' => 'required',
             'ips' => 'required',
             'friendly_name' => 'sometimes|required|text|max:512',
         ];
@@ -129,7 +129,7 @@ final class ApiResourceServerController extends APICRUDController
     protected function getCreatePayloadValidationRules(): array
     {
         return [
-            'host' => 'required|host|max:255',
+            'host' => 'required',
             'ips' => 'required',
             'friendly_name' => 'required|text|max:512',
             'active' => 'required|boolean',

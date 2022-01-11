@@ -68,8 +68,12 @@ final class ApiScopeService extends AbstractService implements IApiScopeService
         foreach ($scopes as $scope) {
             $api = $scope->getApi();
             $resource_server = !is_null($api) ? $api->getResourceServer() : null;
-            if (!is_null($resource_server) && !array_key_exists($resource_server->getHost(), $audience)) {
-                $audience[$resource_server->getHost()] = $resource_server->getId();
+            if (!is_null($resource_server)) {
+                $hosts = explode("," , $resource_server->getHost());
+                foreach($hosts as $host) {
+                    if(!array_key_exists($host, $audience))
+                        $audience[$host] = $resource_server->getId();
+                }
             }
         }
         return $audience;
@@ -81,14 +85,11 @@ final class ApiScopeService extends AbstractService implements IApiScopeService
      */
     public function getStrAudienceByScopeNames(array $scopes_names):string
     {
-        $audiences = $this->getAudienceByScopeNames($scopes_names);
-        $audience  = '';
-        foreach ($audiences as $resource_server_host => $ip) {
-            $audience = $audience . $resource_server_host . ' ';
+        $audience = [];
+        foreach ($this->getAudienceByScopeNames($scopes_names) as $resource_server_host => $id) {
+            $audience[] = $resource_server_host;
         }
-        $audience = trim($audience);
-
-        return $audience;
+        return implode(" ", $audience);
     }
 
     /**
