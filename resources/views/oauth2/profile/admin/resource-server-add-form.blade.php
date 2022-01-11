@@ -1,7 +1,7 @@
 <form id="form-resource-server" name="form-resource-server">
     <div class="form-group">
         <label class="control-label" for="host">Host&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>
-        <input type="text" class="form-control" name="host" id="host">
+        <input type="text" class="form-control" name="host" id="host" style="width: 100%">
     </div>
     <div class="form-group">
         <label class="control-label" for="friendly_name">Friendly Name&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>

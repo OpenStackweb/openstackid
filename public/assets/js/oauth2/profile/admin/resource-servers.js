@@ -58,7 +58,7 @@ $(document).ready(function() {
 
     var resource_server_validator = resource_server_form.validate({
         rules: {
-            "host"  :        {required: true, nowhitespace:true, rangelength: [1, 512]},
+            "host"  :        {required: true},
             "friendly_name": {required: true, free_text:true, rangelength: [1, 255]},
             "ips":           {required: true},
         }
@@ -67,6 +67,14 @@ $(document).ready(function() {
     dialog_resource_server.modal({
         show:false,
         backdrop:"static"
+    });
+
+    $('#host').tagsinput({
+        trimValue: true,
+        onTagExists: function(item, $tag) {
+            $tag.hide().fadeIn();
+        },
+        allowDuplicates: false
     });
 
     $('#ips').tagsinput({
