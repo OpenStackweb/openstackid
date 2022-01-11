@@ -176,6 +176,7 @@ final class OAuth2BearerAccessTokenRequestValidator
             Log::debug('checking token audience ...');
             $audience = explode(' ', $access_token->getAudience());
             if ((!in_array($realm, $audience))) {
+                Log::warning(sprintf("OAuth2BearerAccessTokenRequestValidator::handle audience %s realm %s ", implode(',', $audience), $realm));
                 throw new InvalidGrantTypeException(OAuth2Protocol::OAuth2Protocol_Error_InvalidToken);
             }
 
