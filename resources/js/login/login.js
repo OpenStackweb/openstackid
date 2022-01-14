@@ -1,5 +1,3 @@
-import styles from './login.module.scss'
-import "./third_party_identity_providers.scss";
 import React from 'react';
 import ReCAPTCHA from "react-google-recaptcha";
 import ReactDOM from 'react-dom';
@@ -23,8 +21,11 @@ import InputAdornment from '@material-ui/core/InputAdornment';
 import IconButton from '@material-ui/core/IconButton';
 import { emailValidator } from '../validator';
 import Grid from '@material-ui/core/Grid';
-import InfoOutlinedIcon from '@material-ui/icons/InfoOutlined';
 import Swal from 'sweetalert2'
+import Banner from '../components/banner/banner';
+
+import styles from './login.module.scss'
+import "./third_party_identity_providers.scss";
 
 const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput, emailError }) => {
 
@@ -522,20 +523,7 @@ class LoginPage extends React.Component {
         return (
             <Container component="main" maxWidth="xs" className={styles.main_container}>
                 <CssBaseline />
-                {this.state.showInfoBanner && <Grid container className={styles.banner}
-                    component={Paper} elevation={0}>
-                    <Grid item xs={1} className={styles.prepend_grid_item} container
-                        justifyContent="center" alignItems="center">
-                        <InfoOutlinedIcon />
-                    </Grid>
-                    <Grid item xs={11} className={styles.append_grid_item} container>
-                        <Grid item xs container direction="column" spacing={1}>
-                            <Grid item xs>
-                                <div dangerouslySetInnerHTML={{ __html: this.state.infoBannerContent }} />
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                </Grid>}
+                {this.state.showInfoBanner && <Banner infoBannerContent={this.state.infoBannerContent} />}
                 <Container className={styles.login_container}>
                     <div className={styles.inner_container}>
                         <Typography component="h1" className={styles.app_logo_container}>

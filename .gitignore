@@ -45,3 +45,5 @@ model.sql
 /public/assets/dist/
 /public/assets/login.js
 /public/assets/css/login.css
+/public/assets/home.js
+/public/assets/css/home.css

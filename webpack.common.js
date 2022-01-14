@@ -19,6 +19,7 @@ module.exports = {
     */
     entry: {
         login: './resources/js/login/login.js',
+        home: './resources/js/home/home.js',
         index: './resources/js/index.js',
     },
     output: {
