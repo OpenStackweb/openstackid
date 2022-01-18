@@ -241,5 +241,6 @@ return [
                         your settings and more."),
     "show_public_profile_show_photo" => env('SHOW_PUBLIC_PROFILE_SHOW_PHOTO_CHECKBOX', true),
     "show_info_banner"      => env('SHOW_INFO_BANNER', 0),
-    "info_banner_content"   => env('INFO_BANNER_CONTENT')
+    "info_banner_content"   => env('INFO_BANNER_CONTENT'),
+    "default_profile_image" => env('DEFAULT_PROFILE_IMAGE', null),
 ];
