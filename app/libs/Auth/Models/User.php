@@ -19,6 +19,7 @@ use App\libs\Auth\Models\UserRegistrationRequest;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use App\Events\UserEmailVerified;
 use Doctrine\Common\Collections\Criteria;
@@ -860,6 +861,7 @@ class User extends BaseEntity
      */
     public function getPic(): string
     {
+        $default_pic = Config::get("app.default_profile_image", null);
         try {
             $pic_key = sprintf("%s_user_pic", $this->id);
             $pic = Cache::get($pic_key);
@@ -876,6 +878,8 @@ class User extends BaseEntity
             if(!empty($this->external_pic)){
                 return $this->external_pic;
             }
+            if(!empty($default_pic))
+                return $default_pic;
             return $this->getGravatarUrl();
         }
         catch(RequestException $ex1){
@@ -884,6 +888,8 @@ class User extends BaseEntity
         catch (\Exception $ex) {
             Log::warning($ex);
         }
+        if(!empty($default_pic))
+            return $default_pic;
         return $this->getGravatarUrl();
     }
 
