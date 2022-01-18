@@ -213,18 +213,18 @@ final class UserService extends AbstractService implements IUserService
      */
     public function sendWelcomeEmail(User $user): void
     {
+        if(Config::get("mail.send_welcome_email")) {
+            $this->tx_service->transaction(function () use ($user) {
+                $reset_password_link = null;
 
-        $this->tx_service->transaction(function () use ($user) {
-            $reset_password_link = null;
+                if (!$user->hasPasswordSet()) {
+                    $request = $this->generatePasswordResetRequest($user->getEmail());
+                    $reset_password_link = $request->getResetLink();
+                }
 
-            if (!$user->hasPasswordSet()) {
-                $request = $this->generatePasswordResetRequest($user->getEmail());
-                $reset_password_link = $request->getResetLink();
-            }
-
-            Mail::queue(new WelcomeNewUserEmail($user, $reset_password_link));
-
-        });
+                Mail::queue(new WelcomeNewUserEmail($user, $reset_password_link));
+            });
+        }
     }
 
     /**
