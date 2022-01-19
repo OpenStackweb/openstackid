@@ -1,33 +1,14 @@
-@extends('layout')
+@extends('reactapp_layout')
 @section('title')
     <title>Welcome to {{ Config::get('app.app_name') }} - Sign Up </title>
 @append
-@section('scripts')
-    {!! HTML::style('assets/chosen-js/chosen.css') !!}
-    {!! HTML::style('assets/css/auth/register.css') !!}
-    {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
-    {!! HTML::script('assets/chosen-js/chosen.jquery.js') !!}
-    {!! HTML::script('assets/js/auth/registration.js') !!}
-    <script type="application/javascript">
-        var verifyCaptchaCallback = function(response) {
-            $('#g_recaptcha_hidden').val(response);
-            $('#g_recaptcha_hidden').valid();
-        };
-    </script>
+@section('meta')
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 
-@section('content')
+
+<!-- @section('content')
 <div class="container">
-    @if ($errors->any())
-        <div class="alert alert-danger alert-dismissible" role="alert">
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{!! $error !!}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
     <div class="col-xs-12 col-md-5 col-md-offset-3 signup-form">
         <form id="form-registration"
               target="_self"
@@ -115,4 +96,62 @@
         <div class="text-center">Already have an account? <a target="_self" href="{!! URL::action('UserController@getLogin') !!}">Sign in</a></div>
     </div>
 </div>
-@endsection
+@endsection  -->
+
+@section('css')
+    {!! HTML::style('assets/css/signup.css') !!}
+@append
+@section('content')
+    
+@append
+@section('scripts')
+    <script>
+        let signUpError = '';
+        const initialValues = {
+            first_name: '',
+            last_name: '',
+            email: '',
+            country_iso_code: '',
+            password: '',
+            password_confirmation: '',
+            agree_code_of_conduct: false,
+        }
+        @if ($errors->any())
+            @foreach($errors->all() as $error)
+                signUpError = '{!! $error !!}';
+            @endforeach
+
+            initialValues.first_name = "{{old('first_name')}}";
+            initialValues.last_name = "{{old('last_name')}}";
+            initialValues.email = "{{old('email')}}";
+            initialValues.country_iso_code = "{{old('country_iso_code')}}";
+        @endif
+
+        let countries = [];
+        @foreach($countries as $country)
+            countries.push({ value: "{!! $country->getAlpha2() !!}", text: "{!! $country->getName() !!}" });
+        @endforeach
+
+        let config = {
+            csrfToken :  document.head.querySelector('meta[name="csrf-token"]').content,
+            realm: '{{isset($identity_select) ? $realm : ""}}',
+            appName: '{{ Config::get("app.app_name") }}',
+            appLogo: '{{  Config::get("app.logo_url") }}',
+            clientId: '{{ $client_id }}',
+            codeOfConductUrl: '{!! Config::get("app.code_of_conduct_link") !!}',
+            countries: countries,
+            redirectUri: '{{ $redirect_uri }}',
+            signInAction:'{{ URL::action("UserController@getLogin") }}',
+            signUpAction: '{{ URL::action("Auth\RegisterController@register") }}',
+            signUpError: signUpError,
+            captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
+            showInfoBanner: parseInt('{{ Config::get("app.show_info_banner", 0) }}') === 1 ? true: false,
+            infoBannerContent: '{!! html_entity_decode(Config::get("app.info_banner_content")) !!}',
+            tenantName: '{{ Config::get("app.tenant_name") }}',
+            initialValues: initialValues
+        }
+
+        window.SIGN_UP_ENDPOINT = config.signUpAction;
+    </script>
+    {!! HTML::script('assets/signup.js') !!}
+@append

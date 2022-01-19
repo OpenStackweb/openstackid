@@ -47,3 +47,9 @@ model.sql
 /public/assets/css/login.css
 /public/assets/home.js
 /public/assets/css/home.css
+/public/assets/signup.js
+/public/assets/css/signup.css
+/public/assets/emailVerification.js
+/public/assets/css/emailVerification.css
+/public/assets/passwordReset.js
+/public/assets/css/passwordReset.css

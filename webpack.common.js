@@ -1,7 +1,7 @@
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 const webpack = require('webpack');
-const path              = require('path');
+const path = require('path');
 
 module.exports = {
     /*
@@ -18,9 +18,12 @@ module.exports = {
     },
     */
     entry: {
-        login: './resources/js/login/login.js',
-        home: './resources/js/home/home.js',
         index: './resources/js/index.js',
+        home: './resources/js/home/home.js',
+        login: './resources/js/login/login.js',
+        signup: './resources/js/signup/signup.js',
+        emailVerification: './resources/js/email_verification/email_verification.js',
+        passwordReset: './resources/js/password_reset/password_reset.js',
     },
     output: {
         filename: '[name].js',

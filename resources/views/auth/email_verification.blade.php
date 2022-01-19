@@ -1,19 +1,9 @@
-@extends('layout')
+@extends('reactapp_layout')
 @section('title')
     <title>Welcome to {{ Config::get("app.app_name") }} - Resend Email Verification </title>
 @append
-@section('scripts')
-    {!! HTML::style('assets/css/auth/email.css') !!}
-    {!! HTML::script('assets/js/auth/email-verification.js') !!}
-    <script type="application/javascript">
-        var verifyCaptchaCallback = function(response) {
-            $('#g_recaptcha_hidden').val(response);
-            $('#g_recaptcha_hidden').valid();
-        };
-    </script>
-@append
 
-@section('content')
+<!-- @section('content')
     <div class="container">
         @if (session('status'))
             <div class="alert alert-success alert-dismissible" role="alert">
@@ -58,4 +48,31 @@
             </form>
         </div>
     </div>
-@endsection
+@endsection -->
+
+@section('css')
+    {!! HTML::style('assets/css/emailVerification.css') !!}
+@append
+@section('content')
+
+@append
+@section('scripts')
+    <script>
+
+        // var verifyCaptchaCallback = function(response) {
+        //     $('#g_recaptcha_hidden').val(response);
+        //     $('#g_recaptcha_hidden').valid();
+        // };
+
+        let config = {
+            //token :  document.head.querySelector('meta[name="csrf-token"]').content,
+            appName: '{{ Config::get("app.app_name") }}',
+            appLogo: '{{  Config::get("app.logo_url") }}',
+            captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
+            showInfoBanner: parseInt('{{ Config::get("app.show_info_banner", 0) }}') === 1 ? true: false,
+            infoBannerContent: '{!! html_entity_decode(Config::get("app.info_banner_content")) !!}',
+        }
+    </script>
+    {!! HTML::script('assets/emailVerification.js') !!}
+@append
+
