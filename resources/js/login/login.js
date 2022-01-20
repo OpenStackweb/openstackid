@@ -527,7 +527,7 @@ class LoginPage extends React.Component {
                 <Container className={styles.login_container}>
                     <div className={styles.inner_container}>
                         <Typography component="h1" className={styles.app_logo_container}>
-                            <a href={window.location.href}><img className={styles.app_logo} alt="appLogo" src={this.props.appLogo} /></a>
+                            <a href={window.location.href}><img className={styles.app_logo} alt={this.props.appName} src={this.props.appLogo} /></a>
                         </Typography>
                         <Typography component="h1" variant="h5">
                             Sign in {this.state.user_fullname && <Chip

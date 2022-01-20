@@ -29,7 +29,7 @@
         <header class="row header">
             <div class="col-md-5">
                 <p id="logo">
-                    <a href="/" target="_self" ><img src="{!!  Config::get('app.logo_url') !!}"></a>
+                    <a href="/" target="_self" ><img alt="{!! Config::get("app.app_name") !!}" src="{!!  Config::get('app.logo_url') !!}"></a>
                 </p>
             </div>
             <div class="col-md-7">
