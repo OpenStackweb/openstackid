@@ -82,7 +82,7 @@ final class SocialLoginController extends Controller
         catch (\Exception $ex){
             Log::error($ex);
         }
-        return view("auth.register_error");
+        return view("auth.social_login_error");
     }
 
     /**
@@ -147,7 +147,7 @@ final class SocialLoginController extends Controller
         catch (\Exception $ex){
             Log::error($ex);
         }
-        return view("auth.register_error");
+        return view("auth.social_login_error");
     }
 
 }
