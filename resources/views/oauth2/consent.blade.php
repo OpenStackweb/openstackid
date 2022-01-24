@@ -12,7 +12,7 @@
 @section('header_right')
     @if(Auth::check())
         <div class="row">
-            <div class="col-md-6 col-md-offset-8">
+            <div class="col-md-6 col-md-offset-5 col-xs-12 col-xs-offset-2">
                 Welcome, <a target="_self" href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->getIdentifier()!!}</a>
             </div>
         </div>
