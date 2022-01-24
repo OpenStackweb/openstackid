@@ -10,9 +10,10 @@ body {
 #logo img {
     display: block;
     margin: 0 auto;
-    width: 100%;
-    max-width: 446px;
-    height: 300px;
+    width: auto;
+    height: auto;
+    max-width: 174px;
+    max-height: 48px;
 }
 
 .panel-heading {
