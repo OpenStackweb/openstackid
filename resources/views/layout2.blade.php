@@ -27,12 +27,12 @@
 <body>
     <div class="container">
         <header class="row header">
-            <div class="col-md-5">
+            <div class="col-md-12">
                 <p id="logo">
                     <a href="/" target="_self" ><img alt="{!! Config::get("app.app_name") !!}" src="{!!  Config::get('app.logo_url') !!}"></a>
                 </p>
             </div>
-            <div class="col-md-7">
+            <div class="col-md-12">
                 @yield('header_right')
             </div>
         </header>
