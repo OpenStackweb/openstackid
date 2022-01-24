@@ -10,7 +10,8 @@ body {
 #logo img {
     display: block;
     margin: 0 auto;
-    width: 446px;
+    width: 100%;
+    max-width: 446px;
     height: 300px;
 }
 
