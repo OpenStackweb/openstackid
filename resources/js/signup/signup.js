@@ -1,42 +1,27 @@
-import React, { useEffect, useRef, useState } from 'react'
-import ReactDOM from 'react-dom'
-import ReCAPTCHA from 'react-google-recaptcha'
-import Button from '@material-ui/core/Button'
-import Card from '@material-ui/core/Card'
-import CardHeader from '@material-ui/core/CardHeader'
-import CardContent from '@material-ui/core/CardContent'
-import Container from '@material-ui/core/Container'
-import CssBaseline from '@material-ui/core/CssBaseline'
-import Checkbox from '@material-ui/core/Checkbox'
-import Grid from '@material-ui/core/Grid'
-import InfoOutlinedIcon from '@material-ui/icons/InfoOutlined'
-import MenuItem from '@material-ui/core/MenuItem'
-import PasswordStrengthBar from 'react-password-strength-bar'
-import TextField from '@material-ui/core/TextField'
-import Typography from '@material-ui/core/Typography'
-import Select from '@material-ui/core/Select'
-import Swal from 'sweetalert2'
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles'
-import { useFormik } from 'formik'
-import { object, string, ref } from 'yup'
-import Banner from '../components/banner/banner'
+import React, { useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
+import ReCAPTCHA from "react-google-recaptcha";
+import Button from "@material-ui/core/Button";
+import Card from "@material-ui/core/Card";
+import CardHeader from "@material-ui/core/CardHeader";
+import CardContent from "@material-ui/core/CardContent";
+import Container from "@material-ui/core/Container";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import Checkbox from "@material-ui/core/Checkbox";
+import Grid from "@material-ui/core/Grid";
+import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
+import MenuItem from "@material-ui/core/MenuItem";
+import PasswordStrengthBar from "react-password-strength-bar";
+import TextField from "@material-ui/core/TextField";
+import Typography from "@material-ui/core/Typography";
+import Select from "@material-ui/core/Select";
+import Swal from "sweetalert2";
+import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles";
+import { useFormik } from "formik";
+import { object, string, ref } from "yup";
+import Banner from "../components/banner/banner";
 
-import styles from './signup.module.scss'
-
-const validationSchema = object({
-  first_name: string('Enter your first name').required('First name is required'),
-  last_name: string('Enter your last name').required('Last name is required'),
-  email: string('Enter your email')
-    .email('Enter a valid email')
-    .required('Email is required'),
-  country_iso_code: string('Select a country'),
-  password: string('Enter your password')
-    .min(8, 'Password should be of minimum 8 characters length')
-    .required('Password is required'),
-  password_confirmation: string('Confirm your password')
-    .required('Password confirmation is required')
-    .oneOf([ref('password')], 'Passwords do not match'),
-})
+import styles from "./signup.module.scss";
 
 const SignUpPage = ({
   appLogo,
@@ -47,6 +32,7 @@ const SignUpPage = ({
   csrfToken,
   infoBannerContent,
   initialValues,
+  passwordPolicy,
   redirectUri,
   showInfoBanner,
   signInAction,
@@ -55,57 +41,70 @@ const SignUpPage = ({
   tenantName,
 }) => {
   const formEl = useRef(null);
-  const captcha = useRef(null)
-  const [captchaConfirmation, setCaptchaConfirmation] = useState(null)
+  const captcha = useRef(null);
+  const [captchaConfirmation, setCaptchaConfirmation] = useState(null);
 
   useEffect(() => {
     if (signUpError) {
-      Swal('Something went wrong!', signUpError, 'error')
+      Swal("Something went wrong!", signUpError, "error");
     }
-  }, [signUpError])
+  }, [signUpError]);
 
-  const doHtmlFormPost = values => {
+  const doHtmlFormPost = (values) => {
     formEl.current.submit();
-  }
+  };
+
+  const buildValidationSchema = (passwordPolicy) =>
+    object({
+      first_name: string("Enter your first name").required(
+        "First name is required"
+      ),
+      last_name: string("Enter your last name").required(
+        "Last name is required"
+      ),
+      email: string("Enter your email")
+        .email("Enter a valid email")
+        .required("Email is required"),
+      country_iso_code: string("Select a country").required(
+        "Country is required"
+      ),
+      password: string("Enter your password")
+        .min(
+          passwordPolicy.min_length,
+          `Password should be of minimum ${passwordPolicy.min_length} characters length`
+        )
+        .required("Password is required"),
+      password_confirmation: string("Confirm your password")
+        .required("Password confirmation is required")
+        .oneOf([ref("password")], "Passwords do not match"),
+    });
 
   const formik = useFormik({
     initialValues: initialValues,
-    // initialValues: {
-    //   first_name: 'Test',
-    //   last_name: 'Registration',
-    //   email: 'test@nomail.com',
-    //   country_iso_code: 'AR',
-    //   password: '1qaz2w!sx3edc',
-    //   password_confirmation: '1qaz2w!sx3edc',
-    //   agree_code_of_conduct: false,
-    // },
-    validationSchema: validationSchema,
+    validationSchema: buildValidationSchema(passwordPolicy),
     validate: (values) => {
-      const errors = {}
+      const errors = {};
       if (codeOfConductUrl && !values.agree_code_of_conduct) {
         errors.agree_code_of_conduct =
-          'You must agree to the Community Code of Conduct'
+          "You must agree to the Community Code of Conduct";
       }
-      return errors
+      return errors;
     },
-    onSubmit: (values, actions) => {
-      const recaptchaResponse = captcha.current.getValue()
+    onSubmit: (values) => {
+      const recaptchaResponse = captcha.current.getValue();
       if (!recaptchaResponse) {
-        setCaptchaConfirmation('Remember to check the captcha')
-        return
+        setCaptchaConfirmation("Remember to check the captcha");
+        return;
       }
-
-      console.log(JSON.stringify(values, null, 2))
-
-      doHtmlFormPost()
+      doHtmlFormPost();
     },
-  })
+  });
 
   const onChangeRecaptcha = () => {
     if (captcha.current.getValue()) {
-      setCaptchaConfirmation(null)
+      setCaptchaConfirmation(null);
     }
-  }
+  };
 
   return (
     <Container component="main" maxWidth="xs" className={styles.main_container}>
@@ -116,7 +115,13 @@ const SignUpPage = ({
           <img className={styles.app_logo} alt="appLogo" src={appLogo} />
         </a>
       </div>
-      <form onSubmit={formik.handleSubmit} ref={formEl} method="post" action={signUpAction} target="_self">
+      <form
+        onSubmit={formik.handleSubmit}
+        ref={formEl}
+        method="post"
+        action={signUpAction}
+        target="_self"
+      >
         <Card className={styles.signup_container} variant="outlined">
           <CardHeader
             title="Register"
@@ -163,7 +168,8 @@ const SignUpPage = ({
                     value={formik.values.last_name}
                     onChange={formik.handleChange}
                     error={
-                      formik.touched.last_name && Boolean(formik.errors.last_name)
+                      formik.touched.last_name &&
+                      Boolean(formik.errors.last_name)
                     }
                     helperText={
                       formik.touched.last_name && formik.errors.last_name
@@ -177,7 +183,6 @@ const SignUpPage = ({
                   name="email"
                   autoComplete="email"
                   variant="outlined"
-                  //required
                   fullWidth
                   size="small"
                   label="Email Address"
@@ -199,6 +204,10 @@ const SignUpPage = ({
                   displayEmpty
                   onChange={formik.handleChange}
                   className={styles.countries}
+                  error={
+                    formik.touched.country_iso_code &&
+                    Boolean(formik.errors.country_iso_code)
+                  }
                 >
                   <MenuItem value="">
                     <span className={styles.countries_empty_text}>
@@ -211,6 +220,12 @@ const SignUpPage = ({
                     </MenuItem>
                   ))}
                 </Select>
+                {formik.touched.country_iso_code &&
+                  formik.errors.country_iso_code && (
+                    <div className={styles.error_label}>
+                      {formik.errors.country_iso_code}
+                    </div>
+                  )}
               </Grid>
               <Grid item xs={12}>
                 <TextField
@@ -221,6 +236,7 @@ const SignUpPage = ({
                   fullWidth
                   size="small"
                   label="Password"
+                  inputProps={{ maxLength: passwordPolicy.max_length }}
                   value={formik.values.password}
                   onChange={formik.handleChange}
                   error={
@@ -231,7 +247,7 @@ const SignUpPage = ({
                 {formik.values.password && (
                   <PasswordStrengthBar
                     password={formik.values.password}
-                    minLength={8}
+                    minLength={passwordPolicy.min_length}
                   />
                 )}
               </Grid>
@@ -244,6 +260,7 @@ const SignUpPage = ({
                   fullWidth
                   size="small"
                   label="Confirm Password"
+                  inputProps={{ maxLength: passwordPolicy.max_length }}
                   value={formik.values.password_confirmation}
                   onChange={formik.handleChange}
                   error={
@@ -260,8 +277,8 @@ const SignUpPage = ({
                 <InfoOutlinedIcon fontSize="small" />
                 &nbsp;
                 <Typography variant="body2">
-                  The password must be 8–30 characters, and must include a
-                  special character.
+                  {`The password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and must include a
+                  special character.`}
                 </Typography>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
@@ -287,7 +304,7 @@ const SignUpPage = ({
                       onChange={formik.handleChange}
                       color="default"
                     />
-                    I agree to the{' '}
+                    I agree to the{" "}
                     <a href={codeOfConductUrl} target="_blank">
                       {tenantName} Community Code of Conduct
                     </a>
@@ -314,40 +331,54 @@ const SignUpPage = ({
           </CardContent>
         </Card>
         <input type="hidden" value={csrfToken} id="_token" name="_token" />
-        {clientId && <input type="hidden" id="client_id" name="client_id" value={clientId}/>}
-        {redirectUri && <input type="hidden" id="redirect_uri" name="redirect_uri" value={redirectUri}/>}
+        {clientId && (
+          <input
+            type="hidden"
+            id="client_id"
+            name="client_id"
+            value={clientId}
+          />
+        )}
+        {redirectUri && (
+          <input
+            type="hidden"
+            id="redirect_uri"
+            name="redirect_uri"
+            value={redirectUri}
+          />
+        )}
       </form>
       <div className={styles.footer}>
         <Typography variant="body2">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <a target="_self" href={signInAction}>
             Sign in
           </a>
         </Typography>
       </div>
     </Container>
-  )
-}
+  );
+};
 
 // Or Create your Own theme:
 const theme = createMuiTheme({
   palette: {
     primary: {
-      main: '#3fa2f7',
+      main: "#3fa2f7",
     },
   },
   overrides: {
     MuiButton: {
       containedPrimary: {
-        color: 'white',
+        color: "white",
       },
     },
   },
-})
+});
 
 ReactDOM.render(
   <MuiThemeProvider theme={theme}>
     <SignUpPage {...config} />
   </MuiThemeProvider>,
-  document.querySelector('#root'),
-)
+  document.querySelector("#root")
+);

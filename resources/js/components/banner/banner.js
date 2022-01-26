@@ -1,11 +1,11 @@
-import React from 'react';
-import Grid from '@material-ui/core/Grid'
-import Paper from '@material-ui/core/Paper'
-import InfoOutlinedIcon from '@material-ui/icons/InfoOutlined'
+import React from "react";
+import Grid from "@material-ui/core/Grid";
+import Paper from "@material-ui/core/Paper";
+import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 
-import styles from './banner.module.scss'
+import styles from "./banner.module.scss";
 
-const Banner = ({infoBannerContent}) => {
+const Banner = ({ infoBannerContent }) => {
   return (
     <Grid container className={styles.banner} component={Paper} elevation={0}>
       <Grid
@@ -26,7 +26,7 @@ const Banner = ({infoBannerContent}) => {
         </Grid>
       </Grid>
     </Grid>
-  )
-}
+  );
+};
 
-export default Banner
+export default Banner;

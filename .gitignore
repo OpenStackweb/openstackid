@@ -51,5 +51,9 @@ model.sql
 /public/assets/css/signup.css
 /public/assets/emailVerification.js
 /public/assets/css/emailVerification.css
-/public/assets/passwordReset.js
-/public/assets/css/passwordReset.css
+/public/assets/forgotPassword.js
+/public/assets/css/forgotPassword.css
+/public/assets/resetPassword.js
+/public/assets/css/resetPassword.css
+/public/assets/setPassword.js
+/public/assets/css/setPassword.css

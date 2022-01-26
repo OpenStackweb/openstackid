@@ -23,7 +23,9 @@ module.exports = {
         login: './resources/js/login/login.js',
         signup: './resources/js/signup/signup.js',
         emailVerification: './resources/js/email_verification/email_verification.js',
-        passwordReset: './resources/js/password_reset/password_reset.js',
+        forgotPassword: './resources/js/forgot_password/forgot_password.js',
+        resetPassword: './resources/js/reset_password/reset_password.js',
+        setPassword: './resources/js/set_password/set_password.js',
     },
     output: {
         filename: '[name].js',

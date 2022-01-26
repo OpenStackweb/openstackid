@@ -24,5 +24,11 @@
       background-color: $base-color-dark;
       margin-top: 10px;
     }
+
+    .error_label {
+      color: #f44336;
+      font-size: 0.75rem;
+      margin: 4px 0 4px 14px;
+    }
   }
 }
