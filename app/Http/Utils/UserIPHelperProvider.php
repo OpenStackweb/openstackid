@@ -11,7 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Illuminate\Support\Facades\Request;
+
+use Illuminate\Support\Facades\Log;
 /**
  * Class UserIPHelperProvider
  * @package App\Http\Utils
@@ -21,6 +22,8 @@ final class UserIPHelperProvider implements IUserIPHelperProvider
 
     public function getCurrentUserIpAddress(): string
     {
-        return Request::server('REMOTE_ADDR');
+        $ip = $_SERVER['HTTP_CLIENT_IP'] ?? ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? ''));
+        Log::debug(sprintf("UserIPHelperProvider::getCurrentUserIpAddress ip %s", $ip));
+        return $ip;
     }
 }
