@@ -162,10 +162,8 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
 
     private function _update($id){
         try {
+
             if(!Request::isJson()) return $this->error400();
-            if(!$this->resource_server_context->getCurrentUserId()){
-                return $this->error403();
-            }
 
             $payload = Request::json()->all();
             // Creates a Validator instance and validates the data.
