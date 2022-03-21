@@ -46,6 +46,10 @@ class OAuth2Message extends HttpMessage
         return isset($this->container[$param])? $this->container[$param] : null;
     }
 
+    public function hasParam(string $param):bool{
+        return isset($this->container[$param]);
+    }
+
     /**
      * @param string $param
      * @param mixed $value
