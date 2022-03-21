@@ -252,7 +252,9 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         // verify that login hint (email) is populated
         $this->assertTrue(str_contains($response->getContent(), 'sebastian@tipit.net'));
-
+        $this->assertTrue(str_contains($response->getContent(), 'config.user_fullname'));
+        $this->assertTrue(str_contains($response->getContent(), 'config.user_pic'));
+        $this->assertTrue(str_contains($response->getContent(), 'config.user_verified'));
         // do login
         $response = $this->action('POST', "UserController@postLogin",
             array
