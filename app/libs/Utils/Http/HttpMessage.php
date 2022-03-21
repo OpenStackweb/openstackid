@@ -83,7 +83,6 @@ class HttpMessage implements ArrayAccess
      */
     public function __toString()
     {
-        $string = var_export(array_merge(array('from_ip' => IPHelper::getUserIp()), $this->container), true);
-        return (string)$string;
+        return json_encode(array_merge(['from_ip' => IPHelper::getUserIp()], $this->container));
     }
 }

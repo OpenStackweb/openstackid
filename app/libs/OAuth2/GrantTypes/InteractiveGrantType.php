@@ -551,9 +551,12 @@ abstract class InteractiveGrantType extends AbstractGrantType
      */
     protected function shouldPromptLogin(OAuth2AuthorizationRequest $request)
     {
+        Log::debug(sprintf("InteractiveGrant::shouldPromptLogin %s", $request->__toString()));
+
         if
         (
             $request instanceof OAuth2AuthenticationRequest &&
+            $request->hasParam(OAuth2Protocol::OAuth2Protocol_Prompt) &&
             !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_Prompt_Login) &&
             in_array(OAuth2Protocol::OAuth2Protocol_Prompt_Login, $request->getPrompt())
         )
@@ -570,11 +573,11 @@ abstract class InteractiveGrantType extends AbstractGrantType
      */
     protected function shouldPromptConsent(OAuth2AuthorizationRequest $request):bool
     {
-        Log::debug(sprintf("InteractiveGrant::shouldPromptConsent %s", $request));
+        Log::debug(sprintf("InteractiveGrant::shouldPromptConsent %s", $request->__toString()));
         if
         (
             $request instanceof OAuth2AuthenticationRequest &&
-            $request->hasParam(OAuth2Protocol::OAuth2Protocol_Prompt_Consent) &&
+            $request->hasParam(OAuth2Protocol::OAuth2Protocol_Prompt) &&
             !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_Prompt_Consent) &&
             in_array(OAuth2Protocol::OAuth2Protocol_Prompt_Consent, $request->getPrompt())
         )
