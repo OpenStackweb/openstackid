@@ -53,6 +53,14 @@ abstract class OAuth2Request {
 
     /**
      * @param string $param
+     * @return bool
+     */
+    public function hasParam(string $param):bool{
+        return $this->message->hasParam($param);
+    }
+
+    /**
+     * @param string $param
      * @param mixed $value
      * @return $this
      */
