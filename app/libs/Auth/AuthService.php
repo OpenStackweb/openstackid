@@ -12,6 +12,8 @@
  * limitations under the License.
  **/
 
+use App\Http\Utils\CookieConstants;
+use App\Http\Utils\SessionConstants;
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use App\Services\AbstractService;
@@ -118,6 +120,10 @@ final class AuthService extends AbstractService implements IAuthService
         return Auth::user();
     }
 
+    private function clearAccountData():void{
+
+    }
+
     /**
      * @param string $username
      * @param string $password
@@ -141,6 +147,7 @@ final class AuthService extends AbstractService implements IAuthService
             $this->getCurrentUser()->getId(),
             time()
         );
+        Session::regenerate();
 
         return true;
     }
@@ -246,7 +253,7 @@ final class AuthService extends AbstractService implements IAuthService
                 }
             }
             Auth::login($user, false);
-
+            Session::regenerate();
             return $otp;
         });
     }
@@ -255,6 +262,7 @@ final class AuthService extends AbstractService implements IAuthService
     {
         $this->invalidateSession();
         Auth::logout();
+        Session::regenerate();
         $this->principal_service->clear();
         // put in past
         Cookie::queue
@@ -288,15 +296,15 @@ final class AuthService extends AbstractService implements IAuthService
 
     public function clearUserAuthorizationResponse()
     {
-        if (Session::has("openid.authorization.response")) {
-            Session::remove("openid.authorization.response");
+        if (Session::has(SessionConstants::OpenIdAuthzResponse)) {
+            Session::remove(SessionConstants::OpenIdAuthzResponse);
             Session::save();
         }
     }
 
     public function setUserAuthorizationResponse($auth_response)
     {
-        Session::put("openid.authorization.response", $auth_response);
+        Session::put(SessionConstants::OpenIdAuthzResponse, $auth_response);
         Session::save();
     }
 
@@ -331,8 +339,8 @@ final class AuthService extends AbstractService implements IAuthService
 
     public function getUserAuthenticationResponse()
     {
-        if (Session::has("openstackid.authentication.response")) {
-            $value = Session::get("openstackid.authentication.response");
+        if (Session::has(SessionConstants::OpenIdAuthResponse)) {
+            $value = Session::get(SessionConstants::OpenIdAuthResponse);
             return $value;
         }
         return IAuthService::AuthenticationResponse_None;
@@ -340,14 +348,14 @@ final class AuthService extends AbstractService implements IAuthService
 
     public function setUserAuthenticationResponse($auth_response)
     {
-        Session::put("openstackid.authentication.response", $auth_response);
+        Session::put(SessionConstants::OpenIdAuthResponse, $auth_response);
         Session::save();
     }
 
     public function clearUserAuthenticationResponse()
     {
-        if (Session::has("openstackid.authentication.response")) {
-            Session::remove("openstackid.authentication.response");
+        if (Session::has(SessionConstants::OpenIdAuthResponse)) {
+            Session::remove(SessionConstants::OpenIdAuthResponse);
             Session::save();
         }
     }
@@ -531,4 +539,114 @@ final class AuthService extends AbstractService implements IAuthService
         $this->cache_service->addSingleValue($session_id . "invalid", $session_id);
     }
 
+    /**
+     * @param int $n
+     * @return bool
+     */
+    public function hasRegisteredMoreThanFormerAccounts(int $n = 0):bool
+    {
+        $formerAccounts = [];
+        if(Cookie::has(CookieConstants::CookieAccounts)){
+            $res = Cookie::get(CookieConstants::CookieAccounts);
+            if(!empty($res))
+                $formerAccounts = json_decode($res, true);
+            return (count($formerAccounts) > $n);
+        }
+        return false;
+    }
+
+    public function saveSelectedAccount(string $loginHint): void
+    {
+        $userHint = $this->getUserByUsername($loginHint);
+        if(!is_null($userHint)) {
+            Session::put(SessionConstants::UserName, $userHint->getEmail());
+            Session::put(SessionConstants::UserFullName, $userHint->getFullName());
+            Session::put(SessionConstants::UserPic, $userHint->getPic());
+            Session::put(SessionConstants::UserVerified, true);
+            Session::save();
+        }
+    }
+
+    public function hasSelectedAccount(): bool
+    {
+       return
+           Session::has(SessionConstants::UserName) &&
+           Session::has(SessionConstants::UserFullName) &&
+           Session::has(SessionConstants::UserPic) &&
+           Session::has(SessionConstants::UserVerified);
+    }
+
+    public function clearSelectedAccount(): void
+    {
+        Session::remove(SessionConstants::UserName);
+        Session::remove(SessionConstants::UserFullName);
+        Session::remove(SessionConstants::UserPic);
+        Session::remove(SessionConstants::UserVerified);
+    }
+
+    public function getFormerAccounts(): array
+    {
+        $formerAccounts = [];
+        if(Cookie::has(CookieConstants::CookieAccounts)){
+            $res = Cookie::get(CookieConstants::CookieAccounts);
+            if(!empty($res))
+                $formerAccounts = json_decode($res, true);
+        }
+        return $formerAccounts;
+    }
+
+    public function removeFormerAccount(string $loginHint): void
+    {
+        $formerAccounts = [];
+        if(Cookie::has(CookieConstants::CookieAccounts)){
+            $res = Cookie::get(CookieConstants::CookieAccounts);
+            if(!empty($res))
+                $formerAccounts = json_decode($res, true);
+        }
+        if(isset($formerAccounts[$loginHint])){
+            unset($formerAccounts[$loginHint]);
+        }
+        Cookie::queue
+        (
+            CookieConstants::CookieAccounts,
+            json_encode($formerAccounts),
+            time() + (20 * 365 * 24 * 60 * 60),
+            $path = Config::get("session.path"),
+            $domain = Config::get("session.domain"),
+            $secure = true,
+            $httpOnly = true,
+            $raw = false,
+            $sameSite = 'none'
+        );
+
+    }
+
+    /**
+     * @param User $user
+     */
+    public function addFormerAccount(User $user):void{
+        $formerAccounts = [];
+        if(Cookie::has(CookieConstants::CookieAccounts)){
+            $res = Cookie::get(CookieConstants::CookieAccounts);
+            if(!empty($res))
+                $formerAccounts = json_decode($res, true);
+        }
+        $formerAccounts[$user->getEmail()] = [
+            SessionConstants::UserName => $user->getEmail(),
+            SessionConstants::UserFullName => $user->getFullName(),
+            SessionConstants::UserPic => $user->getPic(),
+        ];
+        Cookie::queue
+        (
+            CookieConstants::CookieAccounts,
+            json_encode($formerAccounts),
+            time() + (20 * 365 * 24 * 60 * 60),
+            $path = Config::get("session.path"),
+            $domain = Config::get("session.domain"),
+            $secure = true,
+            $httpOnly = true,
+            $raw = false,
+            $sameSite = 'none'
+        );
+    }
 }

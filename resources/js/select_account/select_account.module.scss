@@ -1,0 +1,48 @@
+$border-color: #e3e3e3;
+$base-color:#3fa2f7;
+$banner-base-color: #28A4DB;
+$banner-base-color-light:#EFF5F8;
+$text-color-dark:#0a1f31;
+
+.main_container {
+  margin-top: 5%;
+  margin-bottom: 10%;
+  max-width: 544px !important;
+}
+
+
+.login_container {
+  border: solid 1px $border-color;
+  color: $base-color;
+  background-color: white;
+}
+
+.inner_container {
+  display: flex;
+  margin-top: 64px;
+  padding-bottom: 20%;
+  flex-direction: column;
+  h1.app_logo_container {
+    text-align: center;
+  }
+  .app_logo{
+    max-width: 40%;
+    margin-bottom: 15%;
+  }
+  .continue_btn{
+    float: right;
+    margin-top: 30%;
+  }
+  .recaptcha{
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+  .separator{
+    color:$base-color;
+    width: 100%;
+    border: 1px solid;
+    margin-bottom: 5%;
+    margin-top: 5%;
+  }
+}

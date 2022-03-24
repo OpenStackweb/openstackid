@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 use OAuth2\Models\IPrincipal;
 use OAuth2\Models\Principal;
 use OAuth2\Services\IPrincipalService;
-
+use App\Http\Utils\SessionConstants;
 /**
  * Class PrincipalService
  * @package Services\OAuth2
@@ -27,19 +27,15 @@ use OAuth2\Services\IPrincipalService;
 final class PrincipalService implements IPrincipalService
 {
 
-    const UserIdParam = 'openstackid.oauth2.principal.user_id';
-    const AuthTimeParam = 'openstackid.oauth2.principal.auth_time';
-    const OPBrowserState = 'openstackid.oauth2.principal.opbs';
-
     /**
      * @return IPrincipal
      */
     public function get()
     {
         $principal = new Principal;
-        $user_id = Session::get(self::UserIdParam);
-        $auth_time = Session::get(self::AuthTimeParam);
-        $op_browser_state = Session::get(self::OPBrowserState);
+        $user_id = Session::get(SessionConstants::UserIdParam);
+        $auth_time = Session::get(SessionConstants::AuthTimeParam);
+        $op_browser_state = Session::get(SessionConstants::OPBrowserState);
 
         Log::debug(sprintf("PrincipalService::get - user_id %s auth_time %s op_browser_state %s", $user_id, $auth_time, $op_browser_state));
 
@@ -100,8 +96,8 @@ final class PrincipalService implements IPrincipalService
     public function register($user_id, $auth_time)
     {
         Log::debug(sprintf("PrincipalService::register user_id %s auth_time %s", $user_id, $auth_time));
-        Session::put(self::UserIdParam, $user_id);
-        Session::put(self::AuthTimeParam, $auth_time);
+        Session::put(SessionConstants::UserIdParam, $user_id);
+        Session::put(SessionConstants::AuthTimeParam, $auth_time);
         // Maintain a `op_browser_state` cookie along with the `sessionid` cookie that
         // represents the End-User's login state at the OP. If the user is not logged
         $op_browser_state = $this->calculateBrowserState();
@@ -118,7 +114,7 @@ final class PrincipalService implements IPrincipalService
             $sameSite = 'none'
         );
         Log::debug(sprintf("PrincipalService::register op_browser_state %s", $op_browser_state));
-        Session::put(self::OPBrowserState, $op_browser_state);
+        Session::put(SessionConstants::OPBrowserState, $op_browser_state);
         Session::save();
     }
 
@@ -128,9 +124,9 @@ final class PrincipalService implements IPrincipalService
     public function clear()
     {
         Log::debug("PrincipalService::clear");
-        Session::remove(self::UserIdParam);
-        Session::remove(self::AuthTimeParam);
-        Session::remove(self::OPBrowserState);
+        Session::remove(SessionConstants::UserIdParam);
+        Session::remove(SessionConstants::AuthTimeParam);
+        Session::remove(SessionConstants::OPBrowserState);
         Session::save();
         Cookie::queue
         (

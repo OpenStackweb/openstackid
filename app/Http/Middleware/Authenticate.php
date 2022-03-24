@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Utils\SessionConstants;
 use Closure;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -33,13 +35,13 @@ class Authenticate
     public function handle($request, Closure $next, $guard = null)
     {
        if (Auth::guard($guard)->guest()) {
-            Session::put('backurl', URL::full());
+            Session::put(SessionConstants::BackUrl, URL::full());
             Session::save();
             return Redirect::action('UserController@getLogin');
         }
-        $redirect = Session::get('backurl');
+        $redirect = Session::get(SessionConstants::BackUrl);
         if (!empty($redirect)) {
-            Session::forget('backurl');
+            Session::forget(SessionConstants::BackUrl);
             Session::save();
             return Redirect::to($redirect);
         }

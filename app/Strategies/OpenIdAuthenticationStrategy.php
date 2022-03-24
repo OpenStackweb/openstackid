@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 **/
+
+use App\Http\Utils\SessionConstants;
 use Illuminate\Http\RedirectResponse;
 use OpenId\Handlers\IOpenIdAuthenticationStrategy;
 use OpenId\Requests\Contexts\RequestContext;
@@ -31,7 +33,7 @@ final class OpenIdAuthenticationStrategy implements IOpenIdAuthenticationStrateg
      */
     public function doLogin(OpenIdAuthenticationRequest $request, RequestContext $context)
     {
-        Session::put('openid.auth.context', $context);
+        Session::put(SessionConstants::OpenIdAuthContext, $context);
         Session::save();
         return Redirect::action('UserController@getLogin');
     }
@@ -43,7 +45,7 @@ final class OpenIdAuthenticationStrategy implements IOpenIdAuthenticationStrateg
      */
     public function doConsent(OpenIdAuthenticationRequest $request, RequestContext $context)
     {
-        Session::put('openid.auth.context', $context);
+        Session::put(SessionConstants::OpenIdAuthContext, $context);
         Session::save();
         return Redirect::action('UserController@getConsent');
     }

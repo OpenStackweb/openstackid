@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Utils\SessionConstants;
 use OAuth2\Requests\OAuth2RequestMemento;
 use OAuth2\Services\IMementoOAuth2SerializerService;
 use Illuminate\Support\Facades\Session;
@@ -28,7 +30,7 @@ final class OAuth2MementoSessionSerializerService implements IMementoOAuth2Seria
     public function serialize(OAuth2RequestMemento $memento)
     {
         $state = base64_encode(json_encode($memento->getState()));
-        Session::put('oauth2.request.state', $state);
+        Session::put(SessionConstants::OAuth2RequestState, $state);
         Session::save();
     }
 
@@ -37,7 +39,7 @@ final class OAuth2MementoSessionSerializerService implements IMementoOAuth2Seria
      */
     public function load()
     {
-        $state = Session::get('oauth2.request.state', null);
+        $state = Session::get(SessionConstants::OAuth2RequestState, null);
         if(is_null($state)) return null;
 
         $state = json_decode( base64_decode($state), true);
@@ -50,7 +52,7 @@ final class OAuth2MementoSessionSerializerService implements IMementoOAuth2Seria
      */
     public function forget()
     {
-        Session::remove('oauth2.request.state');
+        Session::remove(SessionConstants::OAuth2RequestState);
         Session::save();
     }
 
@@ -59,6 +61,6 @@ final class OAuth2MementoSessionSerializerService implements IMementoOAuth2Seria
      */
     public function exists()
     {
-        return Session::has('oauth2.request.state');
+        return Session::has(SessionConstants::OAuth2RequestState);
     }
 }

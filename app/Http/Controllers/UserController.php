@@ -15,10 +15,16 @@
 use App\Http\Controllers\OpenId\DiscoveryController;
 use App\Http\Controllers\OpenId\OpenIdController;
 use App\Http\Controllers\Traits\JsonResponses;
+use App\Http\Utils\CookieConstants;
 use App\Http\Utils\CountryList;
+use App\Http\Utils\SessionConstants;
+use App\libs\Auth\SocialLoginProviders;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
 use Exception;
+use Illuminate\Http\Request as LaravelRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -141,20 +147,20 @@ final class UserController extends OpenIdController
      */
     public function __construct
     (
-        IMementoOpenIdSerializerService $openid_memento_service,
-        IMementoOAuth2SerializerService $oauth2_memento_service,
-        IAuthService $auth_service,
-        IServerConfigurationService $server_configuration_service,
-        ITrustedSitesService $trusted_sites_service,
-        DiscoveryController $discovery,
-        IUserService $user_service,
-        IUserActionService $user_action_service,
-        IClientRepository $client_repository,
-        IApiScopeRepository $scope_repository,
-        ITokenService $token_service,
-        IResourceServerService $resource_server_service,
+        IMementoOpenIdSerializerService  $openid_memento_service,
+        IMementoOAuth2SerializerService  $oauth2_memento_service,
+        IAuthService                     $auth_service,
+        IServerConfigurationService      $server_configuration_service,
+        ITrustedSitesService             $trusted_sites_service,
+        DiscoveryController              $discovery,
+        IUserService                     $user_service,
+        IUserActionService               $user_action_service,
+        IClientRepository                $client_repository,
+        IApiScopeRepository              $scope_repository,
+        ITokenService                    $token_service,
+        IResourceServerService           $resource_server_service,
         IUtilsServerConfigurationService $utils_configuration_service,
-        ISecurityContextService $security_context_service
+        ISecurityContextService          $security_context_service
     )
     {
 
@@ -223,8 +229,38 @@ final class UserController extends OpenIdController
         });
     }
 
-    public function getLogin()
+    public function getSelectAccount(LaravelRequest $request)
     {
+        $formerAccounts = $this->auth_service->getFormerAccounts();
+
+        if (count($formerAccounts) > 0) {
+            if (Auth::guest()) {
+                if(count($formerAccounts) > 1) {
+                    return View::make("auth.select_account", [
+                        'accounts' => $formerAccounts
+                    ]);
+                }
+                return redirect()->action("UserController@getLogin",['login_hint' => $formerAccounts[array_key_first($formerAccounts)]['username']]);
+            }
+            return redirect()->action("UserController@getProfile");
+        }
+
+        return redirect()->action("UserController@getLogin");
+    }
+
+    public function getLogin(LaravelRequest $request)
+    {
+        if ($request->has(OAuth2Protocol::OAuth2Protocol_LoginHint)) {
+            $loginHint = trim($request->get(OAuth2Protocol::OAuth2Protocol_LoginHint));
+            if (!empty($loginHint))
+                $this->auth_service->saveSelectedAccount($loginHint);
+            return redirect()->action("UserController@getLogin");
+        }
+
+        if ($this->auth_service->hasRegisteredMoreThanFormerAccounts(0) && !$this->auth_service->hasSelectedAccount()) {
+            return redirect()->action("UserController@getSelectAccount");
+        }
+
         return $this->login_strategy->getLogin();
     }
 
@@ -269,6 +305,28 @@ final class UserController extends OpenIdController
         }
     }
 
+    public function removeFormerAccount(){
+        try {
+
+            $username = Request::input("username", "");
+            if (empty($username)) {
+                throw new ValidationException("empty username.");
+            }
+
+          $this->auth_service->removeFormerAccount(trim($username));
+          return $this->deleted();
+
+        } catch (ValidationException $ex) {
+            Log::warning($ex);
+            return $this->error412($ex->getMessages());
+        } catch (EntityNotFoundException $ex) {
+            Log::warning($ex);
+            return $this->error404();
+        } catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
     /**
      * @return \Illuminate\Http\JsonResponse|mixed
      */
@@ -342,12 +400,11 @@ final class UserController extends OpenIdController
     public function postLogin()
     {
         $max_login_attempts_2_show_captcha = $this->server_configuration_service->getConfigValue("MaxFailed.LoginAttempts.2ShowCaptcha");
-        $login_attempts                    = 0;
-        $username                          = '';
+        $login_attempts = 0;
+        $username = '';
         $user = null;
 
-        try
-        {
+        try {
 
             $data = Request::all();
 
@@ -376,13 +433,14 @@ final class UserController extends OpenIdController
 
                 $username = $data['username'];
                 $password = $data['password'];
-                $flow     = $data['flow'];
+                $flow = $data['flow'];
                 $remember = Request::input("remember");
                 $remember = !is_null($remember);
                 $connection = $data['connection'] ?? null;
 
                 try {
                     if ($flow == "password" && $this->auth_service->login($username, $password, $remember)) {
+                        $this->auth_service->clearSelectedAccount();
                         return $this->login_strategy->postLogin();
                     }
 
@@ -414,6 +472,7 @@ final class UserController extends OpenIdController
 
                         $otpClaim = OAuth2OTP::fromParams($username, $connection, $password);
                         $this->auth_service->loginWithOTP($otpClaim, $client);
+                        $this->auth_service->clearSelectedAccount();
                         return $this->login_strategy->postLogin();
                     }
                 } catch (AuthenticationException $ex) {
@@ -431,7 +490,7 @@ final class UserController extends OpenIdController
                             'login_attempts' => $login_attempts,
                             'error_message' => $ex->getMessage(),
                             'user_fullname' => !is_null($user) ? $user->getFullName() : "",
-                            'user_pic' => !is_null($user) ? $user->getPic(): "",
+                            'user_pic' => !is_null($user) ? $user->getPic() : "",
                             'user_verified' => true,
                             'username' => $username,
                             'flow' => $flow
@@ -442,13 +501,13 @@ final class UserController extends OpenIdController
             }
 
             // validator errors
-            $response_data =    [
+            $response_data = [
                 'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                'login_attempts'                    => $login_attempts,
-                'validator'                         => $validator,
+                'login_attempts' => $login_attempts,
+                'validator' => $validator,
             ];
 
-            if(!is_null($user)){
+            if (!is_null($user)) {
                 $response_data['user_fullname'] = $user->getFullName();
                 $response_data['user_pic'] = $user->getPic();
                 $response_data['user_verified'] = true;
@@ -463,14 +522,14 @@ final class UserController extends OpenIdController
 
             $user = $this->auth_service->getUserByUsername($username);
 
-            $response_data =    [
+            $response_data = [
                 'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
-                'login_attempts'                    => $login_attempts,
-                'username'                          => $username,
-                'error_message'                     => $ex1->getMessage()
+                'login_attempts' => $login_attempts,
+                'username' => $username,
+                'error_message' => $ex1->getMessage()
             ];
 
-            if(!is_null($user)){
+            if (!is_null($user)) {
                 $response_data['user_fullname'] = $user->getFullName();
                 $response_data['user_pic'] = $user->getPic();
                 $response_data['user_verified'] = true;
@@ -567,9 +626,9 @@ final class UserController extends OpenIdController
                 return $this->discovery->user($identifier);
             }
 
-            $redirect = Session::get('backurl');
+            $redirect = Session::get(SessionConstants::BackUrl);
             if (!empty($redirect)) {
-                Session::forget('backurl');
+                Session::forget(SessionConstants::BackUrl);
                 Session::save();
                 return Redirect::to($redirect);
             }

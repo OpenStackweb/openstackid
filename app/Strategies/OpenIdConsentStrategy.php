@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Utils\SessionConstants;
 use Illuminate\Support\Facades\Auth;
 use OpenId\Exceptions\InvalidOpenIdMessageException;
 use OpenId\Exceptions\InvalidRequestContextException;
@@ -82,7 +84,7 @@ final class OpenIdConsentStrategy implements IConsentStrategy
      */
     private function getViewData()
     {
-        $context = Session::get('openid.auth.context');
+        $context = Session::get(SessionConstants::OpenIdAuthContext);
 
         if (is_null($context))
             throw new InvalidRequestContextException();
@@ -110,7 +112,7 @@ final class OpenIdConsentStrategy implements IConsentStrategy
                 throw new InvalidOpenIdMessageException();
             $this->user_action_service->addUserAction($this->auth_service->getCurrentUser()->getId(), IPHelper::getUserIp(), IUserActionService::ConsentAction, $msg->getParam(OpenIdProtocol::OpenIDProtocol_Realm));
             $this->auth_service->setUserAuthorizationResponse($trust_action[0]);
-            Session::remove('openid.auth.context');
+            Session::remove(SessionConstants::OpenIdAuthContext);
             Session::save();
             return Redirect::action('OpenId\OpenIdProviderController@endpoint');
         }

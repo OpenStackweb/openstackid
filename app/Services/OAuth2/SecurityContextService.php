@@ -14,6 +14,7 @@
 use OAuth2\Models\SecurityContext;
 use OAuth2\Services\ISecurityContextService;
 use Illuminate\Support\Facades\Session;
+use App\Http\Utils\SessionConstants;
 /**
  * Class SecurityContextService
  * @package Services\OAuth2
@@ -21,8 +22,6 @@ use Illuminate\Support\Facades\Session;
 final class SecurityContextService implements ISecurityContextService
 {
 
-    const RequestedUserIdParam = 'openstackid.oauth2.security_context.requested_user_id';
-    const RequestedAuthTime    = 'openstackid.oauth2.security_context.requested_auth_time';
     /**
      * @return SecurityContext
      */
@@ -34,8 +33,8 @@ final class SecurityContextService implements ISecurityContextService
         (
             array
             (
-                Session::get(self::RequestedUserIdParam),
-                Session::get(self::RequestedAuthTime),
+                Session::get(SessionConstants::RequestedUserIdParam),
+                Session::get(SessionConstants::RequestedAuthTime),
             )
         );
 
@@ -48,8 +47,8 @@ final class SecurityContextService implements ISecurityContextService
      */
     public function save(SecurityContext $security_context)
     {
-        Session::put(self::RequestedUserIdParam, $security_context->getRequestedUserId());
-        Session::put(self::RequestedAuthTime, $security_context->isAuthTimeRequired());
+        Session::put(SessionConstants::RequestedUserIdParam, $security_context->getRequestedUserId());
+        Session::put(SessionConstants::RequestedAuthTime, $security_context->isAuthTimeRequired());
         Session::save();
         return $this;
     }
@@ -59,8 +58,8 @@ final class SecurityContextService implements ISecurityContextService
      */
     public function clear()
     {
-        Session::remove(self::RequestedUserIdParam);
-        Session::remove(self::RequestedAuthTime);
+        Session::remove(SessionConstants::RequestedUserIdParam);
+        Session::remove(SessionConstants::RequestedAuthTime);
         Session::save();
         return $this;
     }

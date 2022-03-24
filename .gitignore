@@ -45,3 +45,5 @@ model.sql
 /public/assets/dist/
 /public/assets/login.js
 /public/assets/css/login.css
+/public/assets/select_account.js
+/public/assets/css/select.css
