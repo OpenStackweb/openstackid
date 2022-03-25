@@ -160,7 +160,8 @@ final class EventServiceProvider extends ServiceProvider
             function(Login $event){
                 $user = $event->user;
                 $authService = App::make(IAuthService::class);
-                $authService->addFormerAccount($user);
+                if($event->remember)
+                    $authService->addFormerAccount($user);
                 Log::debug(sprintf("Login from user %s (%s).", $user->getAuthIdentifierName(), $user->getAuthIdentifier()));
             }
         );

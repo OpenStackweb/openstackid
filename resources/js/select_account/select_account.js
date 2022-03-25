@@ -1,8 +1,6 @@
 import styles from './select_account.module.scss'
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React, {useEffect} from 'react';
 import Avatar from '@material-ui/core/Avatar';
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
 import CssBaseline from "@material-ui/core/CssBaseline";
@@ -15,76 +13,70 @@ import ListItemAvatar from '@material-ui/core/ListItemAvatar';
 import Typography from '@material-ui/core/Typography';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import Tooltip from '@material-ui/core/Tooltip';
-import {removeFormerAccount} from './actions';
 import Swal from "sweetalert2";
+import {connect} from 'react-redux';
+import {loadFormerAccounts, removeFormerAccount} from './actions'
+import Link from "@material-ui/core/Link";
 
-const theme = createMuiTheme({
-    palette: {
-        primary: {
-            main: '#3fa2f7'
+const SelectAccountPage = ({formerAccounts, loadFormerAccounts, removeFormerAccount, ...rest}) => {
+
+    useEffect(() => {
+            const {accounts} = rest;
+            loadFormerAccounts(accounts);
         },
-    },
-    overrides: {
-        MuiButton: {
-            containedPrimary: {
-                color: 'white'
-            }
-        }
-    }
-});
-
-
-const SelectAccountPage = (props) => {
-    const { accounts } = props;
+        []);
 
     const onHandleSelectAccount = (account) => {
         window.location = `/auth/login?login_hint=${encodeURIComponent(account.username)}`;
     }
 
     const onHandleRemoveAccount = (account) => {
-        removeFormerAccount(account.username, props.token).then((payload) => {
-            let { response } = payload;
-        }, (error) => {
-            let { response, status, message } = error;
+        removeFormerAccount(account.username).then((payload) => {
+            console.log(payload)
+        }).catch((error) => {
+            let {response, status, message} = error;
             Swal('Oops...', 'Something went wrong!', 'error')
         });
     }
 
+    if (!formerAccounts.length) return null;
+
     return (
         <Container component="main" maxWidth="xs" className={styles.main_container}>
-            <CssBaseline />
+            <CssBaseline/>
             <Container className={styles.login_container}>
                 <div className={styles.inner_container}>
                     <Typography component="h1" className={styles.app_logo_container}>
-                        <a href={window.location.href}><img className={styles.app_logo} alt={props.appName} src={props.appLogo} /></a>
+                        <a href={window.location.href}><img className={styles.app_logo} alt={rest.appName}
+                                                            src={rest.appLogo}/></a>
                     </Typography>
-                    <Typography component="h1" variant="h5" style={{ textAlign: "center"}}>
-                        Select an Account
+                    <Typography component="h1" variant="h5" style={{textAlign: "center"}}>
+                        Choose an account
                     </Typography>
-                    <List style={{ width: '100%', backgroundColor: 'background.paper' }}>
+                    <List style={{width: '100%', backgroundColor: 'background.paper'}}>
                         {
-                            accounts.map(a => {
+                            formerAccounts.map( ( a, idx ) => {
                                 return (
-                                    <>
+                                    <React.Fragment key={idx}>
                                         <ListItem
-                                            title={`Proceed with ${a.full_name} ...`}
+                                            title={`Proceed as ${a.full_name} .`}
                                             button
-                                            onClick={(ev) => {onHandleSelectAccount(a)}}
-                                            alignItems="flex-start"
-                                            disablePadding
-                                            key={a.username}>
+                                            onClick={(ev) => {
+                                                onHandleSelectAccount(a)
+                                            }}
+                                            alignItems="flex-start">
                                             <ListItemAvatar>
-                                                <Avatar alt={a.full_name} src={a.pic} />
+                                                <Avatar alt={a.full_name} src={a.pic}/>
                                             </ListItemAvatar>
                                             <ListItemText
                                                 primary={a.full_name}
                                                 secondary={
                                                     <React.Fragment>
                                                         <Typography
-                                                            style={{ display: 'inline' }}
+                                                            style={{display: 'inline'}}
                                                             component="span"
                                                             variant="body2"
-                                                            color="text.primary">
+                                                            color="textPrimary">
                                                             {a.username}
                                                         </Typography>
                                                     </React.Fragment>
@@ -92,29 +84,49 @@ const SelectAccountPage = (props) => {
                                             />
                                             <ListItemSecondaryAction>
                                                 <Tooltip title="remove" aria-label="remove">
-                                                    <IconButton edge="end" aria-label="remove" onClick={(ev) => {onHandleRemoveAccount(a)}}>
-                                                        <DeleteIcon />
+                                                    <IconButton edge="end" aria-label="remove" onClick={(ev) => {
+                                                        onHandleRemoveAccount(a)
+                                                    }}>
+                                                        <DeleteIcon/>
                                                     </IconButton>
                                                 </Tooltip>
                                             </ListItemSecondaryAction>
                                         </ListItem>
-                                        <Divider variant="inset" component="li" />
-                                    </>
+                                        <Divider variant="inset" component="li"/>
+                                    </React.Fragment>
                                 )
                             })
                         }
 
                     </List>
                 </div>
+                <hr className={styles.separator} />
+                <Container className={styles.links_container}>
+                    <Link href="#" target="_self" variant="body2" align="left">
+                        Help?
+                    </Link>
+                    &nbsp;
+                    <Link href="#" target="_self" variant="body2">
+                        Privacy
+                    </Link>
+                    &nbsp;
+                    <Link href="#" target="_self" variant="body2" align="left">
+                        Terms
+                    </Link>
+                </Container>
             </Container>
         </Container>
     );
 }
 
+const mapStateToProps = ({selectAccountState}) => ({
+    formerAccounts: selectAccountState.accounts,
+});
 
-ReactDOM.render(
-    <MuiThemeProvider theme={theme}>
-        <SelectAccountPage {...config} />
-    </MuiThemeProvider>,
-    document.querySelector('#root')
-);
+export default connect(
+    mapStateToProps,
+    {
+        loadFormerAccounts,
+        removeFormerAccount,
+    }
+)(SelectAccountPage);

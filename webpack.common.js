@@ -19,7 +19,7 @@ module.exports = {
     */
     entry: {
         login: './resources/js/login/login.js',
-        select_account: './resources/js/select_account/select_account.js',
+        select_account: './resources/js/select_account/index.js',
         index: './resources/js/index.js',
     },
     output: {
