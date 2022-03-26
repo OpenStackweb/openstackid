@@ -191,13 +191,13 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
             // permitting offline access to the requested resources are in place
             if($this->offlineAccessRequested() && empty($prompt))
             {
-                $this->last_validation_error = 'invalid offline access';
+                $this->last_validation_error = 'invalid offline access (missing prompt=consent)';
                 return false;
             }
 
             if($this->offlineAccessRequested() && !in_array(OAuth2Protocol::OAuth2Protocol_Prompt_Consent, $prompt))
             {
-                $this->last_validation_error = 'invalid offline access';
+                $this->last_validation_error = 'invalid offline access (missing prompt=consent)';
                 return false;
             }
 
