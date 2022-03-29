@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use OAuth2\Strategies\IPKCEValidationMethod;
 /**
  * Class PKCES256Validator
@@ -26,6 +28,7 @@ final class PKCES256Validator extends PKCEBaseValidator implements IPKCEValidati
          * characters should be removed and no line breaks, whitespace, or other additional characters should be present.
          */
         $encoded = base64_encode(hash('sha256', $this->code_verifier, true));
+        Log::debug(sprintf("PKCES256Validator::isValid code_verifier %s encoded %s code challenge ", $this->code_verifier, $encoded, $this->code_challenge));
         $calculate_code_challenge = strtr(rtrim($encoded, '='), '+/', '-_');
         return $this->code_challenge === $calculate_code_challenge;
     }
