@@ -28,24 +28,33 @@ p > a {
     h1.app_logo_container {
       text-align: center;
     }
-    .app_logo{
-      max-width: 40%;
-      margin-bottom: 15%;
-    }
-    .continue_btn{
-      float: right;
-      margin-top: 30%;
-    }
-    .recaptcha{
-      width: 100%;
-      margin-top: 10px;
-      margin-bottom: 10px;
-    }
-    .separator{
-      color:$base-color;
-      width: 100%;
-      border: 1px solid;
-      margin-bottom: 5%;
+
+  .app_logo {
+    max-width: 40%;
+    margin-bottom: 15%;
+  }
+
+  .continue_btn {
+    float: right;
+    margin-top: 30%;
+  }
+
+  .secondary_btn {
+    min-width: 300px;
+    text-transform: none;
+  }
+
+  .recaptcha {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .separator {
+    color: $base-color;
+    width: 100%;
+    border: 1px solid;
+    margin-bottom: 5%;
       margin-top: 5%;
     }
 }
