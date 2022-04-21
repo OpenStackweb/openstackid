@@ -102,7 +102,7 @@ const SetPasswordPage = ({
       <CssBaseline />
       {showInfoBanner && <Banner infoBannerContent={infoBannerContent} />}
       <div className={styles.title_container}>
-        <a href={window.location.href} target='_self'>
+        <a href='/auth/login' target='_self'>
           <img className={styles.app_logo} alt="appLogo" src={appLogo} />
         </a>
       </div>

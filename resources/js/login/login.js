@@ -365,6 +365,7 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
                             variant="contained"
                             className={styles.third_party_idp_button + ` ${provider.name}`}
                             color="primary"
+                            target="_self"
                             title={`Sign In with ${provider.label}`}
                             href={`${formAction}/${provider.name}`}>
                             {provider.label}
