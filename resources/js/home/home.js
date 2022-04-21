@@ -28,7 +28,7 @@ const HomePage = ({
       <CssBaseline />
       {showInfoBanner && <Banner infoBannerContent={infoBannerContent} />}
       <div className={styles.title_container}>
-        <a href={window.location.href}>
+        <a href={window.location.href} target='_self'>
           <img className={styles.app_logo} alt="appLogo" src={appLogo} />
         </a>
         <h1>{appName} Identity Provider</h1>
@@ -48,6 +48,7 @@ const HomePage = ({
                 variant="outlined"
                 size="large"
                 href={signInUrl}
+                target='_self'
                 className={styles.button}
               >
                 Sign in to your account
@@ -58,6 +59,7 @@ const HomePage = ({
                 variant="outlined"
                 size="large"
                 href={signUpUrl}
+                target='_self'
                 className={styles.button}
               >
                 Register for an OpenInfraID

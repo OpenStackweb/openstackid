@@ -421,7 +421,7 @@ class User extends BaseEntity
     public function __construct()
     {
         parent::__construct();
-        $this->active = false;
+        $this->active = true;
         $this->email_verified = false;
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;

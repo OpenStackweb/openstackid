@@ -170,7 +170,7 @@ const OTPInputForm = ({
     onChangeRecaptcha
 }) => {
     return (
-        <form method="post" action={formAction} onSubmit={onAuthenticate}>
+        <form method="post" action={formAction} onSubmit={onAuthenticate} target='_self'>
             <TextField
                 id="password"
                 name="password"
@@ -225,6 +225,7 @@ const OTPInputForm = ({
                 className={styles.continue_btn}
                 color="primary"
                 type="submit"
+                target='_self'
                 onClick={onAuthenticate}>
                 Verify
             </Button>
@@ -306,6 +307,7 @@ const EmailErrorActions = ({ emitOtpAction, createAccountAction, onValidateEmail
                     <Button variant="contained"
                             href={createAccountAction}
                             type="button"
+                            target='_self'
                             className={styles.secondary_btn}
                             color="primary">
                         Register and set a password
@@ -399,7 +401,7 @@ class LoginPage extends React.Component {
         }
 
         if (this.state.errors.password && this.state.errors.password.includes("is not yet verified")) {
-            this.state.errors.password = this.state.errors.password + `Or <a href='${this.props.verifyEmailAction}?email=${encodeURIComponent(this.props.userName)}'>have another verification email sent to you.</a>`;
+            this.state.errors.password = this.state.errors.password + `Or <a target='_self' href='${this.props.verifyEmailAction}?email=${encodeURIComponent(this.props.userName)}'>have another verification email sent to you.</a>`;
         }
 
         this.onHandleUserNameChange = this.onHandleUserNameChange.bind(this);
@@ -559,7 +561,7 @@ class LoginPage extends React.Component {
                 <Container className={styles.login_container}>
                     <div className={styles.inner_container}>
                         <Typography component="h1" className={styles.app_logo_container}>
-                            <a href={window.location.href}><img className={styles.app_logo} alt={this.props.appName}
+                            <a href={window.location.href} target='_self'><img className={styles.app_logo} alt={this.props.appName}
                                                                 src={this.props.appLogo}/></a>
                         </Typography>
                         <Typography component="h1" variant="h5">

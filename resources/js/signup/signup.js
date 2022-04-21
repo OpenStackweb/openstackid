@@ -111,7 +111,7 @@ const SignUpPage = ({
       <CssBaseline />
       {showInfoBanner && <Banner infoBannerContent={infoBannerContent} />}
       <div className={styles.title_container}>
-        <a href={window.location.href}>
+        <a href={window.location.href} target='_self'>
           <img className={styles.app_logo} alt="appLogo" src={appLogo} />
         </a>
       </div>
@@ -282,7 +282,7 @@ const SignUpPage = ({
                 </Typography>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
-                <Grid item>
+                <Grid container item justify='center'>
                   <ReCAPTCHA
                     ref={captcha}
                     className={styles.recaptcha}
@@ -296,7 +296,7 @@ const SignUpPage = ({
                   )}
                 </Grid>
                 {codeOfConductUrl && (
-                  <Grid item>
+                  <Grid container item justify='center'>
                     <Checkbox
                       id="agree_code_of_conduct"
                       name="agree_code_of_conduct"
@@ -314,7 +314,7 @@ const SignUpPage = ({
                     </div>
                   </Grid>
                 )}
-                <Grid item>
+                <Grid container item justify='center'>
                   <Button
                     variant="contained"
                     size="large"

@@ -78,7 +78,7 @@ const ForgotPasswordPage = ({
       <CssBaseline />
       {showInfoBanner && <Banner infoBannerContent={infoBannerContent} />}
       <div className={styles.title_container}>
-        <a href={window.location.href}>
+        <a href={window.location.href} target='_self'>
           <img className={styles.app_logo} alt="appLogo" src={appLogo} />
         </a>
       </div>
@@ -136,7 +136,7 @@ const ForgotPasswordPage = ({
                 />
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
-                <Grid item>
+                <Grid container item justify='center'>
                   <ReCAPTCHA
                     ref={captcha}
                     className={styles.recaptcha}
@@ -149,7 +149,7 @@ const ForgotPasswordPage = ({
                     </div>
                   )}
                 </Grid>
-                <Grid item>
+                <Grid container item justify='center'>
                   <Button
                     variant="contained"
                     size="large"
