@@ -304,11 +304,12 @@ const SignUpPage = ({
                       onChange={formik.handleChange}
                       color="default"
                     />
-                    I agree to the{" "}
-                    <a href={codeOfConductUrl} target="_blank">
-                      {tenantName} Community Code of Conduct
-                    </a>
-                    ?
+                    <p>
+                      I&nbsp;agree&nbsp;to&nbsp;the&nbsp;
+                      <a href={codeOfConductUrl} target="_blank">
+                        {tenantName} Community Code of Conduct
+                      </a>&nbsp;?
+                    </p>
                     <div className={styles.error_label}>
                       {formik.errors.agree_code_of_conduct}
                     </div>
