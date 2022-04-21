@@ -17,6 +17,7 @@
             appName: '{{ Config::get("app.app_name") }}',
             appLogo: '{{  Config::get("app.logo_url") }}',
             tenantName: '{{ Config::get("app.tenant_name") }}',
+            info: "{!! html_entity_decode(Config::get("app.homepage_info")) !!}",
             signInUrl: '{!! URL::action("UserController@getLogin") !!}',
             signUpUrl: '{!! URL::action("Auth\RegisterController@showRegistrationForm") !!}',
         }

@@ -22,6 +22,7 @@ const HomePage = ({
   signInUrl,
   signUpUrl,
   tenantName,
+  info
 }) => {
   return (
     <Container component="main" maxWidth="xs" className={styles.main_container}>
@@ -68,9 +69,7 @@ const HomePage = ({
             <Grid item className={styles.footer}>
               <InfoOutlinedIcon fontSize="small" />
               &nbsp;
-              <Typography variant="body2">
-                Once you're signed in, you can manage your trusted sites, change
-                your settings and more.
+              <Typography variant="body2" dangerouslySetInnerHTML={{__html: info}}>
               </Typography>
             </Grid>
           </Grid>
