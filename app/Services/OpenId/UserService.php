@@ -378,7 +378,7 @@ final class UserService extends AbstractService implements IUserService
             $path = User::getProfilePicFolder();
 
             Log::debug(sprintf("UserService::updateProfilePhoto user %s saving file to swift path %s fileName %s", $user_id, $path, $fileName));
-            Storage::disk('swift')->putFileAs($path, $file, $fileName);
+            Storage::disk('cloud')->putFileAs($path, $file, $fileName, 'public');
 
             $user->setPic($fileName);
 
