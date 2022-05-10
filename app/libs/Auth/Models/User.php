@@ -868,7 +868,7 @@ class User extends BaseEntity
             if(!empty($pic)) return $pic;
 
             if (!empty($this->pic)) {
-                $storage = Storage::disk('cloud');
+                $storage = Storage::disk(Config::get("filesystems.cloud"));
                 if(!is_null($storage)) {
                     $pic = $storage->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
                     Cache::forever($pic_key, $pic);
