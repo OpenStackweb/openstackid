@@ -321,20 +321,20 @@ final class OAuth2BearerAccessTokenRequestValidator
                 $headers[strtolower($name)] = $value;
             }
         }
-
-        // @codeCoverageIgnoreEnd
-        foreach ($_SERVER as $name => $value) {
-            if (substr($name, 0, 5) == 'HTTP_') {
-                $name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
-                $headers[strtolower($name)] = $value;
+        if(!isset($this->headers['authorization'])) {
+            // @codeCoverageIgnoreEnd
+            foreach ($_SERVER as $name => $value) {
+                if (substr($name, 0, 5) == 'HTTP_') {
+                    $name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
+                    $headers[strtolower($name)] = $value;
+                }
+            }
+            foreach (Request::header() as $name => $value) {
+                if (!array_key_exists($name, $headers)) {
+                    $headers[strtolower($name)] = $value[0];
+                }
             }
         }
-        foreach (Request::header() as $name => $value) {
-            if (!array_key_exists($name, $headers)) {
-                $headers[strtolower($name)] = $value[0];
-            }
-        }
-
 
         return $headers;
     }
