@@ -446,11 +446,8 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
             // Symfony interally prefixes headers with "HTTP", so
             array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
         $content = $response->getContent();
-        echo $content;
         $this->assertResponseStatus(200);
         $this->assertEquals('application/json;charset=UTF-8', $response->headers->get('Content-Type'));
-        $content = $response->getContent();
-
         $response = json_decode($content);
         $validate_access_token = $response->access_token;
         //old token and new token should be equal

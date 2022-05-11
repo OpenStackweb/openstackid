@@ -48,6 +48,7 @@ abstract class BrowserKitTestCase extends BaseTestCase
      */
     protected function prepareForTests()
     {
+        $_SERVER['HTTP_CLIENT_IP'] = "127.0.0.1";
         Artisan::call('doctrine:migrations:migrate', ['--connection=model ']);
         Mail::fake();
         Queue::fake();
