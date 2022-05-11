@@ -31,7 +31,8 @@ final class OAuth2UserRegistrationServiceApiTest extends OAuth2ProtectedApiTest
 
         $headers = [
             "HTTP_Authorization" => " Bearer " . $this->access_token,
-            "CONTENT_TYPE"        => "application/json"
+            "CONTENT_TYPE"        => "application/json",
+            "Origin" => 'test.com'
         ];
 
         $response = $this->action
@@ -47,7 +48,7 @@ final class OAuth2UserRegistrationServiceApiTest extends OAuth2ProtectedApiTest
         );
 
         $content = $response->getContent();
-        echo $content;
+
         $this->assertResponseStatus(201);
 
         $user_registration_request = json_decode($content);
