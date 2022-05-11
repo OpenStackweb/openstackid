@@ -46,8 +46,10 @@ final class OAuth2UserRegistrationServiceApiTest extends OAuth2ProtectedApiTest
             json_encode($data)
         );
 
-        $this->assertResponseStatus(201);
         $content = $response->getContent();
+        echo $content;
+        $this->assertResponseStatus(201);
+
         $user_registration_request = json_decode($content);
 
         $this->assertTrue(!empty($user_registration_request->hash));
