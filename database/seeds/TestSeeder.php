@@ -655,7 +655,7 @@ PPK;
             array(
                 'friendly_name'    => 'test resource server 2',
                 'host'             => $components['host'],
-                'ips'              => '10.0.0.0,2001:4800:7821:101:be76:4eff:fe06:858b,174.143.201.173, 192.1.1.1',
+                'ips'              => '10.0.0.0,2001:4800:7821:101:be76:4eff:fe06:858b,174.143.201.173,192.1.1.1',
                 'active'           => true,
             )
         ];
