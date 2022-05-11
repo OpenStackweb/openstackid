@@ -38,7 +38,6 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTest
         $this->be($this->user);
     }
 
-
     public function createApplication()
     {
         $app = parent::createApplication();
