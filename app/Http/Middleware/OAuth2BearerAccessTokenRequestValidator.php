@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use Closure;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
@@ -32,6 +33,7 @@ use Exception;
 use Utils\Services\ICheckPointService;
 use Utils\Services\ILogService;
 use libs\utils\RequestUtils;
+
 /**
  * Class OAuth2BearerAccessTokenRequestValidator
  * this class implements the logic to Accessing to Protected Resources
@@ -88,18 +90,19 @@ final class OAuth2BearerAccessTokenRequestValidator
     public function __construct(
         IResourceServerContext $context,
         IApiEndpointRepository $endpoint_repository,
-        ITokenService $token_service,
-        IClientRepository $client_repository,
-        ILogService $log_service,
-        ICheckPointService $checkpoint_service
-    ) {
-        $this->context             = $context;
-        $this->headers             = $this->getHeaders();
+        ITokenService          $token_service,
+        IClientRepository      $client_repository,
+        ILogService            $log_service,
+        ICheckPointService     $checkpoint_service
+    )
+    {
+        $this->context = $context;
+        $this->headers = $this->getHeaders();
         $this->endpoint_repository = $endpoint_repository;
-        $this->token_service       = $token_service;
-        $this->client_repository   = $client_repository;
-        $this->log_service         = $log_service;
-        $this->checkpoint_service  = $checkpoint_service;
+        $this->token_service = $token_service;
+        $this->client_repository = $client_repository;
+        $this->log_service = $log_service;
+        $this->checkpoint_service = $checkpoint_service;
     }
 
     /**
@@ -111,12 +114,12 @@ final class OAuth2BearerAccessTokenRequestValidator
     {
         Log::debug(sprintf("OAuth2BearerAccessTokenRequestValidator::handle %s %s", $request->getMethod(), $request->getRequestUri()));
 
-        $url    = $request->getRequestUri();
+        $url = $request->getRequestUri();
         $method = $request->getMethod();
-        $realm  = $request->getHost();
+        $realm = $request->getHost();
 
         try {
-            $route_path  = RequestUtils::getCurrentRoutePath($request);
+            $route_path = RequestUtils::getCurrentRoutePath($request);
             if (strpos($route_path, '/') != 0)
                 $route_path = '/' . $route_path;
 
@@ -132,7 +135,7 @@ final class OAuth2BearerAccessTokenRequestValidator
             // http://tools.ietf.org/id/draft-abarth-origin-03.html
             $origin = $request->headers->has('Origin') ? $request->headers->get('Origin') : null;
             if (!empty($origin)) {
-                $nm     = new Normalizer($origin);
+                $nm = new Normalizer($origin);
                 $origin = $nm->normalize();
             }
 
@@ -182,9 +185,9 @@ final class OAuth2BearerAccessTokenRequestValidator
 
             //check client existence
             $client_id = $access_token->getClientId();
-            $client    = $this->client_repository->getClientById($client_id);
+            $client = $this->client_repository->getClientById($client_id);
 
-            if(is_null($client))
+            if (is_null($client))
                 throw new OAuth2ResourceServerException
                 (
                     400,
@@ -192,9 +195,8 @@ final class OAuth2BearerAccessTokenRequestValidator
                     'invalid client'
                 );
             //if js client , then check if the origin is allowed ....
-            if($client->getApplicationType() == IClient::ApplicationType_JS_Client)
-            {
-                if(!empty($origin) && !$client->isOriginAllowed($origin))
+            if ($client->getApplicationType() == IClient::ApplicationType_JS_Client) {
+                if (!empty($origin) && !$client->isOriginAllowed($origin))
                     throw new OAuth2ResourceServerException
                     (
                         403,
@@ -205,7 +207,7 @@ final class OAuth2BearerAccessTokenRequestValidator
             //check scopes
             Log::debug('checking token scopes ...');
             $endpoint_scopes = explode(' ', $endpoint->getScope());
-            $token_scopes    = explode(' ', $access_token->getScope());
+            $token_scopes = explode(' ', $access_token->getScope());
 
             //check token available scopes vs. endpoint scopes
             if (count(array_intersect($endpoint_scopes, $token_scopes)) == 0) {
@@ -229,23 +231,20 @@ final class OAuth2BearerAccessTokenRequestValidator
             //set context for api and continue processing
             $context = array
             (
-                'access_token'     => $access_token_value,
-                'expires_in'       => $access_token->getRemainingLifetime(),
-                'client_id'        => $client_id,
-                'scope'            => $access_token->getScope(),
+                'access_token' => $access_token_value,
+                'expires_in' => $access_token->getRemainingLifetime(),
+                'client_id' => $client_id,
+                'scope' => $access_token->getScope(),
                 'application_type' => $client->getApplicationType()
             );
 
-            if (!is_null($access_token->getUserId()))
-            {
-                $context['user_id']          = $access_token->getUserId();
+            if (!is_null($access_token->getUserId())) {
+                $context['user_id'] = $access_token->getUserId();
             }
 
             $this->context->setAuthorizationContext($context);
 
-        }
-        catch(OAuth2ResourceServerException $ex1)
-        {
+        } catch (OAuth2ResourceServerException $ex1) {
             $this->log_service->warning($ex1);
             $this->checkpoint_service->trackException($ex1);
             $response = new OAuth2WWWAuthenticateErrorResponse($realm,
@@ -254,12 +253,10 @@ final class OAuth2BearerAccessTokenRequestValidator
                 $ex1->getScope(),
                 $ex1->getHttpCode()
             );
-            $http_response =  Response::json($response->getContent(), $response->getHttpCode());
-            $http_response->header('WWW-Authenticate',$response->getWWWAuthenticateHeaderValue());
+            $http_response = Response::json($response->getContent(), $response->getHttpCode());
+            $http_response->header('WWW-Authenticate', $response->getWWWAuthenticateHeaderValue());
             return $http_response;
-        }
-        catch(InvalidGrantTypeException $ex2)
-        {
+        } catch (InvalidGrantTypeException $ex2) {
             $this->log_service->warning($ex2);
             $this->checkpoint_service->trackException($ex2);
             $response = new OAuth2WWWAuthenticateErrorResponse($realm,
@@ -268,12 +265,10 @@ final class OAuth2BearerAccessTokenRequestValidator
                 null,
                 401
             );
-            $http_response =  Response::json($response->getContent(), $response->getHttpCode());
-            $http_response->header('WWW-Authenticate',$response->getWWWAuthenticateHeaderValue());
+            $http_response = Response::json($response->getContent(), $response->getHttpCode());
+            $http_response->header('WWW-Authenticate', $response->getWWWAuthenticateHeaderValue());
             return $http_response;
-        }
-        catch(ExpiredAccessTokenException $ex3)
-        {
+        } catch (ExpiredAccessTokenException $ex3) {
             $this->log_service->warning($ex3);
             $this->checkpoint_service->trackException($ex3);
             $response = new OAuth2WWWAuthenticateErrorResponse($realm,
@@ -282,12 +277,10 @@ final class OAuth2BearerAccessTokenRequestValidator
                 null,
                 401
             );
-            $http_response =  Response::json($response->getContent(), $response->getHttpCode());
-            $http_response->header('WWW-Authenticate',$response->getWWWAuthenticateHeaderValue());
+            $http_response = Response::json($response->getContent(), $response->getHttpCode());
+            $http_response->header('WWW-Authenticate', $response->getWWWAuthenticateHeaderValue());
             return $http_response;
-        }
-        catch(RevokedAccessTokenException $ex4)
-        {
+        } catch (RevokedAccessTokenException $ex4) {
             $this->log_service->warning($ex4);
             $this->checkpoint_service->trackException($ex4);
             $response = new OAuth2WWWAuthenticateErrorResponse($realm,
@@ -296,12 +289,10 @@ final class OAuth2BearerAccessTokenRequestValidator
                 null,
                 401
             );
-            $http_response =  Response::json($response->getContent(), $response->getHttpCode());
-            $http_response->header('WWW-Authenticate',$response->getWWWAuthenticateHeaderValue());
+            $http_response = Response::json($response->getContent(), $response->getHttpCode());
+            $http_response->header('WWW-Authenticate', $response->getWWWAuthenticateHeaderValue());
             return $http_response;
-        }
-        catch(Exception $ex)
-        {
+        } catch (Exception $ex) {
             $this->log_service->error($ex);
             $this->checkpoint_service->trackException($ex);
             $response = new OAuth2WWWAuthenticateErrorResponse($realm,
@@ -310,8 +301,8 @@ final class OAuth2BearerAccessTokenRequestValidator
                 null,
                 400
             );
-            $http_response =  Response::json($response->getContent(), $response->getHttpCode());
-            $http_response->header('WWW-Authenticate',$response->getWWWAuthenticateHeaderValue());
+            $http_response = Response::json($response->getContent(), $response->getHttpCode());
+            $http_response->header('WWW-Authenticate', $response->getWWWAuthenticateHeaderValue());
             return $http_response;
         }
         $response = $next($request);
@@ -330,7 +321,7 @@ final class OAuth2BearerAccessTokenRequestValidator
                 $headers[strtolower($name)] = $value;
             }
         }
-        if(empty($headers)){
+        if(!isset($this->headers['authorization'])) {
             // @codeCoverageIgnoreEnd
             foreach ($_SERVER as $name => $value) {
                 if (substr($name, 0, 5) == 'HTTP_') {
