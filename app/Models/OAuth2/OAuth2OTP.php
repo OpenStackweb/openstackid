@@ -406,6 +406,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
         $instance->phone_number = $request->getPhoneNumber();
         $instance->scope = $request->getScopes();
         $instance->value = $request->getOTP();
+        $instance->redirect_url = $request->getRedirectUrl();
         return $instance;
     }
 

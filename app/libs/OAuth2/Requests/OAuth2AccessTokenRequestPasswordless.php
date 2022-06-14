@@ -104,7 +104,8 @@ final class OAuth2AccessTokenRequestPasswordless extends OAuth2TokenRequest
 
     public function getUserName(): ?string
     {
-        return $this->getConnection() == OAuth2Protocol::OAuth2PasswordlessConnectionEmail ? $this->getEmail() : $this->getPhoneNumber();
+        return $this->getConnection() == OAuth2Protocol::OAuth2PasswordlessConnectionEmail
+            ? $this->getEmail() : $this->getPhoneNumber();
     }
 
     public function getScopes():string{
@@ -114,5 +115,9 @@ final class OAuth2AccessTokenRequestPasswordless extends OAuth2TokenRequest
     public function getOTP():string{
         // all OTP are on UPPER
         return strtoupper($this->getParam(OAuth2Protocol::OAuth2Protocol_ResponseType_OTP));
+    }
+
+    public function getRedirectUrl():?String{
+        return $this->getParam(OAuth2Protocol::OAuth2Protocol_RedirectUri);
     }
 }
