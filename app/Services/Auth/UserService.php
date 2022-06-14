@@ -40,6 +40,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
+use Models\OAuth2\OAuth2OTP;
 use models\utils\RandomGenerator;
 use OAuth2\Repositories\IClientRepository;
 use Utils\Db\ITransactionService;
@@ -120,12 +121,13 @@ final class UserService extends AbstractService implements IUserService
 
     /**
      * @param array $payload
-     * @return User
+     * @param OAuth2OTP|null $otp
      * @throws ValidationException
+     * @return User
      */
-    public function registerUser(array $payload): User
+    public function registerUser(array $payload, ?OAuth2OTP $otp = null):User
     {
-        return $this->tx_service->transaction(function () use ($payload) {
+        return $this->tx_service->transaction(function () use ($payload, $otp) {
 
             $email = trim($payload['email']);
             $former_user = $this->user_repository->getByEmailOrName($email);
@@ -139,6 +141,10 @@ final class UserService extends AbstractService implements IUserService
 
             $user = UserFactory::build($payload);
             $this->identifier_service->generateIdentifier($user);
+
+            if(!is_null($otp))
+                $user->setCreatedByOtp($otp);
+
             $this->user_repository->add($user);
 
             $formerRequest = $this->user_registration_request_repository->getByEmail($email);
@@ -215,6 +221,7 @@ final class UserService extends AbstractService implements IUserService
     {
         if(Config::get("mail.send_welcome_email")) {
             $this->tx_service->transaction(function () use ($user) {
+
                 $reset_password_link = null;
 
                 if (!$user->hasPasswordSet()) {

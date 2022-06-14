@@ -162,7 +162,7 @@ final class AuthService extends AbstractService implements IAuthService
             (
                 $otpClaim->getConnection(),
                 $otpClaim->getUserName(),
-               $client
+                $client
             );
 
             if(is_null($otp)){
@@ -220,7 +220,8 @@ final class AuthService extends AbstractService implements IAuthService
                         'email_verified' => true,
                         // dont send email
                         'send_email_verified_notice' => false
-                    ]
+                    ],
+                    $otp
                 );
             }
 
@@ -245,6 +246,7 @@ final class AuthService extends AbstractService implements IAuthService
                     Log::warning($ex);
                 }
             }
+
             Auth::login($user, false);
 
             return $otp;
