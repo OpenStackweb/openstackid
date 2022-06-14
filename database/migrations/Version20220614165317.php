@@ -19,8 +19,8 @@ class Version20220614165317 extends AbstractMigration
             $builder->table('users', function (Table $table) {
                 $table->bigInteger('created_by_otp_id', false)->setNotnull(false)->setDefault('NULL');
                 $table->index("created_by_otp_id", "created_by_otp_id");
-                $table->foreign("oauth2_otp", "created_by_otp_id", "id", ["onDelete" => "SET NULL"]);
-                $table->unique(["created_by_otp_id"]);
+                $table->foreign("oauth2_otp", "created_by_otp_id", "id", ["onDelete" => "SET NULL"], "FK_USERS_CREATED_BY_OTP");
+                $table->unique(["created_by_otp_id"], "IDX_USERS_CREATED_BY_OTP_UNIQUE");
             });
         }
     }
