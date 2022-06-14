@@ -17,7 +17,7 @@ class Version20220614165317 extends AbstractMigration
         $builder = new Builder($schema);
         if($schema->hasTable("users") && !$builder->hasColumn("users","created_by_otp_id") ) {
             $builder->table('users', function (Table $table) {
-                $table->unsignedBigInteger('created_by_otp_id', false)->setNotnull(false)->setDefault('NULL');
+                $table->bigInteger('created_by_otp_id', false)->setNotnull(false)->setDefault('NULL');
                 $table->index("created_by_otp_id", "created_by_otp_id");
                 $table->foreign("oauth2_otp", "created_by_otp_id", "id", ["onDelete" => "SET NULL"]);
                 $table->unique(["created_by_otp_id"]);
