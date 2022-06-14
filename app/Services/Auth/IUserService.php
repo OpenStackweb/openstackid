@@ -16,6 +16,8 @@ use Auth\User;
 use Auth\UserPasswordResetRequest;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
+use Models\OAuth2\OAuth2OTP;
+
 /**
  * Interface IUserService
  * @package App\Services\Auth
@@ -24,10 +26,11 @@ interface IUserService
 {
     /**
      * @param array $payload
+     * @param OAuth2OTP|null $otp
      * @throws ValidationException
      * @return User
      */
-    public function registerUser(array $payload):User;
+    public function registerUser(array $payload, ?OAuth2OTP $otp = null):User;
 
     /**
      * @param string $token
