@@ -6,8 +6,8 @@
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;padding-right:25px;padding-left:25px;word-break:break-word;">
                 <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">
-                    Thank you for using a one-time-use code to verify your email address on
-                    {!! $site_base_url !!}. You now have an {!! Config::get('app.app_name') !!} using the email address <a href="#" style="text-decoration:none !important;color:black !important; cursor:default !important">{!!$user_email!!}</a>.
+                    Thank you for using a one-time-use code to verify your email address@if(!empty($site_base_url)) on
+                    {!! $site_base_url !!}@endif . You now have an {!! Config::get('app.app_name') !!} using the email address <a href="#" style="text-decoration:none !important;color:black !important; cursor:default !important">{!!$user_email!!}</a>.
                 </div>
             </td>
         </tr>
