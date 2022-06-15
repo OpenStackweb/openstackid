@@ -19,15 +19,13 @@ run following commands on root folder
    * phpunit --bootstrap vendor/autoload.php
    * give proper rights to app/storage folder (775 and proper users)
    * vendor/bin/behat --config /home/smarcet/git/openstackid/behat.yml
-
-
+   
 ## Permissions
    
 Laravel may require some permissions to be configured: folders within storage and vendor require write access by the
 web server. 
 
 chmod 777 vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serializer
-
 
 ## Permissions
 
