@@ -15,9 +15,9 @@
     <script>
         let signUpError = '';
         const initialValues = {
-            first_name: '',
-            last_name: '',
-            email: '',
+            first_name: '{{ $first_name ?? '' }}',
+            last_name: '{{ $last_name ?? '' }}',
+            email: '{{ $email ?? '' }}',
             country_iso_code: '',
             password: '',
             password_confirmation: '',
