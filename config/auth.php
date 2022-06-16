@@ -100,6 +100,8 @@ return [
 
     // in seconds
     'password_reset_lifetime' => env('AUTH_PASSWORD_RESET_LIFETIME', 600),
+    'password_min_length' => env('AUTH_PASSWORD_MIN_LENGTH', 8),
+    'password_max_length' => env('AUTH_PASSWORD_MAX_LENGTH', 30),
     'verification_email_lifetime' => env ("AUTH_VERIFICATION_EMAIL_LIFETIME", 600),
     'allows_native_auth' => env('AUTH_ALLOWS_NATIVE_AUTH', 1),
     'allows_native_on_config' => env('AUTH_ALLOWS_NATIVE_AUTH_CONFIG', 1),

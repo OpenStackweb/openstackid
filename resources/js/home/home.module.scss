@@ -1,0 +1,34 @@
+@import '../../styles/global.scss';
+
+.main_container {
+  margin-top: 5%;
+  margin-bottom: 10%;
+  max-width: 544px !important;
+
+  .title_container {
+    .app_logo {
+      display: flex;
+      max-width: 40%;
+      margin: auto;
+    }
+    h1 {
+      display: flex;
+      justify-content: center;
+    }
+  }
+
+  .home_container {
+    border: solid 1px $border-color;
+    color: $base-color;
+    background-color: white;
+
+    .button {
+      width: 300px;
+    }
+
+    .footer {
+      display: flex;
+      vertical-align: middle;
+    }
+  }
+}
