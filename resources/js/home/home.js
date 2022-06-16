@@ -63,7 +63,7 @@ const HomePage = ({
                 target='_self'
                 className={styles.button}
               >
-                Register for an OpenInfraID
+                Register for an {appName}
               </Button>
             </Grid>
             <Grid item className={styles.footer}>
