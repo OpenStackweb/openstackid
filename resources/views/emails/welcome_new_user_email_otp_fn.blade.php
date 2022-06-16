@@ -22,7 +22,7 @@
         @if(!empty($reset_password_link))
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">In order to login more quickly in the future you can <a href="{!! $reset_password_link !!}" target="_blank">set a password</a> (this link expires in {!! $reset_password_link_lifetime !!} min but you can always use the <a href="{!! URL::action("Auth\ForgotPasswordController@showLinkRequestForm'") !!}" target="_blank">reset your password</a> option to get a new one).</div>
+                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">In order to login more quickly in the future you can <a href="{!! $reset_password_link !!}" target="_blank">set a password</a> (this link expires in {!! $reset_password_link_lifetime !!} min but you can always use the <a href="{!! URL::action("Auth\ForgotPasswordController@showLinkRequestForm") !!}" target="_blank">reset your password</a> option to get a new one).</div>
             </td>
         </tr>
         @endif
