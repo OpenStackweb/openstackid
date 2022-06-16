@@ -1,0 +1,40 @@
+@import '../../styles/global.scss';
+
+.main_container {
+  margin-top: 5%;
+  margin-bottom: 10%;
+  max-width: 544px !important;
+
+  .recaptcha{
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .title_container {
+    .app_logo {
+      display: flex;
+      max-width: 40%;
+      margin: auto;
+    }
+  }
+
+  .email_verification_container {
+    border: solid 1px $border-color;
+    color: $base-color;
+    background-color: white;
+
+    .button {
+      width: 380px;
+      color: white;
+      background-color: $base-color-dark;
+      margin-top: 10px;
+    }
+
+    .error_label {
+      color: #f44336;
+      font-size: 0.75rem;
+      margin: 4px 0 4px 14px;
+    }
+  }
+}

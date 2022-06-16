@@ -69,6 +69,16 @@ final class WelcomeNewUserEmail extends Mailable
     public $user_is_complete;
 
     /**
+     * @var bool
+     */
+    public $user_created_by_otp;
+
+    /**
+     * @var string
+     */
+    public $site_base_url;
+
+    /**
      * WelcomeNewUserEmail constructor.
      * @param User $user
      * @param string|null $reset_password_link
@@ -86,6 +96,14 @@ final class WelcomeNewUserEmail extends Mailable
                                   !empty($user->getLastName()) &&
                                   !empty($user->getCompany()) &&
                                   !empty($user->getCountry());
+        $this->user_created_by_otp = false;
+
+        if($user->createdByOTP()){
+            $this->user_created_by_otp = true;
+            $otp = $user->getCreatedByOtp();
+            $otp_redirect_url = $otp->getRedirectUrl();
+            $this->site_base_url = !empty($otp_redirect_url) ? parse_url($otp_redirect_url)['host'] : null;
+        }
 
         $this->reset_password_link = $reset_password_link;
         $this->reset_password_link_lifetime = Config::get("auth.password_reset_lifetime")/60;
@@ -104,6 +122,8 @@ final class WelcomeNewUserEmail extends Mailable
 
         if(Config::get("app.tenant_name") == 'FNTECH') {
             $view = 'emails.welcome_new_user_email_fn';
+            if($this->user_created_by_otp)
+                $view = 'emails.welcome_new_user_email_otp_fn';
         }
 
         Log::debug(sprintf("WelcomeNewUserEmail::build to %s", $this->user_email));

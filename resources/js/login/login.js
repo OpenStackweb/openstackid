@@ -1,5 +1,3 @@
-import styles from './login.module.scss'
-import "./third_party_identity_providers.scss";
 import React from 'react';
 import ReCAPTCHA from "react-google-recaptcha";
 import ReactDOM from 'react-dom';
@@ -23,8 +21,11 @@ import InputAdornment from '@material-ui/core/InputAdornment';
 import IconButton from '@material-ui/core/IconButton';
 import { emailValidator } from '../validator';
 import Grid from '@material-ui/core/Grid';
-import InfoOutlinedIcon from '@material-ui/icons/InfoOutlined';
 import Swal from 'sweetalert2'
+import Banner from '../components/banner/banner';
+
+import styles from './login.module.scss'
+import "./third_party_identity_providers.scss";
 
 const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput, emailError }) => {
 
@@ -67,18 +68,19 @@ const PasswordInputForm = ({
     onAuthenticate,
     disableInput,
     showPassword,
-    passwordValue,
-    passwordError,
-    onUserPasswordChange,
-    handleClickShowPassword,
-    handleMouseDownPassword,
-    userNameValue,
-    csrfToken,
-    shouldShowCaptcha,
-    captchaPublicKey,
-    onChangeRecaptcha,
-    handleEmitOtpAction
-}) => {
+                               passwordValue,
+                               passwordError,
+                               onUserPasswordChange,
+                               handleClickShowPassword,
+                               handleMouseDownPassword,
+                               userNameValue,
+                               csrfToken,
+                               shouldShowCaptcha,
+                               captchaPublicKey,
+                               onChangeRecaptcha,
+                               handleEmitOtpAction,
+                               forgotPasswordAction
+                           }) => {
     return (
         <form method="post" action={formAction} onSubmit={onAuthenticate} target="_self">
             <TextField
@@ -104,23 +106,37 @@ const PasswordInputForm = ({
                                 onMouseDown={handleMouseDownPassword}
                                 edge="end"
                             >
-                                {showPassword ? <Visibility /> : <VisibilityOff />}
+                                {showPassword ? <Visibility/> : <VisibilityOff/>}
                             </IconButton>
                         </InputAdornment>
                     )
                 }}
             />
             {passwordError &&
-                <p className={styles.error_label} dangerouslySetInnerHTML={{ __html: passwordError }}></p>
+                <p className={styles.error_label} dangerouslySetInnerHTML={{__html: passwordError}}></p>
             }
-            <FormControlLabel
-                disabled={disableInput}
-                control={<Checkbox value="remember" name="remember" id="remember" color="primary" />}
-                label="Remember me"
-            />
-            <input type="hidden" value={userNameValue} id="username" name="username" />
-            <input type="hidden" value={csrfToken} id="_token" name="_token" />
-            <input type="hidden" value="password" id="flow" name="flow" />
+            <Grid container spacing={1}>
+                <Grid item xs={12}>
+                    <Button variant="contained"
+                            disabled={disableInput}
+                            onClick={onAuthenticate}
+                            type="submit"
+                            color="primary">
+                        Continue
+                    </Button>
+                </Grid>
+                <Grid item xs={12}>
+                    <FormControlLabel
+                        disabled={disableInput}
+                        control={<Checkbox value="remember" name="remember" id="remember" color="primary"/>}
+                        label="Remember me"
+                    />
+                </Grid>
+            </Grid>
+
+            <input type="hidden" value={userNameValue} id="username" name="username"/>
+            <input type="hidden" value={csrfToken} id="_token" name="_token"/>
+            <input type="hidden" value="password" id="flow" name="flow"/>
             {shouldShowCaptcha() &&
                 <ReCAPTCHA
                     className={styles.recaptcha}
@@ -130,8 +146,8 @@ const PasswordInputForm = ({
             }
             <ExistingAccountActions
                 emitOtpAction={handleEmitOtpAction}
-                onAuthenticate={onAuthenticate}
-                disableInput={disableInput}
+                userName={userNameValue}
+                forgotPasswordAction={forgotPasswordAction}
             />
         </form>
     );
@@ -154,7 +170,7 @@ const OTPInputForm = ({
     onChangeRecaptcha
 }) => {
     return (
-        <form method="post" action={formAction} onSubmit={onAuthenticate}>
+        <form method="post" action={formAction} onSubmit={onAuthenticate} target='_self'>
             <TextField
                 id="password"
                 name="password"
@@ -209,6 +225,7 @@ const OTPInputForm = ({
                 className={styles.continue_btn}
                 color="primary"
                 type="submit"
+                target='_self'
                 onClick={onAuthenticate}>
                 Verify
             </Button>
@@ -217,24 +234,24 @@ const OTPInputForm = ({
 }
 
 const HelpLinks = ({
-    userName,
-    showEmitOtpAction,
-    forgotPasswordAction,
-    showForgotPasswordAction,
-    showVerifyEmailAction,
-    verifyEmailAction,
-    showHelpAction,
-    helpAction,
-    appName,
-    emitOtpAction
-}) => {
+                       userName,
+                       showEmitOtpAction,
+                       forgotPasswordAction,
+                       showForgotPasswordAction,
+                       showVerifyEmailAction,
+                       verifyEmailAction,
+                       showHelpAction,
+                       helpAction,
+                       appName,
+                       emitOtpAction
+                   }) => {
     if (userName) {
         forgotPasswordAction = `${forgotPasswordAction}?email=${encodeURIComponent(userName)}`;
     }
 
     return (
         <>
-            <hr className={styles.separator} />
+            <hr className={styles.separator}/>
             {
                 showEmitOtpAction &&
                 <Link href="#" onClick={emitOtpAction} variant="body2" target="_self">
@@ -275,43 +292,61 @@ const OTPHelpLinks = ({ emitOtpAction }) => {
 
 const EmailErrorActions = ({ emitOtpAction, createAccountAction, onValidateEmail, disableInput }) => {
     return (
-        <Grid container style={{ alignItems: 'center', marginTop: "20%" }}>
-            <Grid item xs>
-                <p>
-                    Access your account by <Link href="#" onClick={emitOtpAction} variant="body2" target="_self">having
-                        a single-use login code emailed to you</Link>.  Or
-                    <Link href={createAccountAction} variant="body2" target="_self"> establish your account by setting up a password</Link>.
-                </p>
-            </Grid>
-            <Grid item>
-                <Button variant="contained"
-                    onClick={onValidateEmail}
-                    disabled={disableInput}
-                    color="primary">
-                    Continue
-                </Button>
+        <Grid container spacing={1}>
+            <Grid container item spacing={1} justifyContent="center" alignItems="center">
+                <Grid item>
+                    <Button variant="contained"
+                            onClick={emitOtpAction}
+                            type="button"
+                            className={styles.secondary_btn}
+                            color="primary">
+                        Email me a one time use code
+                    </Button>
+                </Grid>
+                <Grid item>
+                    <Button variant="contained"
+                            href={createAccountAction}
+                            type="button"
+                            target='_self'
+                            className={styles.secondary_btn}
+                            color="primary">
+                        Register and set a password
+                    </Button>
+                </Grid>
+                <Grid item>
+                    <Button variant="text"
+                            onClick={onValidateEmail}
+                            disabled={disableInput}
+                            className={styles.secondary_btn}
+                            color="primary">
+                        Adjust email above and try again
+                    </Button>
+                </Grid>
             </Grid>
         </Grid>
     );
 }
 
-const ExistingAccountActions = ({ emitOtpAction, onAuthenticate, disableInput }) => {
+const ExistingAccountActions = ({emitOtpAction, forgotPasswordAction, userName}) => {
+    if (userName) {
+        forgotPasswordAction = `${forgotPasswordAction}?email=${encodeURIComponent(userName)}`;
+    }
+
     return (
-        <Grid container style={{ alignItems: 'center', marginTop: "20%" }}>
-            <Grid item xs>
-                <p>
-                    You have an existing account. If you don't remember or never set a password,
-                    <Link href="#" onClick={emitOtpAction} variant="body2" target="_self">  get a single-use login code </Link> emailed to you now.
-                </p>
-            </Grid>
-            <Grid item>
+        <Grid container spacing={1} style={{marginTop: "30px"}}>
+            <Grid item xs={12}>
                 <Button variant="contained"
-                    disabled={disableInput}
-                    onClick={onAuthenticate}
-                    className={styles.continue_btn} type="submit"
-                    color="primary">
-                    Continue
+                        onClick={emitOtpAction}
+                        type="button"
+                        className={styles.secondary_btn}
+                        color="primary">
+                    Login by emailing me a one time use code
                 </Button>
+            </Grid>
+            <Grid item xs={12}>
+                <Link href={forgotPasswordAction} target="_self" variant="body2">
+                    Reset your password
+                </Link>
             </Grid>
         </Grid>
     );
@@ -330,6 +365,7 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
                             variant="contained"
                             className={styles.third_party_idp_button + ` ${provider.name}`}
                             color="primary"
+                            target="_self"
                             title={`Sign In with ${provider.label}`}
                             href={`${formAction}/${provider.name}`}>
                             {provider.label}
@@ -366,7 +402,7 @@ class LoginPage extends React.Component {
         }
 
         if (this.state.errors.password && this.state.errors.password.includes("is not yet verified")) {
-            this.state.errors.password = this.state.errors.password + `Or <a href='${this.props.verifyEmailAction}?email=${encodeURIComponent(this.props.userName)}'>have another verification email sent to you.</a>`;
+            this.state.errors.password = this.state.errors.password + `Or <a target='_self' href='${this.props.verifyEmailAction}?email=${encodeURIComponent(this.props.userName)}'>have another verification email sent to you.</a>`;
         }
 
         this.onHandleUserNameChange = this.onHandleUserNameChange.bind(this);
@@ -483,7 +519,7 @@ class LoginPage extends React.Component {
             let newErrors = {};
 
             newErrors['password'] = '';
-            newErrors['email'] = "We could not find an Account with that email Address";
+            newErrors['email'] = " ";
 
             if (status == 429) {
                 newErrors['email'] = "Too many requests. Try it later.";
@@ -522,47 +558,32 @@ class LoginPage extends React.Component {
         return (
             <Container component="main" maxWidth="xs" className={styles.main_container}>
                 <CssBaseline />
-                {this.state.showInfoBanner && <Grid container className={styles.banner}
-                    component={Paper} elevation={0}>
-                    <Grid item xs={1} className={styles.prepend_grid_item} container
-                        justifyContent="center" alignItems="center">
-                        <InfoOutlinedIcon />
-                    </Grid>
-                    <Grid item xs={11} className={styles.append_grid_item} container>
-                        <Grid item xs container direction="column" spacing={1}>
-                            <Grid item xs>
-                                <div dangerouslySetInnerHTML={{ __html: this.state.infoBannerContent }} />
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                </Grid>}
+                {this.state.showInfoBanner && <Banner infoBannerContent={this.state.infoBannerContent} />}
                 <Container className={styles.login_container}>
                     <div className={styles.inner_container}>
                         <Typography component="h1" className={styles.app_logo_container}>
-                            <a href={window.location.href}><img className={styles.app_logo} alt={this.props.appName} src={this.props.appLogo} /></a>
+                            <a href={window.location.href} target='_self'><img className={styles.app_logo} alt={this.props.appName}
+                                                                src={this.props.appLogo}/></a>
                         </Typography>
                         <Typography component="h1" variant="h5">
-                            Sign in {this.state.user_fullname && <Chip
-                                avatar={<Avatar alt={this.state.user_fullname} src={this.state.user_pic} />}
-                                variant="outlined"
-                                className={styles.valid_user_name_chip}
-                                label={this.state.user_fullname}
-                                onDelete={this.handleDelete} />}
+                            {this.state.errors.email ? 'Create an account for:' : 'Login'}
+                            {this.state.user_fullname &&
+                                <Chip
+                                    avatar={<Avatar alt={this.state.user_fullname} src={this.state.user_pic}/>}
+                                    variant="outlined"
+                                    className={styles.valid_user_name_chip}
+                                    label={this.state.user_fullname}
+                                    onDelete={this.handleDelete}/>
+                            }
                         </Typography>
                         {!this.state.user_verified &&
                             <>
                                 {this.state.allowNativeAuth &&
-                                    <>
-                                        <EmailInputForm
-                                            onValidateEmail={this.onValidateEmail}
-                                            onHandleUserNameChange={this.onHandleUserNameChange}
-                                            disableInput={this.state.disableInput}
-                                            emailError={this.state.errors.email} />
-                                        {this.state.errors.email == '' &&
-                                            <p>If you have just registered for an event or don't know your password, enter your email
-                                                address and you'll be able to request a single-use login code.</p>
-                                        }
-                                    </>
+                                    <EmailInputForm
+                                        onValidateEmail={this.onValidateEmail}
+                                        onHandleUserNameChange={this.onHandleUserNameChange}
+                                        disableInput={this.state.disableInput}
+                                        emailError={this.state.errors.email}/>
                                 }
                                 {this.state.errors.email == '' &&
                                     this.props.thirdPartyProviders.length > 0 &&
@@ -618,6 +639,7 @@ class LoginPage extends React.Component {
                                     captchaPublicKey={this.props.captchaPublicKey}
                                     onChangeRecaptcha={this.onChangeRecaptcha}
                                     handleEmitOtpAction={this.handleEmitOtpAction}
+                                    forgotPasswordAction={this.props.forgotPasswordAction}
                                 />
                                 <HelpLinks
                                     userName={this.state.user_name}
@@ -627,7 +649,7 @@ class LoginPage extends React.Component {
                                     helpAction={this.props.helpAction}
                                     emitOtpAction={this.handleEmitOtpAction}
                                     showEmitOtpAction={false}
-                                    showForgotPasswordAction={true}
+                                    showForgotPasswordAction={false}
                                     showVerifyEmailAction={false}
                                     showHelpAction={true}
                                 />

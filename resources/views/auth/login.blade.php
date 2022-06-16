@@ -1,4 +1,4 @@
-@extends('auth_layout')
+@extends('reactapp_layout')
 @section('title')
     <title>Welcome to {{ Config::get("app.app_name") }} - Sign in </title>
 @append

@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Storage;
 use models\exceptions\ValidationException;
 use Models\OAuth2\ApiScope;
 use Models\OAuth2\Client;
+use Models\OAuth2\OAuth2OTP;
 use Models\OAuth2\UserConsent;
 use Models\OpenId\OpenIdTrustedSite;
 use Models\UserAction;
@@ -335,6 +336,15 @@ class User extends BaseEntity
     private $external_pic;
 
     // relations
+
+
+    /**
+     * @ORM\ManyToOne(targetEntity="Models\OAuth2\OAuth2OTP", cascade={"persist"})
+     * @ORM\JoinColumn(name="created_by_otp_id", referencedColumnName="id", nullable=true)
+     * @var OAuth2OTP
+     */
+    private $created_by_otp;
+
     /**
      * @ORM\OneToOne(targetEntity="App\libs\Auth\Models\UserRegistrationRequest", mappedBy="owner", cascade={"persist","remove"}, orphanRemoval=true)
      * @var UserRegistrationRequest
@@ -421,7 +431,7 @@ class User extends BaseEntity
     public function __construct()
     {
         parent::__construct();
-        $this->active = false;
+        $this->active = true;
         $this->email_verified = false;
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
@@ -450,6 +460,7 @@ class User extends BaseEntity
         $this->external_provider = null;
         $this->external_pic = null;
         $this->public_profile_allow_chat_with_me = false;
+        $this->created_by_otp = null;
     }
 
     /**
@@ -869,7 +880,7 @@ class User extends BaseEntity
             if(!empty($pic)) return $pic;
 
             if (!empty($this->pic)) {
-                $storage = Storage::disk('swift');
+                $storage = Storage::disk(Config::get("filesystems.cloud"));
                 if(!is_null($storage)) {
                     $pic = $storage->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
                     Cache::forever($pic_key, $pic);
@@ -1933,4 +1944,28 @@ SQL;
     public function hasIdentifier():bool{
         return !empty($this->identifier);
     }
+
+    /**
+     * @return OAuth2OTP|null
+     */
+    public function getCreatedByOtp(): ?OAuth2OTP
+    {
+        return $this->created_by_otp;
+    }
+
+    /**
+     * @param OAuth2OTP $created_by_otp
+     */
+    public function setCreatedByOtp(OAuth2OTP $created_by_otp): void
+    {
+        $this->created_by_otp = $created_by_otp;
+    }
+
+    /**
+     * @return bool
+     */
+    public function createdByOTP():bool{
+        return !is_null($this->created_by_otp);
+    }
+
 }

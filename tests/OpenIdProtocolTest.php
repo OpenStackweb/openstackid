@@ -404,7 +404,6 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         );
 
         $response = $this->action("POST", "OpenId\OpenIdProviderController@endpoint", $params);
-
         $this->assertResponseStatus(302);
 
         $url        = $response->getTargetUrl();

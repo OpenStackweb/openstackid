@@ -11,10 +11,13 @@
 @section('content')
     <div class="container">
         <div class="well">
-            <p> Thank you for creating an {!! Config::get("app.app_name") !!}. You will be receiving an email to verify your email address and
-            then another confirming you have successfully created your {!! Config::get("app.app_name") !!} after your email is verified.</p>
+            <p class="text-center">Almost done!</p>
+            <p class="text-center">Final step: You will receive an email shortly asking you to verify your email address
+                by clicking a link.</p>
+            <p class="text-center">Thank you for creating an {!! Config::get("app.app_name") !!}.</p>
             @if($redirect_uri)
-                <p>Now you will be redirected to <a id="redirect_url" name="redirect_url" href="{{$redirect_uri}}">{{$redirect_uri}}</a></p>
+                <p>Now you will be redirected to <a id="redirect_url" name="redirect_url"
+                                                    href="{{$redirect_uri}}">{{$redirect_uri}}</a></p>
             @endif
         </div>
     </div>
