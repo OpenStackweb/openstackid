@@ -159,7 +159,7 @@ final class RegisterController extends Controller
         ];
 
         if(!empty(Config::get("app.code_of_conduct_link", null))){
-            $rules['agree_code_of_conduct'] = 'required|string|in:on';
+            $rules['agree_code_of_conduct'] = 'required|string|in:true';
         }
 
         return Validator::make($data, $rules);

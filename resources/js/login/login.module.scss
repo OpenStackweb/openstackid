@@ -1,34 +1,9 @@
-$border-color: #e3e3e3;
-$base-color:#3fa2f7;
-$banner-base-color: #28A4DB;
-$banner-base-color-light:#EFF5F8;
-$text-color-dark:#0a1f31;
+@import '../../styles/global.scss';
 
 .main_container{
   margin-top: 5%;
   margin-bottom: 10%;
   max-width: 544px !important;
-}
-
-.banner{
-  border: 2px solid $banner-base-color;
-  margin-bottom: 40px;
-  color: $text-color-dark;
-  .prepend_grid_item{
-    color: $banner-base-color-light;
-    background-color: $banner-base-color;
-    svg{
-      margin-left: auto;
-      margin-right: auto;
-    }
-  }
-  .append_grid_item{
-    background-color: $banner-base-color-light;
-    padding: 10px 5px 10px 15px;
-    a {
-      color: $banner-base-color;
-    }
-  }
 }
 
 .login_container{
@@ -70,9 +45,9 @@ p > a {
   }
 
   .recaptcha {
-    width: 100%;
     margin-top: 10px;
     margin-bottom: 10px;
+    text-align: center;
   }
 
   .separator {

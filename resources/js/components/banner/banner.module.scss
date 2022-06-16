@@ -1,0 +1,23 @@
+@import '../../../styles/global.scss';
+
+.banner{
+  border: 2px solid $banner-base-color;
+  margin-bottom: 40px;
+  color: $text-color-dark;
+  .prepend_grid_item{
+    color: $banner-base-color-light;
+    background-color: $banner-base-color;
+    svg{
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+  .append_grid_item{
+    background-color: $banner-base-color-light;
+    padding: 10px 5px 10px 15px;
+    a {
+      color: $banner-base-color;
+    }
+  }
+}
+  
