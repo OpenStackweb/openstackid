@@ -24,6 +24,7 @@ const ResetPasswordPage = ({
   appLogo,
   captchaPublicKey,
   csrfToken,
+  token,
   infoBannerContent,
   initialValues,
   passwordPolicy,
@@ -33,6 +34,7 @@ const ResetPasswordPage = ({
   showInfoBanner,
   submitButtonText,
 }) => {
+
   const formEl = useRef(null);
   const captcha = useRef(null);
   const [captchaConfirmation, setCaptchaConfirmation] = useState(null);
@@ -207,6 +209,7 @@ const ResetPasswordPage = ({
           </CardContent>
         </Card>
         <input type="hidden" value={csrfToken} id="_token" name="_token" />
+        <input type="hidden" name="token" value={token} />
       </form>
     </Container>
   );

@@ -15,7 +15,7 @@
     <script>
         let error = '';
         const initialValues = { 
-            email: '{!! $email !!}',
+            email: '{!! $email ?? '' !!}',
             password: '',
             password_confirmation: '',
         }
@@ -37,6 +37,7 @@
             csrfToken :  document.head.querySelector('meta[name="csrf-token"]').content,
             infoBannerContent: '{!! html_entity_decode(Config::get("app.info_banner_content")) !!}',
             initialValues: initialValues,
+            token: '{!! $token ?? '' !!}',
             passwordPolicy: passwordPolicy,
             resetPasswordAction: '{{ URL::action("Auth\ResetPasswordController@reset") }}',
             resetPasswordError: error,
