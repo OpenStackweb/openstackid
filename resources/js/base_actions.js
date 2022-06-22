@@ -1,7 +1,6 @@
 import request from 'superagent';
 import URI from "urijs";
 let http = request;
-import Swal from 'sweetalert2';
 
 export const createAction = type => payload => ({
     type,
@@ -93,3 +92,30 @@ export const postRawRequest = (endpoint) => (params, headers = {}) => {
 
 }
 
+export const deleteRawRequest = (endpoint) => (params, headers = {}) => {
+    let url = URI(endpoint);
+
+    if(!isObjectEmpty(params))
+        url = url.query(params);
+
+    let key = url.toString();
+
+    cancel(key);
+
+    let req = http.delete(url.toString());
+
+    schedule(key, req);
+
+    return req.set(headers).send(params).timeout({
+        response: 60000,
+        deadline: 60000,
+    }).then((res) => {
+        let json = res.body;
+        end(key);
+        return Promise.resolve({response: json});
+    }).catch((error) => {
+        end(key);
+        return Promise.reject(error);
+    })
+
+}

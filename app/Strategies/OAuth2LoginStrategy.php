@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Utils\SessionConstants;
 use Illuminate\Support\Facades\Auth;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
@@ -63,16 +65,9 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
         if (!Auth::guest())
             return Redirect::action("UserController@getProfile");
 
-        $requested_user_id = $this->security_context_service->get()->getRequestedUserId();
-        if (!is_null($requested_user_id)) {
-            $userHint = $this->auth_service->getUserById($requested_user_id);
-            if(!is_null($userHint)) {
-                Session::put('username', $userHint->getEmail());
-                Session::put('user_fullname', $userHint->getFullName());
-                Session::put('user_pic', $userHint->getPic());
-                Session::put('user_verified', true);
-                Session::save();
-            }
+        $loginHint = $this->security_context_service->get()->getRequestedUserId();
+        if (!empty($loginHint)) {
+            $this->auth_service->saveSelectedAccount($loginHint);
         }
 
         $auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build(

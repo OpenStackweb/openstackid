@@ -66,7 +66,7 @@ final class UserEmailVerificationRequest extends Mailable
         $this->verification_link = $verification_link;
         $this->user_email = $user->getEmail();
         $this->user_fullname = $user->getFullName();
-        $this->bio_link = URL::action("UserController@getLogin");
+        $this->bio_link = URL::action("UserController@getLogin", ['login_hint' => $this->user_email ]);
     }
 
     /**

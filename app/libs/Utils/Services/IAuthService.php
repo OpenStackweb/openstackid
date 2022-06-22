@@ -151,4 +151,30 @@ interface IAuthService
 
     public function invalidateSession();
 
+    /**
+     * @param int $n
+     * @return bool
+     */
+    public function hasRegisteredMoreThanFormerAccounts(int $n = 0):bool;
+
+    /**
+     * @param string $loginHint
+     */
+    public function saveSelectedAccount(string $loginHint):void;
+
+    public function hasSelectedAccount():bool;
+
+    public function clearSelectedAccount():void;
+
+    public function getFormerAccounts():array;
+
+    /**
+     * @param string $loginHint
+     */
+    public function removeFormerAccount(string $loginHint):void;
+
+    /**
+     * @param User $user
+     */
+    public function addFormerAccount(User $user):void;
 }

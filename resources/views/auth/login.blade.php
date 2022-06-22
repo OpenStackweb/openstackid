@@ -26,7 +26,7 @@
 
         let config = {
             token :  document.head.querySelector('meta[name="csrf-token"]').content,
-            userName:'{{ Session::has('username') ? Session::get('username') : ""}}',
+            userName:'{{ Session::has(\App\Http\Utils\SessionConstants::UserName) ? Session::get(\App\Http\Utils\SessionConstants::UserName) : ""}}',
             realm: '{{isset($identity_select) ? $realm : ""}}',
             appName: '{{ Config::get("app.app_name") }}',
             appLogo: '{{  Config::get("app.logo_url") }}',
@@ -59,14 +59,14 @@
         @endif
 
         @if(Session::has('user_fullname'))
-            config.user_fullname = '{{Session::get("user_fullname")}}';
+            config.user_fullname = '{{Session::get(\App\Http\Utils\SessionConstants::UserFullName)}}';
         @endif
 
-        @if(Session::has('user_pic'))
-            config.user_pic = '{{Session::get("user_pic")}}';
+        @if(Session::has(\App\Http\Utils\SessionConstants::UserPic))
+            config.user_pic = '{{Session::get(\App\Http\Utils\SessionConstants::UserPic)}}';
         @endif
         @if(Session::has('user_verified'))
-            config.user_verified = {{Session::get('user_verified')}};
+            config.user_verified = {{Session::get(\App\Http\Utils\SessionConstants::UserVerified)}};
         @endif
         @if(Session::has('flow'))
             config.flow = '{{Session::get('flow')}}';

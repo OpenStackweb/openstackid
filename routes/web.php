@@ -41,10 +41,13 @@ Route::group(array('middleware' => ['ssl']), function () {
 
     //user interaction
     Route::group(array('prefix' => 'auth'), function () {
-
+        Route::group(array('prefix' => 'select-account'), function () {
+            Route::get('', "UserController@getSelectAccount");
+        });
         Route::group(array('prefix' => 'login'), function () {
             Route::get('', "UserController@getLogin");
             Route::get('account-verify', [ 'uses' => 'UserController@getAccount']);
+            Route::delete('former-account', ['middleware' => ['csrf'], 'uses' => 'UserController@removeFormerAccount']);
             Route::post('otp', ['middleware' => ['csrf'], 'uses' => 'UserController@emitOTP']);
             Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
             Route::get('cancel', "UserController@cancelLogin");

@@ -17,11 +17,15 @@ use App\Events\UserLocked;
 use App\Events\UserPasswordResetRequestCreated;
 use App\Events\UserPasswordResetSuccessful;
 use App\Events\UserSpamStateUpdated;
+use App\Http\Utils\CookieConstants;
+use App\Http\Utils\SessionConstants;
 use App\Jobs\PublishUserCreated;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\Mail\UserLockedEmail;
 use App\Mail\UserPasswordResetMail;
 use Auth\User;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use App\Mail\UserEmailVerificationSuccess;
 use App\Services\Auth\IUserService;
@@ -29,12 +33,16 @@ use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\App;
 use App\Events\UserCreated;
 use App\Events\UserEmailVerified;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Config;
 use Models\OAuth2\Client;
+use MongoDB\Driver\Session;
 use OAuth2\Repositories\IClientRepository;
+use Utils\Services\IAuthService;
+
 /**
  * Class EventServiceProvider
  * @package App\Providers
@@ -147,5 +155,23 @@ final class EventServiceProvider extends ServiceProvider
             return true;
         });
 
+        Event::listen(
+            Login::class,
+            function(Login $event){
+                $user = $event->user;
+                $authService = App::make(IAuthService::class);
+                if($event->remember)
+                    $authService->addFormerAccount($user);
+                Log::debug(sprintf("Login from user %s (%s).", $user->getAuthIdentifierName(), $user->getAuthIdentifier()));
+            }
+        );
+
+        Event::listen(
+            Logout::class,
+            function(Logout $event){
+                $user = $event->user;
+                Log::debug(sprintf("Logout from user %s (%s).", $user->getAuthIdentifierName(), $user->getAuthIdentifier()));
+            }
+        );
     }
 }

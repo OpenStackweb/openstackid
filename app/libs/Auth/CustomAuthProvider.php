@@ -17,6 +17,7 @@ use Exception;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use OpenId\Services\IUserService;
 use Utils\Db\ITransactionService;
 use Utils\Services\ICheckPointService;
@@ -172,10 +173,8 @@ class CustomAuthProvider implements UserProvider
                 Log::warning($ex);
                 $user = null;
             }
-
             return $user;
         });
-
     }
 
     /**

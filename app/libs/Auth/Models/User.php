@@ -499,6 +499,7 @@ class User extends BaseEntity
      */
     public function getIdentifier(): ?string
     {
+        if(empty($this->identifier)) return 'tba';
         return $this->identifier;
     }
 
