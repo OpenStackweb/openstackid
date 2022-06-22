@@ -376,7 +376,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
 
     public function setValue(string $value)
     {
-        $this->value = $value;
+        $this->value = strtoupper($value);
     }
 
     public function getType(): string
@@ -405,7 +405,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
         $instance->email = $request->getEmail();
         $instance->phone_number = $request->getPhoneNumber();
         $instance->scope = $request->getScopes();
-        $instance->value = $request->getOTP();
+        $instance->setValue($request->getOTP());
         $instance->redirect_url = $request->getRedirectUrl();
         return $instance;
     }
@@ -423,7 +423,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
             $instance->email = $user_name;
         if($connection == OAuth2Protocol::OAuth2PasswordlessConnectionEmail)
             $instance->phone_number = $user_name;
-        $instance->value = $value;
+        $instance->setValue($value);
         return $instance;
     }
 
@@ -464,6 +464,5 @@ class OAuth2OTP extends BaseEntity implements Identifier
     {
         return $this->user_id;
     }
-
 
 }
