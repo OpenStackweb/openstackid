@@ -757,6 +757,8 @@ final class TokenService extends AbstractService implements ITokenService
     public function getAccessToken($value, $is_hashed = false)
     {
 
+        Log::debug(sprintf("TokenService::getAccessToken value %s is_hashed %b", $value, $is_hashed));
+
         return $this->tx_service->transaction(function () use (
             $value,
             $is_hashed
@@ -770,14 +772,20 @@ final class TokenService extends AbstractService implements ITokenService
                 if (!$this->cache_service->exists($hashed_value)) {
                     $this->lock_manager_service->lock('lock.get.accesstoken.' . $hashed_value, function () use ($value, $hashed_value) {
                         // check on DB...
+                        Log::debug(sprintf("TokenService::getAccessToken value %s hashed_value %s ( lock acquired )", $value, $hashed_value));
                         $access_token_db = $this->access_token_repository->getByValue($hashed_value);
                         if (is_null($access_token_db)) {
+                            Log::debug(sprintf("TokenService::getAccessToken hashed_value %s ( access token is null on db )", $hashed_value));
                             if ($this->isAccessTokenRevoked($hashed_value)) {
+                                Log::debug(sprintf("TokenService::getAccessToken hashed_value %s ( access token revoked )", $hashed_value));
                                 throw new RevokedAccessTokenException(sprintf('Access token %s is revoked!', $value));
-                            } else if ($this->isAccessTokenVoid($hashed_value)) // check if its marked on cache as expired ...
+                            }
+                            else if ($this->isAccessTokenVoid($hashed_value)) // check if its marked on cache as expired ...
                             {
+                                Log::debug(sprintf("TokenService::getAccessToken hashed_value %s ( access token is void )", $hashed_value));
                                 throw new ExpiredAccessTokenException(sprintf('Access token %s is expired!', $value));
                             } else {
+                                Log::debug(sprintf("TokenService::getAccessToken hashed_value %s ( access token is invalid )", $hashed_value));
                                 throw new InvalidGrantTypeException(sprintf("Access token %s is invalid!", $value));
                             }
                         }
