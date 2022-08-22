@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Utils\UserIPHelperProvider;
+use Illuminate\Support\Facades\Log;
 use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
 use OAuth2\Exceptions\ExpiredAccessTokenException;
 use OAuth2\Exceptions\InvalidAccessTokenException;
@@ -149,12 +150,15 @@ class ValidateBearerTokenGrantType extends AbstractGrantType
 
         $token_value = $request->getToken();
 
+        Log::debug(sprintf("ValidateBearerTokenGrantType token %s", $token_value));
+
         try {
 
             $access_token = $this->token_service->getAccessToken($token_value);
 
             if (is_null($access_token))
             {
+                Log::debug(sprintf("ValidateBearerTokenGrantType token %s is expired", $token_value));
                 throw new ExpiredAccessTokenException
                 (
                     sprintf
@@ -185,6 +189,8 @@ class ValidateBearerTokenGrantType extends AbstractGrantType
 
             $strategy->validate($access_token, $this->current_client);
 
+            Log::debug(sprintf("ValidateBearerTokenGrantType token %s is valid", $token_value));
+
             $issued_client = $this->client_repository->getClientById($access_token->getClientId());
 
             if (is_null($issued_client))
@@ -202,6 +208,8 @@ class ValidateBearerTokenGrantType extends AbstractGrantType
 
             $user_id = $access_token->getUserId();
             $user    = !is_null($user_id) && $user_id > 0 ? $this->auth_service->getUserById($user_id) : null;
+
+            Log::debug(sprintf("ValidateBearerTokenGrantType token %s returning valid introspection response", $token_value));
 
             return new OAuth2AccessTokenValidationResponse
             (

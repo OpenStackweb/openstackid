@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use Illuminate\Support\Facades\Log;
 use OAuth2\Models\AccessToken;
 use OAuth2\Exceptions\BearerTokenDisclosureAttemptException;
 use OAuth2\Models\ClientAuthenticationContext;
@@ -41,16 +42,38 @@ final class ValidateBearerTokenStrategy implements IValidateBearerTokenStrategy
      */
     public function validate(AccessToken $access_token, IClient $client)
     {
+        $access_token_client_id = $access_token->getClientId();
+        $ctx_client_id = $this->client_auth_context->getId();
+        $access_token_value =  $access_token->getValue();
+
+        Log::debug
+        (
+            sprintf
+            (
+                "ValidateBearerTokenStrategy:validate access token client id %s context client id %s",
+                $access_token_client_id,
+                $ctx_client_id
+            )
+        );
+
         // if current client is not a resource server, then we could only access to our own tokens
-        if ($access_token->getClientId() !== $this->client_auth_context->getId())
+        if ($access_token_client_id !== $ctx_client_id)
         {
+            Log::warning(
+                sprintf
+                (
+                    'access token %s does not belongs to client id %s',
+                    $access_token_value,
+                    $ctx_client_id
+                )
+            );
             throw new BearerTokenDisclosureAttemptException
             (
                 sprintf
                 (
                     'access token %s does not belongs to client id %s',
-                    $access_token->getValue(),
-                    $this->client_auth_context->getId()
+                    $access_token_value,
+                    $ctx_client_id
                 )
             );
         }
