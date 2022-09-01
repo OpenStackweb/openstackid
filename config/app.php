@@ -237,8 +237,7 @@ return [
     'help_email' => env('HELP_EMAIL', 'support@openstack.org'),
     'code_of_conduct_link' => env("CODE_OF_CONDUCT_LINK","https://www.openstack.org/legal/community-code-of-conduct"),
     'app_info' => env("APP_INFO_TEXT"),
-    "homepage_info" => env("APP_HOME_PAGE_INFO_TEXT", "Once you're signed in, you can manage your trusted sites, change
-                        your settings and more."),
+    "homepage_info" => env("APP_HOME_PAGE_INFO_TEXT", "Once you\'re signed in, you can manage your trusted sites, change your settings and more."),
     "show_public_profile_show_photo" => env('SHOW_PUBLIC_PROFILE_SHOW_PHOTO_CHECKBOX', true),
     "show_info_banner"      => env('SHOW_INFO_BANNER', 0),
     "info_banner_content"   => env('INFO_BANNER_CONTENT'),
