@@ -253,6 +253,27 @@ PPK;
                'identifier' => 'sebastian.marcet',
             ],
             [
+                'first_name' => 'Sebastian',
+                'last_name' => 'Marcet IDN',
+                'email' => 'hei@やる.ca',
+                'password' => '1qaz2wsx',
+                'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
+                'gender' => 'male',
+                'address1' => 'Av. Siempre Viva 111',
+                'address2' => 'Av. Siempre Viva 111',
+                'city' => 'Lanus Este',
+                'state' => 'Buenos Aires',
+                'post_code' => '1824',
+                'country' => 'AR',
+                'language' => 'ESP',
+                'active' => true,
+                'email_verified' => true,
+                'groups' => [
+                    $super_admin_group
+                ],
+                'identifier' => 'hei@やる',
+            ],
+            [
                 'first_name' => 'Márton',
                 'last_name' => 'Kiss',
                 'email' => 'mkiss@tipit.net',

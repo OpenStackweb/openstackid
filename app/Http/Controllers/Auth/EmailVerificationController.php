@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use App\Http\Controllers\Controller;
+use App\libs\Utils\EmailUtils;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -46,7 +47,7 @@ final class EmailVerificationController extends Controller
         $params = ['email' => ''];
         if($request->has("email")){
             $email = trim($request->get("email"));
-            if (filter_var($email, FILTER_VALIDATE_EMAIL) !== FALSE) {
+            if (EmailUtils::isValidEmail($email)) {
                 $params['email'] = $email;
             }
         }

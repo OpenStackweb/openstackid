@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\PunnyCodeHelper;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use utils\DoctrineFilterMapping;
@@ -87,12 +89,14 @@ final class DoctrineUserRepository
      */
     public function getByEmailOrName(string $term): ?User
     {
+        $term = PunnyCodeHelper::encodeEMail($term);
+
         return $this->getEntityManager()
             ->createQueryBuilder()
             ->select("e")
             ->from($this->getBaseEntity(), "e")
             ->Where("e.email = (:term)")
-            ->setParameter("term", trim($term))
+            ->setParameter("term", $term)
             ->getQuery()
             ->getOneOrNullResult();
     }

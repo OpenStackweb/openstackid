@@ -16,6 +16,7 @@ use App\Events\UserLocked;
 use App\Events\UserSpamStateUpdated;
 use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\Auth\Models\UserRegistrationRequest;
+use App\libs\Utils\PunnyCodeHelper;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Cache;
@@ -499,12 +500,12 @@ class User extends BaseEntity
      */
     public function getIdentifier(): ?string
     {
-        return $this->identifier;
+        return PunnyCodeHelper::decodeEMail($this->identifier);
     }
 
     public function getEmail():string
     {
-        return $this->email;
+        return PunnyCodeHelper::decodeEMail($this->email);
     }
 
     /**
@@ -513,7 +514,7 @@ class User extends BaseEntity
     public function getFullName(): ?string
     {
         $full_name = $this->getFirstName() . " " . $this->getLastName();
-        return !empty(trim($full_name)) ? $full_name : $this->email;
+        return !empty(trim($full_name)) ? $full_name : $this->getEmail();
     }
 
     public function getFirstName()
@@ -919,7 +920,7 @@ class User extends BaseEntity
     private function getGravatarUrl(): string
     {
         $url = 'https://www.gravatar.com/avatar/';
-        $url .= md5(strtolower(trim($this->email)));
+        $url .= md5($this->getEmail());
         return $url;
     }
 
@@ -932,13 +933,13 @@ class User extends BaseEntity
     {
         if(empty($this->password))
         {
-            Log::warning(sprintf("User %s (%s) has not password set.", $this->id, $this->email));
+            Log::warning(sprintf("User %s (%s) has not password set.", $this->id, $this->getEmail()));
             return false;
         }
 
         if(empty($this->password_enc))
         {
-            Log::warning(sprintf("User %s (%s) has not password encoding set.", $this->id, $this->email));
+            Log::warning(sprintf("User %s (%s) has not password encoding set.", $this->id, $this->getEmail()));
             return false;
         }
 
@@ -1529,7 +1530,8 @@ SQL;
      */
     public function setEmail(string $email): void
     {
-        $email = trim($email);
+        $email = PunnyCodeHelper::encodeEMail($email);
+
         if (!empty($this->email) && $email != $this->email) {
             //we are setting a new email
             $this->clearResetPasswordRequests();
@@ -1584,12 +1586,13 @@ SQL;
     {
         if (!$this->email_verified) {
 
-            Log::debug(sprintf("User::verifyEmail verifying email %s", $this->email));
+            Log::debug(sprintf("User::verifyEmail verifying email %s", $this->getEmail()));
             $this->email_verified      = true;
             $this->spam_type           = self::SpamTypeHam;
             $this->active              = true;
             $this->lock                = false;
             $this->email_verified_date = new \DateTime('now', new \DateTimeZone('UTC'));
+
             if($send_email_verified_notice)
                 Event::dispatch(new UserEmailVerified($this->getId()));
             Event::dispatch(new UserSpamStateUpdated($this->getId()));
@@ -1604,7 +1607,7 @@ SQL;
     public function generateEmailVerificationToken(): string
     {
         if($this->isEmailVerified()){
-            throw new ValidationException(sprintf("User %s (%s) is already verified.", $this->id, $this->email));
+            throw new ValidationException(sprintf("User %s (%s) is already verified.", $this->id, $this->getEmail()));
         }
 
         $generator = new RandomGenerator();
@@ -1644,7 +1647,7 @@ SQL;
      */
     public function setIdentifier(string $identifier)
     {
-        $this->identifier = $identifier;
+        $this->identifier = PunnyCodeHelper::encodeEMail($identifier);
     }
 
     /**
@@ -1674,7 +1677,7 @@ SQL;
             $email_changed = $args->hasChangedField("email");
             if( $bio_changed|| $email_changed) {
                 // enqueue user for spam re checker
-                Log::warning(sprintf("User::preUpdate user %s was marked for spam type reclasification.", $this->email));
+                Log::warning(sprintf("User::preUpdate user %s was marked for spam type reclasification.", $this->getEmail()));
                 $this->resetSpamTypeClassification();
                 Event::dispatch(new UserSpamStateUpdated($this->getId()));
             }

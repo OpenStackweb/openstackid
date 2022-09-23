@@ -118,7 +118,8 @@ class CustomAuthProvider implements UserProvider
 
                 $email    = $credentials['username'];
                 $password = $credentials['password'];
-                $user     = $this->user_repository->getByEmailOrName(trim($email));
+
+                $user     = $this->user_repository->getByEmailOrName($email);
 
                 if (is_null($user)) //user must exists
                 {
@@ -193,7 +194,7 @@ class CustomAuthProvider implements UserProvider
             $email = $credentials['username'];
             $password = $credentials['password'];
 
-            $user = $this->user_repository->getByEmailOrName(trim($email));
+            $user = $this->user_repository->getByEmailOrName($email);
 
             if (!$user || !$user->canLogin() || !$user->checkPassword($password)) {
                 return false;

@@ -56,6 +56,45 @@ final class OAuth2UserRegistrationServiceApiTest extends OAuth2ProtectedApiTest
         $this->assertTrue(!empty($user_registration_request->hash));
     }
 
+    public function testIDNRegisterUserRequestCreation()
+    {
+        $data = [
+            'email'      => 'hei2@やる.ca',
+            'first_name' => 'test_'. str_random(16),
+            'last_name'  => 'test_'. str_random(16),
+        ];
+
+        $params = [
+        ];
+
+        $headers = [
+            "HTTP_Authorization" => " Bearer " . $this->access_token,
+            "CONTENT_TYPE"        => "application/json",
+            "Origin" => 'test.com'
+        ];
+
+        $response = $this->action
+        (
+            "POST",
+            "Api\\OAuth2\\OAuth2UserRegistrationRequestApiController@register",
+            $params,
+            [],
+            [],
+            [],
+            $headers,
+            json_encode($data)
+        );
+
+        $content = $response->getContent();
+
+        $this->assertResponseStatus(201);
+
+        $user_registration_request = json_decode($content);
+
+        $this->assertTrue(!empty($user_registration_request->hash));
+        $this->assertTrue($user_registration_request->email === 'hei2@やる.ca');
+    }
+
     public function testRegistrationRequestUpdate()
     {
         $headers = [
