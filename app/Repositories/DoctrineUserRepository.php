@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\PunnyCodeHelper;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use utils\DoctrineFilterMapping;
@@ -49,8 +51,8 @@ final class DoctrineUserRepository
             'last_name'   => 'e.last_name:json_string',
             'full_name'   => new DoctrineFilterMapping("concat(e.first_name, ' ', e.last_name) :operator :value"),
             'github_user' => 'e.github_user:json_string',
-            'email'       => ['e.email:json_string', 'e.second_email:json_string', 'e.third_email:json_string'],
-            'primary_email' => 'e.email:json_string',
+            'email'       => ['e.email:json_email', 'e.second_email:json_email', 'e.third_email:json_email'],
+            'primary_email' => 'e.email:json_email',
             'active'      => 'e.active:json_boolean',
             'group_id'    => new DoctrineJoinFilterMapping('e.groups', "g", "g.id :operator :value")
         ];
@@ -87,12 +89,14 @@ final class DoctrineUserRepository
      */
     public function getByEmailOrName(string $term): ?User
     {
+        $term = PunnyCodeHelper::encodeEmail($term);
+
         return $this->getEntityManager()
             ->createQueryBuilder()
             ->select("e")
             ->from($this->getBaseEntity(), "e")
             ->Where("e.email = (:term)")
-            ->setParameter("term", trim($term))
+            ->setParameter("term", $term)
             ->getQuery()
             ->getOneOrNullResult();
     }

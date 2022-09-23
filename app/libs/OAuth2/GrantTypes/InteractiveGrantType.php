@@ -11,6 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\EmailUtils;
+use App\libs\Utils\PunnyCodeHelper;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use jwe\IJWE;
@@ -425,7 +428,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
         if(!empty ($login_hint))
         {
 
-            if (filter_var($login_hint, FILTER_VALIDATE_EMAIL))
+            if (EmailUtils::isValidEmail($login_hint))
             {
                 $user = $this->auth_service->getUserByUsername($login_hint);
             }

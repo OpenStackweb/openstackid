@@ -50,7 +50,7 @@ final class UserFactory
             $user->setLastName(trim($payload['last_name']));
 
         if(isset($payload['email']) && !empty($payload['email']))
-            $user->setEmail(strtolower(trim($payload['email'])));
+            $user->setEmail($payload['email']);
 
         if(isset($payload['second_email']))
             $user->setSecondEmail(strtolower(trim($payload['second_email'])));
@@ -62,7 +62,7 @@ final class UserFactory
             $user->setBio(trim($payload['bio']));
 
         if(isset($payload['identifier']) && !empty($payload['identifier']))
-            $user->setIdentifier(trim($payload['identifier']));
+            $user->setIdentifier($payload['identifier']);
 
         if(isset($payload['statement_of_interest']))
             $user->setStatementOfInterest(trim($payload['statement_of_interest']));
