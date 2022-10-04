@@ -58,6 +58,12 @@ interface IAccessTokenRepository extends IBaseRepository
 
     /**
      * @param string $hashed_value
+     * @return AccessToken|null
+     */
+    function getByValueCacheable(string $hashed_value):?AccessToken;
+
+    /**
+     * @param string $hashed_value
      * @return AccessToken
      */
     function getByAuthCode(string $hashed_value):?AccessToken;
