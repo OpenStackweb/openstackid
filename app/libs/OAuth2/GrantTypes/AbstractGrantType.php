@@ -93,8 +93,8 @@ abstract class AbstractGrantType implements IGrantType
         // get client credentials from request..
         $this->client_auth_context = $this->client_service->getCurrentClientAuthInfo();
 
-        // retrieve client from storage..
-        $this->current_client = $this->client_repository->getClientById($this->client_auth_context->getId());
+        // retrieve client from storage ...
+        $this->current_client = $this->client_repository->getClientByIdCacheable($this->client_auth_context->getId());
 
         if (is_null($this->current_client))
             throw new InvalidClientException

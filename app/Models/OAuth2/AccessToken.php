@@ -20,6 +20,7 @@ use Doctrine\ORM\Mapping AS ORM;
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineAccessTokenRepository")
  * @ORM\Table(name="oauth2_access_token")
+ * @ORM\Cache("NONSTRICT_READ_WRITE")
  * Class AccessToken
  * @package Models\OAuth2
  */
