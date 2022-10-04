@@ -389,6 +389,90 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
     }
 
+    public function testAuthCodeIDN()
+    {
+
+        $client_id = '%2E%2D%5F%7E87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+
+        $params = array
+        (
+            'client_id' => $client_id,
+            'redirect_uri' => 'https://www.test.com/oauth2',
+            'response_type' => 'code',
+            'scope' => 'openid profile email',
+            OAuth2Protocol::OAuth2Protocol_LoginHint => 'hei@やる.ca',
+            OAuth2Protocol::OAuth2Protocol_MaxAge => 3200
+        );
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth",
+            $params,
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(302);
+
+        $url = $response->getTargetUrl();
+
+        $response = $this->call('GET', $url);
+
+        $this->assertResponseStatus(200);
+
+        // verify that login hint (email) is populated
+        $this->assertTrue(str_contains($response->getContent(), 'hei@やる.ca'));
+
+        // do login
+        $response = $this->action('POST', "UserController@postLogin",
+            array
+            (
+                'username' => 'hei@やる.ca',
+                'password' => '1qaz2wsx',
+                'flow' => 'password',
+                '_token' => Session::token()
+            )
+        );
+
+        $this->assertResponseStatus(302);
+
+        $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
+            [],
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(302);
+
+        //do consent
+        $url = $response->getTargetUrl();
+
+        $response = $this->action('POST', "UserController@postConsent", array(
+            'trust' => 'AllowOnce',
+            '_token' => Session::token()
+        ));
+
+        $this->assertResponseStatus(302);
+
+        // get auth code
+
+        $response = $this->action("GET", "OAuth2\OAuth2ProviderController@auth",
+            [],
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(302);
+
+        $url = $response->getTargetUrl();
+
+        $comps = @parse_url($url);
+        $query = $comps['query'];
+        $output = [];
+        parse_str($query, $output);
+
+        $this->assertTrue(array_key_exists('code', $output));
+        $this->assertTrue(!empty($output['code']));
+    }
+
     public function testAuthCodeInvalidLoginHint()
     {
 

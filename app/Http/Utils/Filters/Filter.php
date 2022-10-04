@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\PunnyCodeHelper;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\QueryBuilder;
 use Illuminate\Support\Facades\Validator;
@@ -349,7 +351,7 @@ final class Filter
      * @param string $original_format
      * @return mixed
      */
-    private function convertValue($value, $original_format)
+    private function convertValue(string $value, string $original_format)
     {
         switch ($original_format) {
             case 'datetime_epoch':
@@ -360,8 +362,10 @@ final class Filter
                 return intval($value);
                 break;
             case 'json_string':
-                return sprintf("%s",$value);
+                return sprintf("%s", $value);
                 break;
+            case 'json_email':
+                return PunnyCodeHelper::encodeEmail($value);
             default:
                 return $value;
                 break;

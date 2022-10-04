@@ -16,6 +16,8 @@ use App\Events\UserLocked;
 use App\Events\UserSpamStateUpdated;
 use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\Auth\Models\UserRegistrationRequest;
+use App\libs\Utils\PunnyCodeHelper;
+use App\libs\Utils\TextUtils;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Cache;
@@ -502,9 +504,9 @@ class User extends BaseEntity
         return $this->identifier;
     }
 
-    public function getEmail():string
+    public function getEmail():?string
     {
-        return $this->email;
+        return PunnyCodeHelper::decodeEmail($this->email);
     }
 
     /**
@@ -513,15 +515,15 @@ class User extends BaseEntity
     public function getFullName(): ?string
     {
         $full_name = $this->getFirstName() . " " . $this->getLastName();
-        return !empty(trim($full_name)) ? $full_name : $this->email;
+        return !empty(trim($full_name)) ? $full_name : $this->getEmail();
     }
 
-    public function getFirstName()
+    public function getFirstName():?string
     {
         return $this->first_name;
     }
 
-    public function getLastName()
+    public function getLastName():?string
     {
         return $this->last_name;
     }
@@ -536,7 +538,7 @@ class User extends BaseEntity
         return $this->gender;
     }
 
-    public function getCountry()
+    public function getCountry():?string
     {
         return $this->country_iso_code;
     }
@@ -561,7 +563,7 @@ class User extends BaseEntity
     }
 
 
-    public function getId()
+    public function getId():int
     {
         return (int)$this->id;
     }
@@ -569,7 +571,7 @@ class User extends BaseEntity
     /**
      * @return bool
      */
-    public function getShowProfileFullName()
+    public function getShowProfileFullName():bool
     {
         return $this->public_profile_show_fullname > 0;
     }
@@ -577,7 +579,7 @@ class User extends BaseEntity
     /**
      * @return bool
      */
-    public function getShowProfilePic()
+    public function getShowProfilePic():bool
     {
         return $this->public_profile_show_photo > 0;
     }
@@ -585,7 +587,7 @@ class User extends BaseEntity
     /**
      * @return bool
      */
-    public function getShowProfileBio()
+    public function getShowProfileBio():bool
     {
         return false;
     }
@@ -593,7 +595,7 @@ class User extends BaseEntity
     /**
      * @return bool
      */
-    public function getShowProfileEmail()
+    public function getShowProfileEmail():bool
     {
         return $this->public_profile_show_email > 0;
     }
@@ -705,23 +707,23 @@ class User extends BaseEntity
         $this->groups->clear();
     }
 
-    public function getStreetAddress()
+    public function getStreetAddress():?string
     {
 
         return $this->address1 . ' ' . $this->address2;
     }
 
-    public function getRegion()
+    public function getRegion():?string
     {
         return $this->state;
     }
 
-    public function getLocality()
+    public function getLocality():?string
     {
         return $this->city;
     }
 
-    public function getPostalCode()
+    public function getPostalCode():?string
     {
         return $this->post_code;
     }
@@ -767,7 +769,7 @@ class User extends BaseEntity
     /**
      * @return string
      */
-    public function getFormattedAddress()
+    public function getFormattedAddress():?string
     {
         $street = $this->getStreetAddress();
         $region = $this->getRegion();
@@ -919,7 +921,7 @@ class User extends BaseEntity
     private function getGravatarUrl(): string
     {
         $url = 'https://www.gravatar.com/avatar/';
-        $url .= md5(strtolower(trim($this->email)));
+        $url .= md5($this->getEmail());
         return $url;
     }
 
@@ -932,13 +934,13 @@ class User extends BaseEntity
     {
         if(empty($this->password))
         {
-            Log::warning(sprintf("User %s (%s) has not password set.", $this->id, $this->email));
+            Log::warning(sprintf("User %s (%s) has not password set.", $this->id, $this->getEmail()));
             return false;
         }
 
         if(empty($this->password_enc))
         {
-            Log::warning(sprintf("User %s (%s) has not password encoding set.", $this->id, $this->email));
+            Log::warning(sprintf("User %s (%s) has not password encoding set.", $this->id, $this->getEmail()));
             return false;
         }
 
@@ -1134,7 +1136,7 @@ class User extends BaseEntity
      */
     public function setCity(string $city): void
     {
-        $this->city = $city;
+        $this->city = TextUtils::trim($city);
     }
 
     /**
@@ -1150,7 +1152,7 @@ class User extends BaseEntity
      */
     public function setPostCode(string $post_code): void
     {
-        $this->post_code = $post_code;
+        $this->post_code = TextUtils::trim($post_code);
     }
 
     /**
@@ -1174,7 +1176,9 @@ class User extends BaseEntity
      */
     public function getSecondEmail(): ?string
     {
-        return $this->second_email;
+        $res = PunnyCodeHelper::decodeEmail($this->second_email);
+        Log::debug(sprintf("User::getSecondEmail res %s", $res));
+        return $res;
     }
 
     /**
@@ -1182,7 +1186,7 @@ class User extends BaseEntity
      */
     public function setSecondEmail(string $second_email): void
     {
-        $this->second_email = $second_email;
+        $this->second_email = PunnyCodeHelper::encodeEmail($second_email);
     }
 
     /**
@@ -1190,7 +1194,7 @@ class User extends BaseEntity
      */
     public function getThirdEmail(): ?string
     {
-        return $this->third_email;
+        return PunnyCodeHelper::decodeEmail($this->third_email);
     }
 
     /**
@@ -1198,7 +1202,7 @@ class User extends BaseEntity
      */
     public function setThirdEmail(string $third_email): void
     {
-        $this->third_email = $third_email;
+        $this->third_email = PunnyCodeHelper::encodeEmail($third_email);
     }
 
     /**
@@ -1214,7 +1218,7 @@ class User extends BaseEntity
      */
     public function setStatementOfInterest(string $statement_of_interest): void
     {
-        $this->statement_of_interest = $statement_of_interest;
+        $this->statement_of_interest = TextUtils::trim($statement_of_interest);
     }
 
     /**
@@ -1230,7 +1234,7 @@ class User extends BaseEntity
      */
     public function setIrc(string $irc): void
     {
-        $this->irc = $irc;
+        $this->irc = TextUtils::trim($irc);
     }
 
     /**
@@ -1262,7 +1266,7 @@ class User extends BaseEntity
      */
     public function setGithubUser(string $github_user): void
     {
-        $this->github_user = $github_user;
+        $this->github_user = TextUtils::trim($github_user);
     }
 
     /**
@@ -1278,7 +1282,7 @@ class User extends BaseEntity
      */
     public function setWechatUser(string $wechat_user): void
     {
-        $this->wechat_user = $wechat_user;
+        $this->wechat_user = TextUtils::trim($wechat_user);
     }
 
     /**
@@ -1294,7 +1298,7 @@ class User extends BaseEntity
      */
     public function setPassword(string $password): void
     {
-        $password = trim($password);
+        $password = TextUtils::trim($password);
 
         if(empty($this->password_enc)){
             $this->password_enc = AuthHelper::AlgNative;
@@ -1513,7 +1517,7 @@ SQL;
      */
     public function setFirstName(string $first_name): void
     {
-        $this->first_name = $first_name;
+        $this->first_name = TextUtils::trim($first_name);
     }
 
     /**
@@ -1521,7 +1525,7 @@ SQL;
      */
     public function setLastName(string $last_name): void
     {
-        $this->last_name = $last_name;
+        $this->last_name = TextUtils::trim($last_name);
     }
 
     /**
@@ -1529,7 +1533,8 @@ SQL;
      */
     public function setEmail(string $email): void
     {
-        $email = trim($email);
+        $email = PunnyCodeHelper::encodeEmail($email);
+
         if (!empty($this->email) && $email != $this->email) {
             //we are setting a new email
             $this->clearResetPasswordRequests();
@@ -1542,7 +1547,7 @@ SQL;
      */
     public function setGender(string $gender): void
     {
-        $this->gender = $gender;
+        $this->gender = TextUtils::trim($gender);
     }
 
     /**
@@ -1550,7 +1555,7 @@ SQL;
      */
     public function setBio(string $bio): void
     {
-        $this->bio = $bio;
+        $this->bio = TextUtils::trim($bio);
     }
 
     public function activate():void {
@@ -1584,12 +1589,13 @@ SQL;
     {
         if (!$this->email_verified) {
 
-            Log::debug(sprintf("User::verifyEmail verifying email %s", $this->email));
+            Log::debug(sprintf("User::verifyEmail verifying email %s", $this->getEmail()));
             $this->email_verified      = true;
             $this->spam_type           = self::SpamTypeHam;
             $this->active              = true;
             $this->lock                = false;
             $this->email_verified_date = new \DateTime('now', new \DateTimeZone('UTC'));
+
             if($send_email_verified_notice)
                 Event::dispatch(new UserEmailVerified($this->getId()));
             Event::dispatch(new UserSpamStateUpdated($this->getId()));
@@ -1604,7 +1610,7 @@ SQL;
     public function generateEmailVerificationToken(): string
     {
         if($this->isEmailVerified()){
-            throw new ValidationException(sprintf("User %s (%s) is already verified.", $this->id, $this->email));
+            throw new ValidationException(sprintf("User %s (%s) is already verified.", $this->id, $this->getEmail()));
         }
 
         $generator = new RandomGenerator();
@@ -1636,7 +1642,7 @@ SQL;
      */
     public function setLanguage(string $language): void
     {
-        $this->language = $language;
+        $this->language = TextUtils::trim($language);
     }
 
     /**
@@ -1644,7 +1650,7 @@ SQL;
      */
     public function setIdentifier(string $identifier)
     {
-        $this->identifier = $identifier;
+        $this->identifier = strtolower(trim($identifier));
     }
 
     /**
@@ -1674,7 +1680,7 @@ SQL;
             $email_changed = $args->hasChangedField("email");
             if( $bio_changed|| $email_changed) {
                 // enqueue user for spam re checker
-                Log::warning(sprintf("User::preUpdate user %s was marked for spam type reclasification.", $this->email));
+                Log::warning(sprintf("User::preUpdate user %s was marked for spam type reclasification.", $this->getEmail()));
                 $this->resetSpamTypeClassification();
                 Event::dispatch(new UserSpamStateUpdated($this->getId()));
             }
@@ -1694,6 +1700,12 @@ SQL;
             return $this->getPic();
 
         $res = $this->{$name};
+        if ($name == "email" || $name == 'second_email' || $name == 'third_email')
+            $res = PunnyCodeHelper::decodeEmail($res);
+
+        if(is_string($res))
+            Log::debug(sprintf("User::__get name %s res %s", $name, $res));
+
         return $res;
     }
 
@@ -1771,7 +1783,7 @@ SQL;
      */
     public function setTwitterName(string $twitter_name): void
     {
-        $this->twitter_name = $twitter_name;
+        $this->twitter_name = TextUtils::trim($twitter_name);
     }
 
     public function clearResetPasswordRequests(): void
@@ -1830,7 +1842,7 @@ SQL;
      */
     public function setCompany(string $company): void
     {
-        $this->company = $company;
+        $this->company = TextUtils::trim($company);
     }
 
     /**
@@ -1846,7 +1858,7 @@ SQL;
      */
     public function setPhoneNumber(string $phone_number): void
     {
-        $this->phone_number = $phone_number;
+        $this->phone_number = TextUtils::trim($phone_number);
     }
 
     const ProfilePicFolder = 'profile_pics';
@@ -1868,7 +1880,7 @@ SQL;
      */
     public function setJobTitle(string $job_title): void
     {
-        $this->job_title = $job_title;
+        $this->job_title = TextUtils::trim($job_title);
     }
 
     /**
@@ -1923,6 +1935,7 @@ SQL;
      * @param string $full_name
      */
     public function setFullName(string $full_name):void{
+        $full_name = TextUtils::trim($full_name);
         $name_parts = explode(" ", $full_name);
         if(count($name_parts) > 0)
             $this->first_name = $name_parts[0];

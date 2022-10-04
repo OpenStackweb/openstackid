@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Controllers\Controller;
+use App\libs\Utils\EmailUtils;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -68,7 +69,7 @@ final class ForgotPasswordController extends Controller
 
             if($request->has("email")){
                 $email = trim($request->get("email"));
-                if (filter_var($email, FILTER_VALIDATE_EMAIL) !== FALSE) {
+                if (EmailUtils::isValidEmail($email)) {
                     $params['email'] = $email;
                 }
             }

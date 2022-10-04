@@ -1,6 +1,6 @@
 <?php namespace App\Http\Middleware;
 /**
- * Copyright 2015 OpenStack Foundation
+ * Copyright 2022 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,17 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use Closure;
-use Log;
-
+use Illuminate\Support\Facades\Log;
 /**
  * Class ETagsMiddleware
  * @package App\Http\Middleware
  */
 final class ETagsMiddleware
 {
-
 
     /**
      * Handle an incoming request.
@@ -31,21 +28,41 @@ final class ETagsMiddleware
      */
     public function handle($request, Closure $next)
     {
+        // Handle request
+        $method = $request->getMethod();
+
+        // Support using HEAD method for checking If-None-Match
+        if ($request->isMethod('HEAD')) {
+            $request->setMethod('GET');
+        }
+        //Handle response
         $response = $next($request);
+
         if ($response->getStatusCode() === 200 && $request->getMethod() === 'GET')
         {
-            $etag = md5($response->getContent());
+            $etag        = md5($response->getContent());
             $requestETag = str_replace('"', '', $request->getETags());
             $requestETag = str_replace('-gzip', '', $requestETag);
+            if($requestETag && is_array($requestETag))
+                Log::debug(sprintf("ETagsMiddleware::handle requestEtag %s calculated etag %s", $requestETag[0], $etag));
 
-            if ($requestETag && $requestETag[0] == $etag)
-            {
-                Log::debug('ETAG 304');
+            // Strip W/ if weak comparison algorithm can be used
+            $requestETag = array_map([$this, 'stripWeakTags'], $requestETag);
+
+            if (in_array($etag, $requestETag)) {
                 $response->setNotModified();
             }
+
             $response->setEtag($etag);
         }
 
+        $request->setMethod($method);
+
         return $response;
+    }
+
+    private function stripWeakTags($etag)
+    {
+        return str_replace('W/', '', $etag);
     }
 }

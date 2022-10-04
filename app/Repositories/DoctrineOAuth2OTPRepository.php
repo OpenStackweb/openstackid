@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
+use App\libs\Utils\PunnyCodeHelper;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 /**
@@ -46,6 +47,8 @@ class DoctrineOAuth2OTPRepository
         ?Client $client
     ):?OAuth2OTP
     {
+        $user_name = PunnyCodeHelper::encodeEmail($user_name);
+
         $query = $this->getEntityManager()
             ->createQueryBuilder()
             ->select("e")
@@ -78,6 +81,8 @@ class DoctrineOAuth2OTPRepository
         ?Client $client = null
     )
     {
+        $user_name = PunnyCodeHelper::encodeEmail($user_name);
+
         $query = $this->getEntityManager()
             ->createQueryBuilder()
             ->select("e")

@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\PunnyCodeHelper;
 use App\Models\Utils\BaseEntity;
 use Doctrine\ORM\Mapping AS ORM;
 use DateTime;
@@ -192,7 +194,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
      */
     public function getEmail(): ?string
     {
-        return $this->email;
+        return PunnyCodeHelper::decodeEmail($this->email);
     }
 
     /**
@@ -200,7 +202,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
      */
     public function setEmail(?string $email): void
     {
-        $this->email =  !empty($email) ? strtolower(trim($email)):null;
+        $this->email = PunnyCodeHelper::encodeEmail($email);
     }
 
     /**
@@ -361,7 +363,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
     }
 
     public function getUserName():?string{
-        return $this->connection == OAuth2Protocol::OAuth2PasswordlessEmail ? $this->email : $this->phone_number;
+        return $this->connection == OAuth2Protocol::OAuth2PasswordlessEmail ? $this->getEmail() : $this->phone_number;
     }
 
     /**
@@ -402,7 +404,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
     public static function fromRequest(OAuth2AccessTokenRequestPasswordless $request, int $length):OAuth2OTP{
         $instance = new self($length);
         $instance->connection = $request->getConnection();
-        $instance->email = $request->getEmail();
+        $instance->setEmail($request->getEmail());
         $instance->phone_number = $request->getPhoneNumber();
         $instance->scope = $request->getScopes();
         $instance->setValue($request->getOTP());
@@ -420,7 +422,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
         $instance = new self(strlen($value));
         $instance->connection = $connection;
         if($connection == OAuth2Protocol::OAuth2PasswordlessConnectionEmail)
-            $instance->email = $user_name;
+            $instance->setEmail($user_name);
         if($connection == OAuth2Protocol::OAuth2PasswordlessConnectionEmail)
             $instance->phone_number = $user_name;
         $instance->setValue($value);

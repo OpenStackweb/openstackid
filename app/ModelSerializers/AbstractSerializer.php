@@ -14,6 +14,7 @@
 use models\utils\IEntity;
 use OAuth2\IResourceServerContext;
 use Utils\JsonUtils;
+use Illuminate\Support\Facades\Log;
 /**
  * Class AbstractSerializer
  * @package App\ModelSerializers
@@ -143,8 +144,11 @@ abstract class AbstractSerializer implements IModelSerializer
                 if(count($fields) > 0 && !in_array($mapping[0], $fields)) continue;
                 $value = null;
                 foreach($method_prefix as $prefix){
+                    Log::debug(sprintf("AbstractSerializer::serialize prefix %s attribute %s", $prefix, $attribute));
                     if(method_exists($this->object, $prefix.$attribute)){
-                        $value   = call_user_func([$this->object, $prefix.$attribute ]);
+                        $value = call_user_func([$this->object, $prefix.$attribute]);
+                        if(is_string($value))
+                            Log::debug(sprintf("AbstractSerializer::serialize prefix %s attribute %s value %s", $prefix, $attribute, $value));
                         break;
                     }
                 }

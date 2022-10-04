@@ -11,6 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\PunnyCodeHelper;
+use App\libs\Utils\TextUtils;
 use App\Models\Utils\BaseEntity;
 use Auth\User;
 use Doctrine\ORM\Mapping AS ORM;
@@ -126,7 +129,7 @@ class UserRegistrationRequest extends BaseEntity
      */
     public function getEmail(): string
     {
-        return $this->email;
+        return PunnyCodeHelper::decodeEmail($this->email);
     }
 
     /**
@@ -134,7 +137,7 @@ class UserRegistrationRequest extends BaseEntity
      */
     public function setEmail(string $email): void
     {
-        $this->email = $email;
+        $this->email = PunnyCodeHelper::encodeEmail($email);
     }
 
     /**
@@ -150,7 +153,7 @@ class UserRegistrationRequest extends BaseEntity
      */
     public function setFirstName(string $first_name): void
     {
-        $this->first_name = $first_name;
+        $this->first_name = TextUtils::trim($first_name);
     }
 
     /**
@@ -166,7 +169,7 @@ class UserRegistrationRequest extends BaseEntity
      */
     public function setLastName(string $last_name): void
     {
-        $this->last_name = $last_name;
+        $this->last_name = TextUtils::trim($last_name);
     }
 
 
@@ -175,7 +178,7 @@ class UserRegistrationRequest extends BaseEntity
     }
 
     public function setCompany(string $company):void{
-        $this->company = $company;
+        $this->company = TextUtils::trim($company);
     }
 
     /**

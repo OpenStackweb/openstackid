@@ -13,6 +13,7 @@
  **/
 use App\libs\Auth\Models\UserRegistrationRequest;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
+use App\libs\Utils\PunnyCodeHelper;
 use utils\DoctrineCaseFilterMapping;
 use utils\DoctrineSwitchFilterMapping;
 /**
@@ -20,7 +21,8 @@ use utils\DoctrineSwitchFilterMapping;
  * @package App\Repositories
  */
 final class DoctrineUserRegistrationRequestRepository
-    extends ModelDoctrineRepository implements IUserRegistrationRequestRepository
+    extends ModelDoctrineRepository
+    implements IUserRegistrationRequestRepository
 {
 
     /**
@@ -81,7 +83,7 @@ final class DoctrineUserRegistrationRequestRepository
     public function getByEmail(string $email): ?UserRegistrationRequest
     {
         return $this->findOneBy([
-            'email' => strtolower(trim($email))
+            'email' => PunnyCodeHelper::encodeEmail($email)
         ]);
     }
 }

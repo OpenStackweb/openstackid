@@ -158,9 +158,13 @@ final class ParseMultiPartFormDataInputStream
     private function file($string)
     {
         preg_match('/name=\"([^\"]*)\".*stream[\n|\r]+([^\n\r].*)?$/s', $string, $match);
-        return [
-            $match[1] => ($match[2] !== NULL ? $match[2] : '')
-        ];
+        if(count($match) >=2 ) {
+            return [
+                $match[1] => ($match[2] !== NULL ? $match[2] : '')
+            ];
+        }
+        Log::warning(sprintf( "ParseMultiPartFormDataInputStream::file %s", $string));
+        return [];
     }
 
     /**
