@@ -14,7 +14,6 @@
 
 use Doctrine\ORM\QueryBuilder;
 use Models\OAuth2\AccessToken;
-use Models\OAuth2\RefreshToken;
 use OAuth2\Repositories\IAccessTokenRepository;
 /**
  * Class DoctrineAccessTokenRepository
@@ -40,24 +39,6 @@ class DoctrineAccessTokenRepository
     function getByValue(string $hashed_value):?AccessToken
     {
         return $this->findOneBy(['value' => $hashed_value]);
-    }
-
-    /**
-     * @param string $hashed_value
-     * @return AccessToken|null
-     */
-    function getByValueCacheable(string $hashed_value):?AccessToken
-    {
-        return $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select("e")
-            ->from($this->getBaseEntity(), "e")
-            ->where("e.value = (:value)")
-            ->setParameter("value", trim($hashed_value))
-            ->setMaxResults(1)
-            ->getQuery()
-            ->setCacheable(true)
-            ->getOneOrNullResult();
     }
 
     /**

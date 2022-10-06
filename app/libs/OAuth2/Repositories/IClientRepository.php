@@ -32,13 +32,6 @@ interface IClientRepository extends IBaseRepository
     public function getClientById(string $client_id):?Client;
 
     /**
-     * @param string $client_id
-     * @return Client|null
-     * @throws \Doctrine\ORM\NonUniqueResultException
-     */
-    public function getClientByIdCacheable(string $client_id):?Client;
-
-    /**
      * @param int $id
      * @return Client|null
      */

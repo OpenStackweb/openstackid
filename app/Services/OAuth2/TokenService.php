@@ -770,7 +770,7 @@ final class TokenService extends AbstractService implements ITokenService
                 if (!$this->cache_service->exists($hashed_value)) {
                     $this->lock_manager_service->lock('lock.get.accesstoken.' . $hashed_value, function () use ($value, $hashed_value) {
                         // check on DB...
-                        $access_token_db = $this->access_token_repository->getByValueCacheable($hashed_value);
+                        $access_token_db = $this->access_token_repository->getByValue($hashed_value);
                         if (is_null($access_token_db)) {
                             if ($this->isAccessTokenRevoked($hashed_value)) {
                                 throw new RevokedAccessTokenException(sprintf('Access token %s is revoked!', $value));
@@ -830,9 +830,8 @@ final class TokenService extends AbstractService implements ITokenService
                     $access_token->setRefreshToken($refresh_token);
                 }
             } catch (UnacquiredLockException $ex1) {
-                throw new InvalidAccessTokenException(sprintf("Access token %s. ", $value));
+                throw new InvalidAccessTokenException(sprintf("access token %s ", $value));
             }
-
             return $access_token;
         });
     }
@@ -921,11 +920,11 @@ final class TokenService extends AbstractService implements ITokenService
     }
 
     /**
-     * @param string $value
-     * @param false $is_hashed
+     * @param \oauth2\services\refresh $value
+     * @param bool $is_hashed
      * @return RefreshToken
      * @throws InvalidGrantTypeException
-     * @throws ReplayAttackRefreshTokenException
+     * @throws ReplayAttackException
      * @throws RevokedRefreshTokenException
      */
     public function getRefreshToken($value, $is_hashed = false)
@@ -933,7 +932,7 @@ final class TokenService extends AbstractService implements ITokenService
         //hash the given value, bc tokens values are stored hashed on DB
         $hashed_value = !$is_hashed ? Hash::compute('sha256', $value) : $value;
 
-        $refresh_token_db = $this->refresh_token_repository->getByValueCacheable($hashed_value);
+        $refresh_token_db = $this->refresh_token_repository->getByValue($hashed_value);
 
         if (is_null($refresh_token_db)) {
             if ($this->isRefreshTokenRevoked($hashed_value))

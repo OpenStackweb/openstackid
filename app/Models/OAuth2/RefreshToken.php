@@ -21,7 +21,6 @@ use Doctrine\ORM\Mapping AS ORM;
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineRefreshTokenRepository")
  * @ORM\Table(name="oauth2_refresh_token")
- * @ORM\Cache("NONSTRICT_READ_WRITE")
  * Class RefreshToken
  * Refresh Token Entity
  */

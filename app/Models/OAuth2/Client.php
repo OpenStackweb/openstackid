@@ -38,7 +38,6 @@ use Doctrine\ORM\Mapping AS ORM;
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOAuth2ClientRepository")
  * @ORM\Table(name="oauth2_client")
- * @ORM\Cache("NONSTRICT_READ_WRITE")
  * Class Client
  * @package Models\OAuth2
  */

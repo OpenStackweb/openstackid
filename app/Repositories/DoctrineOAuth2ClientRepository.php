@@ -99,25 +99,6 @@ final class DoctrineOAuth2ClientRepository
     }
 
     /**
-     * @param string $client_id
-     * @return Client|null
-     * @throws \Doctrine\ORM\NonUniqueResultException
-     */
-    public function getClientByIdCacheable(string $client_id):?Client
-    {
-        return $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select("c")
-            ->from($this->getBaseEntity(), "c")
-            ->where("c.client_id = (:client_id)")
-            ->setParameter("client_id", trim($client_id))
-            ->setMaxResults(1)
-            ->getQuery()
-            ->setCacheable(true)
-            ->getOneOrNullResult();
-    }
-
-    /**
      * @param int $id
      * @return Client|null
      */

@@ -62,22 +62,4 @@ class DoctrineRefreshTokenRepository extends AbstractDoctrineOAuth2TokenReposito
     {
         return $this->findOneBy(['value' => $hashed_value]);
     }
-
-    /**
-     * @param string $hashed_value
-     * @return RefreshToken|null
-     */
-    function getByValueCacheable(string $hashed_value):?RefreshToken
-    {
-        return $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select("e")
-            ->from($this->getBaseEntity(), "e")
-            ->where("e.value = (:value)")
-            ->setParameter("value", trim($hashed_value))
-            ->setMaxResults(1)
-            ->getQuery()
-            ->setCacheable(true)
-            ->getOneOrNullResult();
-    }
 }

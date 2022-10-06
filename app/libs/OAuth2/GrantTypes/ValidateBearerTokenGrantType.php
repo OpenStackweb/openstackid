@@ -185,7 +185,7 @@ class ValidateBearerTokenGrantType extends AbstractGrantType
 
             $strategy->validate($access_token, $this->current_client);
 
-            $issued_client = $this->client_repository->getClientByIdCacheable($access_token->getClientId());
+            $issued_client = $this->client_repository->getClientById($access_token->getClientId());
 
             if (is_null($issued_client))
             {
@@ -193,7 +193,7 @@ class ValidateBearerTokenGrantType extends AbstractGrantType
                 (
                     sprintf
                     (
-                        'Access token %s does not belongs to client id %s.',
+                        'access token %s does not belongs to client id %s',
                         $token_value,
                         $access_token->getClientId()
                     )
