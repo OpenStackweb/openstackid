@@ -22,6 +22,7 @@ use jwa\cryptographic_algorithms\DigitalSignatures_MACs_Registry;
 use jwa\cryptographic_algorithms\KeyManagementAlgorithms_Registry;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
 use models\exceptions\ValidationException;
+use OAuth2\Exceptions\ScopeNotAllowedException;
 use OAuth2\Models\IClient;
 use OAuth2\Models\IClientPublicKey;
 use OAuth2\Models\JWTResponseInfo;
@@ -597,6 +598,7 @@ class Client extends BaseEntity implements IClient
     /**
      * @param string $scope
      * @return bool
+     * @throws ScopeNotAllowedException
      */
     public function isScopeAllowed(string $scope):bool
     {
@@ -610,8 +612,8 @@ class Client extends BaseEntity implements IClient
             $resource_server = !is_null($api) ? $api->getResourceServer() : null;
 
             if(is_null($activeScope) ||(!is_null($api) && !$api->isActive()) || (!is_null($resource_server) && !$resource_server->isActive())){
-                $res = false;
-                break;
+                Log::debug(sprintf("Client::isScopeAllowed client %s scope %s not allowed.", $this->client_id, $desired_scope));
+                throw new ScopeNotAllowedException($desired_scope);
             }
         }
         return $res;
