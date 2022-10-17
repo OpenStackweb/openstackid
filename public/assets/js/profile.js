@@ -32,9 +32,9 @@
                 "first_name": {required: true},
                 "last_name": {required: true},
                 "identifier": {required: true},
-                "email": {required: true, email: true},
-                "second_email": {email: true},
-                "third_email": {email: true},
+                "email": {required: true, custom_email: true},
+                "second_email": {custom_email: true},
+                "third_email": {custom_email: true},
             }
         });
 

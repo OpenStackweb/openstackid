@@ -244,7 +244,7 @@ final class RegisterController extends Controller
                 $validator->getMessageBag()->add('validation', sprintf
                 (
                     "It looks like a user with this email address already exists." .
-                    "You can either <a href='%s'>sign in</a> or <a href='%s'>reset your password</a> if you've forgotten it.",
+                    "You can either <a href=\'%s\'>sign in</a> or <a href=\'%s\'>reset your password</a> if you\'ve forgotten it.",
                     URL::action("UserController@getLogin"),
                     URL::action("Auth\ForgotPasswordController@showLinkRequestForm")
                 ));

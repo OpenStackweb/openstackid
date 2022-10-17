@@ -79,7 +79,7 @@ $(document).ready(function() {
         rules: {
             "first_name"  : {required: true},
             "last_name"   : {required: true},
-            "email"       : {required: true, email: true}
+            "email"       : {required: true, custom_email: true}
         }
     });
 
