@@ -87,6 +87,10 @@ $.validator.addMethod("dateUS", function (value, element,options) {
     return this.optional(element) || check;
 }, "Please enter a valid date.");
 
+$.validator.addMethod("custom_email", function(value, element) {
+    return /^\S+@\S+(\.\S+)*$/.test( value )
+}, "field should be a valid email.");
+
 // override jquery validate plugin defaults
 $.validator.setDefaults({
     ignore: [],

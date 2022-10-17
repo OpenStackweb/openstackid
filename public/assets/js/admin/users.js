@@ -169,7 +169,7 @@ UsersCrud.prototype.init = function () {
         rules: {
             "first_name": {required: true, free_text: true, rangelength: [1, 255]},
             "last_name": {required: true, free_text: true, rangelength: [1, 512]},
-            "email": {required: true, email: true},
+            "email": {required: true, custom_email: true},
             password: {
                 required: true,
                 minlength: 8
