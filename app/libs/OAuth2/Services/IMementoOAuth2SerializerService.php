@@ -22,20 +22,20 @@ interface IMementoOAuth2SerializerService {
      * @param OAuth2RequestMemento $memento
      * @return void
      */
-    public function serialize(OAuth2RequestMemento $memento);
+    public function serialize(OAuth2RequestMemento $memento):void;
 
     /**
-     * @return OAuth2RequestMemento
+     * @return OAuth2RequestMemento|null
      */
-    public function load();
+    public function load():?OAuth2RequestMemento;
 
     /**
      * @return void
      */
-    public function forget();
+    public function forget():void;
 
     /**
      * @return bool
      */
-    public function exists();
+    public function exists():bool;
 } 

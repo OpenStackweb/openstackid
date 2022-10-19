@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use OAuth2\Requests\OAuth2RequestMemento;
 use OAuth2\Services\IMementoOAuth2SerializerService;
 use Illuminate\Support\Facades\Session;
@@ -21,26 +23,35 @@ use Illuminate\Support\Facades\Session;
 final class OAuth2MementoSessionSerializerService implements IMementoOAuth2SerializerService
 {
 
+    const StateKey = 'oauth2.request.state';
     /**
      * @param OAuth2RequestMemento $memento
      * @return void
      */
-    public function serialize(OAuth2RequestMemento $memento)
+    public function serialize(OAuth2RequestMemento $memento):void
     {
-        $state = base64_encode(json_encode($memento->getState()));
-        Session::put('oauth2.request.state', $state);
+        $state = json_encode($memento->getState());
+        Log::debug(sprintf("OAuth2MementoSessionSerializerService::serialize state %s", $state));
+        $state = base64_encode($state);
+        Session::put(self::StateKey, $state);
         Session::save();
     }
 
     /**
      * @return OAuth2RequestMemento
      */
-    public function load()
+    public function load():?OAuth2RequestMemento
     {
-        $state = Session::get('oauth2.request.state', null);
-        if(is_null($state)) return null;
+        $state = Session::get(self::StateKey, null);
 
-        $state = json_decode( base64_decode($state), true);
+        if(is_null($state)){
+            Log::warning(sprintf("OAuth2MementoSessionSerializerService::load state is null"));
+            return null;
+        }
+
+        $state = base64_decode($state);
+        Log::debug(sprintf("OAuth2MementoSessionSerializerService::load state %s", $state));
+        $state = json_decode( $state, true);
 
         return OAuth2RequestMemento::buildFromState($state);
     }
@@ -48,17 +59,22 @@ final class OAuth2MementoSessionSerializerService implements IMementoOAuth2Seria
     /**
      * @return void
      */
-    public function forget()
+    public function forget():void
     {
-        Session::remove('oauth2.request.state');
+        Log::debug(sprintf("OAuth2MementoSessionSerializerService::forget"));
+        Session::remove(self::StateKey);
         Session::save();
     }
 
     /**
      * @return bool
      */
-    public function exists()
+    public function exists():bool
     {
-        return Session::has('oauth2.request.state');
+        $res = Session::has(self::StateKey);
+
+        Log::debug(sprintf("OAuth2MementoSessionSerializerService::exists %b", $res));
+
+        return $res;
     }
 }
