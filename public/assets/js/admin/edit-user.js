@@ -77,14 +77,13 @@ $(document).ready(function() {
     var form = $('#user-form');
     var validator = form.validate({
         rules: {
-            "first_name"  : {required: true},
-            "last_name"   : {required: true},
-            "email"       : {required: true, custom_email: true}
+            "first_name"  : { required: true },
+            "last_name"   : { required: true },
+            "email"       : { required: true, custom_email: true },
+            "second_email": { custom_email: true },
+            "third_email": { custom_email: true }
         }
     });
-
-    //$('#bio').summernote();
-    //$('#statement_of_interest').summernote();
 
     var simplemdeBio = new SimpleMDE({ element: $("#bio")[0] });
     var simplemdeStatement = new SimpleMDE({ element: $("#statement_of_interest")[0] });

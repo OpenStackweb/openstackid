@@ -40,17 +40,17 @@
 
                 <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                     <label for="email">Email</label>
-                    <input  autocomplete="off" class="form-control" type="email" name="email" id="email" value="{!! $user->email !!}" data-lpignore="true">
+                    <input  autocomplete="off" class="form-control" type="text" name="email" id="email" value="{!! $user->email !!}" data-lpignore="true">
                 </div>
                 <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                     <label for="second_email">Second Email</label>
-                    <input autocomplete="off" class="form-control" type="email" name="second_email" id="second_email" value="{!! $user->second_email !!}" data-lpignore="true">
+                    <input autocomplete="off" class="form-control" type="text" name="second_email" id="second_email" value="{!! $user->second_email !!}" data-lpignore="true">
                 </div>
                 <div class="clearfix"></div>
 
                 <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                     <label for="email">Third Email</label>
-                    <input autocomplete="off" class="form-control" type="email" name="third_email" id="third_email" value="{!! $user->third_email !!}" data-lpignore="true">
+                    <input autocomplete="off" class="form-control" type="text" name="third_email" id="third_email" value="{!! $user->third_email !!}" data-lpignore="true">
                 </div>
                 <div class="form-group col-xs-10 col-sm-4 col-md-6 col-lg-6">
                     <label for="gender">Gender</label>

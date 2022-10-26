@@ -9,7 +9,7 @@
     </div>
     <div class="form-group">
         <label for="email">Email</label>
-        <input class="form-control" autocomplete="off" type="email" name="email" id="email" data-lpignore="true">
+        <input class="form-control" autocomplete="off" type="text" name="email" id="email" data-lpignore="true">
     </div>
     <div class="form-group">
         <label for="country_iso_code">Country</label>

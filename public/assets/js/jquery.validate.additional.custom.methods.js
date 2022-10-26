@@ -88,6 +88,9 @@ $.validator.addMethod("dateUS", function (value, element,options) {
 }, "Please enter a valid date.");
 
 $.validator.addMethod("custom_email", function(value, element) {
+    if(!value) return true;
+    value = value.trim();
+    if(value == '') return true;
     return /^\S+@\S+(\.\S+)*$/.test( value )
 }, "field should be a valid email.");
 

@@ -29,12 +29,12 @@
 
         var validator = form.validate({
             rules: {
-                "first_name": {required: true},
-                "last_name": {required: true},
-                "identifier": {required: true},
-                "email": {required: true, custom_email: true},
-                "second_email": {custom_email: true},
-                "third_email": {custom_email: true},
+                "first_name": { required: true},
+                "last_name": { required: true},
+                "identifier": { required: true},
+                "email": { required: true, custom_email: true},
+                "second_email": { custom_email: true},
+                "third_email": { custom_email: true},
             }
         });
 
