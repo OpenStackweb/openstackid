@@ -66,6 +66,7 @@ use utils\factories\BasicJWTFactory;
 use Utils\Services\IAuthService;
 use Utils\Services\ICheckPointService;
 use Utils\Services\ILogService;
+use Utils\Services\IServerConfigurationService;
 
 /**
  * Class OAuth2Protocol
@@ -844,9 +845,12 @@ final class OAuth2Protocol implements IOAuth2Protocol
      */
     private $memento_service;
 
+    /**
+     * @var IServerConfigurationService
+     */
+    private $configuration_service;
 
     /**
-     * OAuth2Protocol constructor.
      * @param ILogService $log_service
      * @param IClientService $client_service
      * @param IClientRepository $client_repository
@@ -864,6 +868,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * @param IServerPrivateKeyRepository $server_private_key_repository
      * @param IClientJWKSetReader $jwk_set_reader_service
      * @param UserIPHelperProvider $ip_helper
+     * @param IServerConfigurationService $configuration_service
      */
     public function __construct
     (
@@ -883,7 +888,8 @@ final class OAuth2Protocol implements IOAuth2Protocol
         IPrincipalService $principal_service,
         IServerPrivateKeyRepository $server_private_key_repository,
         IClientJWKSetReader $jwk_set_reader_service,
-        UserIPHelperProvider $ip_helper
+        UserIPHelperProvider $ip_helper,
+        IServerConfigurationService $configuration_service
     )
     {
 
@@ -1005,6 +1011,8 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $log_service,
             $ip_helper
         );
+
+        $this->configuration_service = $configuration_service;
     }
 
     /**
@@ -1464,7 +1472,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             if (!$this->last_request instanceof OAuth2LogoutRequest) throw new InvalidOAuth2Request;
 
             $id_token_hint = $this->last_request->getIdTokenHint();
-            $client_id = null;
+            $client_id = $this->last_request->getClientId();
             $user_id = null;
             $user = null;
 
@@ -1476,11 +1484,23 @@ final class OAuth2Protocol implements IOAuth2Protocol
                     throw new InvalidOAuth2Request('invalid id_token_hint!');
                 }
 
-                $client_id = $jwt->getClaimSet()->getAudience()->getString();
+
+                $jwt_client_id = $jwt->getClaimSet()->getAudience()->getString();
+                $jwt_issuer = $jwt->getClaimSet()->getIssuer()->getString();
+                $current_issuer = $this->configuration_service->getSiteUrl();
+
+                if($jwt_issuer != $current_issuer){
+                    throw new InvalidOAuth2Request(sprintf("issuer provided on id_token_hint (%s) differs from current one %s",
+                        $jwt_issuer, $current_issuer));
+                }
                 $user_id = $jwt->getClaimSet()->getSubject();
-            }
-            if (empty($client_id)) {
-                $client_id = $this->last_request->getClientId();
+
+                if (!empty($client_id) && $client_id != $jwt_client_id) {
+                        throw new InvalidOAuth2Request(sprintf("client id provided on id_token_hint (%s) differs from current one %s",
+                            $jwt_client_id, $client_id));
+                }
+
+                $client_id = $jwt_client_id;
             }
 
             if (is_null($client_id)) {
