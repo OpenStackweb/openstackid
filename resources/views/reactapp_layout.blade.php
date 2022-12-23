@@ -13,11 +13,25 @@
         #logo a {
             background: url("{!!  Config::get('app.logo_url') !!}") no-repeat scroll left center rgba(0, 0, 0, 0);
         }
+
+        header {
+            display: flex;
+        }
+
+        header div {
+            margin-left: auto;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
-    <div id="root" />
-    @yield('scripts')
-    <span style="display: none">{!! Config::get('app.version') !!}</span>
+<header>
+    <div>
+        @yield('header_right')
+    </div>
+</header>
+<div id="root"/>
+@yield('scripts')
+<span style="display: none">{!! Config::get('app.version') !!}</span>
 </body>
 </html>

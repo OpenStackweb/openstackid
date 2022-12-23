@@ -19,6 +19,7 @@ module.exports = {
     */
     entry: {
         index: './resources/js/index.js',
+        consent: './resources/js/oauth2/consent.js',
         home: './resources/js/home/home.js',
         login: './resources/js/login/login.js',
         signup: './resources/js/signup/signup.js',
