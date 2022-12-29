@@ -163,7 +163,7 @@ class CustomValidator extends Validator
         $emails = explode(',', $value);
         $res = true;
         foreach ($emails as $email) {
-            $res = $this->validateEmail($attribute, $email);
+            $res = $this->validateEmail($attribute, $email, ["validation" => "rfc"]);
             if (!$res) {
                 break;
             }
