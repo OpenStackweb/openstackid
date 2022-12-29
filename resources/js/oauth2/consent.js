@@ -1,4 +1,4 @@
-import React, {useRef} from "react";
+import React, {useRef, useState} from "react";
 import ReactDOM from "react-dom";
 import Button from '@material-ui/core/Button';
 import Container from "@material-ui/core/Container";
@@ -12,30 +12,55 @@ import Grid from "@material-ui/core/Grid";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import Typography from "@material-ui/core/Typography";
 import Tooltip from '@material-ui/core/Tooltip';
+import {ClickAwayListener} from "@material-ui/core";
 
 import styles from "./consent.module.scss";
 
 const HtmlTooltip = withStyles((theme) => ({
     tooltip: {
-        backgroundColor: '#f5f5f9',
-        color: 'rgba(0, 0, 0, 0.87)',
-        maxWidth: 220,
-        fontSize: theme.typography.pxToRem(12),
+        backgroundColor: '#fff',
+        color: 'rgba(0, 0, 0, 0.90)',
+        maxWidth: 350,
+        fontSize: theme.typography.pxToRem(11),
         border: '1px solid #dadde9',
     },
 }))(Tooltip);
 
-const ConsentPage = ({appLogo, appName, appDescription, csrfToken, disclaimer, requestedScopes, formAction}) => {
+const ConsentPage = (
+    {
+        appLogo,
+        appName,
+        appDescription,
+        contactEmail,
+        csrfToken,
+        disclaimer,
+        formAction,
+        redirectURL,
+        requestedScopes
+    }) => {
     const formEl = useRef(null);
     const trustEl = useRef(null);
+    const [open, setOpen] = useState(false);
+    const [cancelButtonDisabled, setCancelButtonDisabled] = useState(false);
+    const [acceptButtonDisabled, setAcceptButtonDisabled] = useState(false);
+
+    const handleTooltipClose = () => {
+        setOpen(false);
+    };
+
+    const handleTooltipOpen = () => {
+        setOpen(true);
+    };
 
     const handleAccept = (e) => {
+        setAcceptButtonDisabled(true)
         trustEl.current.value = 'AllowOnce';
         formEl.current.submit();
         e.preventDefault();
     }
 
     const handleCancel = (e) => {
+        setCancelButtonDisabled(true)
         trustEl.current.value = 'DenyOnce';
         formEl.current.submit();
         e.preventDefault();
@@ -46,20 +71,40 @@ const ConsentPage = ({appLogo, appName, appDescription, csrfToken, disclaimer, r
             <CssBaseline/>
             <div className={styles.title_container}>
                 <a href={window.location.href} target='_self'>
-                    <img className={styles.app_logo} alt="appLogo" src={appLogo}/>
+                    <img className={styles.app_logo} alt="idpLogo" src={appLogo}/>
                 </a>
-                <h1>{appName}&nbsp;
-                    <HtmlTooltip
-                        arrow
-                        title={
-                            <>
-                                <Typography color="inherit">{appName}</Typography>
-                                {appDescription}
-                            </>
-                        }
-                    >
-                        <InfoOutlinedIcon/>
-                    </HtmlTooltip>
+                <h1>
+                    <a target='_blank' href={redirectURL}>{appName}</a>&nbsp;
+                    <ClickAwayListener onClickAway={handleTooltipClose}>
+                        <HtmlTooltip
+                            arrow
+                            PopperProps={{
+                                disablePortal: true,
+                            }}
+                            onClose={handleTooltipClose}
+                            open={open}
+                            disableFocusListener
+                            disableHoverListener
+                            disableTouchListener
+                            interactive
+                            title={
+                                <React.Fragment>
+                                    <Typography color="inherit">{appName}</Typography>
+                                    <hr/>
+                                    <div>{appDescription}</div>
+                                    <hr/>
+                                    {contactEmail &&
+                                        <div>Contact Email: <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.
+                                        </div>}
+                                    <div>Clicking 'Accept' will redirect you to: <a href={redirectURL}
+                                                                                    target='_blank'>{redirectURL}</a>.
+                                    </div>
+                                </React.Fragment>
+                            }
+                        >
+                            <InfoOutlinedIcon onClick={handleTooltipOpen}/>
+                        </HtmlTooltip>
+                    </ClickAwayListener>
                 </h1>
             </div>
             <Card className={styles.consent_container} variant="outlined">
@@ -110,6 +155,7 @@ const ConsentPage = ({appLogo, appName, appDescription, csrfToken, disclaimer, r
                                         className={styles.button}
                                         disableElevation
                                         type="button"
+                                        disabled={cancelButtonDisabled}
                                         onClick={handleCancel}
                                     >
                                         Cancel
@@ -123,6 +169,7 @@ const ConsentPage = ({appLogo, appName, appDescription, csrfToken, disclaimer, r
                                         className={styles.summit_button}
                                         disableElevation
                                         type="button"
+                                        disabled={acceptButtonDisabled}
                                         onClick={handleAccept}
                                     >
                                         Accept

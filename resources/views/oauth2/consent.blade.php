@@ -38,10 +38,12 @@
             csrfToken: document.head.querySelector('meta[name="csrf-token"]').content,
             userName: '{{ Session::has('username') ? Session::get('username') : ""}}',
             realm: '{{isset($identity_select) ? $realm : ""}}',
-            appName: '{{ Config::get("app.app_name") }}',
-            appDescription: '{{ str_replace(array("\n", "\r"), '', strip_tags(Config::get("app.app_info"))) }}',
-            appLogo: '{{  Config::get("app.logo_url") }}',
+            appName: '{!! $app_name !!}',
+            appDescription: '{!! $app_description !!}',
+            appLogo: '{{$app_logo ?? Config::get("app.logo_url")}}',
             formAction: '{{ URL::action("UserController@postConsent") }}',
+            contactEmail: '{!! $contact_email !!}',
+            redirectURL: '{!! $redirect_to !!}',
             disclaimer: disclaimer,
         }
 
