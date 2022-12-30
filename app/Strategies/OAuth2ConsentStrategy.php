@@ -81,16 +81,22 @@ class OAuth2ConsentStrategy implements IConsentStrategy
         $data                     = [];
         $data['requested_scopes'] = $requested_scopes;
         $data['app_name']         = $client->getApplicationName();
-        $data['redirect_to']      = $auth_request->getRedirectUri();
-        $data['website']          = $client->getWebsite();
-        $data['tos_uri']          = $client->getTermOfServiceUri();
-        $data['policy_uri']       = $client->getPolicyUri();
+        $data['redirect_to'] = $auth_request->getRedirectUri();
+        $data['website'] = $client->getWebsite();
+        $data['tos_uri'] = $client->getTermOfServiceUri();
+        $data['policy_uri'] = $client->getPolicyUri();
 
-        $app_logo                 = $client->getApplicationLogo();
+        $app_logo = $client->getApplicationLogo();
 
-        $data['app_logo']         = $app_logo;
-        $data['app_description']  = $client->getApplicationDescription();
-        $data['dev_info_email']   = $client->getDeveloperEmail();
+        $data['app_logo'] = $app_logo;
+        $data['app_description'] = $client->getApplicationDescription();
+        $data['dev_info_email'] = $client->getDeveloperEmail();
+        $data['contact_email'] = '';
+
+        $contacts = $client->getContacts();
+        if (count($contacts) > 0) {
+            $data['contact_email'] = $contacts[0];
+        }
 
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
