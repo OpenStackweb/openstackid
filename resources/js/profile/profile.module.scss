@@ -1,0 +1,46 @@
+@import "../../styles/global.scss";
+
+.main_container {
+  margin-top: 1%;
+  margin-bottom: 1%;
+  max-width: 1024px !important;
+
+  a {
+    color: $base-color-dark;
+  }
+
+  .title_container {
+    .app_logo {
+      display: flex;
+      max-width: 10%;
+      margin: auto;
+      padding-bottom: 10px;
+    }
+  }
+
+  .profile_container {
+    border: solid 1px $border-color;
+    color: $text-color-dark;
+    background-color: white;
+
+    .button {
+      width: 150px;
+      color: white;
+      background-color: $base-color-dark;
+    }
+
+    .countries, .genders, .languages {
+      height: 40px !important;
+
+      &_empty_text {
+        color: $hint-text-color;
+      }
+    }
+
+    .error_label {
+      color: #f44336;
+      font-size: 0.75rem;
+      margin: 4px 0 4px 14px;
+    }
+  }
+}

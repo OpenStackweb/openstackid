@@ -14,6 +14,7 @@
 use App\ModelSerializers\Auth\PrivateUserSerializer;
 use App\ModelSerializers\Auth\PublicGroupSerializer;
 use App\ModelSerializers\Auth\PublicUserSerializer;
+use App\ModelSerializers\Auth\UserActionSerializer;
 use App\ModelSerializers\Auth\UserRegistrationRequestSerializer;
 use App\ModelSerializers\OAuth2\AccessTokenSerializer;
 use App\ModelSerializers\OAuth2\ApiEndpointSerializer;
@@ -75,19 +76,21 @@ final class SerializerRegistry
 
         // auth mappings
         $this->registry["User"] = [
-            self::SerializerType_Public  => PublicUserSerializer::class,
+            self::SerializerType_Public => PublicUserSerializer::class,
             self::SerializerType_Private => PrivateUserSerializer::class,
         ];
+
+        $this->registry["UserAction"] = UserActionSerializer::class;
 
         $this->registry["UserRegistrationRequest"] = UserRegistrationRequestSerializer::class;
 
         $this->registry["Group"] = [
-            self::SerializerType_Public  => PublicGroupSerializer::class,
+            self::SerializerType_Public => PublicGroupSerializer::class,
             self::SerializerType_Private => PublicGroupSerializer::class,
         ];
 
         // oauth2 mappings
-        $this->registry["ResourceServer"]   = ResourceServerSerializer::class;
+        $this->registry["ResourceServer"] = ResourceServerSerializer::class;
         $this->registry["Api"]              = ApiSerializer::class;
         $this->registry["ApiScope"]         = ApiScopeSerializer::class;
         $this->registry["ApiEndpoint"]      = ApiEndpointSerializer::class;

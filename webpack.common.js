@@ -20,13 +20,14 @@ module.exports = {
     entry: {
         index: './resources/js/index.js',
         consent: './resources/js/oauth2/consent.js',
-        home: './resources/js/home/home.js',
-        login: './resources/js/login/login.js',
-        signup: './resources/js/signup/signup.js',
         emailVerification: './resources/js/email_verification/email_verification.js',
         forgotPassword: './resources/js/forgot_password/forgot_password.js',
+        home: './resources/js/home/home.js',
+        login: './resources/js/login/login.js',
+        profile: './resources/js/profile/profile.js',
         resetPassword: './resources/js/reset_password/reset_password.js',
         setPassword: './resources/js/set_password/set_password.js',
+        signup: './resources/js/signup/signup.js',
     },
     output: {
         filename: '[name].js',

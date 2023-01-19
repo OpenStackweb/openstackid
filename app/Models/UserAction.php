@@ -16,7 +16,7 @@ use Auth\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="App\Repositories\DoctrineUserActionRepository")
  * @ORM\Table(name="user_actions")
  * Class UserAction
  * @package Models
@@ -53,7 +53,7 @@ class UserAction extends BaseEntity
      */
     public function getRealm(): string
     {
-        return $this->realm;
+        return $this->realm ?? '';
     }
 
     public function hasRealm():bool

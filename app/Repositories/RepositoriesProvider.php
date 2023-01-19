@@ -32,6 +32,7 @@ use App\Models\SSO\StreamChat\StreamChatSSOProfile;
 use App\Repositories\IServerConfigurationRepository;
 use App\Repositories\IServerExtensionRepository;
 use Auth\Group;
+use Auth\Repositories\IUserActionRepository;
 use Auth\User;
 use Auth\UserPasswordResetRequest;
 use Illuminate\Contracts\Support\DeferrableProvider;
@@ -54,6 +55,7 @@ use Models\OpenId\OpenIdAssociation;
 use Models\OpenId\OpenIdTrustedSite;
 use Models\OpenId\ServerExtension;
 use Models\ServerConfiguration;
+use Models\UserAction;
 use Models\UserExceptionTrail;
 use Models\WhiteListedIP;
 use OAuth2\Repositories\IAccessTokenRepository;
@@ -262,6 +264,13 @@ final class RepositoriesProvider extends ServiceProvider implements DeferrablePr
             }
         );
 
+        App::singleton(
+            IUserActionRepository::class,
+            function () {
+                return EntityManager::getRepository(UserAction::class);
+            }
+        );
+
     }
 
     public function provides()
@@ -294,6 +303,7 @@ final class RepositoriesProvider extends ServiceProvider implements DeferrablePr
             IRocketChatSSOProfileRepository::class,
             IStreamChatSSOProfileRepository::class,
             IOAuth2OTPRepository::class,
+            IUserActionRepository::class,
         ];
     }
 }
