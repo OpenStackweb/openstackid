@@ -20,6 +20,7 @@ module.exports = {
     entry: {
         index: './resources/js/index.js',
         consent: './resources/js/oauth2/consent.js',
+        editUser: './resources/js/admin/edit_user/edit_user.js',
         emailVerification: './resources/js/email_verification/email_verification.js',
         forgotPassword: './resources/js/forgot_password/forgot_password.js',
         home: './resources/js/home/home.js',

@@ -1,7 +1,6 @@
 import request from 'superagent';
 import URI from "urijs";
 let http = request;
-import Swal from 'sweetalert2';
 
 export const createAction = type => payload => ({
     type,

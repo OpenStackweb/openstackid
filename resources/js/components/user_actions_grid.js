@@ -1,9 +1,8 @@
 import React, {useEffect, useState} from "react";
 import {DataGrid} from "@mui/x-data-grid";
-import {getUserActions, PAGE_SIZE} from "../profile/actions";
 import moment from "moment";
 
-const UserActionsGrid = () => {
+const UserActionsGrid = ({getUserActions, pageSize}) => {
     const [page, setPage] = useState(1);
     const [uaRows, setUARows] = useState([]);
     const [uaRowsCount, setUARowsCount] = useState(0);
@@ -62,8 +61,8 @@ const UserActionsGrid = () => {
                     rows={uaRows}
                     columns={uaColumns}
                     pagination
-                    pageSize={PAGE_SIZE}
-                    rowsPerPageOptions={[PAGE_SIZE]}
+                    pageSize={pageSize}
+                    rowsPerPageOptions={[pageSize]}
                     rowCount={uaRowsCount}
                     paginationMode="server"
                     onPageChange={(newPage) => setPage(newPage + 1)}
