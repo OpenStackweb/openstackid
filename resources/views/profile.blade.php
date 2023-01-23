@@ -118,15 +118,10 @@
             appLogo: '{{  Config::get("app.logo_url") }}',
             countries: countries,
             csrfToken: document.head.querySelector('meta[name="csrf-token"]').content,
-            currentCountry: '{!!$user->country_iso_code!!}',
-            currentGender: '{!! $user->gender !!}',
-            currentLanguage: '{!!$user->language!!}',
-            helpMailto: '{!! Config::get("app.help_email") !!}',
             initialValues: initialValues,
             languages: languages,
             menuConfig: menuConfig,
-            passwordPolicy: passwordPolicy,
-            tenantName: '{{ Config::get("app.tenant_name") }}'
+            passwordPolicy: passwordPolicy
         }
 
         window.GET_USER_ACTIONS_ENDPOINT = '{{URL::action("Api\UserActionApiController@getActions")}}';

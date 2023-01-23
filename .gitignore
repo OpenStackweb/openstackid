@@ -57,3 +57,9 @@ model.sql
 /public/assets/css/resetPassword.css
 /public/assets/setPassword.js
 /public/assets/css/setPassword.css
+/public/assets/css/consent.css
+/public/assets/consent.js
+/public/assets/css/editUser.css
+/public/assets/editUser.js
+/public/assets/css/profile.css
+/public/assets/profile.js

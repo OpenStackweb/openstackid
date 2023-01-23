@@ -18,9 +18,11 @@ use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserActionRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Request;
 use OAuth2\IResourceServerContext;
 use utils\Filter;
 use utils\FilterElement;
+use utils\FilterParser;
 use Utils\Services\ILogService;
 
 /**
@@ -54,6 +56,7 @@ final class UserActionApiController extends OAuth2ProtectedController
     protected function getFilterRules(): array
     {
         return [
+            'owner' => ['=='],
             'realm' => ['=@', '=='],
             'user_action' => ['=@', '=='],
             'from_ip' => ['=@', '=='],
@@ -67,6 +70,7 @@ final class UserActionApiController extends OAuth2ProtectedController
     protected function getFilterValidatorRules(): array
     {
         return [
+            'owner' => 'nullable|int',
             'realm' => 'nullable|string',
             'user_action' => 'nullable|string',
             'from_ip' => 'nullable|string',
@@ -100,9 +104,11 @@ final class UserActionApiController extends OAuth2ProtectedController
 
     protected function applyExtraFilters(Filter $filter): Filter
     {
-        $current_user = Auth::user();
-        if (!is_null($current_user))
-            $filter->addFilterCondition(FilterElement::makeEqual("owner", $current_user->getId()));
+        if (!$filter->hasFilter("owner")) {
+            $current_user = Auth::user();
+            if (!is_null($current_user))
+                $filter->addFilterCondition(FilterElement::makeEqual("owner", $current_user->getId()));
+        }
         return $filter;
     }
 

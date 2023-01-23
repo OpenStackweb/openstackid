@@ -1,13 +1,14 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useState} from "react";
 import ReactDOM from "react-dom";
+import ArrowBack from '@material-ui/icons/ArrowBack';
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Checkbox from "@material-ui/core/Checkbox";
-import DeleteIcon from '@material-ui/icons/Delete';
 import Grid from "@material-ui/core/Grid";
+import GroupsInput from "./components/groups_input";
 import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
@@ -15,34 +16,36 @@ import Select from "@material-ui/core/Select";
 import Swal from "sweetalert2";
 import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
-import {object, string, ref} from "yup";
-import RichTextEditor from "../components/rich_text_editor";
+import {object, string} from "yup";
+import RichTextEditor from "../../components/rich_text_editor";
 import {ContentState, convertFromHTML, convertToRaw} from "draft-js";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
-import UserActionsGrid from "../components/user_actions_grid";
+import UserActionsGrid from "../../components/user_actions_grid";
 import {getUserActions, PAGE_SIZE, save} from "./actions";
 import ProfileImageUploader from "./components/profile_image_uploader/profile_image_uploader";
-import Navbar from "../components/navbar/navbar";
+import Navbar from "../../components/navbar/navbar";
 import Divider from "@material-ui/core/Divider";
 import Link from "@material-ui/core/Link";
 import PasswordChangePanel from "./components/password_change_panel";
-import LoadingIndicator from "../components/loading_indicator";
+import LoadingIndicator from "../../components/loading_indicator";
 
-import styles from "./profile.module.scss";
+import styles from "./edit_user.module.scss";
 
-const ProfilePage = ({
-                         appLogo,
-                         countries,
-                         csrfToken,
-                         initialValues,
-                         languages,
-                         menuConfig,
-                         passwordPolicy,
-                         redirectUri
-                     }) => {
+const EditUserPage = ({
+                          appLogo,
+                          countries,
+                          csrfToken,
+                          fetchGroupsURL,
+                          initialValues,
+                          languages,
+                          menuConfig,
+                          passwordPolicy,
+                          usersListURL
+                      }) => {
     const [bio, setBio] = useState(null);
     const [soi, setSoi] = useState(null);
     const [pic, setPic] = useState(null);
+    const [selectedGroups, setSelectedGroups] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -81,12 +84,11 @@ const ProfilePage = ({
         });
 
     const formik = useFormik({
-        //enableReinitialize: true,
         initialValues: initialValues,
         validationSchema: buildValidationSchema(),
         onSubmit: (values) => {
             setLoading(true);
-            save({...values, pic: pic}, csrfToken).then((res) => {
+            save({...values, pic: pic, groups: selectedGroups}, csrfToken).then((res) => {
                 setLoading(false);
                 Swal("Profile saved", "Your profile has been saved successfully", "success");
             }).catch((err) => {
@@ -121,15 +123,11 @@ const ProfilePage = ({
                             justifyContent="center"
                         >
                             <Grid item>
-                                Hello, {initialValues.full_name}
-                            </Grid>
-                            <Grid item>
-                                Your OPENID: <a href={initialValues.open_id_url}>{initialValues.open_id_url}</a>
-                            </Grid>
-                            <Grid item>
-                                <Typography variant="h6">
-                                    FNid Account Settings:
-                                </Typography>
+                                <Link href={usersListURL}
+                                      title=""
+                                      target="_self">
+                                    <ArrowBack/>
+                                </Link>
                             </Grid>
                             <Divider variant="middle"/>
                             <Grid item>
@@ -465,6 +463,11 @@ const ProfilePage = ({
                                     />
                                 </Grid>
                             </Grid>
+                            <Grid item xs={12}>
+                                <GroupsInput url={fetchGroupsURL}
+                                             defaultValues={formik.values.groups}
+                                             onChange={(_, v) => setSelectedGroups(v.map(g => g.id))}/>
+                            </Grid>
                             <Grid item spacing={2} container direction="row">
                                 <Grid item xs={6}>
                                     <TextField
@@ -709,28 +712,33 @@ const ProfilePage = ({
                                 passwordPolicy={passwordPolicy}/>
                             <Grid item xs={12}>
                                 <FormControlLabel
-                                    control={<Checkbox name="public_profile_show_fullname"
-                                                       id="public_profile_show_fullname"
-                                                       checked={formik.values.public_profile_show_fullname}
+                                    control={<Checkbox name="active"
+                                                       id="active"
+                                                       checked={formik.values.active}
                                                        onChange={formik.handleChange}
                                                        color="primary"/>}
-                                    label="Show Full name on Public Profile?"
+                                    label="Is Active?"
                                 />
                                 <FormControlLabel
-                                    control={<Checkbox name="public_profile_show_email"
-                                                       id="public_profile_show_email"
-                                                       checked={formik.values.public_profile_show_email}
+                                    control={<Checkbox name="email_verified"
+                                                       id="email_verified"
+                                                       checked={formik.values.email_verified}
                                                        onChange={formik.handleChange}
                                                        color="primary"/>}
-                                    label="Show Email on Public Profile?"
+                                    label="Email Verified?"
                                 />
-                                <FormControlLabel
-                                    control={<Checkbox name="public_profile_allow_chat_with_me"
-                                                       id="public_profile_allow_chat_with_me"
-                                                       checked={formik.values.public_profile_allow_chat_with_me}
-                                                       onChange={formik.handleChange}
-                                                       color="primary"/>}
-                                    label="Allow people to chat with me?"
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    id="spam-type"
+                                    name="spam-type"
+                                    variant="outlined"
+                                    fullWidth
+                                    size="small"
+                                    label="Spam Type"
+                                    inputProps={{maxLength: 20}}
+                                    value={formik.values.spam_type}
+                                    disabled={true}
                                 />
                             </Grid>
                             <Grid item container alignItems="center" justifyContent="center">
@@ -750,77 +758,17 @@ const ProfilePage = ({
                                 </Typography>
                             </Grid>
                             <Grid item container alignItems="center" justifyContent="center">
-                                <UserActionsGrid getUserActions={getUserActions} pageSize={PAGE_SIZE}/>
+                                <UserActionsGrid getUserActions={
+                                    (page, order, orderDir, filters) =>
+                                        getUserActions(page, order, orderDir, filters, initialValues.id)
+                                } pageSize={PAGE_SIZE}/>
                             </Grid>
-                            {
-                                initialValues.trusted_sites?.length > 0 &&
-                                <>
-                                    <Divider/>
-                                    <Grid item container>
-                                        <Typography component="h1" variant="h5">
-                                            Trusted Sites
-                                        </Typography>
-                                    </Grid>
-                                    <Grid item container alignItems="center" justifyContent="center">
-                                        <Grid item spacing={2} container direction="row">
-                                            <Grid item xs={5}>
-                                                <Typography variant="subtitle1">
-                                                    Realm
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={3}>
-                                                <Typography variant="subtitle1">
-                                                    Policy
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={3}>
-                                                <Typography variant="subtitle1">
-                                                    Trusted Data
-                                                </Typography>
-                                            </Grid>
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <Divider/>
-                                        </Grid>
-                                        {
-                                            initialValues.trusted_sites.map((item, ix) =>
-                                                <Grid item spacing={2} container direction="row" key={ix}>
-                                                    <Grid item xs={5}>
-                                                        {item.realm}
-                                                    </Grid>
-                                                    <Grid item xs={3}>
-                                                        {item.auth_policy}
-                                                    </Grid>
-                                                    <Grid item xs={3}>
-                                                        {item.trusted_data}
-                                                    </Grid>
-                                                    <Grid item xs={1}>
-                                                        <Link href={item.deleteURL}
-                                                              title="Deletes a decision about a particular trusted site"
-                                                              target="_self">
-                                                            <DeleteIcon/>
-                                                        </Link>
-                                                    </Grid>
-                                                </Grid>
-                                            )
-                                        }
-                                    </Grid>
-                                </>
-                            }
                         </Grid>
                     </CardContent>
                 </Card>
                 <input type="hidden" value={csrfToken} id="_token" name="_token"/>
                 <input type="hidden" name="_method" value="PUT"/>
                 <input type="hidden" id="id" name="id" value={initialValues.id}/>
-                {redirectUri && (
-                    <input
-                        type="hidden"
-                        id="redirect_uri"
-                        name="redirect_uri"
-                        value={redirectUri}
-                    />
-                )}
             </form>
             <LoadingIndicator open={loading}/>
         </Container>
@@ -861,7 +809,7 @@ Object.assign(theme, {
 
 ReactDOM.render(
     <MuiThemeProvider theme={theme}>
-        <ProfilePage {...config} />
+        <EditUserPage {...config} />
     </MuiThemeProvider>,
     document.querySelector("#root")
 );
