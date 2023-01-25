@@ -21,6 +21,8 @@ use jwk\exceptions\InvalidJWKAlgorithm;
 use jwk\exceptions\JWKInvalidSpecException;
 use jws\exceptions\JWSInvalidJWKException;
 use jws\IJWS;
+use Models\OAuth2\Client;
+use Models\OAuth2\OAuth2OTP;
 use OAuth2\Exceptions\AccessDeniedException;
 use OAuth2\Exceptions\ConsentRequiredException;
 use OAuth2\Exceptions\InteractionRequiredException;
@@ -61,6 +63,8 @@ use utils\factories\BasicJWTFactory;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
 use phpseclib\Crypt\Random;
+use function Psy\debug;
+
 /**
  * Class InteractiveGrantType
  * @package OAuth2\GrantTypes
@@ -409,24 +413,48 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
     /**
      * @param OAuth2AuthenticationRequest $request
+     * @param Client $client
      * @throws InteractionRequiredException
      * @throws InvalidClientException
-     * @throws InvalidLoginHint
-     * @throws InvalidJWKAlgorithm
      * @throws InvalidClientType
-     * @throws ServerKeyNotFoundException
      * @throws InvalidCompactSerializationException
+     * @throws InvalidJWKAlgorithm
+     * @throws InvalidLoginHint
+     * @throws JWKInvalidSpecException
+     * @throws JWSInvalidJWKException
+     * @throws ServerKeyNotFoundException
+     * @throws \Auth\Exceptions\AuthenticationException
+     * @throws \jwa\cryptographic_algorithms\exceptions\InvalidAuthenticationTagException
+     * @throws \jwe\exceptions\JWEInvalidRecipientKeyException
+     * @throws \jwe\exceptions\JWEUnsupportedContentEncryptionAlgorithmException
+     * @throws \jwe\exceptions\JWEUnsupportedKeyManagementAlgorithmException
+     * @throws \jwk\exceptions\InvalidJWKType
+     * @throws \jws\exceptions\JWSInvalidPayloadException
+     * @throws \jws\exceptions\JWSNotSupportedAlgorithm
      */
-    protected function processUserHint(OAuth2AuthenticationRequest $request)
+    protected function processUserHint(OAuth2AuthenticationRequest $request,Client $client)
     {
         $login_hint = $request->getLoginHint();
         $token_hint = $request->getIdTokenHint();
-        $this->log_service->debug_msg("InteractiveGrantType::processUserHint");
+        $otp_login_hint = $request->getOTPLoginHint();
+
+        Log::debug(sprintf("InteractiveGrant::processUserHint request %s client %s", $request->__toString(), $client->getId()));
         // process login hint
         $user = null;
+        if(!empty($otp_login_hint) && !empty ($login_hint)
+            && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_OTP_LoginHint)){
 
-        if(!empty ($login_hint))
+            Log::debug("InteractiveGrant::processUserHint processing OTP hint...");
+            $otpClaim = OAuth2OTP::fromParams($login_hint, OAuth2Protocol::OAuth2PasswordlessConnectionInline,$otp_login_hint, $request->getScope(), );
+            $this->auth_service->loginWithOTP($otpClaim, $client, true);
+            $user = $this->auth_service->getUserByUsername($otpClaim->getUserName());
+            Log::debug(sprintf("InteractiveGrant::processUserHint processing OTP hint. got user %s (%s)", $user->getEmail(), $user->getId()));
+            $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_LoginHint);
+            $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_OTP_LoginHint);
+        }
+        else if(!empty ($login_hint) && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_LoginHint))
         {
+            Log::debug("InteractiveGrant::processUserHint processing Login hint...");
 
             if (EmailUtils::isValidEmail($login_hint))
             {
@@ -437,24 +465,11 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $user_id = $this->auth_service->unwrapUserId($login_hint);
                 $user    = $this->auth_service->getUserById($user_id);
             }
+            $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_LoginHint);
         }
         else if(!empty($token_hint))
         {
-            $this->log_service->debug_msg("InteractiveGrantType::processUserHint has token hint");
-            $client_id = $request->getClientId();
-            $client    = $this->client_repository->getClientById($client_id);
-
-            if (is_null($client))
-            {
-                throw new InvalidClientException
-                (
-                    sprintf
-                    (
-                        "client_id %s does not exists!",
-                        $client_id
-                    )
-                );
-            }
+            Log::debug("InteractiveGrant::processUserHint processing Token hint...");
 
             $jwt = BasicJWTFactory::build($token_hint);
 
@@ -519,7 +534,6 @@ abstract class InteractiveGrantType extends AbstractGrantType
             $this->auth_service->reloadSession($jti->getValue());
 
         }
-
         if(!is_null($user))
         {
             $this->log_service->debug_msg("InteractiveGrantType::processUserHint: checking principal");
@@ -530,6 +544,8 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $logged_user->getId() !== $user->getId()
             )
             {
+                $this->log_service->debug_msg(sprintf("InteractiveGrantType::processUserHint: logged user %s user %s", $logged_user->getId(), $user->getId()));
+
                 $this->auth_service->logout();
 
                 if(!$this->canInteractWithEndUser($request)) {
@@ -657,17 +673,17 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
     /**
      * @param OAuth2AuthorizationRequest $request
-     * @param IClient $client
+     * @param Client $client
      * @return bool
      * @throws LoginRequiredException
      */
-    protected function mustAuthenticateUser(OAuth2AuthorizationRequest $request, IClient $client)
+    protected function mustAuthenticateUser(OAuth2AuthorizationRequest $request, Client $client)
     {
 
         if($request instanceof OAuth2AuthenticationRequest)
         {
             try {
-                $this->processUserHint($request);
+                $this->processUserHint($request, $client);
             }
             catch (JWSInvalidJWKException $ex){
                 Log::warning($ex);

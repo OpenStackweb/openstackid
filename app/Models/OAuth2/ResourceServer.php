@@ -212,4 +212,12 @@ class ResourceServer extends BaseEntity
     public function __get($name) {
         return $this->{$name};
     }
+
+    /**
+     * @param Client $client
+     * @return bool
+     */
+    public function canImpersonateClient(Client $client):bool{
+        return true;
+    }
 }

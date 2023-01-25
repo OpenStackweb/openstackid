@@ -148,14 +148,15 @@ final class AuthService extends AbstractService implements IAuthService
     /**
      * @param OAuth2OTP $otpClaim
      * @param Client|null $client
+     * @param bool $remember
      * @return OAuth2OTP|null
-     * @throws AuthenticationException
+     * @throws Exception
      */
-    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null): ?OAuth2OTP{
+    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP{
 
         Log::debug(sprintf("AuthService::loginWithOTP otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
 
-        $otp = $this->tx_service->transaction(function() use($otpClaim, $client){
+        $otp = $this->tx_service->transaction(function() use($otpClaim, $client, $remember){
 
             // find latest db OTP by connection , by username (email/phone) number and client not redeemed
             $otp = $this->otp_repository->getLatestByConnectionAndUserNameNotRedeemed
@@ -184,7 +185,7 @@ final class AuthService extends AbstractService implements IAuthService
             return $otp;
         });
 
-        return $this->tx_service->transaction(function() use($otp, $otpClaim, $client){
+        return $this->tx_service->transaction(function() use($otp, $otpClaim, $client, $remember){
 
             if (!$otp->isAlive()) {
                 throw new AuthenticationException("OTP is expired.");
@@ -247,7 +248,7 @@ final class AuthService extends AbstractService implements IAuthService
                 }
             }
 
-            Auth::login($user, false);
+            Auth::login($user, $remember);
 
             return $otp;
         });
@@ -255,6 +256,7 @@ final class AuthService extends AbstractService implements IAuthService
 
     public function logout()
     {
+        Log::debug("AuthService::logout");
         $this->invalidateSession();
         Auth::logout();
         $this->principal_service->clear();
