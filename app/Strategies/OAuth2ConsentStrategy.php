@@ -91,17 +91,11 @@ class OAuth2ConsentStrategy implements IConsentStrategy
         $data['app_logo'] = $app_logo;
         $data['app_description'] = $client->getApplicationDescription();
         $data['dev_info_email'] = $client->getDeveloperEmail();
-        $data['contact_email'] = '';
-
-        $contacts = $client->getContacts();
-        if (count($contacts) > 0) {
-            $data['contact_email'] = $contacts[0];
-        }
+        $data['contact_emails'] = $client->getContacts();
 
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
         return $response_strategy->getConsentResponse($data);
-
     }
 
     public function postConsent($trust_action)
