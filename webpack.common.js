@@ -36,11 +36,23 @@ module.exports = {
         publicPath: '/assets/',
         pathinfo: false
     },
-    node: {
-        fs: 'empty',
-        child_process: 'empty',
-        tls: 'empty',
-        net: 'empty',
+    resolve: {
+        fallback: {
+            "fs" : false,
+            "crypto" : false,
+            path: false,
+            stream: false,
+            buffer: false,
+            http: false,
+            os: false,
+            zlib:false,
+            https: false,
+            url:false,
+            assert:false,
+            tls: false,
+            net:false,
+            child_process: false
+        }
     },
     plugins: [
         new webpack.ProvidePlugin({
@@ -95,16 +107,17 @@ module.exports = {
                 use: [MiniCssExtractPlugin.loader, "css-loader"]
             },
             {
+                test: /\.less/,
+                use: [MiniCssExtractPlugin.loader, "css-loader", "less-loader"]
+            },
+            {
                 test: /\.module\.scss/,
                 use: [
                     MiniCssExtractPlugin.loader,
                     {
                         loader: 'css-loader',
                         options: {
-                            modules: {
-                                localIdentName: "[local]___[hash:base64:5]",
-                                hashPrefix: 'schedule-filter-widget',
-                            },
+                            modules: true,
                             sourceMap: false
                         }
                     },
@@ -119,29 +132,23 @@ module.exports = {
             {
                 test: /\.scss/,
                 exclude: /\.module\.scss/,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    // Translates CSS into CommonJS
-                    "css-loader",
-                    // Compiles Sass to CSS
-                    "sass-loader",
-                ],
+                use: [MiniCssExtractPlugin.loader, "css-loader", 'sass-loader'],
             },
             {
                 test: /\.(ttf|eot)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-                use: "file-loader?name=fonts/[name].[ext]"
+                type: "asset/resource"
             },
             {
                 test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-                use: "url-loader?limit=10000&minetype=application/font-woff&name=fonts/[name].[ext]"
+                type: "asset/resource"
             },
             {
                 test: /\.svg/,
-                use: "file-loader?name=svg/[name].[ext]!svgo-loader"
+                type: "asset/resource"
             },
             {
                 test: /\.jpg|\.png|\.gif$/,
-                use: "file-loader?name=images/[name].[ext]"
+                type: "asset/resource"
             },
         ]
     }

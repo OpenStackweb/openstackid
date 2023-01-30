@@ -63,3 +63,8 @@ model.sql
 /public/assets/editUser.js
 /public/assets/css/profile.css
 /public/assets/profile.js
+/public/assets/*.svg
+/public/assets/*.ttf
+/public/assets/*.woff2
+/public/assets/*.png
+/public/assets/*.txt
