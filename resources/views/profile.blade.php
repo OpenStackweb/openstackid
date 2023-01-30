@@ -24,7 +24,7 @@
         const initialValues = {
             address1: '{!! $user->address1 ?? '' !!}',
             address2: '{!! $user->address2 ?? '' !!}',
-            bio: '{!! $user->bio ?? '' !!}',
+            bio: '',
             birthday: '{!! $user->birthday != null ? $user->birthday->format("Y-m-d") : '' !!}',
             city: '{!! $user->city ?? '' !!}',
             company: '{!! $user->company ?? '' !!}',

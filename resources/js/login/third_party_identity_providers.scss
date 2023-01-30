@@ -16,7 +16,7 @@ $okta_fore_color:#00297a;
 }
 .facebook:before {
   border-right: #364e92 1px solid !important;
-  background: url('/assets/img/third_party_identity_providers/icon_facebook.png') 6px 6px no-repeat !important;
+  background: url('../../../public/assets/img/third_party_identity_providers/icon_facebook.png') 6px 6px no-repeat !important;
 }
 
 .apple{
@@ -25,11 +25,11 @@ $okta_fore_color:#00297a;
 
 .apple:before {
   border-right: #000001 1px solid !important;
-  background: url('/assets/img/third_party_identity_providers/icon_apple.png') 6px 6px no-repeat !important;
+  background: url('../../../public/assets/img/third_party_identity_providers/icon_apple.png') 6px 6px no-repeat !important;
 }
 .google:before {
   border-right: #BB3F30 1px solid;
-  background: url('/assets/img/third_party_identity_providers/icon_google.png') 6px 6px no-repeat;
+  background: url('../../../public/assets/img/third_party_identity_providers/icon_google.png') 6px 6px no-repeat;
 }
 
 .google {
@@ -43,7 +43,7 @@ $okta_fore_color:#00297a;
 
 .google:before {
   border-right: #BB3F30 1px solid;
-  background: url('/assets/img/third_party_identity_providers/icon_google.png') 6px 6px no-repeat;
+  background: url('../../../public/assets/img/third_party_identity_providers/icon_google.png') 6px 6px no-repeat;
 }
 
 .linkedin{
@@ -58,7 +58,7 @@ $okta_fore_color:#00297a;
 
 .linkedin:before {
   border-right: #4864B1 1px solid;
-  background: url('/assets/img/third_party_identity_providers/icon_linkedin.png') 6px 6px no-repeat;
+  background: url('../../../public/assets/img/third_party_identity_providers/icon_linkedin.png') 6px 6px no-repeat;
 }
 
 .okta{
@@ -74,5 +74,5 @@ $okta_fore_color:#00297a;
 
 .okta:before {
   top: -3px !important;
-  background: url('/assets/img/third_party_identity_providers/icon_okta.png') 6px 6px no-repeat !important;
+  background: url('../../../public/assets/img/third_party_identity_providers/icon_okta.png') 6px 6px no-repeat !important;
 }
