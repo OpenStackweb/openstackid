@@ -65,6 +65,8 @@ model.sql
 /public/assets/profile.js
 /public/assets/*.svg
 /public/assets/*.ttf
+/public/assets/*.eot
 /public/assets/*.woff2
+/public/assets/*.woff
 /public/assets/*.png
 /public/assets/*.txt

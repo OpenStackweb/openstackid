@@ -22,7 +22,7 @@ function UsersCrud(urls, perPage) {
                 'td.user-fname': 'user.first_name',
                 'td.user-lname': 'user.last_name',
                 'td.user-email': function(arg){
-                    return arg.item.email.replace("<","").replace(">", "");
+                    return arg.item.email ? arg.item.email.replace("<","").replace(">", "") : 'TBD';
                 },
                 'td.user-spam-type': 'user.spam_type',
                 'td.user-last-login': function (arg) {
