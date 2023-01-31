@@ -3154,7 +3154,6 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertTrue(array_key_exists('id_token', $output));
         $this->assertTrue(!empty($output['id_token']));
 
-
         $params = array
         (
             'code' => $output['code'],

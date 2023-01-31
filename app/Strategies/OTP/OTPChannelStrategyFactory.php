@@ -25,6 +25,8 @@ final class OTPChannelStrategyFactory
         switch($connection){
             case OAuth2Protocol::OAuth2PasswordlessConnectionEmail:
                 return new OTPChannelEmailStrategy();
+            case OAuth2Protocol::OAuth2PasswordlessConnectionInline:
+                return new OTPChannelNullStrategy();
         }
         throw new InvalidOAuth2Request(sprintf("connection value %s is not valid", $connection));
     }

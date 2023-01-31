@@ -13,6 +13,7 @@
  **/
 
 use App\libs\Auth\SocialLoginProviders;
+use Illuminate\Support\Facades\Log;
 use Utils\IPHelper;
 use Services\IUserActionService;
 use Utils\Services\IAuthService;
@@ -45,6 +46,8 @@ class DefaultLoginStrategy implements ILoginStrategy
 
     public function getLogin()
     {
+        Log::debug(sprintf("DefaultLoginStrategy::getLogin"));
+
         if (Auth::guest())
             return View::make("auth.login", [
                 'supported_providers' => SocialLoginProviders::buildSupportedProviders()

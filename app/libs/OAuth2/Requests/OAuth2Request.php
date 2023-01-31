@@ -41,13 +41,18 @@ abstract class OAuth2Request {
     }
 
     /**
-     * @param string $param
-     * @return null
+     * @param $param
+     * @param bool $decode
+     * @return mixed|string|null
      */
-    public function getParam($param)
+    public function getParam($param, bool $decode = true)
     {
         $value =  $this->message->getParam($param);
-        if(!empty($value)) $value = trim(urldecode($value));
+        if(!empty($value)) {
+            if($decode)
+                $value = urldecode($value);
+            $value = trim($value);
+        }
         return $value;
     }
 

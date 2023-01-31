@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
@@ -65,6 +67,8 @@ class OAuth2ConsentStrategy implements IConsentStrategy
 
     public function getConsent()
     {
+        Log::debug("OAuth2ConsentStrategy::getConsent");
+
         $auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build
         (
             OAuth2Message::buildFromMemento
@@ -72,6 +76,9 @@ class OAuth2ConsentStrategy implements IConsentStrategy
                 $this->memento_service->load()
             )
         );
+
+        Log::debug(sprintf("OAuth2ConsentStrategy::getConsent auth request %s", $auth_request->__toString()));
+
 
         $client_id                = $auth_request->getClientId();
         $client                   = $this->client_repository->getClientById($client_id);

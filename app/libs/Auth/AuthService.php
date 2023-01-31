@@ -27,6 +27,7 @@ use Models\OAuth2\OAuth2OTP;
 use OAuth2\Exceptions\InvalidOTPException;
 use OAuth2\Models\IClient;
 use OAuth2\Services\IPrincipalService;
+use OAuth2\Services\ISecurityContextService;
 use OpenId\Services\IUserService;
 use App\Services\Auth\IUserService as IAuthUserService;
 use utils\Base64UrlRepresentation;
@@ -73,6 +74,11 @@ final class AuthService extends AbstractService implements IAuthService
     private $otp_repository;
 
     /**
+     * @var ISecurityContextService
+     */
+    private $security_context_service;
+
+    /**
      * AuthService constructor.
      * @param IUserRepository $user_repository
      * @param IOAuth2OTPRepository $otp_repository
@@ -80,6 +86,7 @@ final class AuthService extends AbstractService implements IAuthService
      * @param IUserService $user_service
      * @param ICacheService $cache_service
      * @param IAuthUserService $auth_user_service
+     * @params ISecurityContextService $security_context_service
      * @param ITransactionService $tx_service
      */
     public function __construct
@@ -90,6 +97,7 @@ final class AuthService extends AbstractService implements IAuthService
         IUserService $user_service,
         ICacheService $cache_service,
         IAuthUserService $auth_user_service,
+        ISecurityContextService $security_context_service,
         ITransactionService $tx_service
     )
     {
@@ -100,6 +108,7 @@ final class AuthService extends AbstractService implements IAuthService
         $this->cache_service = $cache_service;
         $this->auth_user_service = $auth_user_service;
         $this->otp_repository = $otp_repository;
+        $this->security_context_service = $security_context_service;
     }
 
     /**
@@ -148,14 +157,15 @@ final class AuthService extends AbstractService implements IAuthService
     /**
      * @param OAuth2OTP $otpClaim
      * @param Client|null $client
+     * @param bool $remember
      * @return OAuth2OTP|null
-     * @throws AuthenticationException
+     * @throws Exception
      */
-    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null): ?OAuth2OTP{
+    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP{
 
         Log::debug(sprintf("AuthService::loginWithOTP otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
 
-        $otp = $this->tx_service->transaction(function() use($otpClaim, $client){
+        $otp = $this->tx_service->transaction(function() use($otpClaim, $client, $remember){
 
             // find latest db OTP by connection , by username (email/phone) number and client not redeemed
             $otp = $this->otp_repository->getLatestByConnectionAndUserNameNotRedeemed
@@ -184,7 +194,7 @@ final class AuthService extends AbstractService implements IAuthService
             return $otp;
         });
 
-        return $this->tx_service->transaction(function() use($otp, $otpClaim, $client){
+        return $this->tx_service->transaction(function() use($otp, $otpClaim, $client, $remember){
 
             if (!$otp->isAlive()) {
                 throw new AuthenticationException("OTP is expired.");
@@ -247,7 +257,7 @@ final class AuthService extends AbstractService implements IAuthService
                 }
             }
 
-            Auth::login($user, false);
+            Auth::login($user, $remember);
 
             return $otp;
         });
@@ -255,9 +265,11 @@ final class AuthService extends AbstractService implements IAuthService
 
     public function logout()
     {
+        Log::debug("AuthService::logout");
         $this->invalidateSession();
-        Auth::logout();
         $this->principal_service->clear();
+        $this->security_context_service->clear();
+        Auth::logout();
         // put in past
         Cookie::queue
         (

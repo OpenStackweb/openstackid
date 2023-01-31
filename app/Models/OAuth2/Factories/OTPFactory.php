@@ -50,6 +50,12 @@ final class OTPFactory
         $otp = new OAuth2OTP($length, $lifetime);
         $otp->setConnection($request->getConnection());
         $otp->setSend($request->getSend());
+
+        // if its inline the OTP lives forever
+        if($otp->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
+            $lifetime = 0 ;
+        }
+
         $otp->setLifetime($lifetime);
         $otp->setNonce($request->getNonce());
         $otp->setRedirectUrl($request->getRedirectUri());
@@ -96,6 +102,12 @@ final class OTPFactory
         $otp->setConnection($payload[OAuth2Protocol::OAuth2PasswordlessConnection]);
         $otp->setSend($payload[OAuth2Protocol::OAuth2PasswordlessSend]);
         $otp->setScope($payload[OAuth2Protocol::OAuth2Protocol_Scope] ?? null);
+
+        // if its inline the OTP lives forever
+        if($otp->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
+            $lifetime = 0 ;
+        }
+
         $otp->setLifetime($lifetime);
         $otp->setNonce($payload[OAuth2Protocol::OAuth2Protocol_Nonce] ?? null);
         $otp->setRedirectUrl($payload[OAuth2Protocol::OAuth2Protocol_RedirectUri] ?? null);

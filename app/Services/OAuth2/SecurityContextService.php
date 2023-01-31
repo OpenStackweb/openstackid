@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use OAuth2\Models\SecurityContext;
 use OAuth2\Services\ISecurityContextService;
 use Illuminate\Support\Facades\Session;
@@ -28,6 +30,8 @@ final class SecurityContextService implements ISecurityContextService
      */
     public function get()
     {
+        Log::debug("SecurityContextService::get");
+
         $context = new SecurityContext;
 
         $context->setState
@@ -48,6 +52,7 @@ final class SecurityContextService implements ISecurityContextService
      */
     public function save(SecurityContext $security_context)
     {
+        Log::debug("SecurityContextService::save");
         Session::put(self::RequestedUserIdParam, $security_context->getRequestedUserId());
         Session::put(self::RequestedAuthTime, $security_context->isAuthTimeRequired());
         Session::save();
@@ -59,6 +64,7 @@ final class SecurityContextService implements ISecurityContextService
      */
     public function clear()
     {
+        Log::debug("SecurityContextService::clear");
         Session::remove(self::RequestedUserIdParam);
         Session::remove(self::RequestedAuthTime);
         Session::save();
