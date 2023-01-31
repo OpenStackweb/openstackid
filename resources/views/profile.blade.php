@@ -24,7 +24,7 @@
         const initialValues = {
             address1: '{!! $user->address1 ?? '' !!}',
             address2: '{!! $user->address2 ?? '' !!}',
-            bio: '',
+            bio: {!! json_encode($user->bio) !!},
             birthday: '{!! $user->birthday != null ? $user->birthday->format("Y-m-d") : '' !!}',
             city: '{!! $user->city ?? '' !!}',
             company: '{!! $user->company ?? '' !!}',
@@ -56,7 +56,7 @@
             public_profile_show_photo: parseInt('{!! $user->public_profile_show_photo !!}') === 1 ? true : false,
             second_email: '{!! $user->second_email ?? '' !!}',
             state: '{!! $user->state ?? '' !!}',
-            statement_of_interest: '{!! $user->statement_of_interest ?? ''  !!}',
+            statement_of_interest: {!! json_encode($user->statement_of_interest) !!},
             third_email: '{!! $user->third_email ?? '' !!}',
             trusted_sites: trustedSites,
             twitter_name: '{!! $user->twitter_name ?? '' !!}',

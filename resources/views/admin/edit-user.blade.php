@@ -18,7 +18,7 @@
         const initialValues = {
             address1: '{!! $user->address1 ?? '' !!}',
             address2: '{!! $user->address2 ?? '' !!}',
-            bio: '{!! $user->bio ?? '' !!}',
+            bio: {!! json_encode($user->bio) !!},
             birthday: '{!! $user->birthday != null ? $user->birthday->format("Y-m-d") : '' !!}',
             city: '{!! $user->city ?? '' !!}',
             company: '{!! $user->company ?? '' !!}',
@@ -49,7 +49,7 @@
             second_email: '{!! $user->second_email ?? '' !!}',
             spam_type: '{!! $user->spam_type ?? '' !!}',
             state: '{!! $user->state ?? '' !!}',
-            statement_of_interest: '{!! $user->statement_of_interest ?? ''  !!}',
+            statement_of_interest: {!! json_encode($user->statement_of_interest) !!},
             third_email: '{!! $user->third_email ?? '' !!}',
             twitter_name: '{!! $user->twitter_name ?? '' !!}',
             wechat_user: '{!! $user->wechat_user ?? '' !!}',

@@ -1,35 +1,39 @@
-import React from 'react';
-import MUIRichTextEditor from 'mui-rte';
-import {stateToHTML} from 'draft-js-export-html';
+import React, {useCallback} from 'react';
 import debounce from 'lodash.debounce';
+import SimpleMDE from "react-simplemde-editor";
+import "easymde/dist/easymde.min.css";
+
 
 const RichTextEditor = ({rteRef, rteProps, value, onChange}) => {
     let handleChangeDebounce;
 
-    const handleChange = (state) => {
+    const handleChange = useCallback((value) => {
         if (handleChangeDebounce) handleChangeDebounce.cancel()
         handleChangeDebounce = debounce(() => {
-            const html = stateToHTML(state.getCurrentContent());
-            onChange(html);
+            onChange(value);
         }, 300);
         handleChangeDebounce();
-    }
+    }, []);
 
     return (
-        <MUIRichTextEditor
-            controls={[
-                'bold',
-                'italic',
-                'underline',
-                'bulletList',
-                'numberList',
-                'undo',
-                'redo',
-                'clear'
-            ]}
+        // <MUIRichTextEditor
+        //     controls={[
+        //         'bold',
+        //         'italic',
+        //         'underline',
+        //         'bulletList',
+        //         'numberList',
+        //         'undo',
+        //         'redo',
+        //         'clear'
+        //     ]}
+        //     value={value}
+        //     {...rteProps}
+        //     ref={rteRef}
+        //     onChange={handleChange}
+        // />
+        <SimpleMDE
             value={value}
-            {...rteProps}
-            ref={rteRef}
             onChange={handleChange}
         />
     )

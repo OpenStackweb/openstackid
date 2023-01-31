@@ -18,7 +18,6 @@ import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
 import {object, string} from "yup";
 import RichTextEditor from "../../components/rich_text_editor";
-import {ContentState, convertFromHTML, convertToRaw} from "draft-js";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import UserActionsGrid from "../../components/user_actions_grid";
 import {getUserActions, PAGE_SIZE, save} from "./actions";
@@ -42,21 +41,9 @@ const EditUserPage = ({
                           passwordPolicy,
                           usersListURL
                       }) => {
-    const [bio, setBio] = useState(null);
-    const [soi, setSoi] = useState(null);
     const [pic, setPic] = useState(null);
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        const bioHTML = convertFromHTML(initialValues.bio);
-        const bioState = ContentState.createFromBlockArray(bioHTML.contentBlocks, bioHTML.entityMap);
-        setBio(JSON.stringify(convertToRaw(bioState)));
-
-        const soiHTML = convertFromHTML(initialValues.statement_of_interest);
-        const soiState = ContentState.createFromBlockArray(soiHTML.contentBlocks, soiHTML.entityMap);
-        setSoi(JSON.stringify(convertToRaw(soiState)));
-    }, []);
 
     const buildValidationSchema = () =>
         object({
@@ -339,7 +326,7 @@ const EditUserPage = ({
                                     <RichTextEditor
                                         id="bio"
                                         name="bio"
-                                        value={bio}
+                                        value={formik.values.bio}
                                         onChange={(content) => formik.setFieldValue('bio', content)}
                                     />
                                 </Grid>
@@ -354,7 +341,7 @@ const EditUserPage = ({
                                     <RichTextEditor
                                         id="statement_of_interest"
                                         name="statement_of_interest"
-                                        value={soi}
+                                        value={formik.values.statement_of_interest}
                                         onChange={(content) => formik.setFieldValue('statement_of_interest', content)}
                                     />
                                 </Grid>
