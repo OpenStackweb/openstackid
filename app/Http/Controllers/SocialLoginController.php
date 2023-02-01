@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
 use models\exceptions\ValidationException;
+use OAuth2\Services\IMementoOAuth2SerializerService;
 use Strategies\ILoginStrategy;
 use Strategies\ILoginStrategyFactory;
 use Utils\Services\IAuthService;
@@ -43,18 +44,26 @@ final class SocialLoginController extends Controller
     private $login_strategy;
 
     /**
+     * @var IMementoOAuth2SerializerService
+     */
+    private $memento_service;
+
+    /**
      * SocialLoginController constructor.
      * @param IAuthService $auth_service
      * @param IUserService $user_service
+     * @param IMementoOAuth2SerializerService $memento_service
      * @param ILoginStrategyFactory $login_strategy_factory
      */
     public function __construct(
         IAuthService $auth_service,
         IUserService $user_service,
+        IMementoOAuth2SerializerService $memento_service,
         ILoginStrategyFactory $login_strategy_factory
     ){
         $this->auth_service = $auth_service;
         $this->user_service = $user_service;
+        $this->memento_service = $memento_service;
         $this->middleware(function ($request, $next) use($login_strategy_factory){
             // we do it here just to ensure that user session is loaded
             Log::debug(sprintf("SocialLoginController::middleware"));
@@ -117,6 +126,11 @@ final class SocialLoginController extends Controller
                         $social_user->getNickname()
                     )
                 );
+                // special facebook case
+                // @see https://developers.facebook.com/docs/facebook-login/guides/advanced/re-authentication
+                if($provider === 'facebook'){
+                    return Socialite::driver($provider)->reRequest()->redirect();
+                }
                 throw new ValidationException("User email is null");
             }
 
@@ -145,6 +159,7 @@ final class SocialLoginController extends Controller
             return $this->login_strategy->postLogin([ 'provider'=> $provider ]);
         }
         catch (\Exception $ex){
+
             Log::error($ex);
         }
         return view("auth.social_login_error");
