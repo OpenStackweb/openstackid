@@ -22,46 +22,25 @@
         @endforeach
 
         const initialValues = {
-            address1: '{!! $user->address1 ?? '' !!}',
-            address2: '{!! $user->address2 ?? '' !!}',
-            bio: {!! json_encode($user->bio) !!},
-            birthday: '{!! $user->birthday != null ? $user->birthday->format("Y-m-d") : '' !!}',
-            city: '{!! $user->city ?? '' !!}',
-            company: '{!! $user->company ?? '' !!}',
-            country_iso_code: '{!! $user->country_iso_code ?? '' !!}',
-            current_language: '{!!$user->language ?? '' !!}',
-            email: '{!! $user->email ?? '' !!}',
-            first_name: '{!! $user->first_name ?? '' !!}',
-            full_name: '{!! $user->fullname ?? '' !!}',
-            gender: '{!! $user->gender ?? '' !!}',
-            gender_specify: '{!! $user->gender_specify ?? '' !!}',
-            github_user: '{!! $user->github_user ?? '' !!}',
+            ...{!! $user !!},
             has_password_set: parseInt('{{ Auth::user()->hasPasswordSet() }}') === 1 ? true : false,
-            id: '{!! $user->id !!}',
-            identifier: '{!! $user->identifier ?? '' !!}',
-            irc: '{!! $user->irc ?? '' !!}',
-            job_title: '{!! $user->job_title ?? '' !!}',
-            language: '{!! $user->language ?? '' !!}',
-            last_name: '{!! $user->last_name ?? '' !!}',
-            linked_in_profile: '{!! $user->linked_in_profile ?? '' !!}',
-            open_id_url: "{!! str_replace("%23","#",$openid_url) !!}",
             password: '',
             password_confirmation: '',
-            phone_number: '{!! $user->phone_number ?? '' !!}',
-            pic_url: '{!! $user->pic ?? '' !!}',
-            post_code: '{!! $user->post_code ?? '' !!}',
-            public_profile_allow_chat_with_me: parseInt('{!! $user->public_profile_allow_chat_with_me !!}') === 1 ? true : false,
-            public_profile_show_email: parseInt('{!! $user->public_profile_show_email !!}') === 1 ? true : false,
-            public_profile_show_fullname: parseInt('{!! $user->public_profile_show_fullname !!}') === 1 ? true : false,
-            public_profile_show_photo: parseInt('{!! $user->public_profile_show_photo !!}') === 1 ? true : false,
-            second_email: '{!! $user->second_email ?? '' !!}',
-            state: '{!! $user->state ?? '' !!}',
-            statement_of_interest: {!! json_encode($user->statement_of_interest) !!},
-            third_email: '{!! $user->third_email ?? '' !!}',
+            openid_url: "{!! str_replace("%23","#",$openid_url) !!}",
             trusted_sites: trustedSites,
-            twitter_name: '{!! $user->twitter_name ?? '' !!}',
-            wechat_user: '{!! $user->wechat_user ?? '' !!}',
+        };
+
+        if (initialValues.birthday) {
+            const birthday = new Date(0);
+            birthday.setUTCSeconds(initialValues.birthday);
+            initialValues.birthday = birthday.toJSON().slice(0, 10)
         }
+
+        delete initialValues.groups
+
+        Object.keys(initialValues).map(
+            (key) => (initialValues[key] === null) ? initialValues[key] = '' : initialValues[key]
+        );
 
         const menuConfig = {
             apiScopesAdminURL: '{!!URL::action("AdminController@listApiScopeGroups")!!}',

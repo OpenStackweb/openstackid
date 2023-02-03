@@ -26,9 +26,14 @@
     <script>
 
         let scopes = [];
+        let contactEmails = [];
 
         @foreach($requested_scopes as $scope)
         scopes.push('{!! $scope->getShortDescription() !!}');
+        @endforeach
+
+        @foreach($contact_emails as $contact_email)
+        contactEmails.push('{!! $contact_email !!}');
         @endforeach
 
         const disclaimer = '<p class="privacy-policy">** <b>{!!$app_name!!}</b> Application and <b>{!! Config::get('app.tenant_name') !!}</b> will use this information in accordance with their respective <a target="_blank" href="{!!$tos_uri!!}">terms of service</a> and <a target="_blank" href="{!!$policy_uri!!}">privacy policies</a>.</p>';
@@ -42,7 +47,7 @@
             appDescription: '{!! $app_description !!}',
             appLogo: '{{$app_logo ?? Config::get("app.logo_url")}}',
             formAction: '{{ URL::action("UserController@postConsent") }}',
-            contactEmail: '{!! $contact_email !!}',
+            contactEmails: contactEmails,
             redirectURL: '{!! $redirect_to !!}',
             disclaimer: disclaimer,
         }

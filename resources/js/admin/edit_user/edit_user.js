@@ -16,7 +16,7 @@ import Select from "@material-ui/core/Select";
 import Swal from "sweetalert2";
 import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
-import {object, string} from "yup";
+import {object, ref, string} from "yup";
 import RichTextEditor from "../../components/rich_text_editor";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import UserActionsGrid from "../../components/user_actions_grid";
@@ -45,30 +45,32 @@ const EditUserPage = ({
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const buildValidationSchema = () =>
-        object({
-            first_name: string("Enter your first name").required(
+    const buildValidationSchema = () => {
+        return object({
+            first_name: string("First name is required").required(
                 "First name is required"
             ),
-            last_name: string("Enter your last name").required(
+            last_name: string("Last name is required").required(
                 "Last name is required"
             ),
-            birthday: string("Enter your birthday").required(
-                "Birthday is required"
-            ),
-            email: string("Enter your email")
+            email: string("Email is required")
                 .email("Enter a valid email")
                 .required("Email is required"),
-            country_iso_code: string("Select a country").required(
-                "Country is required"
-            ),
-            gender: string("Select a gender").required(
-                "Gender is required"
-            ),
-            language: string("Select a language").required(
-                "Language is required"
-            ),
+            second_email: string("Enter a valid email")
+                .email("Enter a valid email"),
+            third_email: string("Email is required")
+                .email("Enter a valid email"),
+            password: string()
+                .min(passwordPolicy.min_length, `Password must be at least ${passwordPolicy.min_length} characters`)
+                .max(passwordPolicy.max_length, `Password must be at most ${passwordPolicy.max_length} characters`)
+                .matches(
+                    /^(?=.*[a-z])(?=.*[!@#$%^&*])/,
+                    "Password must include a special character"
+                ),
+            password_confirmation: string()
+                .oneOf([ref('password'), null], 'Passwords must match')
         });
+    }
 
     const formik = useFormik({
         initialValues: initialValues,
@@ -77,10 +79,9 @@ const EditUserPage = ({
             setLoading(true);
             save({...values, pic: pic, groups: selectedGroups}, csrfToken).then((res) => {
                 setLoading(false);
-                Swal("Profile saved", "Your profile has been saved successfully", "success");
+                Swal("User saved", "The user has been saved successfully", "success");
             }).catch((err) => {
                 setLoading(false);
-                console.log('err', err);
                 Swal("Something went wrong!", null, "error");
             });
         },
@@ -118,7 +119,7 @@ const EditUserPage = ({
                             </Grid>
                             <Divider variant="middle"/>
                             <Grid item>
-                                <ProfileImageUploader userPicURL={initialValues.pic_url}
+                                <ProfileImageUploader userPicURL={initialValues.pic}
                                                       onFileSelected={(file) => setPic(file)}/>
                             </Grid>
                             <Grid item spacing={2} container direction="row">
@@ -190,7 +191,7 @@ const EditUserPage = ({
                                         size="small"
                                         label="Identifier"
                                         inputProps={{maxLength: 100}}
-                                        value={formik.values.last_name}
+                                        value={formik.values.identifier}
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.identifier &&
@@ -694,7 +695,7 @@ const EditUserPage = ({
                                 </Grid>
                             </Grid>
                             <PasswordChangePanel
-                                hasPasswordSet={initialValues.has_password_set}
+                                hasPasswordSet={false}
                                 formik={formik}
                                 passwordPolicy={passwordPolicy}/>
                             <Grid item xs={12}>

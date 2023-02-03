@@ -71,7 +71,9 @@ export const save = async (values, token) => {
     values.public_profile_allow_chat_with_me = values.public_profile_allow_chat_with_me ? 1 : 0;
     values.active = values.active ? 1 : 0;
     values.email_verified = values.email_verified ? 1 : 0;
-    values.birthday = moment(`${values.birthday} 12:00`).unix();
+    if (values.birthday) {
+        values.birthday = moment(`${values.birthday} 12:00`).unix();
+    }
     values['groups[]'] = values.groups
 
     return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(values, {'X-CSRF-TOKEN': token});

@@ -31,7 +31,7 @@ const ConsentPage = (
         appLogo,
         appName,
         appDescription,
-        contactEmail,
+        contactEmails,
         csrfToken,
         disclaimer,
         formAction,
@@ -93,8 +93,13 @@ const ConsentPage = (
                                     <hr/>
                                     <div>{appDescription}</div>
                                     <hr/>
-                                    {contactEmail &&
-                                        <div>Contact Email: <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.
+                                    {contactEmails?.length > 0 &&
+                                        <div>Contact Emails:&nbsp;
+                                            {contactEmails.map((contactEmail, ix) =>
+                                                <span key={ix}>
+                                                    <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+                                                    {ix < contactEmails.length - 1 ? ', ' : ''}
+                                                </span>)}
                                         </div>}
                                     <div>Clicking 'Accept' will redirect you to: <a href={redirectURL}
                                                                                     target='_blank'>{redirectURL}</a>.

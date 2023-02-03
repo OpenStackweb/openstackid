@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
 use OAuth2\Requests\OAuth2AuthenticationRequest;
@@ -60,13 +61,16 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
 
     public function getLogin()
     {
+        Log::debug(sprintf("OAuth2LoginStrategy::getLogin"));
+
         if (!Auth::guest())
             return Redirect::action("UserController@getProfile");
 
         $requested_user_id = $this->security_context_service->get()->getRequestedUserId();
         if (!is_null($requested_user_id)) {
             $userHint = $this->auth_service->getUserById($requested_user_id);
-            if(!is_null($userHint)) {
+            if (!is_null($userHint)) {
+                Log::debug(sprintf("OAuth2LoginStrategy::getLogin user %s has saved state", $requested_user_id));
                 Session::put('username', $userHint->getEmail());
                 Session::put('user_fullname', $userHint->getFullName());
                 Session::put('user_pic', $userHint->getPic());

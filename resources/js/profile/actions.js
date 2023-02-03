@@ -54,7 +54,9 @@ export const save = async (values, token) => {
     values.public_profile_show_fullname = values.public_profile_show_fullname ? 1 : 0;
     values.public_profile_show_email = values.public_profile_show_email ? 1 : 0;
     values.public_profile_allow_chat_with_me = values.public_profile_allow_chat_with_me ? 1 : 0;
-    values.birthday = moment(`${values.birthday} 12:00`).unix();
+    if (values.birthday) {
+        values.birthday = moment(`${values.birthday} 12:00`).unix();
+    }
 
     return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(values, {'X-CSRF-TOKEN': token});
 }

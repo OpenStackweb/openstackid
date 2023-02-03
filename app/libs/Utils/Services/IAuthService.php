@@ -60,10 +60,11 @@ interface IAuthService
     /**
      * @param OAuth2OTP $otpClaim
      * @param Client|null $client
+     * @param bool $remember
      * @return OAuth2OTP|null
      * @throws AuthenticationException
      */
-    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null): ?OAuth2OTP;
+    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP;
 
 
     /**

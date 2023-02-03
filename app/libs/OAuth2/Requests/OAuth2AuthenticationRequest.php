@@ -93,7 +93,15 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
      */
     public function getLoginHint()
     {
-        return $this->getParam(OAuth2Protocol::OAuth2Protocol_LoginHint);
+        return $this->getParam(OAuth2Protocol::OAuth2Protocol_LoginHint, false);
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getOTPLoginHint()
+    {
+        return $this->getParam(OAuth2Protocol::OAuth2Protocol_OTP_LoginHint);
     }
 
     /**
@@ -123,7 +131,6 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
     {
         parent::__construct($auth_request->getMessage());
     }
-
 
     /**
      * Validates current request

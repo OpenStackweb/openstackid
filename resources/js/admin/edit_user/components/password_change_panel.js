@@ -4,7 +4,7 @@ import Link from "@material-ui/core/Link";
 import TextField from "@material-ui/core/TextField";
 import PasswordStrengthBar from "react-password-strength-bar";
 
-const PasswordChangePanel = ({hasPasswordSet, formik, passwordPolicy}) => {
+const PasswordChangePanel = ({formik, passwordPolicy}) => {
     const [changingPwd, setChangingPwd] = useState(false);
 
     return (
@@ -23,26 +23,6 @@ const PasswordChangePanel = ({hasPasswordSet, formik, passwordPolicy}) => {
             {
                 changingPwd &&
                 <>
-                    {
-                        hasPasswordSet &&
-                        <Grid item xs={12}>
-                            <TextField
-                                id="current_password"
-                                name="current_password"
-                                type="password"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                                label="Current Password"
-                                inputProps={{maxLength: passwordPolicy.max_length}}
-                                onChange={formik.handleChange}
-                                error={
-                                    formik.touched.current_password && Boolean(formik.errors.current_password)
-                                }
-                                helperText={formik.touched.current_password && formik.errors.current_password}
-                            />
-                        </Grid>
-                    }
                     <Grid item xs={12}>
                         <TextField
                             id="password"
@@ -52,7 +32,7 @@ const PasswordChangePanel = ({hasPasswordSet, formik, passwordPolicy}) => {
                             fullWidth
                             size="small"
                             label="New Password"
-                            inputProps={{maxLength: passwordPolicy.max_length}}
+                            inputProps={passwordPolicy}
                             value={formik.values.password}
                             onChange={formik.handleChange}
                             error={

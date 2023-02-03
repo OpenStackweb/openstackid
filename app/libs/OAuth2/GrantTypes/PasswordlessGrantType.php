@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Exceptions\InvalidApplicationType;
+use OAuth2\Exceptions\InvalidClientCredentials;
 use OAuth2\Exceptions\InvalidClientException;
 use OAuth2\Exceptions\InvalidOAuth2Request;
 use OAuth2\Exceptions\InvalidOTPException;
@@ -39,6 +40,7 @@ use OAuth2\Responses\OAuth2AccessTokenResponse;
 use OAuth2\Responses\OAuth2DirectErrorResponse;
 use OAuth2\Responses\OAuth2IdTokenResponse;
 use OAuth2\Responses\OAuth2PasswordlessAuthenticationResponse;
+use OAuth2\Responses\OAuth2PasswordlessInlineAuthenticationResponse;
 use OAuth2\Responses\OAuth2Response;
 use OAuth2\Services\IApiScopeService;
 use OAuth2\Services\IClientJWKSetReader;
@@ -48,6 +50,7 @@ use OAuth2\Services\IPrincipalService;
 use OAuth2\Services\ISecurityContextService;
 use OAuth2\Services\ITokenService;
 use OAuth2\Services\IUserConsentService;
+use OAuth2\Strategies\ClientAuthContextValidatorFactory;
 use OAuth2\Strategies\IOAuth2AuthenticationStrategy;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
@@ -187,6 +190,14 @@ class PasswordlessGrantType extends InteractiveGrantType
 
         $otp = $this->token_service->createOTPFromRequest($request, $this->client);
 
+        if ($otp->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline)
+            return new OAuth2PasswordlessInlineAuthenticationResponse(
+                $otp->getValue(),
+                $otp->getLength(),
+                $otp->getRemainingLifetime(),
+                $otp->getScope()
+            );
+
         return new OAuth2PasswordlessAuthenticationResponse
         (
             $otp->getLength(),
@@ -256,6 +267,50 @@ class PasswordlessGrantType extends InteractiveGrantType
                 throw new ScopeNotAllowedException($scope);
             }
 
+            if ($request->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
+                // we need to send out the credentials or a resource server
+                // get client credentials from request..
+                $this->client_auth_context = $this->client_service->getCurrentClientAuthInfo();
+                // retrieve client from storage ...
+                $impersonating_client = $this->client_repository->getClientByIdCacheable($this->client_auth_context->getId());
+                if (is_null($impersonating_client)) {
+                    throw new InvalidClientException("Invalid impersonating client for inline OTP request");
+                }
+
+                if (!$impersonating_client->isActive() || $impersonating_client->isLocked()) {
+                    throw new LockedClientException
+                    (
+                        sprintf
+                        (
+                            'Client id %s is locked.',
+                            $this->client_auth_context->getId()
+                        )
+                    );
+                }
+
+                if (!$impersonating_client->isResourceServerClient()) {
+                    throw new InvalidClientException("Invalid impersonating client for inline OTP request");
+                }
+
+                $resource_server = $impersonating_client->getResourceServer();
+
+                if (!$resource_server->canImpersonateClient($this->client)) {
+                    throw new InvalidClientException("Invalid impersonating client for inline OTP request");
+                }
+
+                $this->client_auth_context->setClient($impersonating_client);
+
+                if (!ClientAuthContextValidatorFactory::build($this->client_auth_context)->validate($this->client_auth_context))
+                    throw new InvalidClientCredentials
+                    (
+                        sprintf
+                        (
+                            'Invalid credentials for client id %s.',
+                            $this->client_auth_context->getId()
+                        )
+                    );
+            }
+
             $response = $this->buildResponse($request, false);
             // clear save data ...
             $this->auth_service->clearUserAuthorizationResponse();
@@ -298,8 +353,12 @@ class PasswordlessGrantType extends InteractiveGrantType
                 throw new InvalidOAuth2Request;
             }
 
-            if(!$request->isValid()){
+            if (!$request->isValid()) {
                 throw new InvalidOAuth2Request($request->getLastValidationError());
+            }
+
+            if ($request->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
+                throw new InvalidOAuth2Request(sprintf("OTP connection value (%s) not valid on this flow.", OAuth2Protocol::OAuth2PasswordlessConnectionInline));
             }
 
             parent::completeFlow($request);

@@ -11,28 +11,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use OAuth2\OAuth2Protocol;
-use Utils\Http\HttpContentType;
+
 /**
- * Class OAuth2PasswordlessAuthenticationResponse
+ * Class OAuth2PasswordlessInlineAuthenticationResponse
  * @package OAuth2\Responses
  */
-class OAuth2PasswordlessAuthenticationResponse extends OAuth2DirectResponse
+final class OAuth2PasswordlessInlineAuthenticationResponse
+    extends OAuth2PasswordlessAuthenticationResponse
 {
     /**
-     * OAuth2PasswordlessAuthenticationResponse constructor.
+     * @param string $value
      * @param int $otp_length
      * @param int $otp_lifetime
      * @param string|null $scope
      */
-    public function __construct(int $otp_length, int $otp_lifetime, ?string $scope = null)
+    public function __construct(string $value, int $otp_length, int $otp_lifetime, ?string $scope = null)
     {
         // Successful Responses: A server receiving a valid request MUST send a
         // response with an HTTP status code of 200.
-        parent::__construct(self::HttpOkResponse, HttpContentType::Json);
-        $this["otp_length"] = $otp_length;
-        $this["otp_lifetime"] = $otp_lifetime;
-        if(!empty($scope))
-            $this[OAuth2Protocol::OAuth2Protocol_Scope] = $scope;
+        parent::__construct($otp_length, $otp_lifetime, $scope);
+        $this["value"] = $value;
     }
 }

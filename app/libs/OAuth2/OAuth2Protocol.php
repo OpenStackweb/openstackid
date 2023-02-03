@@ -224,9 +224,12 @@ final class OAuth2Protocol implements IOAuth2Protocol
     const OAuth2PasswordlessConnection = 'connection';
     const OAuth2PasswordlessConnectionSMS = 'sms';
     const OAuth2PasswordlessConnectionEmail = 'email';
+    const OAuth2PasswordlessConnectionInline = 'inline';
+
     const ValidOAuth2PasswordlessConnectionValues = [
         self::OAuth2PasswordlessConnectionSMS,
-        self::OAuth2PasswordlessConnectionEmail
+        self::OAuth2PasswordlessConnectionEmail,
+        self::OAuth2PasswordlessConnectionInline,
     ];
 
     const OAuth2PasswordlessSend = 'send';
@@ -543,6 +546,11 @@ final class OAuth2Protocol implements IOAuth2Protocol
      * the phone_number Claim. The use of this parameter is left to the OP's discretion.
      */
     const OAuth2Protocol_LoginHint = 'login_hint';
+
+    /**
+     * Custom Hint to pass the OTP Value to auto login
+     */
+    const OAuth2Protocol_OTP_LoginHint = 'otp_login_hint';
 
     /**
      * Requested Authentication Context Class Reference values. Space-separated string that specifies the acr values

@@ -3,8 +3,7 @@ import debounce from 'lodash.debounce';
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 
-
-const RichTextEditor = ({rteRef, rteProps, value, onChange}) => {
+const RichTextEditor = ({value, onChange}) => {
     let handleChangeDebounce;
 
     const handleChange = useCallback((value) => {
@@ -16,22 +15,6 @@ const RichTextEditor = ({rteRef, rteProps, value, onChange}) => {
     }, []);
 
     return (
-        // <MUIRichTextEditor
-        //     controls={[
-        //         'bold',
-        //         'italic',
-        //         'underline',
-        //         'bulletList',
-        //         'numberList',
-        //         'undo',
-        //         'redo',
-        //         'clear'
-        //     ]}
-        //     value={value}
-        //     {...rteProps}
-        //     ref={rteRef}
-        //     onChange={handleChange}
-        // />
         <SimpleMDE
             value={value}
             onChange={handleChange}

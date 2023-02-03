@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
@@ -65,6 +67,8 @@ class OAuth2ConsentStrategy implements IConsentStrategy
 
     public function getConsent()
     {
+        Log::debug("OAuth2ConsentStrategy::getConsent");
+
         $auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build
         (
             OAuth2Message::buildFromMemento
@@ -73,14 +77,17 @@ class OAuth2ConsentStrategy implements IConsentStrategy
             )
         );
 
-        $client_id                = $auth_request->getClientId();
-        $client                   = $this->client_repository->getClientById($client_id);
-        $scopes                   = explode(' ',$auth_request->getScope());
-        $requested_scopes         = $this->scope_repository->getByNames($scopes);
+        Log::debug(sprintf("OAuth2ConsentStrategy::getConsent auth request %s", $auth_request->__toString()));
 
-        $data                     = [];
+
+        $client_id = $auth_request->getClientId();
+        $client = $this->client_repository->getClientById($client_id);
+        $scopes = explode(' ', $auth_request->getScope());
+        $requested_scopes = $this->scope_repository->getByNames($scopes);
+
+        $data = [];
         $data['requested_scopes'] = $requested_scopes;
-        $data['app_name']         = $client->getApplicationName();
+        $data['app_name'] = $client->getApplicationName();
         $data['redirect_to'] = $auth_request->getRedirectUri();
         $data['website'] = $client->getWebsite();
         $data['tos_uri'] = $client->getTermOfServiceUri();
@@ -91,17 +98,11 @@ class OAuth2ConsentStrategy implements IConsentStrategy
         $data['app_logo'] = $app_logo;
         $data['app_description'] = $client->getApplicationDescription();
         $data['dev_info_email'] = $client->getDeveloperEmail();
-        $data['contact_email'] = '';
-
-        $contacts = $client->getContacts();
-        if (count($contacts) > 0) {
-            $data['contact_email'] = $contacts[0];
-        }
+        $data['contact_emails'] = $client->getContacts();
 
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
         return $response_strategy->getConsentResponse($data);
-
     }
 
     public function postConsent($trust_action)
