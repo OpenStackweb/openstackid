@@ -42,7 +42,7 @@ final class DoctrineUserActionRepository
     protected function getFilterMappings()
     {
         return [
-            'owner' => 'e.owner:json_int',
+            'owner_id' => 'e.owner:json_int',
             'realm' => 'e.realm:json_string',
             'from_ip' => 'e.from_ip:json_string',
             'user_action' => 'e.user_action:json_string',

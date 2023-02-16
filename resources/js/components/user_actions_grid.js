@@ -21,7 +21,7 @@ const UserActionsGrid = ({getUserActions, pageSize}) => {
         },
     ];
 
-    const refreshUserActions = (active, page = 1, order = 'created_at', orderDir = 'asc', filters = {}) => {
+    const refreshUserActions = (active, page = 1, order = 'created_at', orderDir = 'desc', filters = {}) => {
         setLoading(true);
         getUserActions(page, order, orderDir, filters).then(res => {
             if (active) {

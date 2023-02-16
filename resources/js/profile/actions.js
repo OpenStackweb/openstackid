@@ -27,13 +27,14 @@ const parseFilter = (filters) => {
     return filter;
 }
 
-export const getUserActions = async (page = 1, order = 'created_at', orderDir = 'asc', filters = {}) => {
+export const getUserActions = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId) => {
     const params = {
         page: page,
         per_page: PAGE_SIZE,
     };
 
     const filter = parseFilter(filters);
+    filter.push(`owner_id==${userId}`)
 
     if (filter.length > 0) {
         params['filter[]'] = filter;

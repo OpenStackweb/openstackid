@@ -738,7 +738,10 @@ const ProfilePage = ({
                                 </Typography>
                             </Grid>
                             <Grid item container alignItems="center" justifyContent="center">
-                                <UserActionsGrid getUserActions={getUserActions} pageSize={PAGE_SIZE}/>
+                                <UserActionsGrid getUserActions={
+                                    (page, order, orderDir, filters) =>
+                                        getUserActions(page, order, orderDir, filters, initialValues.id)
+                                } pageSize={PAGE_SIZE}/>
                             </Grid>
                             {
                                 initialValues.trusted_sites?.length > 0 &&

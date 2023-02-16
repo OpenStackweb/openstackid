@@ -16,9 +16,13 @@ use App\Http\Controllers\Api\OAuth2\OAuth2ProtectedController;
 use App\Http\Controllers\GetAllTrait;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserActionRepository;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
+use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
 use OAuth2\IResourceServerContext;
 use utils\Filter;
 use utils\FilterElement;
@@ -56,7 +60,7 @@ final class UserActionApiController extends OAuth2ProtectedController
     protected function getFilterRules(): array
     {
         return [
-            'owner' => ['=='],
+            'owner_id' => ['=='],
             'realm' => ['=@', '=='],
             'user_action' => ['=@', '=='],
             'from_ip' => ['=@', '=='],
@@ -70,7 +74,7 @@ final class UserActionApiController extends OAuth2ProtectedController
     protected function getFilterValidatorRules(): array
     {
         return [
-            'owner' => 'nullable|int',
+            'owner_id' => 'required|int',
             'realm' => 'nullable|string',
             'user_action' => 'nullable|string',
             'from_ip' => 'nullable|string',
@@ -102,21 +106,41 @@ final class UserActionApiController extends OAuth2ProtectedController
         return SerializerRegistry::SerializerType_Private;
     }
 
-    protected function applyExtraFilters(Filter $filter): Filter
-    {
-        if (!$filter->hasFilter("owner")) {
-            $current_user = Auth::user();
-            if (!is_null($current_user))
-                $filter->addFilterCondition(FilterElement::makeEqual("owner", $current_user->getId()));
-        }
-        return $filter;
-    }
-
     /**
      * @return JsonResponse
      */
     public function getActions(): JsonResponse
     {
-        return $this->getAll();
+        try {
+            $filter = null;
+
+            if (Request::has('filter')) {
+                $filter = FilterParser::parse(Request::input('filter'), $this->getFilterRules());
+            }
+
+            if (is_null($filter)) $filter = new Filter();
+
+            $filter_validator_rules = $this->getFilterValidatorRules();
+            if (count($filter_validator_rules)) {
+                $filter->validate($filter_validator_rules);
+            }
+
+            $current_user = Auth::user();
+            $owner_id = intval($filter->getFiltersKeyValues()["owner_id"]);
+
+            if ($current_user->getId() != $owner_id && !$current_user->isAdmin()) {
+                throw new ValidationException("current user owner mismatch");
+            }
+            return $this->getAll();
+        } catch (ValidationException $ex1) {
+            Log::warning($ex1);
+            return $this->error412($ex1->getMessages());
+        } catch (EntityNotFoundException $ex2) {
+            Log::warning($ex2);
+            return $this->error404(['message' => $ex2->getMessage()]);
+        } catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
     }
 }
