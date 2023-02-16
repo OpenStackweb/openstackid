@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Controllers\Traits\ParseFilter;
 use App\Http\Utils\PagingConstants;
 use App\ModelSerializers\SerializerRegistry;
 use Illuminate\Support\Facades\Request;
@@ -29,6 +31,8 @@ use models\exceptions\EntityNotFoundException;
  */
 trait GetAllTrait
 {
+    use ParseFilter;
+
     /**
      * @return array
      */
@@ -88,18 +92,7 @@ trait GetAllTrait
                 $per_page = intval(Request::input('per_page'));
             }
 
-            $filter = null;
-
-            if (Request::has('filter')) {
-                $filter = FilterParser::parse(Request::input('filter'), $this->getFilterRules());
-            }
-
-            if(is_null($filter)) $filter = new Filter();
-
-            $filter_validator_rules = $this->getFilterValidatorRules();
-            if(count($filter_validator_rules)) {
-                $filter->validate($filter_validator_rules);
-            }
+            $filter = $this->getFilter($this->getFilterRules(), $this->getFilterValidatorRules());
 
             $order = null;
 

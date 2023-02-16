@@ -23,6 +23,8 @@ use models\exceptions\ValidationException;
  */
 final class Filter
 {
+    const FilterRequestParam = 'filter';
+
     /**
      * @var array
      */

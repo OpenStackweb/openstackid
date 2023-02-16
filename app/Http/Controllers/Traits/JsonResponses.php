@@ -65,6 +65,9 @@ trait JsonResponses
     }
 
     protected function error404($data = array('message' => 'Entity Not Found')){
+        if(!is_array($data)){
+            $data = ['message' => $data];
+        }
         return Response::json($data, 404);
     }
 
@@ -88,7 +91,9 @@ trait JsonResponses
      * @return mixed
      */
     protected function error412($messages){
-
-        return Response::json(array('error'=>'validation' , 'messages' => $messages), 412);
+        if(!is_array($messages)){
+            $messages = [$messages];
+        }
+        return Response::json(array('message' => 'Validation Failed', 'errors' => $messages), 412);
     }
 }

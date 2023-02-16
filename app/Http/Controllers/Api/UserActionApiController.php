@@ -14,19 +14,17 @@
 
 use App\Http\Controllers\Api\OAuth2\OAuth2ProtectedController;
 use App\Http\Controllers\GetAllTrait;
+use App\Http\Controllers\Traits\ParseFilter;
+use App\Models\Exceptions\AuthzException;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserActionRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Request;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\IResourceServerContext;
-use utils\Filter;
-use utils\FilterElement;
-use utils\FilterParser;
 use Utils\Services\ILogService;
 
 /**
@@ -36,6 +34,8 @@ use Utils\Services\ILogService;
 final class UserActionApiController extends OAuth2ProtectedController
 {
     use GetAllTrait;
+
+    use ParseFilter;
 
     /**
      * UserActionApiController constructor.
@@ -112,32 +112,24 @@ final class UserActionApiController extends OAuth2ProtectedController
     public function getActions(): JsonResponse
     {
         try {
-            $filter = null;
-
-            if (Request::has('filter')) {
-                $filter = FilterParser::parse(Request::input('filter'), $this->getFilterRules());
-            }
-
-            if (is_null($filter)) $filter = new Filter();
-
-            $filter_validator_rules = $this->getFilterValidatorRules();
-            if (count($filter_validator_rules)) {
-                $filter->validate($filter_validator_rules);
-            }
-
+            $filter = $this->getFilter($this->getFilterRules(), $this->getFilterValidatorRules());
             $current_user = Auth::user();
-            $owner_id = intval($filter->getFiltersKeyValues()["owner_id"]);
-
+            $owner_id = intval($filter->getUniqueFilter("owner_id")->getValue());
             if ($current_user->getId() != $owner_id && !$current_user->isAdmin()) {
-                throw new ValidationException("current user owner mismatch");
+                throw new AuthzException("Current user owner mismatch.");
             }
             return $this->getAll();
-        } catch (ValidationException $ex1) {
-            Log::warning($ex1);
-            return $this->error412($ex1->getMessages());
-        } catch (EntityNotFoundException $ex2) {
-            Log::warning($ex2);
-            return $this->error404(['message' => $ex2->getMessage()]);
+        }
+        catch (AuthzException $ex){
+            Log::warning($ex);
+            return $this->error403();
+        }
+        catch (ValidationException $ex) {
+            Log::warning($ex);
+            return $this->error412($ex->getMessages());
+        } catch (EntityNotFoundException $ex) {
+            Log::warning($ex);
+            return $this->error404($ex->getMessage());
         } catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
