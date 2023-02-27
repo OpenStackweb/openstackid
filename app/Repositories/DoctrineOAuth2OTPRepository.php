@@ -98,4 +98,44 @@ class DoctrineOAuth2OTPRepository
         $query->addOrderBy("e.id", "DESC");
         return $query->getQuery()->getResult();
     }
+
+    /**
+     * @param string $value
+     * @param string $connection
+     * @param string $user_name
+     * @param Client|null $client
+     * @return OAuth2OTP|null
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     */
+    public function getByValueConnectionAndUserName
+    (
+        string $value,
+        string $connection,
+        string $user_name,
+        ?Client $client = null
+    ): ?OAuth2OTP
+    {
+        $user_name = PunnyCodeHelper::encodeEmail($user_name);
+
+        $query = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select("e")
+            ->from($this->getBaseEntity(), "e")
+            ->where("e.connection = (:connection) and e.value = (:value)")
+            ->andWhere("(e.email = (:user_name) or e.phone_number = (:user_name))")
+            ->andWhere("e.redeemed_at is null")
+            ->setParameter("connection", $connection)
+            ->setParameter("user_name", $user_name)
+            ->setParameter("value", trim($value));
+        // add client id condition
+        if(!is_null($client)){
+            $query->join("e.client", "c")->andWhere("c.id = :client_id")
+                ->setParameter("client_id", $client->getId());
+        }
+        // try to get the latest one
+        $query->addOrderBy("e.id", "DESC");
+        return $query->getQuery()
+            ->setMaxResults(1)
+            ->getOneOrNullResult();
+    }
 }
