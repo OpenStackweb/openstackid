@@ -432,7 +432,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
      * @throws \jws\exceptions\JWSInvalidPayloadException
      * @throws \jws\exceptions\JWSNotSupportedAlgorithm
      */
-    protected function processUserHint(OAuth2AuthenticationRequest $request,Client $client)
+    protected function processUserHint(OAuth2AuthenticationRequest $request, Client $client)
     {
         $login_hint = $request->getLoginHint();
         $token_hint = $request->getIdTokenHint();
@@ -441,40 +441,32 @@ abstract class InteractiveGrantType extends AbstractGrantType
         Log::debug(sprintf("InteractiveGrant::processUserHint request %s client %s", $request->__toString(), $client->getId()));
         // process login hint
         $user = null;
-        if(!empty($otp_login_hint) && !empty ($login_hint)
-            && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_OTP_LoginHint)){
+        if (!empty($otp_login_hint) && !empty ($login_hint)
+            && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_OTP_LoginHint)) {
 
             Log::debug("InteractiveGrant::processUserHint processing OTP hint...");
-            $otpClaim = OAuth2OTP::fromParams($login_hint, OAuth2Protocol::OAuth2PasswordlessConnectionInline,$otp_login_hint, $request->getScope(), );
+            $otpClaim = OAuth2OTP::fromParams($login_hint, OAuth2Protocol::OAuth2PasswordlessConnectionInline, $otp_login_hint, $request->getScope(),);
             $this->auth_service->loginWithOTP($otpClaim, $client, true);
             $user = $this->auth_service->getUserByUsername($otpClaim->getUserName());
             Log::debug(sprintf("InteractiveGrant::processUserHint processing OTP hint. got user %s (%s)", $user->getEmail(), $user->getId()));
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_LoginHint);
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_OTP_LoginHint);
-        }
-        else if(!empty ($login_hint) && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_LoginHint))
-        {
+        } else if (!empty ($login_hint) && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_LoginHint)) {
             Log::debug("InteractiveGrant::processUserHint processing Login hint...");
 
-            if (EmailUtils::isValidEmail($login_hint))
-            {
+            if (EmailUtils::isValidEmail($login_hint)) {
                 $user = $this->auth_service->getUserByUsername($login_hint);
-            }
-            else
-            {
+            } else {
                 $user_id = $this->auth_service->unwrapUserId($login_hint);
                 $user    = $this->auth_service->getUserById($user_id);
             }
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_LoginHint);
-        }
-        else if(!empty($token_hint))
-        {
+        } else if(!empty($token_hint)) {
             Log::debug("InteractiveGrant::processUserHint processing Token hint...");
 
             $jwt = BasicJWTFactory::build($token_hint);
 
-            if($jwt instanceof IJWE)
-            {
+            if($jwt instanceof IJWE) {
                 $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is IJWE");
                 // decrypt using server key
                 $heuristic              = new ServerEncryptionKeyFinder($this->server_private_key_repository);
@@ -489,12 +481,10 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $payload = $jwt->getPlainText();
                 $jwt     = BasicJWTFactory::build($payload);
             }
-            if($jwt instanceof IJWS)
-            {
+            if($jwt instanceof IJWS) {
                 $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is IJWS");
                 // signed by client ?
-                try
-                {
+                try {
                     $heuristic = new ClientSigningKeyFinder($this->jwk_set_reader_service);
                     $client_public_sig_key = $heuristic->find
                     (
@@ -503,9 +493,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
                     );
 
                     $jwt->setKey($client_public_sig_key);
-                }
-                catch(RecipientKeyNotFoundException $ex)
-                {
+                } catch(RecipientKeyNotFoundException $ex) {
                     // try to find the server signing key used ...
                     $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is IJWS -> RecipientKeyNotFoundException");
                     $heuristic = new ServerSigningKeyFinder($this->server_private_key_repository);
@@ -542,13 +530,12 @@ abstract class InteractiveGrantType extends AbstractGrantType
             (
                 !is_null($logged_user) &&
                 $logged_user->getId() !== $user->getId()
-            )
-            {
+            ) {
                 $this->log_service->debug_msg(sprintf("InteractiveGrantType::processUserHint: logged user %s user %s", $logged_user->getId(), $user->getId()));
 
                 $this->auth_service->logout();
 
-                if(!$this->canInteractWithEndUser($request)) {
+                if (!$this->canInteractWithEndUser($request)) {
                     $this->log_service->debug_msg("InteractiveGrantType::processUserHint: cant interact with user");
                     throw new InteractionRequiredException;
                 }
@@ -680,12 +667,10 @@ abstract class InteractiveGrantType extends AbstractGrantType
     protected function mustAuthenticateUser(OAuth2AuthorizationRequest $request, Client $client)
     {
 
-        if($request instanceof OAuth2AuthenticationRequest)
-        {
+        if ($request instanceof OAuth2AuthenticationRequest) {
             try {
                 $this->processUserHint($request, $client);
-            }
-            catch (JWSInvalidJWKException $ex){
+            } catch (JWSInvalidJWKException $ex) {
                 Log::warning($ex);
                 throw $ex;
             }

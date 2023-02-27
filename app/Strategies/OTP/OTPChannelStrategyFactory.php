@@ -22,7 +22,7 @@ final class OTPChannelStrategyFactory
 {
     public static function build(string $connection):IOTPChannelStrategy{
 
-        switch($connection){
+        switch ($connection) {
             case OAuth2Protocol::OAuth2PasswordlessConnectionEmail:
                 return new OTPChannelEmailStrategy();
             case OAuth2Protocol::OAuth2PasswordlessConnectionInline:

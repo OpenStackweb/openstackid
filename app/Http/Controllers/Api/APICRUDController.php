@@ -138,8 +138,7 @@ abstract class APICRUDController extends JsonController
     protected function _update($id, array $payload)
     {
         try {
-
-            $rules   = $this->getUpdatePayloadValidationRules();
+            $rules = $this->getUpdatePayloadValidationRules();
             // Creates a Validator instance and validates the data.
             $validation = Validator::make($payload, $rules);
             if ($validation->fails()) {

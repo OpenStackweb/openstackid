@@ -16,6 +16,7 @@ use App\Http\Controllers\OpenId\DiscoveryController;
 use App\Http\Controllers\OpenId\OpenIdController;
 use App\Http\Controllers\Traits\JsonResponses;
 use App\Http\Utils\CountryList;
+use App\ModelSerializers\SerializerRegistry;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
 use Exception;
@@ -635,7 +636,8 @@ final class UserController extends OpenIdController
         }
 
         return View::make("profile", [
-            'user' => $user,
+            'user' => json_encode(SerializerRegistry::getInstance()->getSerializer(
+                $user, SerializerRegistry::SerializerType_Private)->serialize()),
             "openid_url" => $this->server_configuration_service->getUserIdentityEndpointURL($user->getIdentifier()),
             "sites" => $sites,
             'actions' => $actions,

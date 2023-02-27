@@ -209,7 +209,8 @@ class ResourceServer extends BaseEntity
      * @param $name
      * @return mixed
      */
-    public function __get($name) {
+    public function __get($name)
+    {
         return $this->{$name};
     }
 
@@ -217,7 +218,8 @@ class ResourceServer extends BaseEntity
      * @param Client $client
      * @return bool
      */
-    public function canImpersonateClient(Client $client):bool{
+    public function canImpersonateClient(Client $client): bool
+    {
         return true;
     }
 }

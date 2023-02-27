@@ -263,7 +263,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
 
     public function isRedeemed():bool{
         // inline OTP are always alive
-        if($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
+        if ($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
             return false;
         }
         return !is_null($this->redeemed_at);
@@ -275,11 +275,11 @@ class OAuth2OTP extends BaseEntity implements Identifier
     public function redeem(): void
     {
         // inline OTP are always alive
-        if($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
+        if ($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
             return;
         }
 
-        if(!is_null($this->redeemed_at))
+        if (!is_null($this->redeemed_at))
             throw new ValidationException("OTP is already redeemed.");
         $this->redeemed_at = new \DateTime('now', new \DateTimeZone('UTC'));
         $this->redeemed_from_ip = IPHelper::getUserIp();
@@ -341,9 +341,10 @@ class OAuth2OTP extends BaseEntity implements Identifier
         return $seconds;
     }
 
-    public function isAlive():bool{
+    public function isAlive():bool
+    {
         // inline OTP are always alive
-        if($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
+        if ($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
             return true;
         }
         return $this->getRemainingLifetime() >= 0;
@@ -363,27 +364,30 @@ class OAuth2OTP extends BaseEntity implements Identifier
 
     const MaxRedeemAttempts = 3;
 
-    public function logRedeemAttempt():void{
-        if($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
+    public function logRedeemAttempt():void
+    {
+        if ($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
             Log::debug(sprintf("OAuth2OTP::logRedeemAttempt trying to mark redeem attempt for %s and inline connection", $this->value));
             return;
         }
         Log::debug(sprintf("OAuth2OTP::logRedeemAttempt trying to mark redeem attempt for %s ", $this->value));
-        if($this->redeemed_attempts < self::MaxRedeemAttempts){
+        if ($this->redeemed_attempts < self::MaxRedeemAttempts) {
             $this->redeemed_attempts = $this->redeemed_attempts + 1;
             Log::debug(sprintf("OAuth2OTP::logRedeemAttempt redeemed_attempts %s", $this->redeemed_attempts));
         }
     }
 
-    public function isValid():bool{
+    public function isValid():bool
+    {
         // inline OTP are always valid
-        if($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
+        if ($this->connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
             return true;
         }
         return ($this->redeemed_attempts < self::MaxRedeemAttempts) && $this->isAlive();
     }
 
-    public function getUserName():?string{
+    public function getUserName():?string
+    {
         return $this->connection == OAuth2Protocol::OAuth2PasswordlessEmail
         || $this->connection == OAuth2Protocol::OAuth2PasswordlessConnectionInline
             ? $this->getEmail() : $this->phone_number;
@@ -442,16 +446,17 @@ class OAuth2OTP extends BaseEntity implements Identifier
      * @param string|null $scopes
      * @return OAuth2OTP|null
      */
-    public static function fromParams(string $user_name, string $connection, ?string $value, string $scopes = null):?OAuth2OTP{
+    public static function fromParams(string $user_name, string $connection, ?string $value, string $scopes = null): ?OAuth2OTP
+    {
         $instance = new self(strlen($value));
         $instance->connection = $connection;
-        if($connection == OAuth2Protocol::OAuth2PasswordlessConnectionEmail || $connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline)
+        if ($connection == OAuth2Protocol::OAuth2PasswordlessConnectionEmail || $connection === OAuth2Protocol::OAuth2PasswordlessConnectionInline)
             $instance->setEmail($user_name);
 
-        if($connection == OAuth2Protocol::OAuth2PasswordlessConnectionSMS)
+        if ($connection == OAuth2Protocol::OAuth2PasswordlessConnectionSMS)
             $instance->phone_number = $user_name;
         $instance->setValue($value);
-        if(!empty($scopes))
+        if (!empty($scopes))
             $instance->setScope($scopes);
 
         return $instance;

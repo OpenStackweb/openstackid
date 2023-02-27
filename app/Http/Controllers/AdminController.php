@@ -15,6 +15,7 @@
 use App\Http\Utils\CountryList;
 use App\libs\Auth\Repositories\IBannedIPRepository;
 use App\libs\Auth\Repositories\IGroupRepository;
+use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Response;
@@ -624,10 +625,11 @@ class AdminController extends Controller {
                 $lang2Code[] = $lang;
         }
 
-
         return View::make("admin.edit-user",
             [
-                'user'      => $user,
+                'user_id' => $user_id,
+                'user' => json_encode(SerializerRegistry::getInstance()
+                    ->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize('groups')),
                 'countries' => CountryList::getCountries(),
                 'languages' => $lang2Code,
             ]

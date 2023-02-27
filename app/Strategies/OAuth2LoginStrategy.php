@@ -69,7 +69,7 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
         $requested_user_id = $this->security_context_service->get()->getRequestedUserId();
         if (!is_null($requested_user_id)) {
             $userHint = $this->auth_service->getUserById($requested_user_id);
-            if(!is_null($userHint)) {
+            if (!is_null($userHint)) {
                 Log::debug(sprintf("OAuth2LoginStrategy::getLogin user %s has saved state", $requested_user_id));
                 Session::put('username', $userHint->getEmail());
                 Session::put('user_fullname', $userHint->getFullName());

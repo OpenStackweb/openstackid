@@ -13,6 +13,7 @@
  **/
 
 use App\ModelSerializers\BaseSerializer;
+use App\ModelSerializers\SerializerRegistry;
 use Auth\Group;
 use Auth\User;
 use Illuminate\Support\Facades\Auth;
@@ -102,6 +103,21 @@ final class PrivateUserSerializer extends BaseUserSerializer
         }
 
         $values['groups'] = $groups;
+
+        if (!empty($expand)) {
+            $exp_expand = explode(',', $expand);
+            foreach ($exp_expand as $relation) {
+                if (trim($relation) == 'groups') {
+                    $res = [];
+                    unset($values['groups']);
+                    foreach ($user->getGroups() as $group) {
+                        $res[] = SerializerRegistry::getInstance()->getSerializer($group)->serialize();
+                    }
+                    $values['groups'] = $res;
+                }
+            }
+        }
+
         return $values;
     }
 }

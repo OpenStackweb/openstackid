@@ -184,6 +184,7 @@ Route::group([
         Route::get('', "UserApiController@getAll");
         Route::post('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@create"]);
         Route::put('me', "UserApiController@updateMe");
+        Route::get('actions', "UserActionApiController@getActions");
 
         Route::group(['prefix' => '{id}'], function () {
 

@@ -85,7 +85,7 @@ final class UserFactory
         if(isset($payload['birthday'])){
             if(!empty($payload['birthday'])) {
                 $birthday = $payload['birthday'];
-                if (is_int($birthday)) {
+                if (is_numeric($birthday)) {
                     $birthday = new \DateTime("@$birthday");
                 }
                 $birthday->setTime(0, 0, 0);

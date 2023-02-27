@@ -80,14 +80,14 @@ class OAuth2ConsentStrategy implements IConsentStrategy
         Log::debug(sprintf("OAuth2ConsentStrategy::getConsent auth request %s", $auth_request->__toString()));
 
 
-        $client_id                = $auth_request->getClientId();
-        $client                   = $this->client_repository->getClientById($client_id);
-        $scopes                   = explode(' ',$auth_request->getScope());
-        $requested_scopes         = $this->scope_repository->getByNames($scopes);
+        $client_id = $auth_request->getClientId();
+        $client = $this->client_repository->getClientById($client_id);
+        $scopes = explode(' ', $auth_request->getScope());
+        $requested_scopes = $this->scope_repository->getByNames($scopes);
 
-        $data                     = [];
+        $data = [];
         $data['requested_scopes'] = $requested_scopes;
-        $data['app_name']         = $client->getApplicationName();
+        $data['app_name'] = $client->getApplicationName();
         $data['redirect_to'] = $auth_request->getRedirectUri();
         $data['website'] = $client->getWebsite();
         $data['tos_uri'] = $client->getTermOfServiceUri();

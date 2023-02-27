@@ -91,14 +91,14 @@ final class AuthService extends AbstractService implements IAuthService
      */
     public function __construct
     (
-        IUserRepository $user_repository,
-        IOAuth2OTPRepository $otp_repository,
-        IPrincipalService $principal_service,
-        IUserService $user_service,
-        ICacheService $cache_service,
-        IAuthUserService $auth_user_service,
+        IUserRepository         $user_repository,
+        IOAuth2OTPRepository    $otp_repository,
+        IPrincipalService       $principal_service,
+        IUserService            $user_service,
+        ICacheService           $cache_service,
+        IAuthUserService        $auth_user_service,
         ISecurityContextService $security_context_service,
-        ITransactionService $tx_service
+        ITransactionService     $tx_service
     )
     {
         parent::__construct($tx_service);
@@ -161,11 +161,12 @@ final class AuthService extends AbstractService implements IAuthService
      * @return OAuth2OTP|null
      * @throws Exception
      */
-    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP{
+    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP
+    {
 
         Log::debug(sprintf("AuthService::loginWithOTP otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
 
-        $otp = $this->tx_service->transaction(function() use($otpClaim, $client, $remember){
+        $otp = $this->tx_service->transaction(function () use ($otpClaim, $client, $remember) {
 
             // find latest db OTP by connection , by username (email/phone) number and client not redeemed
             $otp = $this->otp_repository->getLatestByConnectionAndUserNameNotRedeemed
@@ -175,7 +176,7 @@ final class AuthService extends AbstractService implements IAuthService
                 $client
             );
 
-            if(is_null($otp)){
+            if (is_null($otp)) {
                 // otp no emitted
                 Log::warning
                 (
@@ -194,14 +195,14 @@ final class AuthService extends AbstractService implements IAuthService
             return $otp;
         });
 
-        return $this->tx_service->transaction(function() use($otp, $otpClaim, $client, $remember){
+        return $this->tx_service->transaction(function () use ($otp, $otpClaim, $client, $remember) {
 
             if (!$otp->isAlive()) {
                 throw new AuthenticationException("OTP is expired.");
             }
 
             if (!$otp->isValid()) {
-                throw new AuthenticationException( "OTP is not valid.");
+                throw new AuthenticationException("OTP is not valid.");
             }
 
             if ($otp->getValue() != $otpClaim->getValue()) {

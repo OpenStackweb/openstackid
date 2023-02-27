@@ -231,17 +231,32 @@ final class UserApiController extends APICRUDController
             return $this->error403();
 
         $myId = Auth::user()->getId();
-        return $this->update($myId);
+        $payload = $this->getUpdatePayload();
+        return $this->_update($myId, $payload);
+    }
+
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function update($id)
+    {
+        $payload = $this->getUpdatePayload();
+        if (array_key_exists("groups", $payload)) {
+            $payload["groups"] = array_map('intval', $payload["groups"]);
+        }
+        return $this->_update($id, $payload);
     }
 
     /**
      * @return array
      */
-    protected function getUpdatePayload():array{
+    protected function getUpdatePayload(): array
+    {
         $payload = request()->all();
-        if(isset($payload['user'])){
-            $payload = json_decode($payload['user'],true);
-            if(is_null($payload)){
+        if (isset($payload['user'])) {
+            $payload = json_decode($payload['user'], true);
+            if (is_null($payload)) {
                 Log::warning(sprintf("UserApiController::getUpdatePayload can not decode %s ", $payload['user']));
                 return [];
             }

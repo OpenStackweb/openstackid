@@ -20,13 +20,15 @@ module.exports = {
     entry: {
         index: './resources/js/index.js',
         consent: './resources/js/oauth2/consent.js',
-        home: './resources/js/home/home.js',
-        login: './resources/js/login/login.js',
-        signup: './resources/js/signup/signup.js',
+        editUser: './resources/js/admin/edit_user/edit_user.js',
         emailVerification: './resources/js/email_verification/email_verification.js',
         forgotPassword: './resources/js/forgot_password/forgot_password.js',
+        home: './resources/js/home/home.js',
+        login: './resources/js/login/login.js',
+        profile: './resources/js/profile/profile.js',
         resetPassword: './resources/js/reset_password/reset_password.js',
         setPassword: './resources/js/set_password/set_password.js',
+        signup: './resources/js/signup/signup.js',
     },
     output: {
         filename: '[name].js',
@@ -34,11 +36,23 @@ module.exports = {
         publicPath: '/assets/',
         pathinfo: false
     },
-    node: {
-        fs: 'empty',
-        child_process: 'empty',
-        tls: 'empty',
-        net: 'empty',
+    resolve: {
+        fallback: {
+            "fs" : false,
+            "crypto" : false,
+            path: false,
+            stream: false,
+            buffer: false,
+            http: false,
+            os: false,
+            zlib:false,
+            https: false,
+            url:false,
+            assert:false,
+            tls: false,
+            net:false,
+            child_process: false
+        }
     },
     plugins: [
         new webpack.ProvidePlugin({
@@ -93,16 +107,17 @@ module.exports = {
                 use: [MiniCssExtractPlugin.loader, "css-loader"]
             },
             {
+                test: /\.less/,
+                use: [MiniCssExtractPlugin.loader, "css-loader", "less-loader"]
+            },
+            {
                 test: /\.module\.scss/,
                 use: [
                     MiniCssExtractPlugin.loader,
                     {
                         loader: 'css-loader',
                         options: {
-                            modules: {
-                                localIdentName: "[local]___[hash:base64:5]",
-                                hashPrefix: 'schedule-filter-widget',
-                            },
+                            modules: true,
                             sourceMap: false
                         }
                     },
@@ -117,29 +132,23 @@ module.exports = {
             {
                 test: /\.scss/,
                 exclude: /\.module\.scss/,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    // Translates CSS into CommonJS
-                    "css-loader",
-                    // Compiles Sass to CSS
-                    "sass-loader",
-                ],
+                use: [MiniCssExtractPlugin.loader, "css-loader", 'sass-loader'],
             },
             {
                 test: /\.(ttf|eot)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-                use: "file-loader?name=fonts/[name].[ext]"
+                type: "asset/resource"
             },
             {
                 test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-                use: "url-loader?limit=10000&minetype=application/font-woff&name=fonts/[name].[ext]"
+                type: "asset/resource"
             },
             {
                 test: /\.svg/,
-                use: "file-loader?name=svg/[name].[ext]!svgo-loader"
+                type: "asset/resource"
             },
             {
                 test: /\.jpg|\.png|\.gif$/,
-                use: "file-loader?name=images/[name].[ext]"
+                type: "asset/resource"
             },
         ]
     }

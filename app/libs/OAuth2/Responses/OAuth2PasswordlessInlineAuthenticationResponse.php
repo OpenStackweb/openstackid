@@ -17,7 +17,7 @@
  * @package OAuth2\Responses
  */
 final class OAuth2PasswordlessInlineAuthenticationResponse
-extends OAuth2PasswordlessAuthenticationResponse
+    extends OAuth2PasswordlessAuthenticationResponse
 {
     /**
      * @param string $value

@@ -40,9 +40,9 @@ final class OTPFactory
     ):OAuth2OTP{
 
         $lifetime = Config::get("otp.lifetime", 120);
-        $length = Config::get("otp.length",6);
+        $length = Config::get("otp.length", 6);
 
-        if(!is_null($client)){
+        if (!is_null($client)) {
             $lifetime = $client->getOtpLifetime();
             $length = $client->getOtpLength();
         }
@@ -52,8 +52,8 @@ final class OTPFactory
         $otp->setSend($request->getSend());
 
         // if its inline the OTP lives forever
-        if($otp->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
-            $lifetime = 0 ;
+        if ($otp->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
+            $lifetime = 0;
         }
 
         $otp->setLifetime($lifetime);
@@ -64,7 +64,7 @@ final class OTPFactory
         $otp->setPhoneNumber($request->getPhoneNumber());
         $identifier_generator->generate($otp);
 
-        if(!is_null($client)){
+        if (!is_null($client)) {
             // check that client does not has a value
             while($client->hasOTP($otp->getValue())){
                 $identifier_generator->generate($otp);
@@ -92,7 +92,7 @@ final class OTPFactory
         $lifetime = Config::get("otp.lifetime", 120);
         $length = Config::get("otp.length",6);
 
-        if(!is_null($client)){
+        if (!is_null($client)) {
             $lifetime = $client->getOtpLifetime();
             $length = $client->getOtpLength();
         }
@@ -104,8 +104,8 @@ final class OTPFactory
         $otp->setScope($payload[OAuth2Protocol::OAuth2Protocol_Scope] ?? null);
 
         // if its inline the OTP lives forever
-        if($otp->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline){
-            $lifetime = 0 ;
+        if ($otp->getConnection() === OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
+            $lifetime = 0;
         }
 
         $otp->setLifetime($lifetime);
@@ -115,7 +115,7 @@ final class OTPFactory
         $otp->setPhoneNumber($payload[OAuth2Protocol::OAuth2PasswordlessPhoneNumber] ?? null);
         $identifier_generator->generate($otp);
 
-        if(!is_null($client)){
+        if (!is_null($client)) {
             // check that client does not has a value
             while($client->hasOTP($otp->getValue())){
                 $identifier_generator->generate($otp);

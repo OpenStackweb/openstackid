@@ -47,7 +47,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
 
     public static $client2 = null;
 
-    protected function setUp():void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -446,7 +446,8 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
         $this->assertTrue(!empty($id_token));
     }
 
-    public function testCodeInlineFlow() {
+    public function testCodeInlineFlow()
+    {
 
         $scope = sprintf('%s profile email address %s',
             OAuth2Protocol::OpenIdConnect_Scope,
@@ -487,7 +488,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
         $params = [
             'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_Passwordless,
             OAuth2Protocol::OAuth2PasswordlessConnection => OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
-            OAuth2Protocol::OAuth2PasswordlessEmail =>"test@test.com",
+            OAuth2Protocol::OAuth2PasswordlessEmail => "test@test.com",
             OAuth2Protocol::OAuth2Protocol_ResponseType_OTP => $otp,
             OAuth2Protocol::OAuth2Protocol_Scope => $scope
         ];
@@ -509,7 +510,8 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
         $this->assertTrue($response->error === 'invalid_grant');
     }
 
-    public function testCodeInlineFlowComplete() {
+    public function testCodeInlineFlowComplete()
+    {
 
         $scope = sprintf('%s profile email address %s',
             OAuth2Protocol::OpenIdConnect_Scope,
@@ -639,7 +641,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
         $response = json_decode($content);
 
         //get new access token and new refresh token...
-        $new_access_token  = $response->access_token;
+        $new_access_token = $response->access_token;
         $new_refresh_token = $response->refresh_token;
 
         $this->assertTrue(!empty($new_access_token));
@@ -647,7 +649,8 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
 
     }
 
-    public function testInvalidRedeemCodeEmailFlow() {
+    public function testInvalidRedeemCodeEmailFlow()
+    {
 
         $scope = sprintf('%s profile email address %s',
             OAuth2Protocol::OpenIdConnect_Scope,
