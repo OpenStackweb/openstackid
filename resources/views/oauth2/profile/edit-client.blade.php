@@ -45,9 +45,14 @@
         });
         @endforeach
 
-        var scopes = [];
+        var scopes = ['openid'];
+        @if ($client->use_refresh_token)
+        scopes.push('offline_access');
+        @endif
         @foreach ($scopes as $scope)
+        @if ( in_array($scope->id, $selected_scopes))
             scopes.push('{!!trim($scope->name)!!}');
+        @endif
         @endforeach
 
         $(document).ready(function () {
@@ -61,9 +66,10 @@
 
             $(document).on('click', '.copy-scopes-button', function(e){
                 // Copy the text inside the text field
-                navigator.clipboard.writeText(scopes);
+
+                navigator.clipboard.writeText(scopes.join(' '));
                 // Alert the copied text
-                alert("Copied Scopes: " + scopes);
+                alert("Copied Scopes: " + scopes.join(' '));
             });
         });
     </script>
