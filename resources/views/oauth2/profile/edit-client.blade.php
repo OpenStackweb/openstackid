@@ -45,6 +45,11 @@
         });
         @endforeach
 
+        var scopes = [];
+        @foreach ($scopes as $scope)
+            scopes.push('{!!trim($scope->name)!!}');
+        @endforeach
+
         $(document).ready(function () {
             $('.panel-collapse').collapse('hide');
             location.hash && $(location.hash + '.collapse').collapse('show');
@@ -52,6 +57,13 @@
             $(document).on('click', '.head-button', function(e){
                 $('.panel-collapse').collapse('hide');
                 window.location.hash = $(this).attr('href');
+            });
+
+            $(document).on('click', '.copy-scopes-button', function(e){
+                // Copy the text inside the text field
+                navigator.clipboard.writeText(scopes);
+                // Alert the copied text
+                alert("Copied Scopes: " + scopes);
             });
         });
     </script>
@@ -106,6 +118,7 @@
                 <a target="_self" class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#allowed_scopes" aria-expanded="false" aria-controls="allowed_scopes">
                     Application Allowed Scopes
                 </a>
+                <i title="Copy Allowed Scopes to Clipboard" class="fa fa-clipboard copy-scopes-button" aria-hidden="true"></i>
             </h4>
         </div>
         <div id="allowed_scopes" class="panel-collapse collapse" role="tabpanel" aria-labelledby="allowed_scopes_heading">
