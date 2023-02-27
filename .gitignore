@@ -59,3 +59,10 @@ model.sql
 /public/assets/css/setPassword.css
 /public/assets/css/consent.css
 /public/assets/consent.js
+/public/assets/*.ttf
+/public/assets/*.eot
+/public/assets/*.png
+/public/assets/*.woff2
+/public/assets/*.svg
+/public/assets/*.txt
+/public/assets/*.woff
