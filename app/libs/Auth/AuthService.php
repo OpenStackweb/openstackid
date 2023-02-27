@@ -168,9 +168,9 @@ final class AuthService extends AbstractService implements IAuthService
 
         $otp = $this->tx_service->transaction(function () use ($otpClaim, $client, $remember) {
 
-            // find latest db OTP by connection , by username (email/phone) number and client not redeemed
-            $otp = $this->otp_repository->getLatestByConnectionAndUserNameNotRedeemed
-            (
+            // find by value, connection and user name
+            $otp = $this->otp_repository->getByValueConnectionAndUserName(
+                $otpClaim->getValue(),
                 $otpClaim->getConnection(),
                 $otpClaim->getUserName(),
                 $client

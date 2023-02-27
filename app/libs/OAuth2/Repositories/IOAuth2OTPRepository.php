@@ -50,4 +50,20 @@ interface IOAuth2OTPRepository extends IBaseRepository
         string $user_name,
         ?Client $client = null
     );
+
+    /**
+     * @param string $value
+     * @param string $connection
+     * @param string $user_name
+     * @param Client|null $client
+     * @return OAuth2OTP|null
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     */
+    public function getByValueConnectionAndUserName
+    (
+        string $value,
+        string $connection,
+        string $user_name,
+        ?Client $client = null
+    ): ?OAuth2OTP;
 }
