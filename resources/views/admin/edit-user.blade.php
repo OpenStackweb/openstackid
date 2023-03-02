@@ -89,6 +89,7 @@
 
         window.GET_USER_ACTIONS_ENDPOINT = '{{URL::action("Api\UserActionApiController@getActions")}}';
         window.SAVE_PROFILE_ENDPOINT = '{!!URL::action("Api\UserApiController@update",["id" => $user_id])!!}';
+        window.SAVE_PIC_ENDPOINT = '{!!URL::action("Api\UserApiController@updatePic",["id" => $user_id])!!}';
     </script>
     {!! HTML::script('assets/editUser.js') !!}
 @append

@@ -5,6 +5,7 @@
   "main": "resources/assets/js/index.js",
   "author": "smarcet@gmail.com",
   "scripts": {
+    "clean": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' + && yarn",
     "build-dev": "./node_modules/.bin/webpack --config webpack.dev.js",
     "build": "./node_modules/.bin/webpack --config webpack.prod.js",
     "serve": "webpack-dev-server --open --port=8888 --https --config webpack.dev.js",
@@ -59,7 +60,7 @@
     "regenerator-runtime": "^0.13.7",
     "sass-loader": "^12.6.0",
     "style-loader": "^3.3.1",
-    "superagent": "^6.1.0",
+    "superagent": "8.0.9",
     "timesync": "^1.0.5",
     "urijs": "^1.19.1",
     "url-loader": "^4.1.1",

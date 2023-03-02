@@ -13,20 +13,20 @@
  **/
 
 use App\Http\Controllers\APICRUDController;
+use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
-use App\Http\Utils\HTMLCleaner;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
 use Exception;
+use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Request;
+use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\Services\ITokenService;
 use OpenId\Services\IUserService;
-use models\exceptions\EntityNotFoundException;
 use Utils\Services\ILogService;
-use Illuminate\Http\Request as LaravelRequest;
 
 /**
  * Class UserApiController
@@ -34,6 +34,8 @@ use Illuminate\Http\Request as LaravelRequest;
  */
 final class UserApiController extends APICRUDController
 {
+
+    use RequestProcessor;
 
     /**
      * @var ITokenService
@@ -50,9 +52,9 @@ final class UserApiController extends APICRUDController
     public function __construct
     (
         IUserRepository $user_repository,
-        ILogService $log_service,
-        IUserService $user_service,
-        ITokenService $token_service
+        ILogService     $log_service,
+        IUserService    $user_service,
+        ITokenService   $token_service
     )
     {
         parent::__construct($user_repository, $user_service, $log_service);
@@ -88,7 +90,8 @@ final class UserApiController extends APICRUDController
     /**
      * @return array
      */
-    protected function getOrderRules():array{
+    protected function getOrderRules(): array
+    {
         return [
             'first_name',
             'last_name',
@@ -193,10 +196,10 @@ final class UserApiController extends APICRUDController
 
     protected function curateUpdatePayload(array $payload): array
     {
-        if(array_key_exists("bio", $payload)){
+        if (array_key_exists("bio", $payload)) {
             $payload["bio"] = strip_tags($payload["bio"]);
         }
-        if(array_key_exists("statement_of_interest", $payload)){
+        if (array_key_exists("statement_of_interest", $payload)) {
             $payload["statement_of_interest"] = strip_tags($payload["statement_of_interest"]);
         }
         return $payload;
@@ -204,10 +207,10 @@ final class UserApiController extends APICRUDController
 
     protected function curateCreatePayload(array $payload): array
     {
-        if(array_key_exists("bio", $payload)){
+        if (array_key_exists("bio", $payload)) {
             $payload["bio"] = strip_tags($payload["bio"]);
         }
-        if(array_key_exists("statement_of_interest", $payload)){
+        if (array_key_exists("statement_of_interest", $payload)) {
             $payload["statement_of_interest"] = strip_tags($payload["statement_of_interest"]);
         }
         return $payload;
@@ -225,57 +228,35 @@ final class UserApiController extends APICRUDController
      * @param LaravelRequest $request
      * @return \Illuminate\Http\JsonResponse|mixed
      */
-    public function updateMe(LaravelRequest $request)
+    public function updateMe()
     {
         if (!Auth::check())
             return $this->error403();
 
-        $myId = Auth::user()->getId();
-        $payload = $this->getUpdatePayload();
-        return $this->_update($myId, $payload);
+        return $this->update(Auth::user()->getId());
+    }
+
+    public function updateMyPic(){
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->updatePic(Auth::user()->getId());
     }
 
     /**
      * @param $id
-     * @return \Illuminate\Http\JsonResponse|mixed
      */
-    public function update($id)
+    public function updatePic($id)
     {
-        $payload = $this->getUpdatePayload();
-        if (array_key_exists("groups", $payload)) {
-            $payload["groups"] = array_map('intval', $payload["groups"]);
-        }
-        return $this->_update($id, $payload);
-    }
-
-    /**
-     * @return array
-     */
-    protected function getUpdatePayload(): array
-    {
-        $payload = request()->all();
-        if (isset($payload['user'])) {
-            $payload = json_decode($payload['user'], true);
-            if (is_null($payload)) {
-                Log::warning(sprintf("UserApiController::getUpdatePayload can not decode %s ", $payload['user']));
-                return [];
+        return $this->processRequest(function () use ($id) {
+            $file = request()->file('pic');
+            if (is_null($file)) {
+                throw new ValidationException("pic param is required.");
             }
-        }
-        return $payload;
-    }
 
-    /**
-     * @param $id
-     * @param $payload
-     * @return \models\utils\IEntity
-     */
-    protected function onUpdate($id, $payload){
-        $user = parent::onUpdate($id, $payload);
-        $file = request()->file('pic');
-        if (!is_null($file)) {
             $user = $this->service->updateProfilePhoto($id, $file);
-        }
-        return $user;
+            return $this->updated(SerializerRegistry::getInstance()->getSerializer($user, $this->serializerType())->serialize());
+        });
     }
 
     protected function serializerType(): string

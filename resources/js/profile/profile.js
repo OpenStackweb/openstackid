@@ -28,6 +28,7 @@ import PasswordChangePanel from "./components/password_change_panel";
 import LoadingIndicator from "../components/loading_indicator";
 
 import styles from "./profile.module.scss";
+import {handleErrorResponse} from "../utils";
 
 const ProfilePage = ({
                          appLogo,
@@ -75,12 +76,13 @@ const ProfilePage = ({
         validationSchema: buildValidationSchema(),
         onSubmit: (values) => {
             setLoading(true);
-            save({...values, pic: pic}, csrfToken).then((res) => {
+            save({...values}, pic, csrfToken).then((res) => {
                 setLoading(false);
                 Swal("Profile saved", "Your profile has been saved successfully", "success");
             }).catch((err) => {
+                console.log(err);
                 setLoading(false);
-                Swal("Something went wrong!", null, "error");
+                handleErrorResponse(err);
             });
         },
     });

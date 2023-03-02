@@ -1,4 +1,4 @@
-import {getRawRequest, putRawRequest} from "../../base_actions";
+import {getRawRequest, putFile, putRawRequest} from "../../base_actions";
 import moment from "moment";
 
 export const PAGE_SIZE = 10;
@@ -66,17 +66,32 @@ export const fetchGroups = async (url, query) => {
     return response.data;
 }
 
-export const save = async (values, token) => {
-    values.public_profile_show_photo = values.public_profile_show_photo ? 1 : 0;
-    values.public_profile_show_fullname = values.public_profile_show_fullname ? 1 : 0;
-    values.public_profile_show_email = values.public_profile_show_email ? 1 : 0;
-    values.public_profile_allow_chat_with_me = values.public_profile_allow_chat_with_me ? 1 : 0;
-    values.active = values.active ? 1 : 0;
-    values.email_verified = values.email_verified ? 1 : 0;
-    if (values.birthday) {
-        values.birthday = moment(`${values.birthday} 12:00`).unix();
-    }
-    values['groups[]'] = values.groups
+export const save = async (entity, pic, token) => {
+    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {} ,{'X-CSRF-TOKEN': token})
+        .then((res) => {
+                if (pic) {
+                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token});
+                }
+                return Promise.resolve()
+            }
+        );
+}
 
-    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(values, {'X-CSRF-TOKEN': token});
+const normalizeEntity = (entity) => {
+
+    entity.public_profile_show_photo = entity.public_profile_show_photo ? 1 : 0;
+    entity.public_profile_show_fullname = entity.public_profile_show_fullname ? 1 : 0;
+    entity.public_profile_show_email = entity.public_profile_show_email ? 1 : 0;
+    entity.public_profile_allow_chat_with_me = entity.public_profile_allow_chat_with_me ? 1 : 0;
+    entity.active = entity.active ? 1 : 0;
+    entity.email_verified = entity.email_verified ? 1 : 0;
+    entity.post_code = entity.post_code.toString();
+
+    if (entity.birthday) {
+        entity.birthday = moment(`${entity.birthday} 12:00`).unix();
+    }
+
+    entity['groups[]'] = entity.groups.map(id=> parseInt(id));
+
+    return entity;
 }

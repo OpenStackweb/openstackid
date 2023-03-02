@@ -105,6 +105,7 @@
 
         window.GET_USER_ACTIONS_ENDPOINT = '{{URL::action("Api\UserActionApiController@getActions")}}';
         window.SAVE_PROFILE_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMe") !!}';
+        window.SAVE_PIC_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMyPic")!!}';
     </script>
     {!! HTML::script('assets/profile.js') !!}
 @append

@@ -34,8 +34,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-
-        URL::forceScheme('https');
+        if(!App::isLocal())
+            URL::forceScheme('https');
 
         $logger = Log::getLogger();
 

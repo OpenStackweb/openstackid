@@ -29,6 +29,7 @@ import PasswordChangePanel from "./components/password_change_panel";
 import LoadingIndicator from "../../components/loading_indicator";
 
 import styles from "./edit_user.module.scss";
+import {handleErrorResponse} from "../../utils";
 
 const EditUserPage = ({
                           appLogo,
@@ -77,12 +78,13 @@ const EditUserPage = ({
         validationSchema: buildValidationSchema(),
         onSubmit: (values) => {
             setLoading(true);
-            save({...values, pic: pic, groups: selectedGroups}, csrfToken).then((res) => {
+            save({...values, groups: selectedGroups}, pic , csrfToken).then((res) => {
                 setLoading(false);
                 Swal("User saved", "The user has been saved successfully", "success");
             }).catch((err) => {
+                console.log(err);
                 setLoading(false);
-                Swal("Something went wrong!", null, "error");
+                handleErrorResponse(err);
             });
         },
     });
