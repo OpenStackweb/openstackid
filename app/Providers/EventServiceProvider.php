@@ -22,6 +22,8 @@ use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\Mail\UserLockedEmail;
 use App\Mail\UserPasswordResetMail;
 use Auth\User;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Database\Events\MigrationsStarted;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use App\Mail\UserEmailVerificationSuccess;
 use App\Services\Auth\IUserService;
@@ -29,6 +31,7 @@ use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\App;
 use App\Events\UserCreated;
 use App\Events\UserEmailVerified;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -147,5 +150,17 @@ final class EventServiceProvider extends ServiceProvider
             return true;
         });
 
+        // check this one here https://github.com/laravel/framework/issues/33238#issuecomment-897063577
+        Event::listen(MigrationsStarted::class, function (){
+            if (config('databases.allow_disabled_pk')) {
+                DB::statement('SET SESSION sql_require_primary_key=0');
+            }
+        });
+
+        Event::listen(MigrationsEnded::class, function (){
+            if (config('databases.allow_disabled_pk')) {
+                DB::statement('SET SESSION sql_require_primary_key=1');
+            }
+        });
     }
 }
