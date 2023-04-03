@@ -63,6 +63,9 @@ class CreateSuperAdmin extends Command
             $user->setEmail($email);
             $user->verifyEmail();
             $user->setPassword($password);
+            $user->setFirstName($email);
+            $user->setLastName($email);
+            $user->setIdentifier($email);
             EntityManager::persist($user);
             EntityManager::flush();
         }
