@@ -23,6 +23,12 @@ const parseFilter = (filters) => {
         case 'equals':
             filter.push(`${filters.columnField}==${filters.value}`);
             break;
+        case 'after':
+            filter.push(`${filters.columnField}>${filters.value}`);
+            break;
+        case 'before':
+            filter.push(`${filters.columnField}<${filters.value}`);
+            break;
     }
     return filter;
 }

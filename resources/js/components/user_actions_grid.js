@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {DataGrid} from "@mui/x-data-grid";
+import {DataGrid, getGridDateOperators} from "@mui/x-data-grid";
 import moment from "moment";
 
 const UserActionsGrid = ({getUserActions, pageSize}) => {
@@ -16,8 +16,14 @@ const UserActionsGrid = ({getUserActions, pageSize}) => {
         {field: 'user_action', headerName: 'Action', width: 150},
         {field: 'from_ip', headerName: 'From IP', width: 150},
         {
-            field: 'created_at', headerName: 'When (UTC)', width: 170, valueFormatter: params =>
-                moment.unix(params?.value).format("DD/MM/YYYY hh:mm A")
+            field: 'created_at',
+            headerName: 'When (UTC)',
+            type: 'date',
+            width: 170,
+            filterOperators: getGridDateOperators().filter(
+                operator => operator.value === 'after' || operator.value === 'before',
+            ),
+            valueFormatter: params => moment.unix(params?.value).format("DD/MM/YYYY hh:mm A")
         },
     ];
 
@@ -56,10 +62,11 @@ const UserActionsGrid = ({getUserActions, pageSize}) => {
 
     return (
         <div style={{height: 650, width: '100%'}}>
-            {uaRows?.length > 0 &&
+            {uaRows &&
                 <DataGrid
                     rows={uaRows}
                     columns={uaColumns}
+                    disableColumnSelector={true}
                     pagination
                     pageSize={pageSize}
                     rowsPerPageOptions={[pageSize]}

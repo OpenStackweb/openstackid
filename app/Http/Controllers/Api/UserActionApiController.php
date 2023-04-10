@@ -64,7 +64,7 @@ final class UserActionApiController extends OAuth2ProtectedController
             'realm' => ['=@', '=='],
             'user_action' => ['=@', '=='],
             'from_ip' => ['=@', '=='],
-            'created_at' => ['=='],
+            'created_at' => ['<', '>'],
         ];
     }
 
