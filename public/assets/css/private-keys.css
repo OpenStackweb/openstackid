@@ -26,3 +26,5 @@
     padding: 0 !important;
     cursor: pointer;
 }
+
+#ui-datepicker-div {z-index:9999 !important;}
