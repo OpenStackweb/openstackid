@@ -25,15 +25,6 @@
         var modal = $('#ModalAddPrivateKey');
         modal.modal({show:false});
 
-        $('#form-add-private-key .input-daterange').datepicker({
-            startDate: "today",
-            todayBtn: "linked",
-            clearBtn: true,
-            todayHighlight: true,
-            orientation: "bottom right",
-            autoclose: true
-        });
-
         // private key form
         var form = $('#form-add-private-key');
 
@@ -68,6 +59,17 @@
                 "alg" : {required: true}
             }
         });
+
+        modal.on('shown.bs.modal', function (e) {
+            $("#form-add-private-key .date-picker").datepicker({
+                startDate: "today",
+                todayBtn: "linked",
+                clearBtn: true,
+                todayHighlight: true,
+                //orientation: "bottom right",
+                autoclose: true
+            });
+        })
 
         modal.on('hidden.bs.modal', function () {
             form.cleanForm();

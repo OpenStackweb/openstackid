@@ -1,23 +1,31 @@
 <form id="form-add-private-key" name="form-add-private-key">
     <div class="form-group">
-        <label class="control-label" for="kid">Key Identifier&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title="The 'kid' (key ID) parameter is used to match a specific key. This is used, for instance, to choose among a set of keys within a JWK Set during key rollover. The structure of the 'kid' value is unspecified.  When 'kid' values are used within a JWK Set, different keys within the JWK Set SHOULD use distinct 'kid' values.  (One example in which different keys might use the same 'kid' value is if they have different 'kty' (key type) values but are considered to be equivalent alternatives by the application using them.)"></span></label>
+        <label class="control-label" for="kid">Key Identifier&nbsp;<span
+                    class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true"
+                    title="The 'kid' (key ID) parameter is used to match a specific key. This is used, for instance, to choose among a set of keys within a JWK Set during key rollover. The structure of the 'kid' value is unspecified.  When 'kid' values are used within a JWK Set, different keys within the JWK Set SHOULD use distinct 'kid' values.  (One example in which different keys might use the same 'kid' value is if they have different 'kty' (key type) values but are considered to be equivalent alternatives by the application using them.)"></span></label>
         <input type="text" class="form-control" name="kid" id="kid" autocomplete="off">
     </div>
     <div class="form-group">
-        <label class="control-label" for="datepicker">Key validity range&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>
+        <label class="control-label" for="datepicker">Key validity range&nbsp;<span
+                    class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>
         <div class="input-daterange input-group" id="datepicker">
-            <input type="text" class="input-sm form-control" name="valid_from" id=="valid_from" autocomplete="new" />
+            <input type="text" class="input-sm form-control date-picker" name="valid_from" id="valid_from"
+                   autocomplete="new"/>
             <span class="input-group-addon">to</span>
-            <input type="text" class="input-sm form-control" name="valid_to" id="valid_to" autocomplete="new" />
+            <input type="text" class="input-sm form-control date-picker" name="valid_to" id="valid_to"
+                   autocomplete="new"/>
         </div>
     </div>
     <div class="checkbox">
         <label>
-            <input type="checkbox" id="active" name="active" checked>Is Active?&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span>
+            <input type="checkbox" id="active" name="active" checked>Is Active?&nbsp;<span
+                    class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span>
         </label>
     </div>
     <div class="form-group">
-        <label class="control-label" for="usage">Usage&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title="The 'use' parameter identifies the intended use of the key."></span></label>
+        <label class="control-label" for="usage">Usage&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle"
+                                                                  aria-hidden="true"
+                                                                  title="The 'use' parameter identifies the intended use of the key."></span></label>
         {!! Form::select('usage', Utils\ArrayUtils::convert2Assoc(\jwk\JSONWebKeyPublicKeyUseValues::$valid_uses) ,null , array('class' => 'form-control', 'id' => 'usage')) !!}
     </div>
     <div class="form-group">
