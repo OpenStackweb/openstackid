@@ -14,6 +14,7 @@
 
 use App\Events\UserPasswordResetSuccessful;
 use App\Jobs\PublishUserCreated;
+use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Factories\UserRegistrationRequestFactory;
 use App\libs\Auth\Models\SpamEstimatorFeed;
@@ -28,7 +29,6 @@ use App\Mail\UserPasswordResetRequestMail;
 use App\Mail\WelcomeNewUserEmail;
 use App\Services\AbstractService;
 use Auth\Exceptions\UserPasswordResetRequestVoidException;
-use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Auth\UserPasswordResetRequest;
@@ -172,6 +172,14 @@ final class UserService extends AbstractService implements IUserService
             if (is_null($user))
                 throw new EntityNotFoundException();
             $user->verifyEmail();
+
+            try {
+                if (Config::get("queue.enable_message_broker", false) == true)
+                    PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+            } catch (\Exception $ex) {
+                Log::warning($ex);
+            }
+
             return $user;
         });
     }
@@ -517,12 +525,23 @@ final class UserService extends AbstractService implements IUserService
     public function initializeUser(int $user_id): ?User
     {
         return $this->tx_service->transaction(function() use($user_id) {
-
+            Log::debug(sprintf("UserService::initializeUser %s", $user_id));
             $user = $this->user_repository->getById($user_id);
             if(is_null($user) || !$user instanceof User) return null;
 
             if(!$user->isEmailVerified()) {
+                Log::debug(sprintf("UserService::initializeUser %s email not verified", $user_id));
+
                 $this->sendVerificationEmail($user);
+
+                try {
+                    if(Config::get("queue.enable_message_broker", false) == true)
+                        PublishUserCreated::dispatch($user)->onConnection('message_broker');
+                }
+                catch (\Exception $ex){
+                    Log::warning($ex);
+                }
+
                 return $user;
             }
 
