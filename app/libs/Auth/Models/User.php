@@ -501,6 +501,9 @@ class User extends BaseEntity
      */
     public function getIdentifier(): ?string
     {
+        if(empty($this->identifier))
+            return $this->email;
+
         return $this->identifier;
     }
 

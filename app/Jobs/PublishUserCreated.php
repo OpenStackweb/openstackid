@@ -41,7 +41,7 @@ class PublishUserCreated implements ShouldQueue
     {
         $this->user_email = $newUser->getEmail();
         $this->user_id = $newUser->getId();
-        Log::debug(sprintf("PublishUserCreated::PublishUserCreated user %s", $this->user_email));
+        Log::debug(sprintf("PublishUserCreated::PublishUserCreated user %s (%s)", $this->user_email, $this->user_id));
     }
 
     /**
