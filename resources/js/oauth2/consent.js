@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import Button from '@material-ui/core/Button';
 import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
-import {MuiThemeProvider, createTheme, withStyles} from "@material-ui/core/styles";
+import {MuiThemeProvider, createMuiTheme, withStyles} from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
 import CardContent from "@material-ui/core/CardContent";
@@ -192,7 +192,7 @@ const ConsentPage = (
 };
 
 // Or Create your Own theme:
-const theme = createTheme({
+const theme = createMuiTheme({
     palette: {
         primary: {
             main: "#3fa2f7",
