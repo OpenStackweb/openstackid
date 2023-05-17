@@ -15,8 +15,8 @@ import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import Select from "@material-ui/core/Select";
 import Swal from "sweetalert2";
-import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles";
-import { useFormik } from "formik";
+import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
+import {useFormik} from "formik";
 import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
 
@@ -341,7 +341,7 @@ const SetPasswordPage = ({
 };
 
 // Or Create your Own theme:
-const theme = createMuiTheme({
+const theme = createTheme({
   palette: {
     primary: {
       main: "#3fa2f7",
