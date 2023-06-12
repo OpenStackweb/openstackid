@@ -98,7 +98,8 @@ final class ValidateBearerTokenResourceServerStrategy implements IValidateBearer
             (
                 sprintf
                 (
-                    'access token current audience does not match with current request ip %s',
+                    'access token current audience (%s) does not match with current request ip %s',
+                    $access_token->getAudience(),
                     $current_ip
                 )
             );
