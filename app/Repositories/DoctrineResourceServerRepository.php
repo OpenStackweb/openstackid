@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use Models\OAuth2\ResourceServer;
 use OAuth2\Repositories\IResourceServerRepository;
 /**
@@ -55,6 +57,7 @@ class DoctrineResourceServerRepository
      */
     public function getByIp(string $ip):?ResourceServer
     {
+        Log::debug(sprintf("DoctrineResourceServerRepository::getByIp ip %s", $ip));
         return $this->getEntityManager()
             ->createQueryBuilder()
             ->select("r")
@@ -90,6 +93,7 @@ class DoctrineResourceServerRepository
      */
     public function getByAudienceAndIpAndActive(array $audience, string $ip):?ResourceServer
     {
+        Log::debug(sprintf("DoctrineResourceServerRepository::getByAudienceAndIpAndActive audience %s ip %s", json_encode($audience), $ip));
         return $this->getEntityManager()
             ->createQueryBuilder()
             ->select("r")
