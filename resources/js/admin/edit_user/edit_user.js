@@ -27,6 +27,7 @@ import Divider from "@material-ui/core/Divider";
 import Link from "@material-ui/core/Link";
 import PasswordChangePanel from "./components/password_change_panel";
 import LoadingIndicator from "../../components/loading_indicator";
+import TopLogo from "../../components/top_logo/top_logo";
 
 import styles from "./edit_user.module.scss";
 import {handleErrorResponse} from "../../utils";
@@ -92,11 +93,7 @@ const EditUserPage = ({
     return (
         <Container component="main" maxWidth="xs" className={styles.main_container}>
             <CssBaseline/>
-            <div className={styles.title_container}>
-                <a href="/" target='_self'>
-                    <img className={styles.app_logo} alt="appLogo" src={appLogo}/>
-                </a>
-            </div>
+            <TopLogo appLogo={appLogo}/>
             <Navbar menuConfig={menuConfig}/>
             <form
                 onSubmit={formik.handleSubmit}
