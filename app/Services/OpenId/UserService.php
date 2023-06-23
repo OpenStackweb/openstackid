@@ -20,6 +20,7 @@ use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\Services\AbstractService;
 use App\Services\Auth\IUserIdentifierGeneratorService;
+use Auth\Group;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
@@ -296,8 +297,9 @@ final class UserService extends AbstractService implements IUserService
                 $user->clearGroups();
                 foreach ($payload['groups'] as $group_id) {
                     $group = $this->group_repository->getById($group_id);
-                    if (is_null($group))
+                    if (!$group instanceof Group)
                         throw new EntityNotFoundException("group not found");
+
                     $user->addToGroup($group);
                 }
             }
@@ -312,6 +314,7 @@ final class UserService extends AbstractService implements IUserService
                 Log::warning(sprintf("UserService::update use id %s - password changed", $id));
                 Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
             }
+
             return $user;
         });
 
