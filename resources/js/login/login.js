@@ -12,8 +12,8 @@ import Container from '@material-ui/core/Container';
 import Chip from '@material-ui/core/Chip';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
-import { verifyAccount, emitOTP } from './actions';
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+import {verifyAccount, emitOTP} from './actions';
+import {MuiThemeProvider, createTheme} from '@material-ui/core/styles';
 import DividerWithText from '../components/divider_with_text';
 import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
@@ -685,7 +685,7 @@ class LoginPage extends React.Component {
 }
 
 // Or Create your Own theme:
-const theme = createMuiTheme({
+const theme = createTheme({
     palette: {
         primary: {
             main: '#3fa2f7'

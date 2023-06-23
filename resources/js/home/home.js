@@ -9,7 +9,7 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import Grid from "@material-ui/core/Grid";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import Typography from "@material-ui/core/Typography";
-import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles";
+import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import Banner from "../components/banner/banner";
 
 import styles from "./home.module.scss";
@@ -80,7 +80,7 @@ const HomePage = ({
 };
 
 // Or Create your Own theme:
-const theme = createMuiTheme({
+const theme = createTheme({
   palette: {
     primary: {
       main: "#3fa2f7",
