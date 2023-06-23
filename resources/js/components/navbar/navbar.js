@@ -1,13 +1,18 @@
 import React, {useState} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import Button from '@material-ui/core/Button';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
-import Divider from "@material-ui/core/Divider";
-import Typography from "@material-ui/core/Typography";
+import {useMediaQuery} from '@material-ui/core';
+import {useTheme} from '@material-ui/core/styles';
+import {
+    AppBar,
+    Button,
+    Divider,
+    Menu,
+    MenuItem,
+    makeStyles,
+    Toolbar,
+    Typography
+} from '@material-ui/core';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
+import DrawerComponent from '../drawer/drawer';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -21,6 +26,10 @@ const useStyles = makeStyles((theme) => ({
         marginLeft: 'unset',
         backgroundColor: 'white'
     },
+    toolbarMobile: {
+        marginRight: 'unset',
+        backgroundColor: 'white'
+    },
     menuSectionTitle: {
         marginLeft: '10px',
     },
@@ -28,6 +37,8 @@ const useStyles = makeStyles((theme) => ({
 
 export default function NavBar({menuConfig}) {
     const classes = useStyles();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
     const [oauthMenuEl, setOauthMenuEl] = useState(null);
     const [serverAdminEl, setServerAdminEl] = useState(null);
@@ -52,116 +63,122 @@ export default function NavBar({menuConfig}) {
     return (
         <div className={classes.root}>
             <AppBar position="static" elevation={0} className={classes.appbar}>
-                <Toolbar className={classes.toolbar}>
-                    <Button onClick={() => goTo(`${menuConfig.settingURL}`)}>
-                        {menuConfig.settingsText}
-                    </Button>
-                    <Button aria-controls="oauth-menu"
-                            aria-haspopup="true"
-                            onClick={handleOauthMenuClick}
-                            endIcon={<ArrowDropDownIcon/>}>
-                        {menuConfig.oauthConsoleText}
-                    </Button>
-                    <Menu
-                        id="oauth-menu"
-                        anchorEl={oauthMenuEl}
-                        keepMounted
-                        open={Boolean(oauthMenuEl)}
-                        onClose={handleClose}
-                    >
-                        <MenuItem
-                            onClick={() => goTo(`${menuConfig.oauthAppsURL}`)}>{menuConfig.oauthAppsText}</MenuItem>
-                        <MenuItem
-                            onClick={() => goTo(`${menuConfig.oauthGrantsURL}`)}>{menuConfig.oauthGrantsText}</MenuItem>
-                    </Menu>
-                    {(menuConfig.isOAuth2ServerAdmin || menuConfig.isOpenIdServerAdmin || menuConfig.isSuperAdmin) &&
+                <Toolbar className={isMobile ? classes.toolbarMobile : classes.toolbar}>
+                    {isMobile ? (
+                        <DrawerComponent/>
+                    ) : (
                         <>
-                            <Button aria-controls="server-admin-menu"
+                            <Button onClick={() => goTo(`${menuConfig.settingURL}`)}>
+                                {menuConfig.settingsText}
+                            </Button>
+                            <Button aria-controls="oauth-menu"
                                     aria-haspopup="true"
-                                    onClick={handleServerAdminMenuClick}
+                                    onClick={handleOauthMenuClick}
                                     endIcon={<ArrowDropDownIcon/>}>
-                                {menuConfig.serverAdminText}
+                                {menuConfig.oauthConsoleText}
                             </Button>
                             <Menu
-                                id="server-admin-menu"
-                                anchorEl={serverAdminEl}
+                                id="oauth-menu"
+                                anchorEl={oauthMenuEl}
                                 keepMounted
-                                open={Boolean(serverAdminEl)}
+                                open={Boolean(oauthMenuEl)}
                                 onClose={handleClose}
                             >
-                                {(menuConfig.isOpenIdServerAdmin || menuConfig.isSuperAdmin) &&
-                                    <span>
-                                        <li>
-                                            <Typography
-                                                className={classes.menuSectionTitle}
-                                                display="block"
-                                                variant="caption"
-                                            >
-                                                {menuConfig.securitySectionText}
-                                            </Typography>
-                                        </li>
-                                        {menuConfig.isSuperAdmin &&
-                                            <>
-                                                <MenuItem
-                                                    onClick={() => goTo(`${menuConfig.usersAdminURL}`)}>{menuConfig.usersAdminText}</MenuItem>
-                                                <MenuItem
-                                                    onClick={() => goTo(`${menuConfig.groupsAdminURL}`)}>{menuConfig.groupsAdminText}</MenuItem>
-                                            </>
-                                        }
-                                        <MenuItem
-                                            onClick={() => goTo(`${menuConfig.bannedIPsAdminURL}`)}>{menuConfig.bannedIPsAdminText}</MenuItem>
-                                        <Divider component="li"/>
-                                    </span>
-                                }
-                                {menuConfig.isOAuth2ServerAdmin &&
-                                    <span>
-                                        <li>
-                                            <Typography
-                                                className={classes.menuSectionTitle}
-                                                display="block"
-                                                variant="caption"
-                                            >
-                                                {menuConfig.oauthAdminSectionText}
-                                            </Typography>
-                                        </li>
-                                        <MenuItem
-                                            onClick={() => goTo(`${menuConfig.serverPrivateKeysAdminURL}`)}>{menuConfig.serverPrivateKeysAdminText}</MenuItem>
-                                        <MenuItem
-                                            onClick={() => goTo(`${menuConfig.resourceServersAdminURL}`)}>{menuConfig.resourceServersAdminText}</MenuItem>
-                                        <MenuItem
-                                            onClick={() => goTo(`${menuConfig.apiScopesAdminURL}`)}>{menuConfig.apiScopesAdminText}</MenuItem>
-                                        <MenuItem
-                                            onClick={() => goTo(`${menuConfig.lockedClientsAdminURL}`)}>{menuConfig.lockedClientsAdminText}</MenuItem>
-                                        <Divider component="li"/>
-                                    </span>
-                                }
-                                {menuConfig.isOpenIdServerAdmin &&
-                                    <span>
-                                        <li>
-                                            <Typography
-                                                className={classes.menuSectionTitle}
-                                                display="block"
-                                                variant="caption"
-                                            >
-                                                {menuConfig.serverConfigSectionText}
-                                            </Typography>
-                                        </li>
-                                        <MenuItem
-                                            onClick={() => goTo(`${menuConfig.serverConfigURL}`)}>{menuConfig.serverConfigText}</MenuItem>
-                                    </span>
-                                }
+                                <MenuItem
+                                    onClick={() => goTo(`${menuConfig.oauthAppsURL}`)}>{menuConfig.oauthAppsText}</MenuItem>
+                                <MenuItem
+                                    onClick={() => goTo(`${menuConfig.oauthGrantsURL}`)}>{menuConfig.oauthGrantsText}</MenuItem>
                             </Menu>
+                            {(menuConfig.isOAuth2ServerAdmin || menuConfig.isOpenIdServerAdmin || menuConfig.isSuperAdmin) &&
+                                <>
+                                    <Button aria-controls="server-admin-menu"
+                                            aria-haspopup="true"
+                                            onClick={handleServerAdminMenuClick}
+                                            endIcon={<ArrowDropDownIcon/>}>
+                                        {menuConfig.serverAdminText}
+                                    </Button>
+                                    <Menu
+                                        id="server-admin-menu"
+                                        anchorEl={serverAdminEl}
+                                        keepMounted
+                                        open={Boolean(serverAdminEl)}
+                                        onClose={handleClose}
+                                    >
+                                        {(menuConfig.isOpenIdServerAdmin || menuConfig.isSuperAdmin) &&
+                                            <span>
+                                            <li>
+                                                <Typography
+                                                    className={classes.menuSectionTitle}
+                                                    display="block"
+                                                    variant="caption"
+                                                >
+                                                    {menuConfig.securitySectionText}
+                                                </Typography>
+                                            </li>
+                                                {menuConfig.isSuperAdmin &&
+                                                    <>
+                                                        <MenuItem
+                                                            onClick={() => goTo(`${menuConfig.usersAdminURL}`)}>{menuConfig.usersAdminText}</MenuItem>
+                                                        <MenuItem
+                                                            onClick={() => goTo(`${menuConfig.groupsAdminURL}`)}>{menuConfig.groupsAdminText}</MenuItem>
+                                                    </>
+                                                }
+                                                <MenuItem
+                                                    onClick={() => goTo(`${menuConfig.bannedIPsAdminURL}`)}>{menuConfig.bannedIPsAdminText}</MenuItem>
+                                            <Divider component="li"/>
+                                        </span>
+                                        }
+                                        {menuConfig.isOAuth2ServerAdmin &&
+                                            <span>
+                                            <li>
+                                                <Typography
+                                                    className={classes.menuSectionTitle}
+                                                    display="block"
+                                                    variant="caption"
+                                                >
+                                                    {menuConfig.oauthAdminSectionText}
+                                                </Typography>
+                                            </li>
+                                            <MenuItem
+                                                onClick={() => goTo(`${menuConfig.serverPrivateKeysAdminURL}`)}>{menuConfig.serverPrivateKeysAdminText}</MenuItem>
+                                            <MenuItem
+                                                onClick={() => goTo(`${menuConfig.resourceServersAdminURL}`)}>{menuConfig.resourceServersAdminText}</MenuItem>
+                                            <MenuItem
+                                                onClick={() => goTo(`${menuConfig.apiScopesAdminURL}`)}>{menuConfig.apiScopesAdminText}</MenuItem>
+                                            <MenuItem
+                                                onClick={() => goTo(`${menuConfig.lockedClientsAdminURL}`)}>{menuConfig.lockedClientsAdminText}</MenuItem>
+                                            <Divider component="li"/>
+                                        </span>
+                                        }
+                                        {menuConfig.isOpenIdServerAdmin &&
+                                            <span>
+                                            <li>
+                                                <Typography
+                                                    className={classes.menuSectionTitle}
+                                                    display="block"
+                                                    variant="caption"
+                                                >
+                                                    {menuConfig.serverConfigSectionText}
+                                                </Typography>
+                                            </li>
+                                            <MenuItem
+                                                onClick={() => goTo(`${menuConfig.serverConfigURL}`)}>{menuConfig.serverConfigText}</MenuItem>
+                                        </span>
+                                        }
+                                    </Menu>
+                                </>
+                            }
+                            <Button onClick={(e) => {
+                                window.location.href = `mailto:${menuConfig.helpMailto}`;
+                                e.preventDefault();
+                            }}>
+                                Help
+                            </Button>
+                            <Button onClick={() => goTo(`${menuConfig.logoutURL}`)}>
+                                Logout
+                            </Button>
                         </>
-                    }
-                    <Button onClick={(e) => {
-                        window.location.href = `mailto:${menuConfig.helpMailto}`;
-                        e.preventDefault();
-                    }}>
-                        Help
-                    </Button>
-                    <Button onClick={() => goTo(`${menuConfig.logoutURL}`)}>
-                        Logout
-                    </Button>
+                    )}
                 </Toolbar>
             </AppBar>
         </div>
