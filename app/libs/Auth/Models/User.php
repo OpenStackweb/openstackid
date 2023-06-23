@@ -437,8 +437,8 @@ class User extends BaseEntity
         $this->email_verified = false;
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
-        $this->public_profile_show_fullname = false;
-        $this->public_profile_allow_chat_with_me = false;
+        $this->public_profile_show_fullname = true;
+        $this->public_profile_allow_chat_with_me = true;
         $this->password = "";
         $this->identifier = null;
         $this->gender_specify = "";
