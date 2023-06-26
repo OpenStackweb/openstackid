@@ -864,7 +864,7 @@ final class TokenService extends AbstractService implements ITokenService
             $current_audience = array($current_audience);
         }
 
-        $resource_server = $this->resource_server_repository->getByIp($current_ip);
+        $resource_server = $this->resource_server_repository->getByAudienceAndIpAndActive($current_audience, $current_ip);
 
         // check audience
         if(is_null($resource_server)){
@@ -872,19 +872,31 @@ final class TokenService extends AbstractService implements ITokenService
             return false;
         }
 
+        Log::debug
+        (
+            sprintf
+            (
+                "TokenService::checkAccessTokenAudience found resource server %s (%s)",
+                $resource_server->getId(),
+                $resource_server->getHost()
+            )
+        );
+
         $hosts = explode(',', $resource_server->getHost());
+        $res = count(array_intersect($hosts, $current_audience));
 
         Log::debug
         (
             sprintf
             (
-                "TokenService::checkAccessTokenAudience audience %s hosts %s",
+                "TokenService::checkAccessTokenAudience audience %s hosts %s res %s",
                 json_encode($current_audience),
-                json_encode($hosts)
+                json_encode($hosts),
+                $res,
             )
         );
 
-        return count(array_intersect($hosts, $current_audience)) > 0;
+        return $res > 0;
     }
 
 
