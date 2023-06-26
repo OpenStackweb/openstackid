@@ -13,6 +13,7 @@
  **/
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Illuminate\Support\Facades\Redis;
+use Models\OAuth2\ResourceServer;
 use Models\OAuth2\ServerPrivateKey;
 use Models\UserExceptionTrail;
 /**
@@ -64,5 +65,22 @@ class DoctrineRepositoriesTests extends TestCase
 
         EntityManager::remove($ex);
         EntityManager::flush();
+    }
+
+    public function testResourceServerRepository(){
+        $repository = EntityManager::getRepository(ResourceServer::class);
+
+        $rs = new ResourceServer();
+        $rs->setFriendlyName("test".rand(1,1000));
+        $rs->setActive(true);
+        $rs->setIps("127.0.0.1,200.0.0.0");
+        $rs->setHost("https://www.openstack.org,https://test.com");
+
+        EntityManager::persist($rs);
+        EntityManager::flush();
+
+        $res = $repository->getByAudienceAndIpAndActive(['https://www.openstack.org', 'https://test.com'], '127.0.0.1');
+
+        $this->assertTrue(!is_null($res));
     }
 }
