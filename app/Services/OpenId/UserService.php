@@ -359,26 +359,39 @@ final class UserService extends AbstractService implements IUserService
     {
         $user = $this->tx_service->transaction(function () use ($user_id, $file, $max_file_size) {
 
+            Log::debug(sprintf("UserService::updateProfilePhoto user %s", $user_id));
+
             $allowed_extensions = ['png', 'jpg', 'jpeg'];
 
             $user = $this->repository->getById($user_id);
-            if (is_null($user) || !$user instanceof User)
-                throw new EntityNotFoundException("user not found");
+            if (!$user instanceof User)
+                throw new EntityNotFoundException("User not found.");
+
             $fileName = $file->getClientOriginalName();
             $fileExt = $file->extension() ?? pathinfo($fileName, PATHINFO_EXTENSION);
 
             Log::debug(sprintf("UserService::updateProfilePhoto user %s fileName %s fileExt %s", $user_id, $fileName, $fileExt));
 
             if (!in_array($fileExt, $allowed_extensions)) {
-                throw new ValidationException(sprintf("file does not has a valid extension (%s).", join(",", $allowed_extensions)));
-            }
-            if ($file->getSize() > $max_file_size) {
-                throw new ValidationException(sprintf("file exceeds max_file_size (%s MB).", ($max_file_size / 1024) / 1024));
+                throw new ValidationException(sprintf("File does not has a valid extension (%s).", join(",", $allowed_extensions)));
             }
 
+            if ($file->getSize() > $max_file_size) {
+                throw new ValidationException(sprintf("File exceeds max_file_size (%s MB).", ($max_file_size / 1024) / 1024));
+            }
+
+            $storage = Storage::disk(Config::get("filesystems.cloud"));
             // normalize fileName
             $fileName = FileNameSanitizer::sanitize($fileName);
-            $path = User::getProfilePicFolder();
+            // generate path
+            $path = sprintf("%s/%s", User::getProfilePicFolder(), $user->getId());
+            $index = 1;
+            // create unique file name
+            while($storage->exists(sprintf("%s/%s", $path, $fileName))){
+                Log::debug(sprintf("UserService::updateProfilePhoto user %s file %s already exists", $user_id, $fileName));
+                $fileName = sprintf("%s_%s", $index++, $fileName);
+                Log::debug(sprintf("UserService::updateProfilePhoto user %s new file name %s", $user_id, $fileName));
+            }
 
             Log::debug(sprintf("UserService::updateProfilePhoto user %s saving file to swift path %s fileName %s", $user_id, $path, $fileName));
             Storage::disk(Config::get("filesystems.cloud"))->putFileAs($path, $file, $fileName, 'public');

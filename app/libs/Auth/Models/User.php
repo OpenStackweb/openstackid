@@ -885,17 +885,37 @@ class User extends BaseEntity
 
             if (!empty($this->pic)) {
                 $storage = Storage::disk(Config::get("filesystems.cloud"));
+
                 if(!is_null($storage)) {
-                    $pic = $storage->url(sprintf("%s/%s", self::getProfilePicFolder(), $this->pic));
-                    Cache::forever($pic_key, $pic);
-                    return $pic;
+
+                    $path = self::getProfilePicFolder();
+                    $pic = null;
+
+                    if($storage->exists(sprintf("%s/%s/%s", $path, $this->id, $this->pic))) {
+                        Log::debug(sprintf("User::getPic Getting profile pic from %s/%s/%s", $path, $this->id, $this->pic));
+                        $pic = $storage->url(sprintf("%s/%s/%s", $path, $this->id, $this->pic));
+                    }
+
+                    // legacy path format
+                    if(empty($pic) && $storage->exists(sprintf("%s/%s", $path, $this->pic))) {
+                        Log::debug(sprintf("User::getPic Getting profile pic from %s/%s", $path, $this->pic));
+                        $pic = $storage->url(sprintf("%s/%s", $path, $this->pic));
+                    }
+
+                    if(!empty($pic)) {
+                        Cache::forever($pic_key, $pic);
+                        return $pic;
+                    }
                 }
             }
+
             if(!empty($this->external_pic)){
                 return $this->external_pic;
             }
+
             if(!empty($default_pic))
                 return $default_pic;
+
             return $this->getGravatarUrl();
         }
         catch(RequestException $ex1){
