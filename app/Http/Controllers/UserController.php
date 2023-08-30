@@ -606,12 +606,6 @@ final class UserController extends OpenIdController
 
     public function logout()
     {
-        $this->user_action_service->addUserAction
-        (
-            $this->auth_service->getCurrentUser()->getId(),
-            IPHelper::getUserIp(),
-            IUserActionService::LogoutAction
-        );
         $this->auth_service->logout();
         Session::flush();
         Session::regenerate();
