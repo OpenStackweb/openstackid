@@ -498,7 +498,7 @@ class LoginPage extends React.Component {
         }
 
         this.setState({ ...this.state, disableInput: true });
-        verifyAccount(user_name).then((payload) => {
+        verifyAccount(user_name, this.props.token).then((payload) => {
             let { response } = payload;
 
             this.setState({
