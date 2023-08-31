@@ -1,13 +1,13 @@
 import {getRawRequest, postRawRequest} from '../base_actions'
 
 
-export const verifyAccount = (email) => {
+export const verifyAccount = (email, token) => {
 
     const params = {
       email: email
     };
 
-    return getRawRequest(window.VERIFY_ACCOUNT_ENDPOINT)(params);
+    return postRawRequest(window.VERIFY_ACCOUNT_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 
 }
 
