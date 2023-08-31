@@ -19,6 +19,7 @@ module.exports = {
     */
     entry: {
         index: './resources/js/index.js',
+        clients: './resources/js/oauth2/profile/clients.js',
         consent: './resources/js/oauth2/consent.js',
         editUser: './resources/js/admin/edit_user/edit_user.js',
         emailVerification: './resources/js/email_verification/email_verification.js',
