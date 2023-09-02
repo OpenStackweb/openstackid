@@ -1,9 +1,9 @@
-@import '../../../styles/global.scss';
+@import '../../../../styles/global';
 
 .main_container {
   margin-top: 5%;
   margin-bottom: 10%;
-  max-width: 544px !important;
+  max-width: 1024px !important;
 
   .title_container {
     .app_logo {
@@ -23,9 +23,15 @@
     }
   }
 
-  .profile_container {
+  .clients_container {
     border: solid 1px $border-color;
     color: $text-color-dark;
     background-color: white;
+
+    .button {
+      width: 200px;
+      color: white;
+      background-color: $base-color-dark;
+    }
   }
 }

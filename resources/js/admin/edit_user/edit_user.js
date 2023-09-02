@@ -28,9 +28,9 @@ import Link from "@material-ui/core/Link";
 import PasswordChangePanel from "./components/password_change_panel";
 import LoadingIndicator from "../../components/loading_indicator";
 import TopLogo from "../../components/top_logo/top_logo";
+import {handleErrorResponse} from "../../utils";
 
 import styles from "./edit_user.module.scss";
-import {handleErrorResponse} from "../../utils";
 
 const EditUserPage = ({
                           appLogo,

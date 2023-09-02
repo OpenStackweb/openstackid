@@ -122,6 +122,21 @@ export const putRawRequest = (endpoint) => (payload = null, params={}, headers =
     })
 }
 
+export const deleteRawRequest = (endpoint) => (headers = {}) => {
+    let url = URI(endpoint);
+    let req = http.delete(url.toString());
+
+    return req.set(headers).timeout({
+        response: 60000,
+        deadline: 60000,
+    }).then((res) => {
+        let json = res.body;
+        return Promise.resolve({response: json});
+    }).catch((error) => {
+        return Promise.reject(error);
+    })
+}
+
 export const postFile = (
     endpoint
 ) => (file, fileParamName = 'file',

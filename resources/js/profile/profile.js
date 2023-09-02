@@ -136,6 +136,7 @@ const ProfilePage = ({
                                         autoFocus={true}
                                         value={formik.values.first_name}
                                         onChange={formik.handleChange}
+                                        data-lpignore="true"
                                         error={
                                             formik.touched.first_name &&
                                             Boolean(formik.errors.first_name)
@@ -155,6 +156,7 @@ const ProfilePage = ({
                                         label="Last Name"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.last_name}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.last_name &&
@@ -178,6 +180,7 @@ const ProfilePage = ({
                                         label="Email"
                                         inputProps={{maxLength: 255}}
                                         value={formik.values.email}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={formik.touched.email && Boolean(formik.errors.email)}
                                         helperText={formik.touched.email && formik.errors.email}
@@ -193,6 +196,7 @@ const ProfilePage = ({
                                         label="Identifier"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.identifier}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.identifier &&
@@ -216,6 +220,7 @@ const ProfilePage = ({
                                         label="Second Email"
                                         inputProps={{maxLength: 255}}
                                         value={formik.values.second_email}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={formik.touched.second_email && Boolean(formik.errors.second_email)}
                                         helperText={formik.touched.second_email && formik.errors.second_email}
@@ -232,6 +237,7 @@ const ProfilePage = ({
                                         label="Third Email"
                                         inputProps={{maxLength: 255}}
                                         value={formik.values.third_email}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={formik.touched.third_email && Boolean(formik.errors.third_email)}
                                         helperText={formik.touched.third_email && formik.errors.third_email}
@@ -251,6 +257,7 @@ const ProfilePage = ({
                                             shrink: true,
                                         }}
                                         value={formik.values.birthday}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.birthday &&
@@ -269,6 +276,7 @@ const ProfilePage = ({
                                         fullWidth
                                         size="small"
                                         value={formik.values.gender}
+                                        data-lpignore="true"
                                         displayEmpty
                                         onChange={formik.handleChange}
                                         className={styles.genders}
@@ -311,6 +319,7 @@ const ProfilePage = ({
                                             label="Specify your gender"
                                             inputProps={{maxLength: 255}}
                                             value={formik.values.gender_specify}
+                                            data-lpignore="true"
                                             onChange={formik.handleChange}
                                             error={formik.touched.gender_specify && Boolean(formik.errors.gender_specify)}
                                             helperText={formik.touched.gender_specify && formik.errors.gender_specify}
@@ -329,6 +338,7 @@ const ProfilePage = ({
                                         id="bio"
                                         name="bio"
                                         value={formik.values.bio}
+                                        data-lpignore="true"
                                         onChange={(content) => formik.setFieldValue('bio', content)}
                                     />
                                 </Grid>
@@ -344,6 +354,7 @@ const ProfilePage = ({
                                         id="statement_of_interest"
                                         name="statement_of_interest"
                                         value={formik.values.statement_of_interest}
+                                        data-lpignore="true"
                                         onChange={(content) => formik.setFieldValue('statement_of_interest', content)}
                                     />
                                 </Grid>
@@ -359,6 +370,7 @@ const ProfilePage = ({
                                         label="IRC"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.irc}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.irc &&
@@ -379,6 +391,7 @@ const ProfilePage = ({
                                         label="Github user"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.github_user}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.github_user &&
@@ -399,6 +412,7 @@ const ProfilePage = ({
                                         label="Twitter"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.twitter_name}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.twitter_name &&
@@ -421,6 +435,7 @@ const ProfilePage = ({
                                         label="WEChat user"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.wechat_user}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.wechat_user &&
@@ -441,6 +456,7 @@ const ProfilePage = ({
                                         label="LinkedIn Profile"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.linked_in_profile}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.linked_in_profile &&
@@ -463,6 +479,7 @@ const ProfilePage = ({
                                         label="Address 1"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.address1}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.address1 &&
@@ -483,6 +500,7 @@ const ProfilePage = ({
                                         label="Address 2"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.address2}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.address2 &&
@@ -505,6 +523,7 @@ const ProfilePage = ({
                                         label="City"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.city}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.city &&
@@ -525,6 +544,7 @@ const ProfilePage = ({
                                         label="State"
                                         inputProps={{maxLength: 100}}
                                         value={formik.values.state}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.state &&
@@ -547,6 +567,7 @@ const ProfilePage = ({
                                         label="Zip Code"
                                         inputProps={{maxLength: 10}}
                                         value={formik.values.post_code}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.post_code &&
@@ -565,6 +586,7 @@ const ProfilePage = ({
                                         fullWidth
                                         size="small"
                                         value={formik.values.country_iso_code}
+                                        data-lpignore="true"
                                         displayEmpty
                                         onChange={formik.handleChange}
                                         className={styles.countries}
@@ -603,6 +625,7 @@ const ProfilePage = ({
                                         label="Company"
                                         inputProps={{maxLength: 10}}
                                         value={formik.values.company}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.company &&
@@ -623,6 +646,7 @@ const ProfilePage = ({
                                         label="Job Title"
                                         inputProps={{maxLength: 10}}
                                         value={formik.values.job_title}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.job_title &&
@@ -645,6 +669,7 @@ const ProfilePage = ({
                                         label="Phone"
                                         inputProps={{maxLength: 20}}
                                         value={formik.values.phone_number}
+                                        data-lpignore="true"
                                         onChange={formik.handleChange}
                                         error={
                                             formik.touched.phone_number &&
@@ -663,6 +688,7 @@ const ProfilePage = ({
                                         fullWidth
                                         size="small"
                                         value={formik.values.language}
+                                        data-lpignore="true"
                                         displayEmpty
                                         onChange={formik.handleChange}
                                         className={styles.languages}
