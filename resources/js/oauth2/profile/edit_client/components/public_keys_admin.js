@@ -62,10 +62,10 @@ const DialogTitle = withStyles(classes)((props) => {
     );
 });
 
-const PublicKeysAdmin = ({supportedSigningAlgorithms, publicKeys, onSave}) => {
+const PublicKeysAdmin = ({initialValues, supportedSigningAlgorithms, publicKeys, onSave}) => {
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
-    const [dateRangeValue, onDateRangeChange] = useState([new Date(), new Date()]);
+    const [dateRangeValue, setDateRangeChange] = useState([new Date(), new Date()]);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -73,6 +73,10 @@ const PublicKeysAdmin = ({supportedSigningAlgorithms, publicKeys, onSave}) => {
 
     const handleClose = () => {
         setOpen(false);
+    };
+
+    const handleDateRangeChange = (dateRange) => {
+        setDateRangeChange(dateRange);
     };
 
     const PublicKeyItem = ({publicKey}) => (
@@ -108,8 +112,8 @@ const PublicKeysAdmin = ({supportedSigningAlgorithms, publicKeys, onSave}) => {
 
     const buildValidationSchema = () => {
         return object({
-            app_name: string("The app name field is required.").required(
-                "The app name field is required."
+            kid: string("The Key Identifier field is required.").required(
+                "The Key Identifier field is required."
             ),
         });
     };
@@ -119,25 +123,34 @@ const PublicKeysAdmin = ({supportedSigningAlgorithms, publicKeys, onSave}) => {
         validationSchema: buildValidationSchema(),
         onSubmit: (values) => {
             setLoading(true);
-            onSave(values).then(() => {
-                setLoading(false);
-                setOpen(false);
-                Swal("Public key added", "The public key has been added successfully", "success");
-            }).catch((err) => {
-                //console.log(err);
-                setLoading(false);
-                setOpen(false);
-                handleErrorResponse(err);
-            });
+
+            values.valid_from = dateRangeValue[0];
+            values.valid_to = dateRangeValue[1];
+
+            if (values.valid_from) values.valid_from = values.valid_from.toISOString();
+            if (values.valid_to) values.valid_to = values.valid_to.toISOString();
+
+            console.log('public_key_saved', values)
+
+            // onSave(values).then(() => {
+            //     setLoading(false);
+            //     setOpen(false);
+            //     Swal("Public key added", "The public key has been added successfully", "success");
+            // }).catch((err) => {
+            //     //console.log(err);
+            //     setLoading(false);
+            //     setOpen(false);
+            //     handleErrorResponse(err);
+            // });
         },
     });
 
     return (
         <div>
-            <Paper variant="outlined">
+            <Paper variant="outlined" className={styles.paper}>
                 <Grid item container direction="row">
-                    <Grid item xs={10}>
-                        <Typography display="inline">Public keys</Typography>
+                    <Grid item xs={10} container alignItems="center">
+                        <Typography display="inline">Public keys</Typography>&nbsp;
                         <InfoOutlinedIcon fontSize="small"/>
                     </Grid>
                     <Grid item xs={2}>
@@ -174,12 +187,12 @@ const PublicKeysAdmin = ({supportedSigningAlgorithms, publicKeys, onSave}) => {
                     <MuiDialogContent dividers>
                         <FormGroup>
                             <SimpleTextFormControl
-                                id="key_identifier"
+                                id="kid"
                                 title="Key Identifier"
                                 tooltip=""
-                                value={formik.values.key_identifier}
-                                touched={formik.touched.key_identifier}
-                                errors={formik.errors.key_identifier}
+                                value={formik.values.kid}
+                                touched={formik.touched.kid}
+                                errors={formik.errors.kid}
                                 onChange={formik.handleChange}
                             />
                             <FormControl variant="outlined" className={styles.form_control}>
@@ -189,14 +202,14 @@ const PublicKeysAdmin = ({supportedSigningAlgorithms, publicKeys, onSave}) => {
                                 <DateRangePicker
                                     id="key_validity_range"
                                     name="key_validity_range"
-                                    onChange={onDateRangeChange}
+                                    onChange={handleDateRangeChange}
                                     value={dateRangeValue}/>
                             </FormControl>
                             <CheckboxFormControl
-                                id="key_active"
+                                id="active"
                                 title="Is Active?"
                                 tooltip=""
-                                value={formik.values.key_active}
+                                value={formik.values.active}
                                 onChange={formik.handleChange}
                             />
                             <SelectFormControl
@@ -213,24 +226,24 @@ const PublicKeysAdmin = ({supportedSigningAlgorithms, publicKeys, onSave}) => {
                                 ]}
                             />
                             <SelectFormControl
-                                id="algorithm"
+                                id="alg"
                                 title="Algorithm"
                                 tooltip="Identifies the algorithm intended for use with the key."
-                                value={formik.values.algorithm}
-                                touched={formik.touched.algorithm}
-                                errors={formik.errors.algorithm}
+                                value={formik.values.alg}
+                                touched={formik.touched.alg}
+                                errors={formik.errors.alg}
                                 onChange={formik.handleChange}
                                 options={supportedSigningAlgorithms.map((alg) => {
                                     return {value: alg, text: alg};
                                 })}
                             />
                             <FormControl variant="outlined" className={styles.form_control}>
-                                <FormLabel htmlFor="key">
+                                <FormLabel htmlFor="pem_content">
                                     <Typography variant="subtitle2">Key</Typography>
                                 </FormLabel>
                                 <TextField
-                                    id="key"
-                                    name="key"
+                                    id="pem_content"
+                                    name="pem_content"
                                     variant="outlined"
                                     fullWidth
                                     multiline
@@ -238,14 +251,14 @@ const PublicKeysAdmin = ({supportedSigningAlgorithms, publicKeys, onSave}) => {
                                     maxRows={8}
                                     size="small"
                                     autoFocus={true}
-                                    value={formik.values.key}
+                                    value={formik.values.pem_content}
                                     onChange={formik.handleChange}
                                     error={
-                                        formik.touched.key &&
-                                        Boolean(formik.errors.key)
+                                        formik.touched.pem_content &&
+                                        Boolean(formik.errors.pem_content)
                                     }
                                     helperText={
-                                        formik.touched.key && formik.errors.key
+                                        formik.touched.pem_content && formik.errors.pem_content
                                     }
                                 />
                             </FormControl>

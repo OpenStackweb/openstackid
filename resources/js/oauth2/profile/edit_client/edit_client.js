@@ -25,7 +25,13 @@ import {
     Tooltip,
     Typography
 } from "@material-ui/core";
-import {addScope, getAccessTokens, getRefreshTokens, removeScope} from "./actions";
+import {
+    addScope,
+    getAccessTokens,
+    getRefreshTokens,
+    regenerateClientSecret,
+    removeScope
+} from "./actions";
 
 import styles from "./edit_client.module.scss";
 
@@ -38,6 +44,8 @@ const EditClientPage = (
         editorName,
         editURL,
         fetchAdminUsersURL,
+        initialValues,
+        isClientAllowedToUseTokenEndpointAuth,
         isOwner,
         menuConfig,
         ownerName,
@@ -47,14 +55,26 @@ const EditClientPage = (
         supportedContentEncryptionAlgorithms,
         supportedKeyManagementAlgorithms,
         supportedSigningAlgorithms,
+        supportedTokenEndpointAuthMethods,
     }) => {
     const [selScopes, setSelScopes] = useState([]);
     const [copyingScopes, setCopyingScopes] = useState(false);
     const [expanded, setExpanded] = useState(false);
+    const [refreshedValues, setRefreshedValues] = useState({...initialValues});
 
     useEffect(() => {
         setSelScopes(selectedScopes);
     }, []);
+
+    const handleClientSecretRegenerate = () => {
+        regenerateClientSecret(clientId, csrfToken)
+            .then(({response}) => {
+                setRefreshedValues({...refreshedValues, client_secret: response.client_secret});
+            })
+            .catch((err) => {
+                Swal("Something went wrong!", "Can't regenerate the client secret", "error");
+            });
+    }
 
     const handleScopeSelected = (scopeId) => {
         setSelScopes([...new Set([...selScopes, scopeId])]);
@@ -80,6 +100,11 @@ const EditClientPage = (
                 setCopyingScopes(false);
             }, 1000);
         });
+    }
+
+    const handleSecuritySettingsSave = (values) => {
+        console.log('handleSecuritySettingsSave', values);
+        return Promise.resolve();
     }
 
     const handleAccordionChange = (panel) => (event, isExpanded) => {
@@ -146,7 +171,10 @@ const EditClientPage = (
                                     <Typography>OAuth 2.0 Client Data</Typography>
                                 </AccordionSummary>
                                 <AccordionDetails>
-                                    <OauthPanel initialValues={initialValues} isOwner={isOwner}/>
+                                    <OauthPanel
+                                        initialValues={refreshedValues}
+                                        isOwner={isOwner}
+                                        onClientSecretRegenerate={handleClientSecretRegenerate}/>
                                 </AccordionDetails>
                             </Accordion>
                             <Accordion className={styles.accordion}
@@ -205,11 +233,14 @@ const EditClientPage = (
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <SecuritySettingsPanel
-                                        initialValues={initialValues}
+                                        initialValues={refreshedValues}
+                                        isClientAllowedToUseTokenEndpointAuth={isClientAllowedToUseTokenEndpointAuth}
+                                        onSave={handleSecuritySettingsSave}
                                         publicKeys={publicKeys}
                                         supportedContentEncryptionAlgorithms={supportedContentEncryptionAlgorithms}
                                         supportedKeyManagementAlgorithms={supportedKeyManagementAlgorithms}
                                         supportedSigningAlgorithms={supportedSigningAlgorithms}
+                                        supportedTokenEndpointAuthMethods={supportedTokenEndpointAuthMethods}
                                     />
                                 </AccordionDetails>
                             </Accordion>

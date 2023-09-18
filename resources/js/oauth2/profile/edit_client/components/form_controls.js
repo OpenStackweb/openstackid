@@ -35,14 +35,18 @@ const BootstrapInput = withStyles((theme) => ({
     },
 }))(InputBase);
 
+const TooltipLabel = ({id, title, tooltip}) => (
+    <FormLabel htmlFor={id}>
+        <Typography variant="subtitle2" display="inline">{title}</Typography>&nbsp;
+        {tooltip && <Tooltip title={tooltip}>
+            <InfoOutlinedIcon fontSize="small"/>
+        </Tooltip>}
+    </FormLabel>
+);
+
 export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched, errors, onChange}) => (
     <FormControl variant="outlined" className={styles.form_control}>
-        <FormLabel htmlFor={id}>
-            <Typography variant="subtitle2" display="inline">{title}</Typography>
-            {tooltip && <Tooltip title={tooltip}>
-                <InfoOutlinedIcon fontSize="small"/>
-            </Tooltip>}
-        </FormLabel>
+        <TooltipLabel id={id} title={title} tooltip={tooltip}/>
         <TextField
             id={id}
             name={id}
@@ -65,12 +69,7 @@ export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched,
 
 export const SelectFormControl = ({id, title, tooltip, value, touched, errors, onChange, options}) => (
     <FormControl variant="outlined" className={styles.form_control}>
-        <FormLabel htmlFor={id}>
-            <Typography variant="subtitle2" display="inline">{title}</Typography>
-            {tooltip && <Tooltip title={tooltip}>
-                <InfoOutlinedIcon fontSize="small"/>
-            </Tooltip>}
-        </FormLabel>
+        <TooltipLabel id={id} title={title} tooltip={tooltip}/>
         <Select
             id={id}
             name={id}
@@ -107,7 +106,7 @@ export const CheckboxFormControl = ({id, title, tooltip, value, onChange}) => (
                 onChange={onChange}
             />}
             label={<>
-                <Typography display="inline">{title}</Typography>
+                <Typography display="inline">{title}</Typography>&nbsp;
                 {tooltip && <Tooltip title={tooltip}>
                     <InfoOutlinedIcon fontSize="small"/>
                 </Tooltip>}

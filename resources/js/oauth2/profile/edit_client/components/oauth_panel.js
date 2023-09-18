@@ -24,7 +24,7 @@ import {
 
 import styles from "./common.module.scss";
 
-const OauthPanel = ({initialValues, isOwner}) => {
+const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
     const [formValues, setFormValues] = useState({});
     const [copyEventInfo, setCopyEventInfo] = useState({});
 
@@ -47,6 +47,7 @@ const OauthPanel = ({initialValues, isOwner}) => {
 
     const formik = useFormik({
         initialValues: initialValues,
+        enableReinitialize: true,
         validationSchema: buildValidationSchema(),
         onSubmit: (values) => {
             // setLoading(true);
@@ -111,9 +112,7 @@ const OauthPanel = ({initialValues, isOwner}) => {
                             {
                                 isOwner && <IconButton
                                     aria-label="regenerate"
-                                    onClick={() => {
-                                        console.log("REGENERATE");
-                                    }}
+                                    onClick={onClientSecretRegenerate}
                                     edge="end"
                                     size="small"
                                 >

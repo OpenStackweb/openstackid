@@ -201,6 +201,7 @@
         let supportedSigningAlgorithms = [];
         let supportedKeyManagementAlgorithms = [];
         let supportedContentEncryptionAlgorithms = [];
+        let supportedTokenEndpointAuthMethods = [];
         let publicKeys = [];
 
         @foreach($scopes as $scope)
@@ -230,6 +231,10 @@
         supportedContentEncryptionAlgorithms.push('{!! $alg !!}');
         @endforeach
 
+        @foreach(OAuth2\OAuth2Protocol::getTokenEndpointAuthMethodsPerClientType($client) as $method)
+        supportedTokenEndpointAuthMethods.push('{!! $method !!}');
+        @endforeach
+
         @foreach($client->getPublicKeys() as $public_key)
         publicKeys.push({
             'id': {!! $public_key->id !!},
@@ -244,17 +249,32 @@
         @endforeach
 
         const initialValues = {
+            active: true,
+            alg: 'none',
             app_name: '',
             app_description: '',
-            client_id: '',
-            client_secret: '',
-            jwk_url: '',
-            key_active: true,
-            max_age: 0,
+            client_id: '{!!$client->client_id!!}',
+            client_secret: '{!!$client->client_secret!!}',
+            id_token_encrypted_content_alg: 'none',
+            id_token_encrypted_response_alg: 'none',
+            id_token_signed_response_alg: 'none',
+            jwks_uri: '',
+            kid: '',
+            default_max_age: {!!$client->default_max_age!!},
+            logout_session_required: false,
+            logout_uri: '',
+            logout_use_iframe: false,
             otp_length: 6,
             otp_lifetime: 600,
+            pem_content: '',
+            post_logout_redirect_uris: '',
             subject_type: 'public',
-            token_endpoint_auth_method: 'none'
+            token_endpoint_auth_method: 'none',
+            token_endpoint_auth_signing_alg: 'none',
+            usage: 'sig',
+            userinfo_encrypted_response_enc: 'none',
+            userinfo_encrypted_response_alg: 'none',
+            userinfo_signed_response_alg: 'none',
         }
 
         const menuConfig = {
@@ -298,11 +318,13 @@
             appLogo: '{{$app_logo ?? Config::get("app.logo_url")}}',
             clientId: '{!!$client->id!!}',
             clientName: '{!!$client->getFriendlyApplicationType()!!}',
+            clientSecret: '{!!$client->client_secret!!}',
             csrfToken: document.head.querySelector('meta[name="csrf-token"]').content,
             editorName: '{!!$client->getEditedByNice()!!}',
             fetchAdminUsersURL: '{{URL::action("Api\\UserApiController@getAll")}}',
             initialValues: initialValues,
             isOwner: '{!!$client->isOwner(Auth::user())!!}',
+            isClientAllowedToUseTokenEndpointAuth: {!!OAuth2\OAuth2Protocol::isClientAllowedToUseTokenEndpointAuth($client)!!},
             menuConfig: menuConfig,
             ownerName: '{!!$client->getOwnerNice()!!}',
             publicKeys: publicKeys,
@@ -311,11 +333,13 @@
             supportedContentEncryptionAlgorithms: supportedContentEncryptionAlgorithms,
             supportedKeyManagementAlgorithms: supportedKeyManagementAlgorithms,
             supportedSigningAlgorithms: supportedSigningAlgorithms,
+            supportedTokenEndpointAuthMethods: supportedTokenEndpointAuthMethods,
             userName: '{{ Session::has('username') ? Session::get('username') : ""}}',
         }
 
         window.ADD_CLIENT_SCOPE_ENDPOINT = '{!!URL::action("Api\ClientApiController@addAllowedScope",array("id"=>"@client_id","scope_id"=>"@scope_id"))!!}';
         window.REMOVE_CLIENT_SCOPE_ENDPOINT = '{!!URL::action("Api\ClientApiController@removeAllowedScope",array("id"=>"@client_id","scope_id"=>"@scope_id"))!!}';
+        window.REGENERATE_CLIENT_SECRET_ENDPOINT = '{!!URL::action("Api\ClientApiController@regenerateClientSecret",array("id"=>"@client_id"))!!}';
 
         window.GET_ACCESS_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@getAccessTokens",array("id"=>"@client_id"))!!}';
         window.REVOKE_ACCESS_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@revokeToken",array("id"=>"@client_id","value"=>-1,"hint"=>"access-token")) !!}';

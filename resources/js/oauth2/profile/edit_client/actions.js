@@ -2,6 +2,10 @@ import {getRawRequest, putRawRequest, deleteRawRequest} from "../../../base_acti
 
 export const PAGE_SIZE = 30;
 
+export const regenerateClientSecret = async (clientId, token) => {
+    return putRawRequest(window.REGENERATE_CLIENT_SECRET_ENDPOINT.replace('@client_id', clientId))({'X-CSRF-TOKEN': token});
+}
+
 export const getAccessTokens = async (clientId, page = 1, perPage = PAGE_SIZE, order = 'created_at', orderDir = 'desc', filters = {}) => {
     const params = {
         page: page,

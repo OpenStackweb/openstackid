@@ -7,6 +7,8 @@
 
     label {
       margin-bottom: 10px !important;
+      display: flex;
+      align-items: center;
     }
 
     .outline_input {
@@ -22,5 +24,9 @@
       font-size: 0.75rem;
       margin: 4px 0 4px 14px;
     }
+  }
+
+  .paper {
+    padding: 10px;
   }
 }
