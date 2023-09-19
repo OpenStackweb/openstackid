@@ -202,7 +202,19 @@
         let supportedKeyManagementAlgorithms = [];
         let supportedContentEncryptionAlgorithms = [];
         let supportedTokenEndpointAuthMethods = [];
-        let publicKeys = [];
+        let supportedJSONWebKeyTypes = [];
+
+        const AppTypes = {
+            JSClient: '{!! oauth2\models\IClient::ApplicationType_JS_Client !!}',
+            Native: '{!! oauth2\models\IClient::ApplicationType_Native !!}',
+            Service: '{!! oauth2\models\IClient::ApplicationType_Service !!}',
+            WebApp: '{!! oauth2\models\IClient::ApplicationType_Web_App !!}'
+        }
+
+        const ClientTypes = {
+            Public: '{!! OAuth2\Models\IClient::ClientType_Public !!}',
+            Confidential: '{!! OAuth2\Models\IClient::ClientType_Confidential !!}'
+        }
 
         @foreach($scopes as $scope)
         scopes.push({
@@ -235,26 +247,25 @@
         supportedTokenEndpointAuthMethods.push('{!! $method !!}');
         @endforeach
 
-        @foreach($client->getPublicKeys() as $public_key)
-        publicKeys.push({
-            'id': {!! $public_key->id !!},
-            'active': '{!! $public_key->active !!}',
-            'kid': '{!! $public_key->kid !!}',
-            'type': '{!! $public_key->type !!}',
-            'usage': '{!! $public_key->usage !!}',
-            'sha_256_thumbprint': '{!! $public_key->getSHA_256_Thumbprint() !!}',
-            'valid_from': '{!! $public_key->valid_from->format('d/m/Y') !!}',
-            'valid_to': '{!! $public_key->valid_to->format('d/m/Y') !!}',
-        });
+        @foreach(\jwk\JSONWebKeyTypes::$supported_keys as $type)
+        supportedJSONWebKeyTypes.push('{!! $type !!}');
         @endforeach
 
         const initialValues = {
             active: true,
             alg: 'none',
-            app_name: '',
-            app_description: '',
+            allowed_origins: '{!!$client->allowed_origins!!}'.trim().split(','),
+            app_active: false,
+            app_admin_users: [{fullName: 'Test User', id: 256}],
+            app_description: '{!!$client->app_description!!}',
+            app_logo_url: '{!!$client->logo_uri!!}',
+            app_name: '{!!$client->app_name!!}',
+            app_policy_url: '{!!$client->policy_uri!!}',
+            app_term_of_service_url: '{!!$client->tos_uri!!}',
+            app_web_site_url: '{!!$client->website!!}',
             client_id: '{!!$client->client_id!!}',
             client_secret: '{!!$client->client_secret!!}',
+            contact_emails: '{!!$client->contacts!!}'.split(','),
             id_token_encrypted_content_alg: 'none',
             id_token_encrypted_response_alg: 'none',
             id_token_signed_response_alg: 'none',
@@ -268,13 +279,17 @@
             otp_lifetime: 600,
             pem_content: '',
             post_logout_redirect_uris: '',
+            redirect_uris: '{!!$client->redirect_uris!!}'.trim().split(','),
+            rotate_refresh_token: '{!!$client->rotate_refresh_token!!}'.trim() !== '',
             subject_type: 'public',
             token_endpoint_auth_method: 'none',
             token_endpoint_auth_signing_alg: 'none',
+            type: '{!!\jwk\JSONWebKeyTypes::RSA!!}',
             usage: 'sig',
+            use_refresh_token: '{!!$client->use_refresh_token!!}'.trim() !== '',
             userinfo_encrypted_response_enc: 'none',
             userinfo_encrypted_response_alg: 'none',
-            userinfo_signed_response_alg: 'none',
+            userinfo_signed_response_alg: 'none'
         }
 
         const menuConfig = {
@@ -316,9 +331,14 @@
             appName: '{!! Config::get('app.app_name') !!}',
             appDescription: '{!! Config::get('app.app_description') !!}',
             appLogo: '{{$app_logo ?? Config::get("app.logo_url")}}',
+            appType: '{!!$client->application_type!!}',
+            appTypes: AppTypes,
+            canRequestRefreshTokens: {!!$client->canRequestRefreshTokens()!!},
             clientId: '{!!$client->id!!}',
             clientName: '{!!$client->getFriendlyApplicationType()!!}',
             clientSecret: '{!!$client->client_secret!!}',
+            clientType: '{!!$client->client_type!!}',
+            clientTypes: ClientTypes,
             csrfToken: document.head.querySelector('meta[name="csrf-token"]').content,
             editorName: '{!!$client->getEditedByNice()!!}',
             fetchAdminUsersURL: '{{URL::action("Api\\UserApiController@getAll")}}',
@@ -327,13 +347,13 @@
             isClientAllowedToUseTokenEndpointAuth: {!!OAuth2\OAuth2Protocol::isClientAllowedToUseTokenEndpointAuth($client)!!},
             menuConfig: menuConfig,
             ownerName: '{!!$client->getOwnerNice()!!}',
-            publicKeys: publicKeys,
             scopes: scopes,
             selectedScopes: selectedScopes,
             supportedContentEncryptionAlgorithms: supportedContentEncryptionAlgorithms,
             supportedKeyManagementAlgorithms: supportedKeyManagementAlgorithms,
             supportedSigningAlgorithms: supportedSigningAlgorithms,
             supportedTokenEndpointAuthMethods: supportedTokenEndpointAuthMethods,
+            supportedJSONWebKeyTypes: supportedJSONWebKeyTypes,
             userName: '{{ Session::has('username') ? Session::get('username') : ""}}',
         }
 
@@ -345,6 +365,10 @@
         window.REVOKE_ACCESS_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@revokeToken",array("id"=>"@client_id","value"=>-1,"hint"=>"access-token")) !!}';
         window.GET_REFRESH_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@getRefreshTokens",array("id"=>"@client_id"))!!}';
         window.REVOKE_REFRESH_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@revokeToken",array("id"=>"@client_id","value"=>-1,"hint"=>"refresh-token")) !!}';
+
+        window.ADD_PUBLIC_KEY_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_create",array("id"=>"@client_id"))!!}';
+        window.GET_PUBLIC_KEYS_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@getAll",array("id"=>"@client_id"))!!}';
+        window.REMOVE_PUBLIC_KEY_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_delete",array("id"=>"@client_id", "public_key_id"=>"@public_key_id"))!!}';
     </script>
     {!! HTML::script('assets/editClient.js') !!}
 @append

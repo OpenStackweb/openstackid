@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import UsersSelector from "../../../../components/users_selector";
-import {SimpleTextFormControl} from "./form_controls";
+import TagsInput from "../../../../components/tags_input";
+import {CheckboxFormControl, SimpleTextFormControl} from "./form_controls";
 import {useFormik} from 'formik';
 import {object, ref, string} from 'yup';
 import AssignmentIcon from "@material-ui/icons/Assignment";
@@ -8,12 +9,11 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import {
-    Box,
+    Box, Button,
     Divider,
     FormControl,
     FormGroup,
     FormLabel,
-    Grid,
     IconButton,
     InputAdornment,
     OutlinedInput,
@@ -24,7 +24,17 @@ import {
 
 import styles from "./common.module.scss";
 
-const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
+const OauthPanel = ({
+                        appType,
+                        appTypes,
+                        canRequestRefreshTokens,
+                        clientType,
+                        clientTypes,
+                        fetchAdminUsersURL,
+                        initialValues,
+                        isOwner,
+                        onClientSecretRegenerate
+                    }) => {
     const [formValues, setFormValues] = useState({});
     const [copyEventInfo, setCopyEventInfo] = useState({});
 
@@ -50,6 +60,7 @@ const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
         enableReinitialize: true,
         validationSchema: buildValidationSchema(),
         onSubmit: (values) => {
+            console.log(values);
             // setLoading(true);
             // onSave(values).then(() => {
             //     setLoading(false);
@@ -64,9 +75,16 @@ const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
         },
     });
 
+    const handleFormKeyDown = (e) => {
+        if ((e.charCode || e.keyCode) === 13) {
+            e.preventDefault();
+        }
+    }
+
     return (
         <form
             onSubmit={formik.handleSubmit}
+            onKeyDown={handleFormKeyDown}
             method="post"
             encType="multipart/form-data"
             target="_self"
@@ -105,48 +123,72 @@ const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
                         }
                     />
                 </FormControl>
-                <FormControl variant="outlined" className={styles.form_control}>
-                    <FormLabel htmlFor="client_secret">
-                        <Typography variant="subtitle2" display="inline">CLIENT SECRET</Typography>
-                        <Tooltip title="Regenerate">
-                            {
-                                isOwner && <IconButton
-                                    aria-label="regenerate"
-                                    onClick={onClientSecretRegenerate}
-                                    edge="end"
-                                    size="small"
-                                >
-                                    <RefreshIcon/>
-                                </IconButton>
+                {
+                    clientType === clientTypes.Confidential &&
+                    <FormControl variant="outlined" className={styles.form_control}>
+                        <FormLabel htmlFor="client_secret">
+                            <Typography variant="subtitle2" display="inline">CLIENT SECRET</Typography>
+                            <Tooltip title="Regenerate">
+                                {
+                                    isOwner && <IconButton
+                                        aria-label="regenerate"
+                                        onClick={onClientSecretRegenerate}
+                                        edge="end"
+                                        size="small"
+                                    >
+                                        <RefreshIcon/>
+                                    </IconButton>
+                                }
+                            </Tooltip>
+                        </FormLabel>
+                        <OutlinedInput
+                            id="client_secret"
+                            name="client_secret"
+                            type="text"
+                            value={formik.values.client_secret}
+                            onChange={formik.handleChange}
+                            className={styles.outline_input}
+                            disabled={true}
+                            endAdornment={
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        aria-label="copy to clipboard"
+                                        onClick={() => handleCopyClick("client_secret", formik.values.client_secret)}
+                                        edge="end"
+                                    >
+                                        {copyEventInfo.client_secret ?
+                                            <CheckCircleIcon/> :
+                                            <Tooltip title="Click to copy">
+                                                <AssignmentIcon/>
+                                            </Tooltip>
+                                        }
+                                    </IconButton>
+                                </InputAdornment>
                             }
-                        </Tooltip>
-                    </FormLabel>
-                    <OutlinedInput
-                        id="client_secret"
-                        name="client_secret"
-                        type="text"
-                        value={formik.values.client_secret}
-                        onChange={formik.handleChange}
-                        className={styles.outline_input}
-                        disabled={true}
-                        endAdornment={
-                            <InputAdornment position="end">
-                                <IconButton
-                                    aria-label="copy to clipboard"
-                                    onClick={() => handleCopyClick("client_secret", formik.values.client_secret)}
-                                    edge="end"
-                                >
-                                    {copyEventInfo.client_secret ?
-                                        <CheckCircleIcon/> :
-                                        <Tooltip title="Click to copy">
-                                            <AssignmentIcon/>
-                                        </Tooltip>
-                                    }
-                                </IconButton>
-                            </InputAdornment>
-                        }
-                    />
-                </FormControl>
+                        />
+                    </FormControl>
+                }
+                {
+                    canRequestRefreshTokens &&
+                    <>
+                        <Box component="div" whiteSpace="nowrap" height="20px"/>
+                        <Typography>Client Settings</Typography>
+                        <CheckboxFormControl
+                            id="use_refresh_token"
+                            title="Use Refresh Tokens"
+                            tooltip=""
+                            value={formik.values.use_refresh_token}
+                            onChange={formik.handleChange}
+                        />
+                        <CheckboxFormControl
+                            id="rotate_refresh_token"
+                            title="Use Rotate Refresh Token Policy"
+                            tooltip=""
+                            value={formik.values.rotate_refresh_token}
+                            onChange={formik.handleChange}
+                        />
+                    </>
+                }
             </FormGroup>
             <Box component="div" whiteSpace="nowrap" height="20px"/>
             <Typography>Client Data</Typography>
@@ -188,7 +230,7 @@ const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
                 </FormControl>
                 <FormControl variant="outlined" className={styles.form_control}>
                     <FormLabel htmlFor="admin_users">
-                        <Typography variant="subtitle2" display="inline">Admin Users</Typography>
+                        <Typography variant="subtitle2" display="inline">Admin Users</Typography>&nbsp;
                         <Tooltip title="Choose which users would be administrator of this application.">
                             <InfoOutlinedIcon fontSize="small"/>
                         </Tooltip>
@@ -196,16 +238,15 @@ const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
                     <UsersSelector
                         id="app_admin_users"
                         name="app_admin_users"
-                        //fetchUsersURL={fetchAdminUsersURL}
-                        fetchUsersURL={() => {
-                        }}
+                        fetchUsersURL={fetchAdminUsersURL}
+                        initialValue={formik.values.app_admin_users}
                         onChange={formik.handleChange}
                     />
                 </FormControl>
                 <SimpleTextFormControl
                     id="app_web_site_url"
                     title="Application Web Site Url (optional)"
-                    tooltip="Client home page URL"
+                    tooltip="Client home page URL."
                     value={formik.values.app_web_site_url}
                     touched={formik.touched.app_web_site_url}
                     errors={formik.errors.app_web_site_url}
@@ -214,7 +255,7 @@ const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
                 <SimpleTextFormControl
                     id="app_logo_url"
                     title="Application Logo Url (optional)"
-                    tooltip="URL that references a logo for the Client application"
+                    tooltip="URL that references a logo for the Client application."
                     value={formik.values.app_logo_url}
                     touched={formik.touched.app_logo_url}
                     errors={formik.errors.app_logo_url}
@@ -223,7 +264,7 @@ const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
                 <SimpleTextFormControl
                     id="app_term_of_service_url"
                     title="Application Term of Service Url (optional)"
-                    tooltip="URL that the Relying Party Client provides to the End-User to read about the Relying Party's terms of service"
+                    tooltip="URL that the Relying Party Client provides to the End-User to read about the Relying Party's terms of service."
                     value={formik.values.app_term_of_service_url}
                     touched={formik.touched.app_term_of_service_url}
                     errors={formik.errors.app_term_of_service_url}
@@ -232,21 +273,85 @@ const OauthPanel = ({initialValues, isOwner, onClientSecretRegenerate}) => {
                 <SimpleTextFormControl
                     id="app_policy_url"
                     title="Application Policy Url (optional)"
-                    tooltip="URL that the Relying Party Client provides to the End-User to read about the how the profile data will be used"
+                    tooltip="URL that the Relying Party Client provides to the End-User to read about the how the profile data will be used."
                     value={formik.values.app_policy_url}
                     touched={formik.touched.app_policy_url}
                     errors={formik.errors.app_policy_url}
                     onChange={formik.handleChange}
                 />
-                <SimpleTextFormControl
-                    id="contact_emails"
-                    title="Contact Emails (optional)"
-                    tooltip="e-mail addresses of people responsible for this Client"
-                    value={formik.values.contact_emails}
-                    touched={formik.touched.contact_emails}
-                    errors={formik.errors.contact_emails}
-                    onChange={formik.handleChange}
-                />
+                <FormControl variant="outlined" className={styles.form_control}>
+                    <FormLabel htmlFor="contact_emails">
+                        <Typography variant="subtitle2" display="inline">Contact Emails (optional)</Typography>&nbsp;
+                        <Tooltip title="e-mail addresses of people responsible for this Client.">
+                            <InfoOutlinedIcon fontSize="small"/>
+                        </Tooltip>
+                    </FormLabel>
+                    <TagsInput
+                        id="contact_emails"
+                        name="contact_emails"
+                        fullWidth
+                        size="small"
+                        variant="outlined"
+                        type="email"
+                        onChange={formik.handleChange}
+                        tags={formik.values.contact_emails}
+                    />
+                </FormControl>
+                {
+                    //appType === appTypes.Service &&
+                    <FormControl variant="outlined" className={styles.form_control}>
+                        <FormLabel htmlFor="redirect_uris">
+                            <Typography variant="subtitle2" display="inline">Allowed Redirection Uris
+                                (optional)</Typography>&nbsp;
+                            <Tooltip title="Redirection URI values used by the Client.">
+                                <InfoOutlinedIcon fontSize="small"/>
+                            </Tooltip>
+                        </FormLabel>
+                        <TagsInput
+                            id="redirect_uris"
+                            name="redirect_uris"
+                            fullWidth
+                            size="small"
+                            variant="outlined"
+                            type="url"
+                            onChange={formik.handleChange}
+                            tags={formik.values.redirect_uris}
+                        />
+                    </FormControl>
+                }
+                {
+                    //appType === appTypes.JSClient &&
+                    <FormControl variant="outlined" className={styles.form_control}>
+                        <FormLabel htmlFor="allowed_origins">
+                            <Typography variant="subtitle2" display="inline">Allowed javascript origins
+                                (optional)</Typography>&nbsp;
+                            <Tooltip title="Allowed js origin URI values used by the Client.">
+                                <InfoOutlinedIcon fontSize="small"/>
+                            </Tooltip>
+                        </FormLabel>
+                        <TagsInput
+                            id="allowed_origins"
+                            name="allowed_origins"
+                            fullWidth
+                            size="small"
+                            variant="outlined"
+                            type="url"
+                            onChange={formik.handleChange}
+                            tags={formik.values.allowed_origins}
+                        />
+                    </FormControl>
+                }
+                <FormControl variant="outlined" className={styles.form_control}>
+                    <Button
+                        variant="contained"
+                        disableElevation
+                        color="primary"
+                        className={styles.button}
+                        type="submit"
+                    >
+                        Save
+                    </Button>
+                </FormControl>
             </FormGroup>
         </form>
     );

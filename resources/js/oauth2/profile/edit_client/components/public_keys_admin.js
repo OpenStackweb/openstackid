@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {withStyles} from '@material-ui/core/styles';
 import MuiDialogTitle from '@material-ui/core/DialogTitle';
 import MuiDialogContent from '@material-ui/core/DialogContent';
@@ -18,6 +18,8 @@ import Alert from '@material-ui/lab/Alert';
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 import '../../../../../styles/date_range_picker.scss';
 import 'react-calendar/dist/Calendar.css';
+import moment from "moment";
+import {addPublicKey, removePublicKey, getPublicKeys} from '../actions';
 
 import {
     Box,
@@ -62,10 +64,27 @@ const DialogTitle = withStyles(classes)((props) => {
     );
 });
 
-const PublicKeysAdmin = ({initialValues, supportedSigningAlgorithms, publicKeys, onSave}) => {
+const PublicKeysAdmin = ({
+                             csrfToken,
+                             initialValues,
+                             clientId,
+                             supportedSigningAlgorithms,
+                             supportedJSONWebKeyTypes
+                         }) => {
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
+    const [publicKeys, setPublicKeys] = useState([]);
     const [dateRangeValue, setDateRangeChange] = useState([new Date(), new Date()]);
+
+    useEffect(() => {
+        reloadPublicKeys();
+    }, []);
+
+    const reloadPublicKeys = () => {
+        getPublicKeys(clientId, 1, 100).then((res) => {
+            setPublicKeys([...res.data]);
+        });
+    }
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -79,7 +98,27 @@ const PublicKeysAdmin = ({initialValues, supportedSigningAlgorithms, publicKeys,
         setDateRangeChange(dateRange);
     };
 
-    const PublicKeyItem = ({publicKey}) => (
+    const handlePKDelete = (id) => {
+        Swal({
+            title: 'Are you sure to delete this public key?',
+            text: 'This is an non reversible process!',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.value) {
+                removePublicKey(clientId, id, csrfToken).then(() => {
+                    Swal("Public key deleted", "The public key has been deleted successfully", "success");
+                    reloadPublicKeys();
+                }).catch((err) => {
+                    handleErrorResponse(err);
+                });
+            }
+        });
+    };
+
+    const PublicKeyItem = ({publicKey, onDelete}) => (
         <Grid
             item
             container
@@ -98,11 +137,12 @@ const PublicKeysAdmin = ({initialValues, supportedSigningAlgorithms, publicKeys,
                     <Chip label={publicKey.type} color="primary"/>&nbsp;
                 </Grid>
                 <Grid item xs={12}>
-                    {publicKey.sha_256_thumbprint}
+                    {publicKey.sha_256}
                 </Grid>
             </Grid>
             <Grid item xs={1}>
                 <IconButton onClick={() => {
+                    if (onDelete) onDelete(publicKey.id);
                 }}>
                     <DeleteIcon fontSize="small"/>
                 </IconButton>
@@ -114,6 +154,12 @@ const PublicKeysAdmin = ({initialValues, supportedSigningAlgorithms, publicKeys,
         return object({
             kid: string("The Key Identifier field is required.").required(
                 "The Key Identifier field is required."
+            ),
+            type: string("The Key Type field is required.").required(
+                "The Key Type field is required."
+            ),
+            pem_content: string("The Key (PEM content) field is required.").required(
+                "The Key (PEM content) field is required."
             ),
         });
     };
@@ -127,21 +173,21 @@ const PublicKeysAdmin = ({initialValues, supportedSigningAlgorithms, publicKeys,
             values.valid_from = dateRangeValue[0];
             values.valid_to = dateRangeValue[1];
 
-            if (values.valid_from) values.valid_from = values.valid_from.toISOString();
-            if (values.valid_to) values.valid_to = values.valid_to.toISOString();
+            if (values.valid_from) values.valid_from = moment(values.valid_from).format('MM/DD/YYYY');
+            if (values.valid_to) values.valid_to = moment(values.valid_to).format('MM/DD/YYYY');
 
             console.log('public_key_saved', values)
 
-            // onSave(values).then(() => {
-            //     setLoading(false);
-            //     setOpen(false);
-            //     Swal("Public key added", "The public key has been added successfully", "success");
-            // }).catch((err) => {
-            //     //console.log(err);
-            //     setLoading(false);
-            //     setOpen(false);
-            //     handleErrorResponse(err);
-            // });
+            addPublicKey(clientId, values, csrfToken).then(() => {
+                setLoading(false);
+                setOpen(false);
+                Swal("Public key added", "The public key has been added successfully", "success");
+            }).catch((err) => {
+                //console.log(err);
+                setLoading(false);
+                setOpen(false);
+                handleErrorResponse(err);
+            });
         },
     });
 
@@ -168,7 +214,9 @@ const PublicKeysAdmin = ({initialValues, supportedSigningAlgorithms, publicKeys,
             {
                 publicKeys?.length > 0 ?
                     <Grid container spacing={1}>
-                        {publicKeys.map((publicKey) => (<PublicKeyItem key={publicKey.id} publicKey={publicKey}/>))}
+                        {publicKeys.map((publicKey) => (
+                            <PublicKeyItem key={publicKey.id} publicKey={publicKey} onDelete={handlePKDelete}/>
+                        ))}
                     </Grid>
                     :
                     <Alert severity="warning">There are no Public keys yet.</Alert>
@@ -235,6 +283,18 @@ const PublicKeysAdmin = ({initialValues, supportedSigningAlgorithms, publicKeys,
                                 onChange={formik.handleChange}
                                 options={supportedSigningAlgorithms.map((alg) => {
                                     return {value: alg, text: alg};
+                                })}
+                            />
+                            <SelectFormControl
+                                id="type"
+                                title="Type"
+                                tooltip=""
+                                value={formik.values.type}
+                                touched={formik.touched.type}
+                                errors={formik.errors.type}
+                                onChange={formik.handleChange}
+                                options={supportedJSONWebKeyTypes.map((type) => {
+                                    return {value: type, text: type};
                                 })}
                             />
                             <FormControl variant="outlined" className={styles.form_control}>

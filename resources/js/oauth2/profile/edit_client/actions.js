@@ -1,4 +1,4 @@
-import {getRawRequest, putRawRequest, deleteRawRequest} from "../../../base_actions";
+import {getRawRequest, postRawRequest, putRawRequest, deleteRawRequest} from "../../../base_actions";
 
 export const PAGE_SIZE = 30;
 
@@ -44,4 +44,31 @@ export const addScope = async (clientId, scopeId, token) => {
 
 export const removeScope = async (clientId, scopeId, token) => {
     return deleteRawRequest(window.REMOVE_CLIENT_SCOPE_ENDPOINT.replace('@client_id', clientId).replace('@scope_id', scopeId))({'X-CSRF-TOKEN': token});
+}
+
+export const addPublicKey = async (clientId, entity, token) => {
+
+    console.log('addPublicKey', normalizeEntity(entity));
+
+    return postRawRequest(window.ADD_PUBLIC_KEY_ENDPOINT.replace('@client_id', clientId))(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': token});
+}
+
+export const getPublicKeys = async (clientId, page = 1, perPage = PAGE_SIZE) => {
+    const params = {
+        page: page,
+        per_page: perPage,
+    };
+
+    const {response} = await getRawRequest(window.GET_PUBLIC_KEYS_ENDPOINT.replace('@client_id', clientId))(params);
+    return response;
+}
+
+export const removePublicKey = async (clientId, keyId, token) => {
+    return deleteRawRequest(window.REMOVE_PUBLIC_KEY_ENDPOINT.replace('@client_id', clientId).replace('@public_key_id', keyId))({'X-CSRF-TOKEN': token});
+}
+
+const normalizeEntity = (entity) => {
+    entity.active = entity.active ? 1 : 0;
+    delete entity['app_admin_users']
+    return entity;
 }

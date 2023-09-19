@@ -38,8 +38,13 @@ import styles from "./edit_client.module.scss";
 const EditClientPage = (
     {
         appLogo,
+        appType,
+        appTypes,
+        canRequestRefreshTokens,
         clientId,
         clientName,
+        clientType,
+        clientTypes,
         csrfToken,
         editorName,
         editURL,
@@ -49,13 +54,13 @@ const EditClientPage = (
         isOwner,
         menuConfig,
         ownerName,
-        publicKeys,
         scopes,
         selectedScopes,
         supportedContentEncryptionAlgorithms,
         supportedKeyManagementAlgorithms,
         supportedSigningAlgorithms,
         supportedTokenEndpointAuthMethods,
+        supportedJSONWebKeyTypes,
     }) => {
     const [selScopes, setSelScopes] = useState([]);
     const [copyingScopes, setCopyingScopes] = useState(false);
@@ -172,6 +177,11 @@ const EditClientPage = (
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <OauthPanel
+                                        appType={appType}
+                                        appTypes={appTypes}
+                                        clientType={clientType}
+                                        clientTypes={clientTypes}
+                                        fetchAdminUsersURL={fetchAdminUsersURL}
                                         initialValues={refreshedValues}
                                         isOwner={isOwner}
                                         onClientSecretRegenerate={handleClientSecretRegenerate}/>
@@ -233,14 +243,16 @@ const EditClientPage = (
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <SecuritySettingsPanel
+                                        clientId={clientId}
+                                        csrfToken={csrfToken}
                                         initialValues={refreshedValues}
                                         isClientAllowedToUseTokenEndpointAuth={isClientAllowedToUseTokenEndpointAuth}
                                         onSave={handleSecuritySettingsSave}
-                                        publicKeys={publicKeys}
                                         supportedContentEncryptionAlgorithms={supportedContentEncryptionAlgorithms}
                                         supportedKeyManagementAlgorithms={supportedKeyManagementAlgorithms}
                                         supportedSigningAlgorithms={supportedSigningAlgorithms}
                                         supportedTokenEndpointAuthMethods={supportedTokenEndpointAuthMethods}
+                                        supportedJSONWebKeyTypes={supportedJSONWebKeyTypes}
                                     />
                                 </AccordionDetails>
                             </Accordion>

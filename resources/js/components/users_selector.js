@@ -4,12 +4,12 @@ import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-const UsersSelector = ({fetchUsersURL, id, name, onChange}) => {
+const UsersSelector = ({fetchUsersURL, id, name, onChange, initialValue}) => {
     const [open, setOpen] = useState(false);
     const [options, setOptions] = useState([]);
     const [typeAheadEngine, setTypeAheadEngine] = useState(null);
     const [term, setTerm] = useState(null);
-    const [value, setValue] = useState([]);
+    const [value, setValue] = useState(initialValue ?? []);
     const loading = open && options.length === 0;
 
     const getTypeAheadEngine = () => {

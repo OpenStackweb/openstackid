@@ -12,19 +12,22 @@ import {object, string} from "yup";
 import {useFormik} from "formik";
 import PublicKeysAdmin from "./public_keys_admin";
 import {CheckboxFormControl, SelectFormControl, SimpleTextFormControl} from "./form_controls";
+import LogoutOptions from "./logout_options";
 
 import styles from "./common.module.scss";
 
 const SecuritySettingsPanel = (
     {
+        clientId,
+        csrfToken,
         initialValues,
         isClientAllowedToUseTokenEndpointAuth,
         onSave,
-        publicKeys,
         supportedContentEncryptionAlgorithms,
         supportedKeyManagementAlgorithms,
         supportedSigningAlgorithms,
         supportedTokenEndpointAuthMethods,
+        supportedJSONWebKeyTypes,
     }) => {
     const [passwordless, setPasswordless] = useState(false);
 
@@ -39,28 +42,11 @@ const SecuritySettingsPanel = (
     const formik = useFormik({
         initialValues: initialValues,
         validationSchema: buildValidationSchema(),
-        onSubmit: (values) => {
+        onSubmit: (values, {resetForm}) => {
             console.log('formik', values);
             // onSave(values).then(() => {
             //     //console.log('Security settings saved!');
-            // }).catch((err) => {
-            //     //console.log(err);
-            // });
-        },
-    });
-
-    const buildLogoutOptionsValidationSchema = () => {
-        return object({});
-    }
-
-    const logoutOptionsformik = useFormik({
-        initialValues: initialValues,
-        validationSchema: buildLogoutOptionsValidationSchema(),
-
-        onSubmit: (values) => {
-            console.log('logoutOptionsformik', values);
-            // onSave(values).then(() => {
-            //     //console.log('Security settings saved!');
+            //  resetForm();
             // }).catch((err) => {
             //     //console.log(err);
             // });
@@ -276,73 +262,19 @@ const SecuritySettingsPanel = (
                     <Divider/>
                     <Box component="div" whiteSpace="nowrap" height="20px"/>
                     <PublicKeysAdmin
+                        clientId={clientId}
+                        csrfToken={csrfToken}
                         initialValues={initialValues}
                         supportedSigningAlgorithms={supportedSigningAlgorithms}
-                        publicKeys={publicKeys}
+                        supportedJSONWebKeyTypes={supportedJSONWebKeyTypes}
                     />
                     <Divider/>
                     <Box component="div" whiteSpace="nowrap" height="20px"/>
                 </form>
             </Grid>
             <Grid item container>
-                <form
-                    onSubmit={logoutOptionsformik.handleSubmit}
-                    method="post"
-                    encType="multipart/form-data"
-                    target="_self"
-                    className={styles.main_container}
-                >
-                    <FormGroup>
-                        <Typography variant="h6">Logout Options</Typography>
-                        <Box component="div" whiteSpace="nowrap" height="20px"/>
-                        <Divider/>
-                        <SimpleTextFormControl
-                            id="post_logout_redirect_uris"
-                            title="Post Logout Uris (optional)"
-                            tooltip=""
-                            type="url"
-                            value={logoutOptionsformik.values.post_logout_redirect_uris}
-                            touched={logoutOptionsformik.touched.post_logout_redirect_uris}
-                            errors={logoutOptionsformik.errors.post_logout_redirect_uris}
-                            onChange={logoutOptionsformik.handleChange}
-                        />
-                        <SimpleTextFormControl
-                            id="logout_uri"
-                            title="Logout Uri (optional)"
-                            tooltip=""
-                            type="url"
-                            value={logoutOptionsformik.values.logout_uri}
-                            touched={logoutOptionsformik.touched.logout_uri}
-                            errors={logoutOptionsformik.errors.logout_uri}
-                            onChange={logoutOptionsformik.handleChange}
-                        />
-                        <CheckboxFormControl
-                            id="logout_session_required"
-                            title="Session Required (Optional)"
-                            tooltip=""
-                            value={logoutOptionsformik.values.logout_session_required}
-                            onChange={logoutOptionsformik.handleChange}
-                        />
-                        <CheckboxFormControl
-                            id="logout_use_iframe"
-                            title="Use IFrame (Optional)"
-                            tooltip=""
-                            value={logoutOptionsformik.values.logout_use_iframe}
-                            onChange={logoutOptionsformik.handleChange}
-                        />
-                        <FormControl variant="outlined" className={styles.form_control}>
-                            <Button
-                                variant="contained"
-                                disableElevation
-                                color="primary"
-                                className={styles.button}
-                                type="submit"
-                            >
-                                Save
-                            </Button>
-                        </FormControl>
-                    </FormGroup>
-                </form>
+                <LogoutOptions initialValues={initialValues} onSave={() => {
+                }}/>
             </Grid>
         </Grid>
     );
