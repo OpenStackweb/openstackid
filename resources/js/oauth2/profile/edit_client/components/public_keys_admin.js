@@ -71,7 +71,6 @@ const PublicKeysAdmin = ({
                              supportedSigningAlgorithms,
                              supportedJSONWebKeyTypes
                          }) => {
-    const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const [publicKeys, setPublicKeys] = useState([]);
     const [dateRangeValue, setDateRangeChange] = useState([new Date(), new Date()]);
@@ -168,8 +167,6 @@ const PublicKeysAdmin = ({
         initialValues: initialValues,
         validationSchema: buildValidationSchema(),
         onSubmit: (values) => {
-            setLoading(true);
-
             values.valid_from = dateRangeValue[0];
             values.valid_to = dateRangeValue[1];
 
@@ -179,12 +176,10 @@ const PublicKeysAdmin = ({
             console.log('public_key_saved', values)
 
             addPublicKey(clientId, values, csrfToken).then(() => {
-                setLoading(false);
                 setOpen(false);
                 Swal("Public key added", "The public key has been added successfully", "success");
             }).catch((err) => {
                 //console.log(err);
-                setLoading(false);
                 setOpen(false);
                 handleErrorResponse(err);
             });

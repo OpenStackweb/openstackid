@@ -30,7 +30,9 @@ import {
     getAccessTokens,
     getRefreshTokens,
     regenerateClientSecret,
-    removeScope
+    revokeToken,
+    removeScope,
+    updateOAuthClientData
 } from "./actions";
 
 import styles from "./edit_client.module.scss";
@@ -47,7 +49,6 @@ const EditClientPage = (
         clientTypes,
         csrfToken,
         editorName,
-        editURL,
         fetchAdminUsersURL,
         initialValues,
         isClientAllowedToUseTokenEndpointAuth,
@@ -107,8 +108,19 @@ const EditClientPage = (
         });
     }
 
+    const handleOauthSave = (values) => updateOAuthClientData(clientId, values, csrfToken);
+
+    const handleRevokeAccessToken = (tokenId, value) => revokeToken(clientId, value, 'access-token', csrfToken);
+
+    const handleRevokeRefreshToken = (tokenId, value) => revokeToken(clientId, value, 'refresh-token', csrfToken);
+
     const handleSecuritySettingsSave = (values) => {
         console.log('handleSecuritySettingsSave', values);
+        return Promise.resolve();
+    }
+
+    const handleLogoutOptionsSave = (values) => {
+        console.log('handleLogoutOptionsSave', values);
         return Promise.resolve();
     }
 
@@ -184,7 +196,9 @@ const EditClientPage = (
                                         fetchAdminUsersURL={fetchAdminUsersURL}
                                         initialValues={refreshedValues}
                                         isOwner={isOwner}
-                                        onClientSecretRegenerate={handleClientSecretRegenerate}/>
+                                        onClientSecretRegenerate={handleClientSecretRegenerate}
+                                        onSavePromise={handleOauthSave}
+                                    />
                                 </AccordionDetails>
                             </Accordion>
                             <Accordion className={styles.accordion}
@@ -227,7 +241,9 @@ const EditClientPage = (
                                 <AccordionDetails>
                                     <AppGrantsPanel
                                         getAccessTokens={(page, perPage) => getAccessTokens(clientId, page, perPage)}
+                                        onRevokeAccessToken={handleRevokeAccessToken}
                                         getRefreshTokens={(page, perPage) => getRefreshTokens(clientId, page, perPage)}
+                                        onRevokeRefreshToken={handleRevokeRefreshToken}
                                     />
                                 </AccordionDetails>
                             </Accordion>
@@ -247,7 +263,8 @@ const EditClientPage = (
                                         csrfToken={csrfToken}
                                         initialValues={refreshedValues}
                                         isClientAllowedToUseTokenEndpointAuth={isClientAllowedToUseTokenEndpointAuth}
-                                        onSave={handleSecuritySettingsSave}
+                                        onMainSettingsSavePromise={handleSecuritySettingsSave}
+                                        onLogoutOptionsSavePromise={handleLogoutOptionsSave}
                                         supportedContentEncryptionAlgorithms={supportedContentEncryptionAlgorithms}
                                         supportedKeyManagementAlgorithms={supportedKeyManagementAlgorithms}
                                         supportedSigningAlgorithms={supportedSigningAlgorithms}

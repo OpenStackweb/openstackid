@@ -251,7 +251,7 @@ Route::group([
             // public keys
             Route::group(['prefix' => 'public_keys'], function () {
                 Route::post('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@_create'));
-                Route::get('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@getAll'));
+                Route::get('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@_getAll'));
                 Route::group(['prefix' => '{public_key_id}'], function () {
                     Route::delete('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@_delete'));
                     Route::put('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientPublicKeyApiController@_update'));

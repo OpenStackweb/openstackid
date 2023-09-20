@@ -196,6 +196,7 @@
 
 @section('scripts')
     <script>
+        let adminUsers = [];
         let scopes = [];
         let selectedScopes = [];
         let supportedSigningAlgorithms = [];
@@ -215,6 +216,13 @@
             Public: '{!! OAuth2\Models\IClient::ClientType_Public !!}',
             Confidential: '{!! OAuth2\Models\IClient::ClientType_Confidential !!}'
         }
+
+        @foreach($client->admin_users as $admin_user)
+        adminUsers.push({
+            'id': {!! $admin_user->id !!},
+            'fullName': '{!! $admin_user->first_name !!} {!! $admin_user->last_name !!}'
+        });
+        @endforeach
 
         @foreach($scopes as $scope)
         scopes.push({
@@ -253,35 +261,35 @@
 
         const initialValues = {
             active: true,
+            admin_users: adminUsers,
             alg: 'none',
-            allowed_origins: '{!!$client->allowed_origins!!}'.trim().split(','),
+            allowed_origins: '{!!$client->allowed_origins!!}'.trim() === '' ? [] : '{!!$client->allowed_origins!!}'.split(','),
             app_active: false,
-            app_admin_users: [{fullName: 'Test User', id: 256}],
             app_description: '{!!$client->app_description!!}',
-            app_logo_url: '{!!$client->logo_uri!!}',
             app_name: '{!!$client->app_name!!}',
-            app_policy_url: '{!!$client->policy_uri!!}',
-            app_term_of_service_url: '{!!$client->tos_uri!!}',
-            app_web_site_url: '{!!$client->website!!}',
+            application_type: '{!!$client->application_type!!}',
             client_id: '{!!$client->client_id!!}',
             client_secret: '{!!$client->client_secret!!}',
-            contact_emails: '{!!$client->contacts!!}'.split(','),
+            contacts: '{!!$client->contacts!!}'.split(','),
             id_token_encrypted_content_alg: 'none',
             id_token_encrypted_response_alg: 'none',
             id_token_signed_response_alg: 'none',
             jwks_uri: '',
             kid: '',
             default_max_age: {!!$client->default_max_age!!},
+            logo_uri: '{!!$client->logo_uri!!}',
             logout_session_required: false,
             logout_uri: '',
             logout_use_iframe: false,
             otp_length: 6,
             otp_lifetime: 600,
             pem_content: '',
+            policy_uri: '{!!$client->policy_uri!!}',
             post_logout_redirect_uris: '',
-            redirect_uris: '{!!$client->redirect_uris!!}'.trim().split(','),
+            redirect_uris: '{!!$client->redirect_uris!!}'.trim() === '' ? [] : '{!!$client->redirect_uris!!}'.split(','),
             rotate_refresh_token: '{!!$client->rotate_refresh_token!!}'.trim() !== '',
             subject_type: 'public',
+            tos_uri: '{!!$client->tos_uri!!}',
             token_endpoint_auth_method: 'none',
             token_endpoint_auth_signing_alg: 'none',
             type: '{!!\jwk\JSONWebKeyTypes::RSA!!}',
@@ -289,7 +297,8 @@
             use_refresh_token: '{!!$client->use_refresh_token!!}'.trim() !== '',
             userinfo_encrypted_response_enc: 'none',
             userinfo_encrypted_response_alg: 'none',
-            userinfo_signed_response_alg: 'none'
+            userinfo_signed_response_alg: 'none',
+            website: '{!!$client->website!!}',
         }
 
         const menuConfig = {
@@ -333,7 +342,7 @@
             appLogo: '{{$app_logo ?? Config::get("app.logo_url")}}',
             appType: '{!!$client->application_type!!}',
             appTypes: AppTypes,
-            canRequestRefreshTokens: {!!$client->canRequestRefreshTokens()!!},
+            canRequestRefreshTokens: Boolean({!!$client->canRequestRefreshTokens()!!}),
             clientId: '{!!$client->id!!}',
             clientName: '{!!$client->getFriendlyApplicationType()!!}',
             clientSecret: '{!!$client->client_secret!!}',
@@ -343,8 +352,8 @@
             editorName: '{!!$client->getEditedByNice()!!}',
             fetchAdminUsersURL: '{{URL::action("Api\\UserApiController@getAll")}}',
             initialValues: initialValues,
-            isOwner: '{!!$client->isOwner(Auth::user())!!}',
-            isClientAllowedToUseTokenEndpointAuth: {!!OAuth2\OAuth2Protocol::isClientAllowedToUseTokenEndpointAuth($client)!!},
+            isOwner: {!!$client->isOwner(Auth::user())!!} === 1,
+            isClientAllowedToUseTokenEndpointAuth: Boolean({!!OAuth2\OAuth2Protocol::isClientAllowedToUseTokenEndpointAuth($client)!!}),
             menuConfig: menuConfig,
             ownerName: '{!!$client->getOwnerNice()!!}',
             scopes: scopes,
@@ -357,17 +366,18 @@
             userName: '{{ Session::has('username') ? Session::get('username') : ""}}',
         }
 
+        window.UPDATE_CLIENT_DATA_ENDPOINT = '{!!URL::action("Api\ClientApiController@update",array("id"=>"@client_id"))!!}';
+
         window.ADD_CLIENT_SCOPE_ENDPOINT = '{!!URL::action("Api\ClientApiController@addAllowedScope",array("id"=>"@client_id","scope_id"=>"@scope_id"))!!}';
         window.REMOVE_CLIENT_SCOPE_ENDPOINT = '{!!URL::action("Api\ClientApiController@removeAllowedScope",array("id"=>"@client_id","scope_id"=>"@scope_id"))!!}';
         window.REGENERATE_CLIENT_SECRET_ENDPOINT = '{!!URL::action("Api\ClientApiController@regenerateClientSecret",array("id"=>"@client_id"))!!}';
 
         window.GET_ACCESS_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@getAccessTokens",array("id"=>"@client_id"))!!}';
-        window.REVOKE_ACCESS_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@revokeToken",array("id"=>"@client_id","value"=>-1,"hint"=>"access-token")) !!}';
         window.GET_REFRESH_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@getRefreshTokens",array("id"=>"@client_id"))!!}';
-        window.REVOKE_REFRESH_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@revokeToken",array("id"=>"@client_id","value"=>-1,"hint"=>"refresh-token")) !!}';
+        window.REVOKE_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@revokeToken",array("id"=>"@client_id","value"=>"@value","hint"=>"@hint")) !!}';
 
         window.ADD_PUBLIC_KEY_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_create",array("id"=>"@client_id"))!!}';
-        window.GET_PUBLIC_KEYS_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@getAll",array("id"=>"@client_id"))!!}';
+        window.GET_PUBLIC_KEYS_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_getAll",array("id"=>"@client_id"))!!}';
         window.REMOVE_PUBLIC_KEY_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_delete",array("id"=>"@client_id", "public_key_id"=>"@public_key_id"))!!}';
     </script>
     {!! HTML::script('assets/editClient.js') !!}

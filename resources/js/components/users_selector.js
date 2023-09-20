@@ -4,7 +4,7 @@ import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-const UsersSelector = ({fetchUsersURL, id, name, onChange, initialValue}) => {
+const UsersSelector = ({fetchUsersURL, id, name, onChange, initialValue, disabled}) => {
     const [open, setOpen] = useState(false);
     const [options, setOptions] = useState([]);
     const [typeAheadEngine, setTypeAheadEngine] = useState(null);
@@ -61,6 +61,7 @@ const UsersSelector = ({fetchUsersURL, id, name, onChange, initialValue}) => {
             id={id}
             name={name}
             size="small"
+            disabled={disabled ?? false}
             multiple
             value={value}
             open={open}

@@ -51,7 +51,7 @@ const TokensGrid = ({getTokens, pageSize, tokensListChanged, noTokensMessage, on
             disableColumnMenu: true,
             sortable: false,
             renderCell: (params) => (
-                <Button variant="contained" color="primary" onClick={() => onRevoke(params.id)}>
+                <Button variant="contained" color="primary" onClick={() => onRevoke(params.id, params.row.value)}>
                     Revoke
                 </Button>
             ),
