@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import LoadingIndicator from "../../../../components/loading_indicator";
 import UsersSelector from "../../../../components/users_selector";
-import TagsInput from "../../../../components/tags_input";
+import TagsInput, {getTags} from "../../../../components/tags_input";
 import {handleErrorResponse} from "../../../../utils";
 import {CheckboxFormControl, SimpleTextFormControl} from "./form_controls";
 import {useFormik} from 'formik';
@@ -86,8 +86,6 @@ const OauthPanel = ({
             e.preventDefault();
         }
     }
-
-    const getTags = (value) => Array.isArray(value) ? value : value?.split(',');
 
     return (
         <>

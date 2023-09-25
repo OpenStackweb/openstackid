@@ -45,7 +45,7 @@ export const revokeToken = async (clientId, value, hint, token) => {
         .replace('@hint', hint))({'X-CSRF-TOKEN': token});
 }
 
-export const updateOAuthClientData = async (clientId, entity, token) => {
+export const updateClientData = async (clientId, entity, token) => {
     return putRawRequest(window.UPDATE_CLIENT_DATA_ENDPOINT.replace('@client_id', clientId))(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': token});
 }
 
@@ -96,6 +96,9 @@ const normalizeEntity = (entity) => {
 
     entity.redirect_uris = Array.isArray(entity.redirect_uris) ?
         entity.redirect_uris.filter(r => r).join(',') : entity.redirect_uris;
+
+    entity.post_logout_redirect_uris = Array.isArray(entity.post_logout_redirect_uris) ?
+        entity.post_logout_redirect_uris.filter(r => r).join(',') : entity.post_logout_redirect_uris;
 
     entity.contacts = Array.isArray(entity.contacts) ? entity.contacts.filter(c => c).join(',') : entity.contacts;
 

@@ -26,7 +26,6 @@ const SecuritySettingsPanel = (
         supportedJSONWebKeyTypes,
     }) => {
     const [loading, setLoading] = useState(false);
-    const [passwordless, setPasswordless] = useState(false);
 
     const buildValidationSchema = () => {
         return object({
@@ -44,7 +43,7 @@ const SecuritySettingsPanel = (
             onMainSettingsSavePromise(values).then(() => {
                 setLoading(false);
                 Swal("Security settings saved", "The security settings section info has been saved successfully", "success");
-                resetForm();
+                //resetForm();
             }).catch((err) => {
                 //console.log(err);
                 setLoading(false);
@@ -66,16 +65,14 @@ const SecuritySettingsPanel = (
                     >
                         <FormGroup>
                             <CheckboxFormControl
-                                id="passwordless"
+                                id="otp_enabled"
                                 title="Use Passwordless?"
                                 tooltip="Use Passwordless Authentication"
-                                value={formik.values.passwordless}
-                                onChange={() => {
-                                    setPasswordless(!passwordless);
-                                }}
+                                value={formik.values.otp_enabled}
+                                onChange={formik.handleChange}
                             />
                             {
-                                passwordless &&
+                                formik.values.otp_enabled &&
                                 <>
                                     <SimpleTextFormControl
                                         id="otp_length"
@@ -165,7 +162,7 @@ const SecuritySettingsPanel = (
                                 <Grid item xs={6}>
                                     <SelectFormControl
                                         id="userinfo_signed_response_alg"
-                                        title="UserInfo Signed Response Algorithm"
+                                        title="User Info Signed Response Algorithm"
                                         tooltip="JWS alg algorithm [JWA] REQUIRED for signing UserInfo Responses. If this is specified, the response will be JWT [JWT] serialized, and signed using JWS. The default, if omitted, is for the UserInfo Response to return the Claims as a UTF-8 encoded JSON object using the application/json content-type."
                                         value={formik.values.userinfo_signed_response_alg ?? 'none'}
                                         touched={formik.touched.userinfo_signed_response_alg}
@@ -193,7 +190,7 @@ const SecuritySettingsPanel = (
                                 <Grid item xs={6}>
                                     <SelectFormControl
                                         id="userinfo_encrypted_response_alg"
-                                        title="UserInfo Encrypted Key Algorithm"
+                                        title="User Info Encrypted Key Algorithm"
                                         tooltip=""
                                         value={formik.values.userinfo_encrypted_response_alg ?? 'none'}
                                         touched={formik.touched.userinfo_encrypted_response_alg}
@@ -221,7 +218,7 @@ const SecuritySettingsPanel = (
                                 <Grid item xs={6}>
                                     <SelectFormControl
                                         id="userinfo_encrypted_response_enc"
-                                        title="UserInfo Encrypted Content Algorithm"
+                                        title="User Info Encrypted Content Algorithm"
                                         tooltip=""
                                         value={formik.values.userinfo_encrypted_response_enc ?? 'none'}
                                         touched={formik.touched.userinfo_encrypted_response_enc}

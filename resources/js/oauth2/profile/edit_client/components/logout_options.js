@@ -1,11 +1,12 @@
 import React, {useState} from "react";
 import {object} from "yup";
 import {useFormik} from "formik";
-import {Box, Button, Divider, FormControl, FormGroup, Typography} from "@material-ui/core";
+import {Box, Button, Divider, FormControl, FormGroup, FormLabel, Tooltip, Typography} from "@material-ui/core";
 import {CheckboxFormControl, SimpleTextFormControl} from "./form_controls";
 import Swal from "sweetalert2";
 import {handleErrorResponse} from "../../../../utils";
 import LoadingIndicator from "../../../../components/loading_indicator";
+import TagsInput, {getTags} from "../../../../components/tags_input";
 
 import styles from "./common.module.scss";
 
@@ -34,10 +35,17 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
         },
     });
 
+    const handleFormKeyDown = (e) => {
+        if ((e.charCode || e.keyCode) === 13) {
+            e.preventDefault();
+        }
+    }
+
     return (
         <>
             <form
                 onSubmit={formik.handleSubmit}
+                onKeyDown={handleFormKeyDown}
                 method="post"
                 encType="multipart/form-data"
                 target="_self"
@@ -47,16 +55,22 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
                     <Typography variant="h6">Logout Options</Typography>
                     <Box component="div" whiteSpace="nowrap" height="20px"/>
                     <Divider/>
-                    <SimpleTextFormControl
-                        id="post_logout_redirect_uris"
-                        title="Post Logout Uris (optional)"
-                        tooltip=""
-                        type="url"
-                        value={formik.values.post_logout_redirect_uris}
-                        touched={formik.touched.post_logout_redirect_uris}
-                        errors={formik.errors.post_logout_redirect_uris}
-                        onChange={formik.handleChange}
-                    />
+                    <FormControl variant="outlined" className={styles.form_control}>
+                        <FormLabel htmlFor="post_logout_redirect_uris">
+                            <Typography variant="subtitle2" display="inline">Post Logout Uris (optional)</Typography>
+                        </FormLabel>
+                        <TagsInput
+                            id="post_logout_redirect_uris"
+                            name="post_logout_redirect_uris"
+                            fullWidth
+                            size="small"
+                            variant="outlined"
+                            type="url"
+                            tags={getTags(formik.values.post_logout_redirect_uris)}
+                            errors={formik.errors.post_logout_redirect_uris}
+                            onChange={formik.handleChange}
+                        />
+                    </FormControl>
                     <SimpleTextFormControl
                         id="logout_uri"
                         title="Logout Uri (optional)"
@@ -71,14 +85,14 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
                         id="logout_session_required"
                         title="Session Required (Optional)"
                         tooltip=""
-                        value={formik.values.logout_session_required}
+                        value={!!formik.values.logout_session_required}
                         onChange={formik.handleChange}
                     />
                     <CheckboxFormControl
                         id="logout_use_iframe"
                         title="Use IFrame (Optional)"
                         tooltip=""
-                        value={formik.values.logout_use_iframe}
+                        value={!!formik.values.logout_use_iframe}
                         onChange={formik.handleChange}
                     />
                     <FormControl variant="outlined" className={styles.form_control}>

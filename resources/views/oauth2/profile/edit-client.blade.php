@@ -1,175 +1,3 @@
-{{--@extends('layout')--}}
-
-{{--@section('title')--}}
-{{--<title>Welcome to {!! Config::get('app.app_name') !!} - OAUTH2 Console - Edit Client</title>--}}
-{{--@stop--}}
-{{--@section('css')--}}
-{{--    {!! HTML::style('assets/css/edit-client.css') !!}--}}
-{{--@append--}}
-{{--@section('scripts')--}}
-{{--    {!! HTML::script("assets/moment/min/moment.min.js") !!}--}}
-{{--    <script type="application/javascript">--}}
-
-{{--        var dataClientUrls =--}}
-{{--        {--}}
-{{--            refresh: '{!!URL::action("Api\\ClientApiController@setRefreshTokenClient",array("id"=>$client->id, "use_refresh_token" => "@use_refresh_token"))!!}',--}}
-{{--            rotate: '{!!URL::action("Api\\ClientApiController@setRotateRefreshTokenPolicy",array("id"=>$client->id, 'rotate_refresh_token'=>'@rotate_refresh_token'))!!}',--}}
-{{--            update: '{!!URL::action("Api\\ClientApiController@update",array("id"=>$client->id))!!}',--}}
-{{--            add_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@_create",array("id"=>$client->id))!!}',--}}
-{{--            get_public_keys: '{!!URL::action("Api\\ClientPublicKeyApiController@getAll",array("id"=>$client->id))!!}',--}}
-{{--            delete_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@_delete",array("id" => $client->id, 'public_key_id'=> '@public_key_id'))!!}',--}}
-{{--            update_public_key: '{!!URL::action("Api\\ClientPublicKeyApiController@_update",array("id" => $client->id, 'public_key_id'=> '@public_key_id'))!!}',--}}
-{{--            fetchUsers: '{!!URL::action("Api\\UserApiController@getAll")!!}',--}}
-{{--        };--}}
-
-{{--        var oauth2_supported_algorithms =--}}
-{{--        {--}}
-{{--            sig_algorihtms:--}}
-{{--            {--}}
-{{--                mac: {!!Utils\ArrayUtils::toJson(OAuth2\OAuth2Protocol::$supported_signing_algorithms_hmac_sha2)!!},--}}
-{{--                rsa: {!!Utils\ArrayUtils::toJson(OAuth2\OAuth2Protocol::$supported_signing_algorithms_rsa)!!}--}}
-{{--            },--}}
-{{--            key_management_algorihtms: {!!Utils\ArrayUtils::toJson(OAuth2\OAuth2Protocol::$supported_key_management_algorithms)!!},--}}
-{{--            content_encryption_algorihtms:  {!!Utils\ArrayUtils::toJson(OAuth2\OAuth2Protocol::$supported_content_encryption_algorithms)!!}--}}
-{{--        };--}}
-
-{{--        var current_admin_users  = [];--}}
-{{--        var is_mine = {!! $client->isOwner(Auth::user())? 1:0 !!}--}}
-
-{{--        @foreach($client->getAdminUsers() as $user)--}}
-{{--        current_admin_users.push({--}}
-{{--            "id": {!!$user->getId()!!} ,--}}
-{{--            "value": "{!! $user->getFullName() !!}",--}}
-{{--            "first_name": "{!! $user->first_name !!}",--}}
-{{--            "last_name": "{!! $user->last_name !!}"--}}
-{{--        });--}}
-{{--        @endforeach--}}
-
-{{--        var scopes = ['openid'];--}}
-{{--        @if ($client->use_refresh_token)--}}
-{{--        scopes.push('offline_access');--}}
-{{--        @endif--}}
-{{--        @foreach ($scopes as $scope)--}}
-{{--        @if ( in_array($scope->id, $selected_scopes))--}}
-{{--            scopes.push('{!!trim($scope->name)!!}');--}}
-{{--        @endif--}}
-{{--        @endforeach--}}
-
-{{--        $(document).ready(function () {--}}
-{{--            $('.panel-collapse').collapse('hide');--}}
-{{--            location.hash && $(location.hash + '.collapse').collapse('show');--}}
-
-{{--            $(document).on('click', '.head-button', function(e){--}}
-{{--                $('.panel-collapse').collapse('hide');--}}
-{{--                window.location.hash = $(this).attr('href');--}}
-{{--            });--}}
-
-{{--            $(document).on('click', '.copy-scopes-button', function(e){--}}
-{{--                // Copy the text inside the text field--}}
-
-{{--                navigator.clipboard.writeText(scopes.join(' '));--}}
-{{--                // Alert the copied text--}}
-{{--                alert("Copied Scopes: " + scopes.join(' '));--}}
-{{--            });--}}
-{{--        });--}}
-{{--    </script>--}}
-{{--@append--}}
-{{--@section('content')--}}
-{{--@include('menu')--}}
-{{--<legend>--}}
-{{--    <span aria-hidden="true" class="glyphicon glyphicon-info-sign pointable"--}}
-{{--          title="OAuth 2.0 allows users to share specific data with you (for example, contact lists) while keeping their usernames, passwords, and other information private.">--}}
-
-{{--    </span>&nbsp;{!!$client->getFriendlyApplicationType()!!} - Client # {!! $client->id !!}--}}
-{{--</legend>--}}
-{{--<div class="row">--}}
-{{--    <div style="padding-left:15px" class="col-md-2 clear-padding"><strong>Created By:&nbsp;</strong></div><div class="col-md-10 clear-padding">{!! $client->getOwnerNice() !!}</div>--}}
-{{--</div>--}}
-{{--<div class="row">--}}
-{{--    <div style="padding-left:15px" class="col-md-2 clear-padding"><strong>Edited By</strong>:&nbsp;</div><div class="col-md-10 clear-padding">{!! $client->getEditedByNice() !!}</div>--}}
-{{--</div>--}}
-{{--@if($errors->any())--}}
-{{--<div class="errors">--}}
-{{--    <ul>--}}
-{{--        @foreach($errors->all() as $error)--}}
-{{--        <div class="alert alert-danger alert-dismissible" role="alert">--}}
-{{--            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>--}}
-{{--            {!! $error !!}--}}
-{{--        </div>--}}
-{{--        @endforeach--}}
-{{--    </ul>--}}
-{{--</div>--}}
-{{--@endif--}}
-
-{{--<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">--}}
-{{--    <!-- main data -->--}}
-{{--    <div class="panel panel-default" style="padding-bottom:0px">--}}
-{{--        <div class="panel-heading" role="tab" id="main_data_heading" style="margin-bottom:0px">--}}
-{{--            <h4 class="panel-title">--}}
-{{--                <a target="_self" role="button" class="head-button" data-toggle="collapse" data-parent="#accordion" href="#main_data" aria-expanded="true" aria-controls="main_data">--}}
-{{--                    OAuth 2.0 Client Data--}}
-{{--                </a>--}}
-{{--            </h4>--}}
-{{--        </div>--}}
-{{--        <div id="main_data" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="main_data_heading">--}}
-{{--            <div class="panel-body">--}}
-{{--                @include('oauth2.profile.edit-client-data', array('access_tokens' => $access_tokens, 'refresh_tokens' => $refresh_tokens,'client' => $client))--}}
-{{--            </div>--}}
-{{--        </div>--}}
-{{--    </div>--}}
-{{--    <!-- scopes -->--}}
-{{--    <div class="panel panel-default" style="padding-bottom:0px">--}}
-{{--        <div class="panel-heading" role="tab" id="allowed_scopes_heading" style="margin-bottom:0px">--}}
-{{--            <h4 class="panel-title">--}}
-{{--                <a target="_self" class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#allowed_scopes" aria-expanded="false" aria-controls="allowed_scopes">--}}
-{{--                    Application Allowed Scopes--}}
-{{--                </a>--}}
-{{--                <i title="Copy Allowed Scopes to Clipboard" class="fa fa-clipboard copy-scopes-button" aria-hidden="true"></i>--}}
-{{--            </h4>--}}
-{{--        </div>--}}
-{{--        <div id="allowed_scopes" class="panel-collapse collapse" role="tabpanel" aria-labelledby="allowed_scopes_heading">--}}
-{{--            <div class="panel-body">--}}
-{{--                @include('oauth2.profile.edit-client-scopes',array('access_tokens' => $access_tokens, 'refresh_tokens' => $refresh_tokens,'client'=>$client) )--}}
-{{--            </div>--}}
-{{--        </div>--}}
-{{--    </div>--}}
-{{--    <!-- grants -->--}}
-{{--    <div class="panel panel-default" style="padding-bottom:0px">--}}
-{{--        <div class="panel-heading" role="tab" id="grants_heading" style="margin-bottom:0px">--}}
-{{--            <h4 class="panel-title">--}}
-{{--                <a target="_self" class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#grants" aria-expanded="false" aria-controls="grants">--}}
-{{--                    Application Grants--}}
-{{--                </a>--}}
-{{--            </h4>--}}
-{{--        </div>--}}
-{{--        <div id="grants" class="panel-collapse collapse" role="tabpanel" aria-labelledby="grants_heading">--}}
-{{--            <div class="panel-body">--}}
-{{--                @include('oauth2.profile.edit-client-tokens',array('access_tokens' => $access_tokens, 'refresh_tokens' => $refresh_tokens,'client'=>$client) )--}}
-{{--            </div>--}}
-{{--        </div>--}}
-{{--    </div>--}}
-{{--    <!-- security settings -->--}}
-{{--    <div class="panel panel-default" style="padding-bottom:0px">--}}
-{{--        <div class="panel-heading" role="tab" id="security_heading" style="margin-bottom:0px">--}}
-{{--            <h4 class="panel-title">--}}
-{{--                <a target="_self" class="collapsed head-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#security" aria-expanded="false" aria-controls="security">--}}
-{{--                    Security Settings--}}
-{{--                </a>--}}
-{{--            </h4>--}}
-{{--        </div>--}}
-{{--        <div id="security" class="panel-collapse collapse" role="tabpanel" aria-labelledby="security_heading">--}}
-{{--            <div class="panel-body">--}}
-{{--                @include('oauth2.profile.edit-client-security-main-settings',array('client' => $client) )--}}
-{{--                <hr/>--}}
-{{--                @include('oauth2.profile.edit-client-public-keys',array('client' => $client) )--}}
-{{--                <hr/>--}}
-{{--                @include('oauth2.profile.edit-client-security-logout',array('client' => $client) )--}}
-{{--            </div>--}}
-{{--        </div>--}}
-{{--    </div>--}}
-{{--</div>--}}
-{{--@stop--}}
-
 @extends('reactapp_layout')
 
 @section('title')
@@ -271,33 +99,34 @@
             client_id: '{!!$client->client_id!!}',
             client_secret: '{!!$client->client_secret!!}',
             contacts: '{!!$client->contacts!!}'.split(','),
-            id_token_encrypted_content_alg: 'none',
-            id_token_encrypted_response_alg: 'none',
-            id_token_signed_response_alg: 'none',
-            jwks_uri: '',
+            id_token_encrypted_content_alg: '{!!$client->id_token_encrypted_response_enc!!}'.trim(),
+            id_token_encrypted_response_alg: '{!!$client->id_token_encrypted_response_alg!!}'.trim(),
+            id_token_signed_response_alg: '{!!$client->id_token_signed_response_alg!!}'.trim(),
+            jwks_uri: '{!!$client->jwks_uri!!}',
             kid: '',
             default_max_age: {!!$client->default_max_age!!},
             logo_uri: '{!!$client->logo_uri!!}',
-            logout_session_required: false,
-            logout_uri: '',
-            logout_use_iframe: false,
-            otp_length: 6,
-            otp_lifetime: 600,
+            logout_session_required: Boolean({!!$client->logout_session_required!!}),
+            logout_uri: '{!!$client->logout_uri!!}',
+            logout_use_iframe: Boolean({!!$client->logout_use_iframe!!}),
+            otp_enabled: Boolean({!!$client->otp_enabled!!}),
+            otp_length: {!!$client->otp_length!!},
+            otp_lifetime: {!!$client->otp_lifetime!!},
             pem_content: '',
             policy_uri: '{!!$client->policy_uri!!}',
-            post_logout_redirect_uris: '',
+            post_logout_redirect_uris: '{!!$client->post_logout_redirect_uris!!}'.trim() === '' ? [] : '{!!$client->post_logout_redirect_uris!!}'.split(','),
             redirect_uris: '{!!$client->redirect_uris!!}'.trim() === '' ? [] : '{!!$client->redirect_uris!!}'.split(','),
             rotate_refresh_token: '{!!$client->rotate_refresh_token!!}'.trim() !== '',
-            subject_type: 'public',
+            subject_type: '{!!$client->subject_type!!}'.trim(),
             tos_uri: '{!!$client->tos_uri!!}',
-            token_endpoint_auth_method: 'none',
-            token_endpoint_auth_signing_alg: 'none',
+            token_endpoint_auth_method: '{!!$client->token_endpoint_auth_method!!}'.trim(),
+            token_endpoint_auth_signing_alg: '{!!$client->token_endpoint_auth_signing_alg!!}'.trim(),
             type: '{!!\jwk\JSONWebKeyTypes::RSA!!}',
             usage: 'sig',
             use_refresh_token: '{!!$client->use_refresh_token!!}'.trim() !== '',
-            userinfo_encrypted_response_enc: 'none',
-            userinfo_encrypted_response_alg: 'none',
-            userinfo_signed_response_alg: 'none',
+            userinfo_encrypted_response_enc: '{!!$client->userinfo_encrypted_response_enc!!}'.trim(),
+            userinfo_encrypted_response_alg: '{!!$client->userinfo_encrypted_response_alg!!}'.trim(),
+            userinfo_signed_response_alg: '{!!$client->userinfo_signed_response_alg!!}'.trim(),
             website: '{!!$client->website!!}',
         }
 

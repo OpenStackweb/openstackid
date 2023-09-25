@@ -11,6 +11,8 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
+export const getTags = (value) => Array.isArray(value) ? value : value?.split(',');
+
 const TagsInput = ({...props}) => {
     const classes = useStyles();
     const {id, name, selectedTags, placeholder, onChange, tags, ...other} = props;

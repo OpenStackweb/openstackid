@@ -16,10 +16,11 @@ import {useFormik} from 'formik';
 import {object, ref, string} from 'yup';
 import Alert from '@material-ui/lab/Alert';
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
-import '../../../../../styles/date_range_picker.scss';
-import 'react-calendar/dist/Calendar.css';
 import moment from "moment";
 import {addPublicKey, removePublicKey, getPublicKeys} from '../actions';
+
+import '../../../../../styles/date_range_picker.scss';
+import 'react-calendar/dist/Calendar.css';
 
 import {
     Box,
@@ -191,8 +192,7 @@ const PublicKeysAdmin = ({
             <Paper variant="outlined" className={styles.paper}>
                 <Grid item container direction="row">
                     <Grid item xs={10} container alignItems="center">
-                        <Typography display="inline">Public keys</Typography>&nbsp;
-                        <InfoOutlinedIcon fontSize="small"/>
+                        <Typography display="inline">Public keys</Typography>
                     </Grid>
                     <Grid item xs={2}>
                         <Button variant="outlined" color="primary" onClick={handleClickOpen}>
@@ -227,11 +227,11 @@ const PublicKeysAdmin = ({
                     <DialogTitle id="customized-dialog-title" onClose={handleClose}>
                         Add Public Key
                     </DialogTitle>
-                    <MuiDialogContent dividers>
+                    <MuiDialogContent dividers className={styles.main_container}>
                         <FormGroup>
                             <SimpleTextFormControl
                                 id="kid"
-                                title="Key Identifier"
+                                title="Key Identifier *"
                                 tooltip=""
                                 value={formik.values.kid}
                                 touched={formik.touched.kid}
@@ -294,7 +294,7 @@ const PublicKeysAdmin = ({
                             />
                             <FormControl variant="outlined" className={styles.form_control}>
                                 <FormLabel htmlFor="pem_content">
-                                    <Typography variant="subtitle2">Key</Typography>
+                                    <Typography variant="subtitle2">Key *</Typography>
                                 </FormLabel>
                                 <TextField
                                     id="pem_content"
@@ -302,8 +302,8 @@ const PublicKeysAdmin = ({
                                     variant="outlined"
                                     fullWidth
                                     multiline
-                                    minRows={8}
-                                    maxRows={8}
+                                    minRows={7}
+                                    maxRows={7}
                                     size="small"
                                     autoFocus={true}
                                     value={formik.values.pem_content}
