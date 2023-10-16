@@ -604,7 +604,7 @@ const EditUserPage = ({
                                         fullWidth
                                         size="small"
                                         label="Company"
-                                        inputProps={{maxLength: 10}}
+                                        inputProps={{maxLength: 100}}
                                         value={formik.values.company}
                                         onChange={formik.handleChange}
                                         error={
