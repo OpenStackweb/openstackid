@@ -1,5 +1,10 @@
 # OpenstackId Idp
 
+## Documentation
+
+* https://wiki.openstack.org/wiki/OpenStackID
+* https://docs.openstack.org/infra/openstackid/
+
 ## Prerequisites
 
     * LAMP/LEMP environment
