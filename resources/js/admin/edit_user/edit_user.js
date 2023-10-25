@@ -44,7 +44,10 @@ const EditUserPage = ({
                           usersListURL
                       }) => {
     const [pic, setPic] = useState(null);
-    const [selectedGroups, setSelectedGroups] = useState([]);
+
+    // intialize current groups
+
+    const [selectedGroups, setSelectedGroups] = useState(initialValues?.groups?.length > 0 ? initialValues.groups.map(g =>g.id): [] )
     const [loading, setLoading] = useState(false);
 
     const buildValidationSchema = () => {
