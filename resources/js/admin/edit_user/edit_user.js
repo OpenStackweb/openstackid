@@ -1,5 +1,4 @@
-import React, {useEffect, useState} from "react";
-import ReactDOM from "react-dom";
+import React, {useState} from "react";
 import ArrowBack from '@material-ui/icons/ArrowBack';
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
@@ -14,7 +13,6 @@ import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import Select from "@material-ui/core/Select";
 import Swal from "sweetalert2";
-import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
 import {object, ref, string} from "yup";
 import RichTextEditor from "../../components/rich_text_editor";
@@ -32,17 +30,17 @@ import TopLogo from "../../components/top_logo/top_logo";
 import styles from "./edit_user.module.scss";
 import {handleErrorResponse} from "../../utils";
 
-const EditUserPage = ({
-                          appLogo,
-                          countries,
-                          csrfToken,
-                          fetchGroupsURL,
-                          initialValues,
-                          languages,
-                          menuConfig,
-                          passwordPolicy,
-                          usersListURL
-                      }) => {
+export const EditUserPage = ({
+                                 appLogo,
+                                 countries,
+                                 csrfToken,
+                                 fetchGroupsURL,
+                                 initialValues,
+                                 languages,
+                                 menuConfig,
+                                 passwordPolicy,
+                                 usersListURL
+                             }) => {
     const [pic, setPic] = useState(null);
 
     // intialize current groups
@@ -765,41 +763,3 @@ const EditUserPage = ({
     );
 };
 
-// Or Create your Own theme:
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: "#3fa2f7",
-        },
-    },
-    overrides: {
-        MuiButton: {
-            containedPrimary: {
-                color: "white",
-            },
-        },
-    },
-});
-
-Object.assign(theme, {
-    overrides: {
-        MUIRichTextEditor: {
-            root: {
-                marginTop: 5,
-                height: 400,
-                border: "1px solid #D3D3D3",
-                borderRadius: "5px"
-            },
-            editor: {
-                borderTop: "1px solid #D3D3D3"
-            }
-        }
-    }
-})
-
-ReactDOM.render(
-    <MuiThemeProvider theme={theme}>
-        <EditUserPage {...config} />
-    </MuiThemeProvider>,
-    document.querySelector("#root")
-);

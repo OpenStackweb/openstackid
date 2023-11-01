@@ -19,7 +19,7 @@ import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import IconButton from '@material-ui/core/IconButton';
-import { emailValidator } from '../validator';
+import {emailValidator} from '../validator';
 import Grid from '@material-ui/core/Grid';
 import Swal from 'sweetalert2'
 import Banner from '../components/banner/banner';
@@ -27,13 +27,13 @@ import Banner from '../components/banner/banner';
 import styles from './login.module.scss'
 import "./third_party_identity_providers.scss";
 
-const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput, emailError }) => {
+const EmailInputForm = ({onValidateEmail, onHandleUserNameChange, disableInput, emailError}) => {
 
     return (
         <Paper elevation={0} component="form"
-            target="_self"
-            className={styles.paper_root}
-            onSubmit={onValidateEmail}>
+               target="_self"
+               className={styles.paper_root}
+               onSubmit={onValidateEmail}>
             <TextField
                 id="email"
                 name="email"
@@ -51,11 +51,11 @@ const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput,
             />
             {emailError == "" &&
                 <Button variant="contained"
-                    color="primary"
-                    title="Continue"
-                    className={styles.apply_button}
-                    disabled={disableInput}
-                    onClick={onValidateEmail}>
+                        color="primary"
+                        title="Continue"
+                        className={styles.apply_button}
+                        disabled={disableInput}
+                        onClick={onValidateEmail}>
                     &gt;
                 </Button>
             }
@@ -64,10 +64,10 @@ const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput,
 }
 
 const PasswordInputForm = ({
-    formAction,
-    onAuthenticate,
-    disableInput,
-    showPassword,
+                               formAction,
+                               onAuthenticate,
+                               disableInput,
+                               showPassword,
                                passwordValue,
                                passwordError,
                                onUserPasswordChange,
@@ -154,21 +154,21 @@ const PasswordInputForm = ({
 }
 
 const OTPInputForm = ({
-    formAction,
-    onAuthenticate,
-    disableInput,
-    showPassword,
-    passwordValue,
-    passwordError,
-    onUserPasswordChange,
-    handleClickShowPassword,
-    handleMouseDownPassword,
-    userNameValue,
-    csrfToken,
-    shouldShowCaptcha,
-    captchaPublicKey,
-    onChangeRecaptcha
-}) => {
+                          formAction,
+                          onAuthenticate,
+                          disableInput,
+                          showPassword,
+                          passwordValue,
+                          passwordError,
+                          onUserPasswordChange,
+                          handleClickShowPassword,
+                          handleMouseDownPassword,
+                          userNameValue,
+                          csrfToken,
+                          shouldShowCaptcha,
+                          captchaPublicKey,
+                          onChangeRecaptcha
+                      }) => {
     return (
         <form method="post" action={formAction} onSubmit={onAuthenticate} target='_self'>
             <TextField
@@ -196,7 +196,7 @@ const OTPInputForm = ({
                                 onMouseDown={handleMouseDownPassword}
                                 edge="end"
                             >
-                                {showPassword ? <Visibility /> : <VisibilityOff />}
+                                {showPassword ? <Visibility/> : <VisibilityOff/>}
                             </IconButton>
                         </InputAdornment>
                     )
@@ -206,13 +206,13 @@ const OTPInputForm = ({
             <p>A Verification Code was just sent to your Email.</p>
             <FormControlLabel
                 disabled={disableInput}
-                control={<Checkbox value="remember" name="remember" id="remember" color="primary" />}
+                control={<Checkbox value="remember" name="remember" id="remember" color="primary"/>}
                 label="Remember me"
             />
-            <input type="hidden" value={userNameValue} id="username" name="username" />
-            <input type="hidden" value={csrfToken} id="_token" name="_token" />
-            <input type="hidden" value="otp" id="flow" name="flow" />
-            <input type="hidden" value="email" id="connection" name="connection" />
+            <input type="hidden" value={userNameValue} id="username" name="username"/>
+            <input type="hidden" value={csrfToken} id="_token" name="_token"/>
+            <input type="hidden" value="otp" id="flow" name="flow"/>
+            <input type="hidden" value="email" id="connection" name="connection"/>
             {shouldShowCaptcha() &&
                 <ReCAPTCHA
                     className={styles.recaptcha}
@@ -221,12 +221,12 @@ const OTPInputForm = ({
                 />
             }
             <Button variant="contained"
-                disabled={disableInput}
-                className={styles.continue_btn}
-                color="primary"
-                type="submit"
-                target='_self'
-                onClick={onAuthenticate}>
+                    disabled={disableInput}
+                    className={styles.continue_btn}
+                    color="primary"
+                    type="submit"
+                    target='_self'
+                    onClick={onAuthenticate}>
                 Verify
             </Button>
         </form>
@@ -279,18 +279,19 @@ const HelpLinks = ({
     );
 }
 
-const OTPHelpLinks = ({ emitOtpAction }) => {
+const OTPHelpLinks = ({emitOtpAction}) => {
     return (
         <>
-            <hr className={styles.separator} />
+            <hr className={styles.separator}/>
             <p className={styles.otp_p}>Didn't receive it ?</p>
-            <p className={styles.otp_p}>Check your spam folder or <Link href="#" onClick={emitOtpAction} variant="body2" target="_self">resend email.</Link>
+            <p className={styles.otp_p}>Check your spam folder or <Link href="#" onClick={emitOtpAction} variant="body2"
+                                                                        target="_self">resend email.</Link>
             </p>
         </>
     );
 }
 
-const EmailErrorActions = ({ emitOtpAction, createAccountAction, onValidateEmail, disableInput }) => {
+const EmailErrorActions = ({emitOtpAction, createAccountAction, onValidateEmail, disableInput}) => {
     return (
         <Grid container spacing={1}>
             <Grid container item spacing={1} justifyContent="center" alignItems="center">
@@ -352,7 +353,7 @@ const ExistingAccountActions = ({emitOtpAction, forgotPasswordAction, userName})
     );
 }
 
-const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableInput, allowNativeAuth }) => {
+const ThirdPartyIdentityProviders = ({thirdPartyProviders, formAction, disableInput, allowNativeAuth}) => {
     return (
         <>
             {allowNativeAuth && <DividerWithText>Or</DividerWithText>}
@@ -373,12 +374,13 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
                     );
                 })
             }
-            <p>If you have a login, you may still choose to use a social login with <b>the same email address</b> to access your account.</p>
+            <p>If you have a login, you may still choose to use a social login with <b>the same email address</b> to
+                access your account.</p>
         </>
     );
 }
 
-class LoginPage extends React.Component {
+export class LoginPage extends React.Component {
 
     constructor(props) {
         super(props);
@@ -422,7 +424,7 @@ class LoginPage extends React.Component {
         let user_fullname = this.state.user_fullname ? this.state.user_fullname : this.state.user_name;
 
         emitOTP(this.state.user_name, this.props.token).then((payload) => {
-            let { response } = payload;
+            let {response} = payload;
             this.setState({
                 ...this.state,
                 authFlow: "otp",
@@ -434,7 +436,7 @@ class LoginPage extends React.Component {
                 user_fullname: user_fullname,
             });
         }, (error) => {
-            let { response, status, message } = error;
+            let {response, status, message} = error;
             Swal('Oops...', 'Something went wrong!', 'error')
         });
         return false;
@@ -454,12 +456,12 @@ class LoginPage extends React.Component {
             if (this.state.authFlow == 'OTP') {
                 error = 'Verification Code is empty';
             }
-            this.setState({ ...this.state, errors: { ...this.state.errors, password: error } });
+            this.setState({...this.state, errors: {...this.state.errors, password: error}});
             ev.preventDefault();
             return false;
         }
         if (this.state.captcha_value == '' && this.shouldShowCaptcha()) {
-            this.setState({ ...this.state, errors: { ...this.state.errors, password: 'you must check CAPTCHA' } });
+            this.setState({...this.state, errors: {...this.state.errors, password: 'you must check CAPTCHA'}});
             ev.preventDefault();
             return false;
         }
@@ -467,26 +469,26 @@ class LoginPage extends React.Component {
     }
 
     onChangeRecaptcha(value) {
-        this.setState({ ...this.state, captcha_value: value });
+        this.setState({...this.state, captcha_value: value});
     }
 
     onHandleUserNameChange(ev) {
-        let { value, id } = ev.target;
-        this.setState({ ...this.state, user_name: value });
+        let {value, id} = ev.target;
+        this.setState({...this.state, user_name: value});
     }
 
     onUserPasswordChange(ev) {
-        let { errors } = this.state;
-        let { value, id } = ev.target;
+        let {errors} = this.state;
+        let {value, id} = ev.target;
         if (value == "") // clean error
             errors[id] = '';
-        this.setState({ ...this.state, user_password: value, errors: { ...errors } });
+        this.setState({...this.state, user_password: value, errors: {...errors}});
     }
 
     onValidateEmail(ev) {
 
         ev.preventDefault();
-        let { user_name } = this.state;
+        let {user_name} = this.state;
         user_name = user_name.trim();
 
         if (user_name == '') {
@@ -497,9 +499,9 @@ class LoginPage extends React.Component {
             return false;
         }
 
-        this.setState({ ...this.state, disableInput: true });
+        this.setState({...this.state, disableInput: true});
         verifyAccount(user_name, this.props.token).then((payload) => {
-            let { response } = payload;
+            let {response} = payload;
 
             this.setState({
                 ...this.state,
@@ -514,7 +516,7 @@ class LoginPage extends React.Component {
             })
         }, (error) => {
 
-            let { response, status, message } = error;
+            let {response, status, message} = error;
 
             let newErrors = {};
 
@@ -539,7 +541,13 @@ class LoginPage extends React.Component {
 
     handleDelete() {
         this.setState({
-            ...this.state, user_name: null, user_pic: null, user_fullname: null, user_verified: false, authFlow: "password", errors: {
+            ...this.state,
+            user_name: null,
+            user_pic: null,
+            user_fullname: null,
+            user_verified: false,
+            authFlow: "password",
+            errors: {
                 email: "",
                 password: "",
             },
@@ -547,7 +555,7 @@ class LoginPage extends React.Component {
     }
 
     handleClickShowPassword(ev) {
-        this.setState({ ...this.state, showPassword: !this.state.showPassword })
+        this.setState({...this.state, showPassword: !this.state.showPassword})
     }
 
     handleMouseDownPassword(ev) {
@@ -557,13 +565,14 @@ class LoginPage extends React.Component {
     render() {
         return (
             <Container component="main" maxWidth="xs" className={styles.main_container}>
-                <CssBaseline />
-                {this.state.showInfoBanner && <Banner infoBannerContent={this.state.infoBannerContent} />}
+                <CssBaseline/>
+                {this.state.showInfoBanner && <Banner infoBannerContent={this.state.infoBannerContent}/>}
                 <Container className={styles.login_container}>
                     <div className={styles.inner_container}>
                         <Typography component="h1" className={styles.app_logo_container}>
-                            <a href={window.location.href} target='_self'><img className={styles.app_logo} alt={this.props.appName}
-                                                                src={this.props.appLogo}/></a>
+                            <a href={window.location.href} target='_self'><img className={styles.app_logo}
+                                                                               alt={this.props.appName}
+                                                                               src={this.props.appLogo}/></a>
                         </Typography>
                         <Typography component="h1" variant="h5">
                             {this.state.errors.email ? 'Create an account for:' : 'Login'}
@@ -674,7 +683,7 @@ class LoginPage extends React.Component {
                                     captchaPublicKey={this.props.captchaPublicKey}
                                     onChangeRecaptcha={this.onChangeRecaptcha}
                                 />
-                                <OTPHelpLinks emitOtpAction={this.handleEmitOtpAction} />
+                                <OTPHelpLinks emitOtpAction={this.handleEmitOtpAction}/>
                             </>
                         }
                     </div>
@@ -683,26 +692,3 @@ class LoginPage extends React.Component {
         );
     }
 }
-
-// Or Create your Own theme:
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: '#3fa2f7'
-        },
-    },
-    overrides: {
-        MuiButton: {
-            containedPrimary: {
-                color: 'white'
-            }
-        }
-    }
-});
-
-ReactDOM.render(
-    <MuiThemeProvider theme={theme}>
-        <LoginPage {...config} />
-    </MuiThemeProvider>,
-    document.querySelector('#root')
-);
