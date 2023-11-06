@@ -31,16 +31,16 @@ import TopLogo from "../components/top_logo/top_logo";
 import styles from "./profile.module.scss";
 import {handleErrorResponse} from "../utils";
 
-const ProfilePage = ({
-                         appLogo,
-                         countries,
-                         csrfToken,
-                         initialValues,
-                         languages,
-                         menuConfig,
-                         passwordPolicy,
-                         redirectUri
-                     }) => {
+export const ProfilePage = ({
+                                appLogo,
+                                countries,
+                                csrfToken,
+                                initialValues,
+                                languages,
+                                menuConfig,
+                                passwordPolicy,
+                                redirectUri
+                            }) => {
     const [pic, setPic] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -816,42 +816,3 @@ const ProfilePage = ({
         </Container>
     );
 };
-
-// Or Create your Own theme:
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: "#3fa2f7",
-        },
-    },
-    overrides: {
-        MuiButton: {
-            containedPrimary: {
-                color: "white",
-            },
-        },
-    },
-});
-
-Object.assign(theme, {
-    overrides: {
-        MUIRichTextEditor: {
-            root: {
-                marginTop: 5,
-                height: 400,
-                border: "1px solid #D3D3D3",
-                borderRadius: "5px"
-            },
-            editor: {
-                borderTop: "1px solid #D3D3D3"
-            }
-        }
-    }
-})
-
-ReactDOM.render(
-    <MuiThemeProvider theme={theme}>
-        <ProfilePage {...config} />
-    </MuiThemeProvider>,
-    document.querySelector("#root")
-);

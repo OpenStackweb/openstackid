@@ -20,17 +20,17 @@ import Banner from "../components/banner/banner";
 
 import styles from "./reset_password.module.scss";
 
-const ResetPasswordPage = ({
-  appLogo,
-  captchaPublicKey,
-  csrfToken,
-  token,
-  infoBannerContent,
-  initialValues,
-  passwordPolicy,
-  resetPasswordAction,
-  resetPasswordError,
-  sessionStatus,
+export const ResetPasswordPage = ({
+                                    appLogo,
+                                    captchaPublicKey,
+                                    csrfToken,
+                                    token,
+                                    infoBannerContent,
+                                    initialValues,
+                                    passwordPolicy,
+                                    resetPasswordAction,
+                                    resetPasswordError,
+                                    sessionStatus,
   showInfoBanner,
   submitButtonText,
 }) => {
@@ -179,27 +179,27 @@ const ResetPasswordPage = ({
                 </Typography>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
-                <Grid container item justify='center'>
+                <Grid container item justifyContent='center'>
                   <ReCAPTCHA
-                    ref={captcha}
-                    className={styles.recaptcha}
-                    sitekey={captchaPublicKey}
-                    onChange={onChangeRecaptcha}
+                      ref={captcha}
+                      className={styles.recaptcha}
+                      sitekey={captchaPublicKey}
+                      onChange={onChangeRecaptcha}
                   />
                   {captchaConfirmation && (
-                    <div className={styles.error_label}>
-                      {captchaConfirmation}
-                    </div>
+                      <div className={styles.error_label}>
+                        {captchaConfirmation}
+                      </div>
                   )}
                 </Grid>
-                <Grid container item justify='center'>
+                <Grid container item justifyContent='center'>
                   <Button
-                    variant="contained"
-                    size="large"
-                    className={styles.button}
-                    disableElevation
-                    fullWidth
-                    type="submit"
+                      variant="contained"
+                      size="large"
+                      className={styles.button}
+                      disableElevation
+                      fullWidth
+                      type="submit"
                   >
                     {submitButtonText}
                   </Button>
@@ -214,26 +214,3 @@ const ResetPasswordPage = ({
     </Container>
   );
 };
-
-// Or Create your Own theme:
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#3fa2f7",
-    },
-  },
-  overrides: {
-    MuiButton: {
-      containedPrimary: {
-        color: "white",
-      },
-    },
-  },
-});
-
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <ResetPasswordPage {...config} />
-  </MuiThemeProvider>,
-  document.querySelector("#root")
-);

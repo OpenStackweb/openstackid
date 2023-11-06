@@ -16,24 +16,23 @@ import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import Select from "@material-ui/core/Select";
 import Swal from "sweetalert2";
-import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
 import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
 
 import styles from "./signup.module.scss";
 
-const SignUpPage = ({
-  appLogo,
-  captchaPublicKey,
-  clientId,
-  codeOfConductUrl,
-  countries,
-  csrfToken,
-  infoBannerContent,
-  initialValues,
-  passwordPolicy,
-  redirectUri,
+export const SignUpPage = ({
+                             appLogo,
+                             captchaPublicKey,
+                             clientId,
+                             codeOfConductUrl,
+                             countries,
+                             csrfToken,
+                             infoBannerContent,
+                             initialValues,
+                             passwordPolicy,
+                             redirectUri,
   showInfoBanner,
   signInAction,
   signUpAction,
@@ -282,31 +281,31 @@ const SignUpPage = ({
                 </Typography>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
-                <Grid container item justify='center'>
+                <Grid container item justifyContent='center'>
                   <ReCAPTCHA
-                    ref={captcha}
-                    className={styles.recaptcha}
-                    sitekey={captchaPublicKey}
-                    onChange={onChangeRecaptcha}
+                      ref={captcha}
+                      className={styles.recaptcha}
+                      sitekey={captchaPublicKey}
+                      onChange={onChangeRecaptcha}
                   />
                   {captchaConfirmation && (
-                    <div className={styles.error_label}>
-                      {captchaConfirmation}
-                    </div>
+                      <div className={styles.error_label}>
+                        {captchaConfirmation}
+                      </div>
                   )}
                 </Grid>
                 {codeOfConductUrl && (
-                  <Grid container item justify='center'>
-                    <Checkbox
-                      id="agree_code_of_conduct"
-                      name="agree_code_of_conduct"
-                      value={formik.values.agree_code_of_conduct}
-                      onChange={formik.handleChange}
-                      color="default"
-                    />
-                    <p>
-                      I&nbsp;agree&nbsp;to&nbsp;the&nbsp;
-                      <a href={codeOfConductUrl} target="_blank">
+                    <Grid container item justifyContent='center'>
+                      <Checkbox
+                          id="agree_code_of_conduct"
+                          name="agree_code_of_conduct"
+                          value={formik.values.agree_code_of_conduct}
+                          onChange={formik.handleChange}
+                          color="default"
+                      />
+                      <p>
+                        I&nbsp;agree&nbsp;to&nbsp;the&nbsp;
+                        <a href={codeOfConductUrl} target="_blank">
                         {tenantName} Community Code of Conduct
                       </a>&nbsp;?
                     </p>
@@ -315,14 +314,14 @@ const SignUpPage = ({
                     </div>
                   </Grid>
                 )}
-                <Grid container item justify='center'>
+                <Grid container item justifyContent='center'>
                   <Button
-                    variant="contained"
-                    size="large"
-                    className={styles.button}
-                    disableElevation
-                    fullWidth
-                    type="submit"
+                      variant="contained"
+                      size="large"
+                      className={styles.button}
+                      disableElevation
+                      fullWidth
+                      type="submit"
                   >
                     Register Now
                   </Button>
@@ -360,26 +359,3 @@ const SignUpPage = ({
     </Container>
   );
 };
-
-// Or Create your Own theme:
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#3fa2f7",
-    },
-  },
-  overrides: {
-    MuiButton: {
-      containedPrimary: {
-        color: "white",
-      },
-    },
-  },
-});
-
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <SignUpPage {...config} />
-  </MuiThemeProvider>,
-  document.querySelector("#root")
-);

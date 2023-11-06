@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import ReactDOM from "react-dom";
 import ReCAPTCHA from "react-google-recaptcha";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
@@ -11,7 +10,6 @@ import Grid from "@material-ui/core/Grid";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import Swal from "sweetalert2";
-import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
 import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
@@ -24,17 +22,17 @@ const validationSchema = object({
     .required("Email is required"),
 });
 
-const EmailVerificationPage = ({
-  appLogo,
-  captchaPublicKey,
-  csrfToken,
-  emailVerificationAction,
-  emailVerificationError,
-  infoBannerContent,
-  initialValues,
-  sessionStatus,
-  showInfoBanner,
-  submitButtonText,
+export const EmailVerificationPage = ({
+                                        appLogo,
+                                        captchaPublicKey,
+                                        csrfToken,
+                                        emailVerificationAction,
+                                        emailVerificationError,
+                                        infoBannerContent,
+                                        initialValues,
+                                        sessionStatus,
+                                        showInfoBanner,
+                                        submitButtonText,
 }) => {
   const formEl = useRef(null);
   const captcha = useRef(null);
@@ -121,30 +119,30 @@ const EmailVerificationPage = ({
                 />
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
-                <Grid container item justify='center'>
-                <ReCAPTCHA
-                    ref={captcha}
-                    className={styles.recaptcha}
-                    sitekey={captchaPublicKey}
-                    onChange={onChangeRecaptcha}
-                  />
-                  {captchaConfirmation && (
-                    <div className={styles.error_label}>
-                      {captchaConfirmation}
-                    </div>
-                  )}
+                <Grid container item justifyContent='center'>
+                    <ReCAPTCHA
+                        ref={captcha}
+                        className={styles.recaptcha}
+                        sitekey={captchaPublicKey}
+                        onChange={onChangeRecaptcha}
+                    />
+                    {captchaConfirmation && (
+                        <div className={styles.error_label}>
+                            {captchaConfirmation}
+                        </div>
+                    )}
                 </Grid>
-                <Grid container item justify='center'>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    className={styles.button}
-                    disableElevation
-                    fullWidth
-                    type="submit"
-                  >
-                    {submitButtonText}
-                  </Button>
+                  <Grid container item justifyContent='center'>
+                      <Button
+                          variant="contained"
+                          size="large"
+                          className={styles.button}
+                          disableElevation
+                          fullWidth
+                          type="submit"
+                      >
+                          {submitButtonText}
+                      </Button>
                 </Grid>
               </Grid>
             </Grid>
@@ -155,26 +153,3 @@ const EmailVerificationPage = ({
     </Container>
   );
 };
-
-// Or Create your Own theme:
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#3fa2f7",
-    },
-  },
-  overrides: {
-    MuiButton: {
-      containedPrimary: {
-        color: "white",
-      },
-    },
-  },
-});
-
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <EmailVerificationPage {...config} />
-  </MuiThemeProvider>,
-  document.querySelector("#root")
-);
