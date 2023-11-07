@@ -12,18 +12,18 @@ const UserActionsGrid = ({getUserActions, pageSize}) => {
     const [filterModel, setFilterModel] = useState({});
 
     const uaColumns = [
-        {field: 'realm', headerName: 'From Realm', width: 400},
+        {field: 'realm', headerName: 'From Realm', width: 380},
         {field: 'user_action', headerName: 'Action', width: 150},
         {field: 'from_ip', headerName: 'From IP', width: 150},
         {
             field: 'created_at',
             headerName: 'When (UTC)',
             type: 'date',
-            width: 170,
+            width: 190,
             filterOperators: getGridDateOperators().filter(
                 operator => operator.value === 'after' || operator.value === 'before',
             ),
-            valueFormatter: params => moment.unix(params?.value).format("DD/MM/YYYY hh:mm A")
+            valueFormatter: params => moment.unix(params?.value).format("DD/MM/YYYY hh:mm:ss A")
         },
     ];
 

@@ -30,8 +30,10 @@ use OAuth2\Services\IPrincipalService;
 use OAuth2\Services\ISecurityContextService;
 use OpenId\Services\IUserService;
 use App\Services\Auth\IUserService as IAuthUserService;
+use Services\IUserActionService;
 use utils\Base64UrlRepresentation;
 use Utils\Db\ITransactionService;
+use Utils\IPHelper;
 use Utils\Services\IAuthService;
 use Utils\Services\ICacheService;
 use jwe\compression_algorithms\CompressionAlgorithms_Registry;
@@ -53,6 +55,10 @@ final class AuthService extends AbstractService implements IAuthService
      * @var IUserService
      */
     private $user_service;
+    /**
+     * @var IUserActionService
+     */
+    private $user_action_service;
     /**
      * @var ICacheService
      */
@@ -84,10 +90,12 @@ final class AuthService extends AbstractService implements IAuthService
      * @param IOAuth2OTPRepository $otp_repository
      * @param IPrincipalService $principal_service
      * @param IUserService $user_service
+     * @param IUserActionService $user_action_service
      * @param ICacheService $cache_service
      * @param IAuthUserService $auth_user_service
-     * @params ISecurityContextService $security_context_service
+     * @param ISecurityContextService $security_context_service
      * @param ITransactionService $tx_service
+     * @params ISecurityContextService $security_context_service
      */
     public function __construct
     (
@@ -95,6 +103,7 @@ final class AuthService extends AbstractService implements IAuthService
         IOAuth2OTPRepository    $otp_repository,
         IPrincipalService       $principal_service,
         IUserService            $user_service,
+        IUserActionService      $user_action_service,
         ICacheService           $cache_service,
         IAuthUserService        $auth_user_service,
         ISecurityContextService $security_context_service,
@@ -105,6 +114,7 @@ final class AuthService extends AbstractService implements IAuthService
         $this->user_repository = $user_repository;
         $this->principal_service = $principal_service;
         $this->user_service = $user_service;
+        $this->user_action_service = $user_action_service;
         $this->cache_service = $cache_service;
         $this->auth_user_service = $auth_user_service;
         $this->otp_repository = $otp_repository;
@@ -266,7 +276,17 @@ final class AuthService extends AbstractService implements IAuthService
 
     public function logout()
     {
-        Log::debug("AuthService::logout");
+        $user_id = $this->getCurrentUser()->getId();
+        $ip = IPHelper::getUserIp();
+        Log::debug(sprintf("AuthService::logout - UserID: %s, IP: %s", $user_id, $ip));
+
+        $this->user_action_service->addUserAction
+        (
+            $user_id,
+            $ip,
+            IUserActionService::LogoutAction
+        );
+
         $this->invalidateSession();
         $this->principal_service->clear();
         $this->security_context_service->clear();
