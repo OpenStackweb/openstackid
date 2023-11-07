@@ -1,0 +1,37 @@
+@import '../../../../styles/global';
+
+.main_container {
+  margin-top: 5%;
+  margin-bottom: 10%;
+  max-width: 1024px !important;
+
+  .title_container {
+    .app_logo {
+      display: flex;
+      max-width: 40%;
+      margin: auto;
+    }
+
+    h1 {
+      display: flex;
+      justify-content: center;
+      vertical-align: middle;
+
+      a {
+        text-decoration: none;
+      }
+    }
+  }
+
+  .clients_container {
+    border: solid 1px $border-color;
+    color: $text-color-dark;
+    background-color: white;
+
+    .button {
+      width: 200px;
+      color: white;
+      background-color: $base-color-dark;
+    }
+  }
+}

@@ -434,10 +434,12 @@ class AdminController extends Controller {
         $clients = $user->getAvailableClients();
 
         return View::make("oauth2.profile.clients", [
-            "username"             => $user->getFullName(),
-            "user_id"              => $user->getId(),
-            "use_system_scopes"    => $user->canUseSystemScopes(),
-            'clients'              => $clients,
+            "user" => json_encode(SerializerRegistry::getInstance()
+                ->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize('groups')),
+            "username" => $user->getFullName(),
+            "user_id" => $user->getId(),
+            "use_system_scopes" => $user->canUseSystemScopes(),
+            'clients' => $clients,
         ]);
     }
 

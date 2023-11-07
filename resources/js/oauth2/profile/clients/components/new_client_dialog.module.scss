@@ -1,0 +1,20 @@
+@import '../../../../../styles/global';
+
+.dialog {
+  .content {
+    .form_control {
+      margin-top: 15px;
+
+      label {
+        margin-bottom: 10px !important;
+      }
+
+      .error_label {
+        color: #f44336;
+        font-size: 0.75rem;
+        margin: 4px 0 4px 14px;
+      }
+    }
+  }
+}
+
