@@ -1,6 +1,4 @@
 import React, {useEffect, useState} from "react";
-import ReactDOM from "react-dom";
-import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import AssignmentIcon from "@material-ui/icons/Assignment";
 import CheckCircleIcon from "@material-ui/icons/CheckCircle";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
@@ -37,24 +35,16 @@ import {
 
 import styles from "./edit_client.module.scss";
 
-const EditClientPage = (
+export const EditClientPage = (
     {
         appLogo,
         appType,
         appTypes,
-        canRequestRefreshTokens,
-        clientId,
-        clientName,
-        clientType,
+        entity,
         clientTypes,
-        csrfToken,
-        editorName,
         fetchAdminUsersURL,
         initialValues,
-        isClientAllowedToUseTokenEndpointAuth,
-        isOwner,
         menuConfig,
-        ownerName,
         scopes,
         selectedScopes,
         supportedContentEncryptionAlgorithms,
@@ -63,17 +53,19 @@ const EditClientPage = (
         supportedTokenEndpointAuthMethods,
         supportedJSONWebKeyTypes,
     }) => {
+    const {clientId, clientName, editorName, ownerName} = entity;
+
     const [selScopes, setSelScopes] = useState([]);
     const [copyingScopes, setCopyingScopes] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const [refreshedValues, setRefreshedValues] = useState({...initialValues});
 
     useEffect(() => {
-        setSelScopes(selectedScopes);
+        setSelScopes(scopes.filter(scope => selectedScopes.includes(scope.id)));
     }, []);
 
     const handleClientSecretRegenerate = () => {
-        regenerateClientSecret(clientId, csrfToken)
+        regenerateClientSecret(clientId)
             .then(({response}) => {
                 setRefreshedValues({...refreshedValues, client_secret: response.client_secret});
             })
@@ -82,17 +74,17 @@ const EditClientPage = (
             });
     }
 
-    const handleScopeSelected = (scopeId) => {
-        setSelScopes([...new Set([...selScopes, scopeId])]);
-        addScope(clientId, scopeId, csrfToken)
+    const handleScopeSelected = (scopeId, scopeName) => {
+        setSelScopes([...new Set([...selScopes, {id: scopeId, name: scopeName}])]);
+        addScope(clientId, scopeId)
             .catch((err) => {
                 Swal("Something went wrong!", "Can't add this scope", "error");
             });
     }
 
-    const handleScopeUnselected = (scopeId) => {
-        setSelScopes([...selScopes.filter(id => scopeId !== id)]);
-        removeScope(clientId, scopeId, csrfToken)
+    const handleScopeUnselected = (scopeId, scopeName) => {
+        setSelScopes([...selScopes.filter(scope => scopeName !== scope.name)]);
+        removeScope(clientId, scopeId)
             .catch((err) => {
                 Swal("Something went wrong!", "Can't remove this scope", "error");
             });
@@ -101,20 +93,20 @@ const EditClientPage = (
     const handleCopyScopes = (e) => {
         e.stopPropagation();
         setCopyingScopes(true);
-        navigator.clipboard.writeText(JSON.stringify(selScopes)).then(() => {
+        navigator.clipboard.writeText(selScopes.map(scope => scope.name).join(' ')).then(() => {
             setTimeout(() => {
                 setCopyingScopes(false);
             }, 1000);
         });
     }
 
-    const handleSave = (values) => updateClientData(clientId, values, csrfToken);
+    const handleSave = (values) => updateClientData(clientId, values);
 
-    const handleRevokeAccessToken = (tokenId, value) => revokeToken(clientId, value, 'access-token', csrfToken);
+    const handleRevokeAccessToken = (tokenId, value) => revokeToken(clientId, value, 'access-token');
 
-    const handleRevokeRefreshToken = (tokenId, value) => revokeToken(clientId, value, 'refresh-token', csrfToken);
+    const handleRevokeRefreshToken = (tokenId, value) => revokeToken(clientId, value, 'refresh-token');
 
-    const handleSecuritySettingsSave = (values) => updateClientData(clientId, values, csrfToken);
+    const handleSecuritySettingsSave = (values) => updateClientData(clientId, values);
 
     const handleAccordionChange = (panel) => (event, isExpanded) => {
         setExpanded(isExpanded ? panel : false);
@@ -183,11 +175,10 @@ const EditClientPage = (
                                     <OauthPanel
                                         appType={appType}
                                         appTypes={appTypes}
-                                        clientType={clientType}
                                         clientTypes={clientTypes}
+                                        entity={entity}
                                         fetchAdminUsersURL={fetchAdminUsersURL}
                                         initialValues={refreshedValues}
-                                        isOwner={isOwner}
                                         onClientSecretRegenerate={handleClientSecretRegenerate}
                                         onSavePromise={handleSave}
                                     />
@@ -251,10 +242,9 @@ const EditClientPage = (
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <SecuritySettingsPanel
-                                        clientId={clientId}
-                                        csrfToken={csrfToken}
+                                        entity={entity}
+                                        clientTypes={clientTypes}
                                         initialValues={refreshedValues}
-                                        isClientAllowedToUseTokenEndpointAuth={isClientAllowedToUseTokenEndpointAuth}
                                         onMainSettingsSavePromise={handleSecuritySettingsSave}
                                         onLogoutOptionsSavePromise={handleSave}
                                         supportedContentEncryptionAlgorithms={supportedContentEncryptionAlgorithms}
@@ -272,26 +262,3 @@ const EditClientPage = (
         </Container>
     );
 };
-
-// Or Create your Own theme:
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: "#3fa2f7",
-        },
-    },
-    overrides: {
-        MuiButton: {
-            containedPrimary: {
-                color: "white",
-            },
-        },
-    },
-});
-
-ReactDOM.render(
-    <MuiThemeProvider theme={theme}>
-        <EditClientPage {...config} />
-    </MuiThemeProvider>,
-    document.querySelector("#root")
-);

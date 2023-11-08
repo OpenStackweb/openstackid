@@ -13,16 +13,10 @@
  * limitations under the License.
  **/
 
-use App\Http\Utils\PagingConstants;
-use Exception;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use models\exceptions\EntityNotFoundException;
-use models\exceptions\ValidationException;
+use App\Http\Controllers\GetAllTrait;
 use OAuth2\Services\IClientPublicKeyService;
 use utils\Filter;
 use utils\FilterElement;
-use utils\PagingInfo;
 use Utils\Services\ILogService;
 use OAuth2\Repositories\IClientPublicKeyRepository;
 use Illuminate\Support\Facades\Request;
@@ -33,6 +27,8 @@ use Illuminate\Support\Facades\Request;
  */
 final class ClientPublicKeyApiController extends AsymmetricKeyApiController
 {
+    use GetAllTrait;
+
     /**
      * @param IClientPublicKeyRepository $repository
      * @param IClientPublicKeyService $service
@@ -41,7 +37,7 @@ final class ClientPublicKeyApiController extends AsymmetricKeyApiController
     public function __construct
     (
         IClientPublicKeyRepository $repository,
-        IClientPublicKeyService $service,
+        IClientPublicKeyService    $service,
         ILogService $log_service
     )
     {
@@ -57,90 +53,42 @@ final class ClientPublicKeyApiController extends AsymmetricKeyApiController
         return array_merge($payload, $this->extra_create_payload_params);
     }
 
-    /**
-     * @param int $client_id
-     * @return mixed
-     */
-    public function _getAll($client_id)
+    protected function applyExtraFilters(Filter $filter): Filter
     {
-        $values = Request::all();
-        $rules = [
-            'page' => 'integer|min:1',
-            'per_page' => sprintf('required_with:page|integer|min:%s|max:%s', PagingConstants::MinPageSize, PagingConstants::MaxPageSize),
-        ];
-
-        try {
-            $validation = Validator::make($values, $rules);
-
-            if ($validation->fails()) {
-                $ex = new ValidationException();
-                throw $ex->setMessages($validation->messages()->toArray());
-            }
-
-            // default values
-            $page = 1;
-            $per_page = PagingConstants::DefaultPageSize;;
-
-            if (Request::has('page')) {
-                $page = intval(Request::input('page'));
-                $per_page = intval(Request::input('per_page'));
-            }
-
-            $filter = new Filter();
-            $filter->addFilterCondition(FilterElement::makeEqual("client_id", intval($client_id)));
-
-            $data = $this->repository->getAllByPage(new PagingInfo($page, $per_page), $filter);
-            return $this->ok
-            (
-                $data->toArray
-                (
-                    Request::input('expand', ''),
-                    [],
-                    [],
-                    [],
-                    $this->getAllSerializerType()
-                )
-            );
-        } catch (ValidationException $ex1) {
-            Log::warning($ex1);
-            return $this->error412(array($ex1->getMessage()));
-        } catch (EntityNotFoundException $ex2) {
-            Log::warning($ex2);
-            return $this->error404(array('message' => $ex2->getMessage()));
-        } catch (Exception $ex) {
-            Log::error($ex);
-            return $this->error500($ex);
-        }
+        $client_id = Request::route('id');
+        $filter->addFilterCondition(FilterElement::makeEqual("owner_id", intval($client_id)));
+        return $filter;
     }
 
     private $extra_create_payload_params = [];
 
     /**
-     * @param int $client_id
+     * @param int $owner_id
      * @return mixed
      */
-    public function _create($client_id)
+    public function _create($owner_id)
     {
-        $this->extra_create_payload_params['client_id'] = $client_id;
+        $this->extra_create_payload_params['owner_id'] = $owner_id;
         return $this->create();
     }
 
     /**
-     * @param int $client_id
+     * @param int $owner_id
      * @param int $public_key_id
      * @return mixed
      */
-    public function _update($client_id, $public_key_id)
+    public function _update($owner_id, $public_key_id)
     {
         return $this->update($public_key_id);
     }
 
     /**
-     * @param int $client_id
+     * @param int $owner_id
      * @param int $public_key_id
      * @return mixed
      */
-    public function _delete($client_id, $public_key_id){
+    public function _delete($owner_id, $public_key_id)
+    {
         return $this->delete($public_key_id);
     }
 

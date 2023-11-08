@@ -77,7 +77,7 @@ final class ClientPublicKeyService extends AsymmetricKeyService implements IClie
                 throw new ValidationException('public key already exists on another client, choose another one!.');
             }
 
-            $client = $this->client_repository->getById(intval($params['client_id']));
+            $client = $this->client_repository->getById(intval($params['owner_id']));
 
             if(is_null($client) || !$client instanceof Client)
                 throw new EntityNotFoundException('client does not exits!');

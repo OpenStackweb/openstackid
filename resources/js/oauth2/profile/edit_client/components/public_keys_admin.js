@@ -66,7 +66,6 @@ const DialogTitle = withStyles(classes)((props) => {
 });
 
 const PublicKeysAdmin = ({
-                             csrfToken,
                              initialValues,
                              clientId,
                              supportedSigningAlgorithms,
@@ -108,7 +107,7 @@ const PublicKeysAdmin = ({
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.value) {
-                removePublicKey(clientId, id, csrfToken).then(() => {
+                removePublicKey(clientId, id).then(() => {
                     Swal("Public key deleted", "The public key has been deleted successfully", "success");
                     reloadPublicKeys();
                 }).catch((err) => {
@@ -176,7 +175,7 @@ const PublicKeysAdmin = ({
 
             console.log('public_key_saved', values)
 
-            addPublicKey(clientId, values, csrfToken).then(() => {
+            addPublicKey(clientId, values).then(() => {
                 setOpen(false);
                 Swal("Public key added", "The public key has been added successfully", "success");
             }).catch((err) => {

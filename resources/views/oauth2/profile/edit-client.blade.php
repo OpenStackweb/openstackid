@@ -87,6 +87,18 @@
         supportedJSONWebKeyTypes.push('{!! $type !!}');
         @endforeach
 
+        const entity = {
+            canRequestRefreshTokens: Boolean({!!$client->canRequestRefreshTokens()!!}),
+            clientId: '{!!$client->id!!}',
+            clientName: '{!!$client->getFriendlyApplicationType()!!}',
+            clientSecret: '{!!$client->client_secret!!}',
+            clientType: '{!!$client->client_type!!}',
+            editorName: '{!!$client->getEditedByNice()!!}',
+            isClientAllowedToUseTokenEndpointAuth: Boolean({!!OAuth2\OAuth2Protocol::isClientAllowedToUseTokenEndpointAuth($client)!!}),
+            isOwner: {!!$client->isOwner(Auth::user())!!} === 1,
+            ownerName: '{!!$client->getOwnerNice()!!}',
+        }
+
         const initialValues = {
             active: true,
             admin_users: adminUsers,
@@ -96,8 +108,8 @@
             app_description: '{!!$client->app_description!!}',
             app_name: '{!!$client->app_name!!}',
             application_type: '{!!$client->application_type!!}',
-            client_id: '{!!$client->client_id!!}',
-            client_secret: '{!!$client->client_secret!!}',
+            client_id: entity.clientId,
+            client_secret: entity.clientSecret,
             contacts: '{!!$client->contacts!!}'.split(','),
             id_token_encrypted_content_alg: '{!!$client->id_token_encrypted_response_enc!!}'.trim(),
             id_token_encrypted_response_alg: '{!!$client->id_token_encrypted_response_alg!!}'.trim(),
@@ -113,6 +125,7 @@
             otp_length: {!!$client->otp_length!!},
             otp_lifetime: {!!$client->otp_lifetime!!},
             pem_content: '',
+            pkce_enabled: Boolean({!!$client->pkce_enabled!!}),
             policy_uri: '{!!$client->policy_uri!!}',
             post_logout_redirect_uris: '{!!$client->post_logout_redirect_uris!!}'.trim() === '' ? [] : '{!!$client->post_logout_redirect_uris!!}'.split(','),
             redirect_uris: '{!!$client->redirect_uris!!}'.trim() === '' ? [] : '{!!$client->redirect_uris!!}'.split(','),
@@ -171,20 +184,10 @@
             appLogo: '{{$app_logo ?? Config::get("app.logo_url")}}',
             appType: '{!!$client->application_type!!}',
             appTypes: AppTypes,
-            canRequestRefreshTokens: Boolean({!!$client->canRequestRefreshTokens()!!}),
-            clientId: '{!!$client->id!!}',
-            clientName: '{!!$client->getFriendlyApplicationType()!!}',
-            clientSecret: '{!!$client->client_secret!!}',
-            clientType: '{!!$client->client_type!!}',
             clientTypes: ClientTypes,
-            csrfToken: document.head.querySelector('meta[name="csrf-token"]').content,
-            editorName: '{!!$client->getEditedByNice()!!}',
             fetchAdminUsersURL: '{{URL::action("Api\\UserApiController@getAll")}}',
             initialValues: initialValues,
-            isOwner: {!!$client->isOwner(Auth::user())!!} === 1,
-            isClientAllowedToUseTokenEndpointAuth: Boolean({!!OAuth2\OAuth2Protocol::isClientAllowedToUseTokenEndpointAuth($client)!!}),
             menuConfig: menuConfig,
-            ownerName: '{!!$client->getOwnerNice()!!}',
             scopes: scopes,
             selectedScopes: selectedScopes,
             supportedContentEncryptionAlgorithms: supportedContentEncryptionAlgorithms,
@@ -194,6 +197,8 @@
             supportedJSONWebKeyTypes: supportedJSONWebKeyTypes,
             userName: '{{ Session::has('username') ? Session::get('username') : ""}}',
         }
+
+        window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;
 
         window.UPDATE_CLIENT_DATA_ENDPOINT = '{!!URL::action("Api\ClientApiController@update",array("id"=>"@client_id"))!!}';
 
@@ -206,7 +211,7 @@
         window.REVOKE_TOKENS_ENDPOINT = '{!! URL::action("Api\ClientApiController@revokeToken",array("id"=>"@client_id","value"=>"@value","hint"=>"@hint")) !!}';
 
         window.ADD_PUBLIC_KEY_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_create",array("id"=>"@client_id"))!!}';
-        window.GET_PUBLIC_KEYS_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_getAll",array("id"=>"@client_id"))!!}';
+        window.GET_PUBLIC_KEYS_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@getAll",array("id"=>"@client_id"))!!}';
         window.REMOVE_PUBLIC_KEY_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_delete",array("id"=>"@client_id", "public_key_id"=>"@public_key_id"))!!}';
     </script>
     {!! HTML::script('assets/editClient.js') !!}

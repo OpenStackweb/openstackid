@@ -28,7 +28,7 @@ class DoctrineClientPublicKeyRepository
     protected function getFilterMappings()
     {
         return [
-            'client_id' => 'e.owner',
+            'owner_id' => 'e.owner',
         ];
     }
 

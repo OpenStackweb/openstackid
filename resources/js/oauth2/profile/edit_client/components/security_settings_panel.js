@@ -13,10 +13,9 @@ import styles from "./common.module.scss";
 
 const SecuritySettingsPanel = (
     {
-        clientId,
-        csrfToken,
+        entity,
+        clientTypes,
         initialValues,
-        isClientAllowedToUseTokenEndpointAuth,
         onMainSettingsSavePromise,
         onLogoutOptionsSavePromise,
         supportedContentEncryptionAlgorithms,
@@ -25,6 +24,8 @@ const SecuritySettingsPanel = (
         supportedTokenEndpointAuthMethods,
         supportedJSONWebKeyTypes,
     }) => {
+    const {clientId, clientType, isClientAllowedToUseTokenEndpointAuth} = entity;
+
     const [loading, setLoading] = useState(false);
 
     const buildValidationSchema = () => {
@@ -64,6 +65,15 @@ const SecuritySettingsPanel = (
                         className={styles.main_container}
                     >
                         <FormGroup>
+                            {clientType === clientTypes.Public &&
+                                <CheckboxFormControl
+                                    id="pkce_enabled"
+                                    title="Use PCKE?"
+                                    tooltip="Use Proof Key for Code Exchange instead of a Client Secret (Public Clients)"
+                                    value={formik.values.pkce_enabled}
+                                    onChange={formik.handleChange}
+                                />
+                            }
                             <CheckboxFormControl
                                 id="otp_enabled"
                                 title="Use Passwordless?"
@@ -261,7 +271,6 @@ const SecuritySettingsPanel = (
                         <Box component="div" whiteSpace="nowrap" height="20px"/>
                         <PublicKeysAdmin
                             clientId={clientId}
-                            csrfToken={csrfToken}
                             initialValues={initialValues}
                             supportedSigningAlgorithms={supportedSigningAlgorithms}
                             supportedJSONWebKeyTypes={supportedJSONWebKeyTypes}

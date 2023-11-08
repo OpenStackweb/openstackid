@@ -13,6 +13,11 @@ import styles from "./common.module.scss";
 const LogoutOptions = ({initialValues, onSavePromise}) => {
     const [loading, setLoading] = useState(false);
 
+    const validatePostLogoutRedirectURI = (value) => {
+        const regex = /^https:\/\/([\w@][\w.:@]+)\/?[\w\.?=%&=\-@/$,]*$/ig;
+        return regex.test(value);
+    }
+
     const buildValidationSchema = () => {
         return object({});
     }
@@ -69,6 +74,7 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
                             tags={getTags(formik.values.post_logout_redirect_uris)}
                             errors={formik.errors.post_logout_redirect_uris}
                             onChange={formik.handleChange}
+                            isValid={validatePostLogoutRedirectURI}
                         />
                     </FormControl>
                     <SimpleTextFormControl

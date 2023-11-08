@@ -2,8 +2,9 @@ import {getRawRequest, postRawRequest, putRawRequest, deleteRawRequest} from "..
 
 export const PAGE_SIZE = 30;
 
-export const regenerateClientSecret = async (clientId, token) => {
-    return putRawRequest(window.REGENERATE_CLIENT_SECRET_ENDPOINT.replace('@client_id', clientId))({'X-CSRF-TOKEN': token});
+export const regenerateClientSecret = async (clientId) => {
+    return putRawRequest(window.REGENERATE_CLIENT_SECRET_ENDPOINT
+        .replace('@client_id', clientId))({'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
 export const getAccessTokens = async (clientId, page = 1, perPage = PAGE_SIZE, order = 'created_at', orderDir = 'desc', filters = {}) => {
@@ -38,30 +39,33 @@ export const getRefreshTokens = async (clientId, page = 1, perPage = PAGE_SIZE, 
     return response;
 }
 
-export const revokeToken = async (clientId, value, hint, token) => {
+export const revokeToken = async (clientId, value, hint) => {
     return deleteRawRequest(window.REVOKE_TOKENS_ENDPOINT
         .replace('@client_id', clientId)
         .replace('@value', value)
-        .replace('@hint', hint))({'X-CSRF-TOKEN': token});
+        .replace('@hint', hint))({'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
-export const updateClientData = async (clientId, entity, token) => {
-    return putRawRequest(window.UPDATE_CLIENT_DATA_ENDPOINT.replace('@client_id', clientId))(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': token});
+export const updateClientData = async (clientId, entity) => {
+    return putRawRequest(window.UPDATE_CLIENT_DATA_ENDPOINT
+        .replace('@client_id', clientId))(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
-export const addScope = async (clientId, scopeId, token) => {
+export const addScope = async (clientId, scopeId) => {
     return putRawRequest(window.ADD_CLIENT_SCOPE_ENDPOINT
         .replace('@client_id', clientId)
-        .replace('@scope_id', scopeId))({}, {}, {'X-CSRF-TOKEN': token});
+        .replace('@scope_id', scopeId))({}, {}, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
-export const removeScope = async (clientId, scopeId, token) => {
-    return deleteRawRequest(window.REMOVE_CLIENT_SCOPE_ENDPOINT.replace('@client_id', clientId)
-        .replace('@scope_id', scopeId))({'X-CSRF-TOKEN': token});
+export const removeScope = async (clientId, scopeId) => {
+    return deleteRawRequest(window.REMOVE_CLIENT_SCOPE_ENDPOINT
+        .replace('@client_id', clientId)
+        .replace('@scope_id', scopeId))({'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
-export const addPublicKey = async (clientId, entity, token) => {
-    return postRawRequest(window.ADD_PUBLIC_KEY_ENDPOINT.replace('@client_id', clientId))(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': token});
+export const addPublicKey = async (clientId, entity) => {
+    return postRawRequest(window.ADD_PUBLIC_KEY_ENDPOINT
+        .replace('@client_id', clientId))(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
 export const getPublicKeys = async (clientId, page = 1, perPage = PAGE_SIZE) => {
@@ -74,9 +78,9 @@ export const getPublicKeys = async (clientId, page = 1, perPage = PAGE_SIZE) => 
     return response;
 }
 
-export const removePublicKey = async (clientId, keyId, token) => {
+export const removePublicKey = async (clientId, keyId) => {
     return deleteRawRequest(window.REMOVE_PUBLIC_KEY_ENDPOINT.replace('@client_id', clientId)
-        .replace('@public_key_id', keyId))({'X-CSRF-TOKEN': token});
+        .replace('@public_key_id', keyId))({'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
 const normalizeEntity = (entity) => {

@@ -4,6 +4,7 @@ import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 
 const AllowedScopesPanel = ({scopes, selectedScopes, onScopeSelected, onScopeUnselected}) => {
     const [apisInfo, setApisInfo] = useState([]);
+    const selectedScopeIds = selectedScopes.map(scope => scope.id);
 
     useEffect(() => {
         //get api info from scopes
@@ -11,13 +12,13 @@ const AllowedScopesPanel = ({scopes, selectedScopes, onScopeSelected, onScopeUns
     }, []);
 
     const handleCheckboxChange = (e) => {
-        let {checked, id} = e.target;
+        let {checked, id, name} = e.target;
         id = parseInt(id);
         if (checked && onScopeSelected) {
-            onScopeSelected(id)
+            onScopeSelected(id, name)
         }
         if (!checked && onScopeUnselected) {
-            onScopeUnselected(id)
+            onScopeUnselected(id, name)
         }
     }
 
@@ -59,7 +60,7 @@ const AllowedScopesPanel = ({scopes, selectedScopes, onScopeSelected, onScopeUns
                                         control={<Checkbox
                                             color="primary"
                                             id={scope.id.toString()}
-                                            checked={selectedScopes.includes(scope.id)}
+                                            checked={selectedScopeIds.includes(scope.id)}
                                             onChange={handleCheckboxChange}
                                         />}
                                         label={<>

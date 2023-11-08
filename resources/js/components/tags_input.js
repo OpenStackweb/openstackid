@@ -15,7 +15,7 @@ export const getTags = (value) => Array.isArray(value) ? value : value?.split(',
 
 const TagsInput = ({...props}) => {
     const classes = useStyles();
-    const {id, name, selectedTags, placeholder, onChange, tags, ...other} = props;
+    const {id, name, selectedTags, isValid, placeholder, onChange, tags, type, ...other} = props;
     const [inputValue, setInputValue] = useState("");
     const [selectedItem, setSelectedItem] = useState([]);
 
@@ -60,24 +60,24 @@ const TagsInput = ({...props}) => {
 
     function handleKeyDown(event) {
         if (event.key === "Enter") {
+            const value = event.target.value.trim();
             const newSelectedItem = [...selectedItem];
-            const duplicatedValues = newSelectedItem.indexOf(
-                event.target.value.trim()
-            );
+            const duplicatedValues = newSelectedItem.indexOf(value);
 
             if (duplicatedValues !== -1) {
                 setInputValue("");
                 return;
             }
-            if (!event.target.value.replace(/\s/g, "").length) return;
+            if (!value.replace(/\s/g, "").length) return;
 
-            if ((props.type === "url" && !isValidHttpUrl(event.target.value)) ||
-                (props.type === "email" && !isValidEmail(event.target.value))) {
+            if ((isValid && !isValid(value)) ||
+                (type === "url" && !isValidHttpUrl(value)) ||
+                (type === "email" && !isValidEmail(value))) {
                 setInputValue("");
                 return;
             }
 
-            newSelectedItem.push(event.target.value.trim());
+            newSelectedItem.push(value);
             setSelectedItem(newSelectedItem);
             setInputValue("");
 

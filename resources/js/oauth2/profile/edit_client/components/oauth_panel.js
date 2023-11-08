@@ -31,15 +31,15 @@ import styles from "./common.module.scss";
 const OauthPanel = ({
                         appType,
                         appTypes,
-                        canRequestRefreshTokens,
-                        clientType,
                         clientTypes,
+                        entity,
                         fetchAdminUsersURL,
                         initialValues,
-                        isOwner,
                         onClientSecretRegenerate,
                         onSavePromise
                     }) => {
+    const {canRequestRefreshTokens, clientType, isOwner} = entity;
+
     const [loading, setLoading] = useState(false);
     const [copyEventInfo, setCopyEventInfo] = useState({});
 
@@ -50,6 +50,25 @@ const OauthPanel = ({
                 setCopyEventInfo({...copyEventInfo, [target]: false});
             }, 2000);
         });
+    }
+
+    const validateRedirectURI = (value) => {
+        try {
+            const url = new URL(value);
+            return appType === appTypes.Native ? true : url.protocol === 'https:'
+                && url.search === '';
+        } catch (err) {
+            return false;
+        }
+    }
+
+    const validateAllowedOrigin = (value) => {
+        try {
+            const url = new URL(value);
+            return url.protocol === 'https:' && url.search === '';
+        } catch (err) {
+            return false;
+        }
     }
 
     const buildValidationSchema = () => {
@@ -311,7 +330,7 @@ const OauthPanel = ({
                         />
                     </FormControl>
                     {
-                        appType === appTypes.Service &&
+                        appType !== appTypes.Service &&
                         <FormControl variant="outlined" className={styles.form_control}>
                             <FormLabel htmlFor="redirect_uris">
                                 <Typography variant="subtitle2" display="inline">Allowed Redirection Uris
@@ -329,6 +348,7 @@ const OauthPanel = ({
                                 type="url"
                                 onChange={formik.handleChange}
                                 tags={getTags(formik.values.redirect_uris)}
+                                isValid={validateRedirectURI}
                             />
                         </FormControl>
                     }
@@ -351,6 +371,7 @@ const OauthPanel = ({
                                 type="url"
                                 onChange={formik.handleChange}
                                 tags={getTags(formik.values.allowed_origins)}
+                                isValid={validateAllowedOrigin}
                             />
                         </FormControl>
                     }
