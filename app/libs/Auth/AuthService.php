@@ -150,14 +150,22 @@ final class AuthService extends AbstractService implements IAuthService
 
         $this->last_login_error = "";
         if (!Auth::attempt(['username' => $username, 'password' => $password], $remember_me)) {
-            throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
+            throw new AuthenticationException
+            (
+                "We are sorry, your username or password does not match an existing record."
+            );
         }
-
         Log::debug("AuthService::login: clearing principal");
         $this->principal_service->clear();
+        $current_user = $this->getCurrentUser();
+        if(is_null($current_user))
+            throw new AuthenticationException
+            (
+                "We are sorry, your username or password does not match an existing record."
+            );
         $this->principal_service->register
         (
-            $this->getCurrentUser()->getId(),
+            $current_user->getId(),
             time()
         );
 
@@ -276,17 +284,21 @@ final class AuthService extends AbstractService implements IAuthService
 
     public function logout()
     {
-        $user_id = $this->getCurrentUser()->getId();
-        $ip = IPHelper::getUserIp();
-        Log::debug(sprintf("AuthService::logout - UserID: %s, IP: %s", $user_id, $ip));
+        Log::debug("AuthService::logout");
+        $current_user = $this->getCurrentUser();
+        // check if we have user on session
+        if(!is_null($current_user)) {
+            $ip = IPHelper::getUserIp();
+            Log::debug(sprintf("AuthService::logout we have user %s from ip %s", $current_user->getId(), $ip));
+            $this->user_action_service->addUserAction
+            (
+                $current_user->getId(),
+                $ip,
+                IUserActionService::LogoutAction
+            );
+        }
 
-        $this->user_action_service->addUserAction
-        (
-            $user_id,
-            $ip,
-            IUserActionService::LogoutAction
-        );
-
+        // regular flow
         $this->invalidateSession();
         $this->principal_service->clear();
         $this->security_context_service->clear();
