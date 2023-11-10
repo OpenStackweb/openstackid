@@ -18,17 +18,17 @@ use Models\OAuth2\Client;
  * Class ClientSerializer
  * @package App\ModelSerializers\OAuth2
  */
-final class ClientSerializer extends BaseSerializer
+class ClientSerializer extends BaseSerializer
 {
     protected static $array_mappings = [
-        'ApplicationName'         => 'app_name:json_string',
-        'ApplicationDescription'  => 'app_description:json_string',
-        'ApplicationType'         => 'application_type:json_string',
+        'ApplicationName' => 'app_name:json_string',
+        'ApplicationDescription' => 'app_description:json_string',
+        'ApplicationType' => 'application_type:json_string',
         'FriendlyApplicationType' => 'friendly_application_type:json_string',
-        'Active'                  => 'active:json_boolean',
-        'Locked'                  => 'locked:json_boolean',
-        'ClientId'                => 'client_id:json_string',
-        'ClientSecret'            => 'client_secret:json_string',
+        'Active' => 'active:json_boolean',
+        'Locked' => 'locked:json_boolean',
+        'ClientId' => 'client_id:json_string',
+        'ClientSecret' => 'client_secret:json_string',
         'ClientType'              => 'client_type:json_string',
     ];
 

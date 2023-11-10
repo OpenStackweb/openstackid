@@ -38,7 +38,6 @@ import styles from "./edit_client.module.scss";
 export const EditClientPage = (
     {
         appLogo,
-        appType,
         appTypes,
         entity,
         clientTypes,
@@ -53,7 +52,7 @@ export const EditClientPage = (
         supportedTokenEndpointAuthMethods,
         supportedJSONWebKeyTypes,
     }) => {
-    const {clientId, clientName, editorName, ownerName} = entity;
+    const {id, client_id, client_name, modified_by, owner_name} = entity;
 
     const [selScopes, setSelScopes] = useState([]);
     const [copyingScopes, setCopyingScopes] = useState(false);
@@ -65,7 +64,7 @@ export const EditClientPage = (
     }, []);
 
     const handleClientSecretRegenerate = () => {
-        regenerateClientSecret(clientId)
+        regenerateClientSecret(id)
             .then(({response}) => {
                 setRefreshedValues({...refreshedValues, client_secret: response.client_secret});
             })
@@ -76,7 +75,7 @@ export const EditClientPage = (
 
     const handleScopeSelected = (scopeId, scopeName) => {
         setSelScopes([...new Set([...selScopes, {id: scopeId, name: scopeName}])]);
-        addScope(clientId, scopeId)
+        addScope(id, scopeId)
             .catch((err) => {
                 Swal("Something went wrong!", "Can't add this scope", "error");
             });
@@ -84,7 +83,7 @@ export const EditClientPage = (
 
     const handleScopeUnselected = (scopeId, scopeName) => {
         setSelScopes([...selScopes.filter(scope => scopeName !== scope.name)]);
-        removeScope(clientId, scopeId)
+        removeScope(id, scopeId)
             .catch((err) => {
                 Swal("Something went wrong!", "Can't remove this scope", "error");
             });
@@ -100,13 +99,13 @@ export const EditClientPage = (
         });
     }
 
-    const handleSave = (values) => updateClientData(clientId, values);
+    const handleSave = (values) => updateClientData(id, values);
 
-    const handleRevokeAccessToken = (tokenId, value) => revokeToken(clientId, value, 'access-token');
+    const handleRevokeAccessToken = (tokenId, value) => revokeToken(id, value, 'access-token');
 
-    const handleRevokeRefreshToken = (tokenId, value) => revokeToken(clientId, value, 'refresh-token');
+    const handleRevokeRefreshToken = (tokenId, value) => revokeToken(id, value, 'refresh-token');
 
-    const handleSecuritySettingsSave = (values) => updateClientData(clientId, values);
+    const handleSecuritySettingsSave = (values) => updateClientData(id, values);
 
     const handleAccordionChange = (panel) => (event, isExpanded) => {
         setExpanded(isExpanded ? panel : false);
@@ -132,7 +131,7 @@ export const EditClientPage = (
                             </Tooltip>
                             &nbsp;
                             <Typography variant="subtitle1">
-                                {clientName} - Client # {clientId}
+                                {client_name} - Client # {id}
                             </Typography>
                         </Grid>
                         <Divider/>
@@ -144,7 +143,7 @@ export const EditClientPage = (
                             </Grid>
                             <Grid item xs={4}>
                                 <Typography variant="body2">
-                                    {ownerName}
+                                    {owner_name}
                                 </Typography>
                             </Grid>
                         </Grid>
@@ -156,7 +155,7 @@ export const EditClientPage = (
                             </Grid>
                             <Grid item xs={4}>
                                 <Typography variant="body2">
-                                    {editorName}
+                                    {modified_by}
                                 </Typography>
                             </Grid>
                         </Grid>
@@ -173,7 +172,6 @@ export const EditClientPage = (
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <OauthPanel
-                                        appType={appType}
                                         appTypes={appTypes}
                                         clientTypes={clientTypes}
                                         entity={entity}
@@ -223,9 +221,9 @@ export const EditClientPage = (
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <AppGrantsPanel
-                                        getAccessTokens={(page, perPage) => getAccessTokens(clientId, page, perPage)}
+                                        getAccessTokens={(page, perPage) => getAccessTokens(id, page, perPage)}
                                         onRevokeAccessToken={handleRevokeAccessToken}
-                                        getRefreshTokens={(page, perPage) => getRefreshTokens(clientId, page, perPage)}
+                                        getRefreshTokens={(page, perPage) => getRefreshTokens(id, page, perPage)}
                                         onRevokeRefreshToken={handleRevokeRefreshToken}
                                     />
                                 </AccordionDetails>

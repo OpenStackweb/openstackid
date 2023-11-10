@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {object} from "yup";
+import {object, string} from "yup";
 import {useFormik} from "formik";
 import {Box, Button, Divider, FormControl, FormGroup, FormLabel, Tooltip, Typography} from "@material-ui/core";
 import {CheckboxFormControl, SimpleTextFormControl} from "./form_controls";
@@ -19,7 +19,9 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
     }
 
     const buildValidationSchema = () => {
-        return object({});
+        return object({
+            logout_uri: string().matches(/^https:\/\//, {message: 'URL must be SSL'}),
+        });
     }
 
     const formik = useFormik({

@@ -24,123 +24,25 @@
 
 @section('scripts')
     <script>
-        let adminUsers = [];
-        let scopes = [];
-        let selectedScopes = [];
-        let supportedSigningAlgorithms = [];
-        let supportedKeyManagementAlgorithms = [];
-        let supportedContentEncryptionAlgorithms = [];
-        let supportedTokenEndpointAuthMethods = [];
-        let supportedJSONWebKeyTypes = [];
+        const entity = {!!$client!!};
+        const scopes = {!!$scopes!!};
+        const selectedScopes = {!!$selected_scopes!!};
+        const supportedSigningAlgorithms = {!!$supportedSigningAlgorithms!!};
+        const supportedKeyManagementAlgorithms = {!!$supportedKeyManagementAlgorithms!!};
+        const supportedContentEncryptionAlgorithms = {!!$supportedContentEncryptionAlgorithms!!};
+        const supportedTokenEndpointAuthMethods = {!!$supportedTokenEndpointAuthMethods!!};
+        const supportedJSONWebKeyTypes = {!!$supportedJSONWebKeyTypes!!};
 
-        const AppTypes = {
-            JSClient: '{!! oauth2\models\IClient::ApplicationType_JS_Client !!}',
-            Native: '{!! oauth2\models\IClient::ApplicationType_Native !!}',
-            Service: '{!! oauth2\models\IClient::ApplicationType_Service !!}',
-            WebApp: '{!! oauth2\models\IClient::ApplicationType_Web_App !!}'
-        }
-
-        const ClientTypes = {
-            Public: '{!! OAuth2\Models\IClient::ClientType_Public !!}',
-            Confidential: '{!! OAuth2\Models\IClient::ClientType_Confidential !!}'
-        }
-
-        @foreach($client->admin_users as $admin_user)
-        adminUsers.push({
-            'id': {!! $admin_user->id !!},
-            'fullName': '{!! $admin_user->first_name !!} {!! $admin_user->last_name !!}'
-        });
-        @endforeach
-
-        @foreach($scopes as $scope)
-        scopes.push({
-            'id': {!! $scope->id !!},
-            'name': '{!! $scope->name !!}',
-            'description': '{!! $scope->description !!}',
-            'api_name': '{!! $scope->getApiName() !!}',
-            'api_logo': '{!! $scope->getApiLogo() !!}',
-            'api_description': '{!! $scope->getApiDescription() !!}',
-        });
-        @endforeach
-
-        @foreach($selected_scopes as $selected_scope)
-        selectedScopes.push({!! $selected_scope !!});
-        @endforeach
-
-        @foreach(OAuth2\OAuth2Protocol::getSigningAlgorithmsPerClientType($client) as $alg)
-        supportedSigningAlgorithms.push('{!! $alg !!}');
-        @endforeach
-
-        @foreach(OAuth2\OAuth2Protocol::getKeyManagementAlgorithmsPerClientType($client) as $alg)
-        supportedKeyManagementAlgorithms.push('{!! $alg !!}');
-        @endforeach
-
-        @foreach(OAuth2\OAuth2Protocol::$supported_content_encryption_algorithms as $alg)
-        supportedContentEncryptionAlgorithms.push('{!! $alg !!}');
-        @endforeach
-
-        @foreach(OAuth2\OAuth2Protocol::getTokenEndpointAuthMethodsPerClientType($client) as $method)
-        supportedTokenEndpointAuthMethods.push('{!! $method !!}');
-        @endforeach
-
-        @foreach(\jwk\JSONWebKeyTypes::$supported_keys as $type)
-        supportedJSONWebKeyTypes.push('{!! $type !!}');
-        @endforeach
-
-        const entity = {
-            canRequestRefreshTokens: Boolean({!!$client->canRequestRefreshTokens()!!}),
-            clientId: '{!!$client->id!!}',
-            clientName: '{!!$client->getFriendlyApplicationType()!!}',
-            clientSecret: '{!!$client->client_secret!!}',
-            clientType: '{!!$client->client_type!!}',
-            editorName: '{!!$client->getEditedByNice()!!}',
-            isClientAllowedToUseTokenEndpointAuth: Boolean({!!OAuth2\OAuth2Protocol::isClientAllowedToUseTokenEndpointAuth($client)!!}),
-            isOwner: {!!$client->isOwner(Auth::user())!!} === 1,
-            ownerName: '{!!$client->getOwnerNice()!!}',
-        }
+        const appTypes = {!!$app_types!!};
+        const clientTypes = {!!$client_types!!};
 
         const initialValues = {
-            active: true,
-            admin_users: adminUsers,
+            ...entity,
             alg: 'none',
-            allowed_origins: '{!!$client->allowed_origins!!}'.trim() === '' ? [] : '{!!$client->allowed_origins!!}'.split(','),
-            app_active: false,
-            app_description: '{!!$client->app_description!!}',
-            app_name: '{!!$client->app_name!!}',
-            application_type: '{!!$client->application_type!!}',
-            client_id: entity.clientId,
-            client_secret: entity.clientSecret,
-            contacts: '{!!$client->contacts!!}'.split(','),
-            id_token_encrypted_content_alg: '{!!$client->id_token_encrypted_response_enc!!}'.trim(),
-            id_token_encrypted_response_alg: '{!!$client->id_token_encrypted_response_alg!!}'.trim(),
-            id_token_signed_response_alg: '{!!$client->id_token_signed_response_alg!!}'.trim(),
-            jwks_uri: '{!!$client->jwks_uri!!}',
             kid: '',
-            default_max_age: {!!$client->default_max_age!!},
-            logo_uri: '{!!$client->logo_uri!!}',
-            logout_session_required: Boolean({!!$client->logout_session_required!!}),
-            logout_uri: '{!!$client->logout_uri!!}',
-            logout_use_iframe: Boolean({!!$client->logout_use_iframe!!}),
-            otp_enabled: Boolean({!!$client->otp_enabled!!}),
-            otp_length: {!!$client->otp_length!!},
-            otp_lifetime: {!!$client->otp_lifetime!!},
             pem_content: '',
-            pkce_enabled: Boolean({!!$client->pkce_enabled!!}),
-            policy_uri: '{!!$client->policy_uri!!}',
-            post_logout_redirect_uris: '{!!$client->post_logout_redirect_uris!!}'.trim() === '' ? [] : '{!!$client->post_logout_redirect_uris!!}'.split(','),
-            redirect_uris: '{!!$client->redirect_uris!!}'.trim() === '' ? [] : '{!!$client->redirect_uris!!}'.split(','),
-            rotate_refresh_token: '{!!$client->rotate_refresh_token!!}'.trim() !== '',
-            subject_type: '{!!$client->subject_type!!}'.trim(),
-            tos_uri: '{!!$client->tos_uri!!}',
-            token_endpoint_auth_method: '{!!$client->token_endpoint_auth_method!!}'.trim(),
-            token_endpoint_auth_signing_alg: '{!!$client->token_endpoint_auth_signing_alg!!}'.trim(),
             type: '{!!\jwk\JSONWebKeyTypes::RSA!!}',
             usage: 'sig',
-            use_refresh_token: '{!!$client->use_refresh_token!!}'.trim() !== '',
-            userinfo_encrypted_response_enc: '{!!$client->userinfo_encrypted_response_enc!!}'.trim(),
-            userinfo_encrypted_response_alg: '{!!$client->userinfo_encrypted_response_alg!!}'.trim(),
-            userinfo_signed_response_alg: '{!!$client->userinfo_signed_response_alg!!}'.trim(),
-            website: '{!!$client->website!!}',
         }
 
         const menuConfig = {
@@ -182,9 +84,8 @@
             appName: '{!! Config::get('app.app_name') !!}',
             appDescription: '{!! Config::get('app.app_description') !!}',
             appLogo: '{{$app_logo ?? Config::get("app.logo_url")}}',
-            appType: '{!!$client->application_type!!}',
-            appTypes: AppTypes,
-            clientTypes: ClientTypes,
+            appTypes: appTypes,
+            clientTypes: clientTypes,
             fetchAdminUsersURL: '{{URL::action("Api\\UserApiController@getAll")}}',
             initialValues: initialValues,
             menuConfig: menuConfig,

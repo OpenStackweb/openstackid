@@ -84,27 +84,28 @@ export const removePublicKey = async (clientId, keyId) => {
 }
 
 const normalizeEntity = (entity) => {
-    entity.active = entity.active ? 1 : 0;
-    entity.app_active = entity.app_active ? 1 : 0;
-    entity.logout_session_required = entity.logout_session_required ? 1 : 0;
-    entity.logout_use_iframe = entity.logout_use_iframe ? 1 : 0;
-    entity.rotate_refresh_token = entity.rotate_refresh_token ? 1 : 0;
+    const normEntity = {...entity};
+    normEntity.active = entity.active ? 1 : 0;
+    normEntity.app_active = entity.app_active ? 1 : 0;
+    normEntity.logout_session_required = entity.logout_session_required ? 1 : 0;
+    normEntity.logout_use_iframe = entity.logout_use_iframe ? 1 : 0;
+    normEntity.rotate_refresh_token = entity.rotate_refresh_token ? 1 : 0;
 
-    if (entity.admin_users) {
-        //console.log(entity.admin_users.map((au) => au.id))
-        entity.admin_users = entity.admin_users.map((au) => au.id);
+    if (normEntity.admin_users) {
+        //console.log(normEntity.admin_users.map((au) => au.id))
+        normEntity.admin_users = entity.admin_users.map((au) => au.id);
     }
 
-    entity.allowed_origins = Array.isArray(entity.allowed_origins) ?
+    normEntity.allowed_origins = Array.isArray(entity.allowed_origins) ?
         entity.allowed_origins.filter(a => a).join(',') : entity.allowed_origins;
 
-    entity.redirect_uris = Array.isArray(entity.redirect_uris) ?
+    normEntity.redirect_uris = Array.isArray(entity.redirect_uris) ?
         entity.redirect_uris.filter(r => r).join(',') : entity.redirect_uris;
 
-    entity.post_logout_redirect_uris = Array.isArray(entity.post_logout_redirect_uris) ?
+    normEntity.post_logout_redirect_uris = Array.isArray(entity.post_logout_redirect_uris) ?
         entity.post_logout_redirect_uris.filter(r => r).join(',') : entity.post_logout_redirect_uris;
 
-    entity.contacts = Array.isArray(entity.contacts) ? entity.contacts.filter(c => c).join(',') : entity.contacts;
+    normEntity.contacts = Array.isArray(entity.contacts) ? entity.contacts.filter(c => c).join(',') : entity.contacts;
 
-    return entity;
+    return normEntity;
 }

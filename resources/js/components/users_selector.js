@@ -44,7 +44,7 @@ const UsersSelector = ({fetchUsersURL, id, name, onChange, initialValue, disable
                     },
                     function (d) {
                         setOptions(d.map((u) => {
-                            return {fullName: `${u.first_name} ${u.last_name}`, id: u.id};
+                            return {full_name: `${u.first_name} ${u.last_name}`, id: u.id};
                         }));
                     }
                 );
@@ -69,8 +69,8 @@ const UsersSelector = ({fetchUsersURL, id, name, onChange, initialValue, disable
                 setOpen(false);
             }}
             freeSolo
-            getOptionSelected={(option, value) => option.fullName === value.fullName}
-            getOptionLabel={(option) => option.fullName}
+            getOptionSelected={(option, value) => option.full_name === value.fullName}
+            getOptionLabel={(option) => option.full_name}
             options={options}
             loading={loading}
             onChange={(event, newValue) => {

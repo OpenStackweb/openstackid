@@ -1232,23 +1232,39 @@ class Client extends BaseEntity implements IClient
     /**
      * @return bool
      */
-    public function useRotateRefreshTokenPolicy():bool
+    public function useRotateRefreshTokenPolicy(): bool
     {
         return (bool)$this->rotate_refresh_token;
     }
 
     /**
+     * @return bool
+     */
+    public function useLogoutIframe(): bool
+    {
+        return $this->logout_use_iframe;
+    }
+
+    /**
      * @return AccessToken[]
      */
-    public function getValidAccessTokens():array
+    public function getValidAccessTokens(): array
     {
-            $query = $this->createQuery("SELECT t from Models\OAuth2\AccessToken t 
+        $query = $this->createQuery("SELECT t from Models\OAuth2\AccessToken t 
         JOIN t.client c 
         WHERE c.id = :client_id AND DATEADD(t.created_at, t.lifetime, 'SECOND') >= UTC_TIMESTAMP()
         ");
-            return $query
-                ->setParameter('client_id', $this->getIdentifier())
-                ->getResult();
+        return $query
+            ->setParameter('client_id', $this->getIdentifier())
+            ->getResult();
+    }
+
+    /**
+     * @return bool
+     */
+    public function getLogoutSessionRequired(): bool
+    {
+        return $this->logout_session_required;
     }
 
     /**
@@ -1739,5 +1755,4 @@ class Client extends BaseEntity implements IClient
     public function hasOTP(string $value):bool{
         return !is_null($this->getOTPByValue($value));
     }
-
 }

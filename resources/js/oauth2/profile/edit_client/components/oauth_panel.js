@@ -29,7 +29,6 @@ import {
 import styles from "./common.module.scss";
 
 const OauthPanel = ({
-                        appType,
                         appTypes,
                         clientTypes,
                         entity,
@@ -38,7 +37,7 @@ const OauthPanel = ({
                         onClientSecretRegenerate,
                         onSavePromise
                     }) => {
-    const {canRequestRefreshTokens, clientType, isOwner} = entity;
+    const {application_type, can_request_refresh_tokens, client_type, is_own} = entity;
 
     const [loading, setLoading] = useState(false);
     const [copyEventInfo, setCopyEventInfo] = useState({});
@@ -55,7 +54,7 @@ const OauthPanel = ({
     const validateRedirectURI = (value) => {
         try {
             const url = new URL(value);
-            return appType === appTypes.Native ? true : url.protocol === 'https:'
+            return application_type === appTypes.Native ? true : url.protocol === 'https:'
                 && url.search === '';
         } catch (err) {
             return false;
@@ -150,13 +149,13 @@ const OauthPanel = ({
                         />
                     </FormControl>
                     {
-                        clientType === clientTypes.Confidential &&
+                        client_type === clientTypes.Confidential &&
                         <FormControl variant="outlined" className={styles.form_control}>
                             <FormLabel htmlFor="client_secret">
                                 <Typography variant="subtitle2" display="inline">CLIENT SECRET</Typography>
                                 <Tooltip title="Regenerate">
                                     {
-                                        isOwner && <IconButton
+                                        is_own && <IconButton
                                             aria-label="regenerate"
                                             onClick={onClientSecretRegenerate}
                                             edge="end"
@@ -195,7 +194,7 @@ const OauthPanel = ({
                         </FormControl>
                     }
                     {
-                        canRequestRefreshTokens &&
+                        can_request_refresh_tokens &&
                         <>
                             <Box component="div" whiteSpace="nowrap" height="20px"/>
                             <Typography>Client Settings</Typography>
@@ -267,7 +266,7 @@ const OauthPanel = ({
                             fetchUsersURL={fetchAdminUsersURL}
                             initialValue={formik.values.admin_users}
                             onChange={formik.handleChange}
-                            disabled={!isOwner}
+                            disabled={!is_own}
                         />
                     </FormControl>
                     <SimpleTextFormControl
@@ -330,7 +329,7 @@ const OauthPanel = ({
                         />
                     </FormControl>
                     {
-                        appType !== appTypes.Service &&
+                        application_type !== appTypes.Service &&
                         <FormControl variant="outlined" className={styles.form_control}>
                             <FormLabel htmlFor="redirect_uris">
                                 <Typography variant="subtitle2" display="inline">Allowed Redirection Uris
@@ -353,7 +352,7 @@ const OauthPanel = ({
                         </FormControl>
                     }
                     {
-                        appType === appTypes.JSClient &&
+                        application_type === appTypes.JSClient &&
                         <FormControl variant="outlined" className={styles.form_control}>
                             <FormLabel htmlFor="allowed_origins">
                                 <Typography variant="subtitle2" display="inline">Allowed javascript origins

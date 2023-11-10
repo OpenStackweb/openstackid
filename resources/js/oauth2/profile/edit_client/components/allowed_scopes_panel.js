@@ -8,7 +8,7 @@ const AllowedScopesPanel = ({scopes, selectedScopes, onScopeSelected, onScopeUns
 
     useEffect(() => {
         //get api info from scopes
-        setApisInfo([...new Map(scopes.map(scope => [scope['api_name'], scope])).values()]);
+        setApisInfo([...new Map(scopes.map(scope => [scope.api.name, scope])).values()]);
     }, []);
 
     const handleCheckboxChange = (e) => {
@@ -31,7 +31,7 @@ const AllowedScopesPanel = ({scopes, selectedScopes, onScopeSelected, onScopeUns
         >
             {
                 apisInfo.map(apiInfo => (
-                    <Fragment key={apiInfo.api_name}>
+                    <Fragment key={apiInfo.api.name}>
                         <Grid item container direction="row" alignItems="center">
                             <Box
                                 component="img"
@@ -39,20 +39,20 @@ const AllowedScopesPanel = ({scopes, selectedScopes, onScopeSelected, onScopeUns
                                     height: 20,
                                     width: 20
                                 }}
-                                alt={apiInfo.api_name}
-                                src={apiInfo.api_logo}
+                                alt={apiInfo.api.name}
+                                src={apiInfo.api.logo}
                             />
                             &nbsp;
-                            <Typography variant="h6" display="inline">{apiInfo.api_name}</Typography>
+                            <Typography variant="h6" display="inline">{apiInfo.api.name}</Typography>
                             &nbsp;
-                            <Tooltip title={apiInfo.api_description}>
+                            <Tooltip title={apiInfo.api.description}>
                                 <InfoOutlinedIcon fontSize="small"/>
                             </Tooltip>
                         </Grid>
                         <Grid item container direction="row" alignItems="center">
                             {
                                 scopes
-                                    .filter(scope => scope.api_name === apiInfo.api_name)
+                                    .filter(scope => scope.api.name === apiInfo.api.name)
                                     .map(scope => <FormControlLabel
                                         id={scope.id.toString()}
                                         name={scope.name}

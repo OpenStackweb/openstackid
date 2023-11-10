@@ -24,7 +24,7 @@ const SecuritySettingsPanel = (
         supportedTokenEndpointAuthMethods,
         supportedJSONWebKeyTypes,
     }) => {
-    const {clientId, clientType, isClientAllowedToUseTokenEndpointAuth} = entity;
+    const {id, client_type, is_allowed_to_use_token_endpoint_auth} = entity;
 
     const [loading, setLoading] = useState(false);
 
@@ -65,7 +65,7 @@ const SecuritySettingsPanel = (
                         className={styles.main_container}
                     >
                         <FormGroup>
-                            {clientType === clientTypes.Public &&
+                            {client_type === clientTypes.Public &&
                                 <CheckboxFormControl
                                     id="pkce_enabled"
                                     title="Use PCKE?"
@@ -117,7 +117,7 @@ const SecuritySettingsPanel = (
                                 onChange={formik.handleChange}
                             />
 
-                            {isClientAllowedToUseTokenEndpointAuth &&
+                            {is_allowed_to_use_token_endpoint_auth &&
                                 <>
                                     <SelectFormControl
                                         id="token_endpoint_auth_signing_alg"
@@ -174,7 +174,7 @@ const SecuritySettingsPanel = (
                                         id="userinfo_signed_response_alg"
                                         title="User Info Signed Response Algorithm"
                                         tooltip="JWS alg algorithm [JWA] REQUIRED for signing UserInfo Responses. If this is specified, the response will be JWT [JWT] serialized, and signed using JWS. The default, if omitted, is for the UserInfo Response to return the Claims as a UTF-8 encoded JSON object using the application/json content-type."
-                                        value={formik.values.userinfo_signed_response_alg ?? 'none'}
+                                        value={formik.values.userinfo_signed_response_alg}
                                         touched={formik.touched.userinfo_signed_response_alg}
                                         errors={formik.errors.userinfo_signed_response_alg}
                                         onChange={formik.handleChange}
@@ -188,7 +188,7 @@ const SecuritySettingsPanel = (
                                         id="id_token_signed_response_alg"
                                         title="Id Token Signed Response Algorithm"
                                         tooltip="JWS alg algorithm [JWA] REQUIRED for signing the ID Token issued to this Client. The value none MUST NOT be used as the ID Token alg value unless the Client uses only Response Types that return no ID Token from the Authorization Endpoint (such as when only using the Authorization Code Flow). The default, if omitted, is RS256. The public key for validating the signature is provided by retrieving the JWK Set referenced by the jwks_uri element from OpenID Connect Discovery 1.0 [OpenID.Discovery]."
-                                        value={formik.values.id_token_signed_response_alg ?? 'none'}
+                                        value={formik.values.id_token_signed_response_alg}
                                         touched={formik.touched.id_token_signed_response_alg}
                                         errors={formik.errors.id_token_signed_response_alg}
                                         onChange={formik.handleChange}
@@ -202,7 +202,7 @@ const SecuritySettingsPanel = (
                                         id="userinfo_encrypted_response_alg"
                                         title="User Info Encrypted Key Algorithm"
                                         tooltip=""
-                                        value={formik.values.userinfo_encrypted_response_alg ?? 'none'}
+                                        value={formik.values.userinfo_encrypted_response_alg}
                                         touched={formik.touched.userinfo_encrypted_response_alg}
                                         errors={formik.errors.userinfo_encrypted_response_alg}
                                         onChange={formik.handleChange}
@@ -216,7 +216,7 @@ const SecuritySettingsPanel = (
                                         id="id_token_encrypted_response_alg"
                                         title="Id Token Encrypted Key Algorithm"
                                         tooltip=""
-                                        value={formik.values.id_token_encrypted_response_alg ?? 'none'}
+                                        value={formik.values.id_token_encrypted_response_alg}
                                         touched={formik.touched.id_token_encrypted_response_alg}
                                         errors={formik.errors.id_token_encrypted_response_alg}
                                         onChange={formik.handleChange}
@@ -230,7 +230,7 @@ const SecuritySettingsPanel = (
                                         id="userinfo_encrypted_response_enc"
                                         title="User Info Encrypted Content Algorithm"
                                         tooltip=""
-                                        value={formik.values.userinfo_encrypted_response_enc ?? 'none'}
+                                        value={formik.values.userinfo_encrypted_response_enc}
                                         touched={formik.touched.userinfo_encrypted_response_enc}
                                         errors={formik.errors.userinfo_encrypted_response_enc}
                                         onChange={formik.handleChange}
@@ -241,12 +241,12 @@ const SecuritySettingsPanel = (
                                 </Grid>
                                 <Grid item xs={6}>
                                     <SelectFormControl
-                                        id="id_token_encrypted_content_alg"
+                                        id="id_token_encrypted_response_enc"
                                         title="Id Token Encrypted Content Algorithm"
                                         tooltip=""
-                                        value={formik.values.id_token_encrypted_content_alg ?? 'none'}
-                                        touched={formik.touched.id_token_encrypted_content_alg}
-                                        errors={formik.errors.id_token_encrypted_content_alg}
+                                        value={formik.values.id_token_encrypted_response_enc}
+                                        touched={formik.touched.id_token_encrypted_response_enc}
+                                        errors={formik.errors.id_token_encrypted_response_enc}
                                         onChange={formik.handleChange}
                                         options={supportedContentEncryptionAlgorithms.map((alg) => {
                                             return {value: alg, text: alg};
@@ -270,7 +270,7 @@ const SecuritySettingsPanel = (
                         <Divider/>
                         <Box component="div" whiteSpace="nowrap" height="20px"/>
                         <PublicKeysAdmin
-                            clientId={clientId}
+                            clientId={id}
                             initialValues={initialValues}
                             supportedSigningAlgorithms={supportedSigningAlgorithms}
                             supportedJSONWebKeyTypes={supportedJSONWebKeyTypes}
