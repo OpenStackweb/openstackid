@@ -81,13 +81,15 @@ const NewClientDialog = ({onSave, fetchAdminUsersURL}) => {
     const formik = useFormik({
         initialValues: initialValues,
         validationSchema: buildValidationSchema(),
-        onSubmit: (values) => {
+        onSubmit: (values, {resetForm}) => {
             setLoading(true);
             onSave(values).then(({response}) => {
                 setLoading(false);
                 setOpen(false);
-                Swal("Client added",
-                    `<h4>The client has been added successfully</h4><h5>CLIENT ID</h5>${response.client_id}<h5>CLIENT SECRET</h5>${response.client_secret}`, "success");
+                resetForm();
+                let message = `<h4>The client has been added successfully</h4><h5>CLIENT ID</h5>${response.client_id}`;
+                if (response.client_secret) message += `<h5>CLIENT SECRET</h5>${response.client_secret}`;
+                Swal("Client added", message, "success");
             }).catch((err) => {
                 //console.log(err);
                 setLoading(false);
