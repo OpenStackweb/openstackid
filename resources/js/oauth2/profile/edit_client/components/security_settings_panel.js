@@ -28,17 +28,8 @@ const SecuritySettingsPanel = (
 
     const [loading, setLoading] = useState(false);
 
-    const buildValidationSchema = () => {
-        return object({
-            jwks_uri: string("The JWK Url field is required.").required(
-                "The JWK Url field is required."
-            ),
-        });
-    }
-
     const formik = useFormik({
         initialValues: initialValues,
-        validationSchema: buildValidationSchema(),
         onSubmit: (values, {resetForm}) => {
             setLoading(true);
             onMainSettingsSavePromise(values).then(() => {
