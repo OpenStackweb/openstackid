@@ -93,7 +93,15 @@ export const EditClientPage = (
     const handleCopyScopes = (e) => {
         e.stopPropagation();
         setCopyingScopes(true);
-        navigator.clipboard.writeText(selScopes.map(scope => scope.name).join(' ')).then(() => {
+
+        const scopesToCopy = selScopes.map(scope => scope.name);
+
+        scopesToCopy.push('openid')
+
+        if (entity.use_refresh_token)
+            scopesToCopy.push('offline_access')
+
+        navigator.clipboard.writeText(scopesToCopy.join(' ')).then(() => {
             setTimeout(() => {
                 setCopyingScopes(false);
             }, 1000);

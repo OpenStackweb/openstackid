@@ -92,9 +92,8 @@ export const removePublicKey = async (clientId, keyId) => {
 
 const normalizeEntity = (entity, entitySection) => {
     let normEntity = {};
+    const clientTypes = window.CLIENT_TYPES;
 
-    //normEntity.active = entity.active ? 1 : 0;
-    //normEntity.app_active = entity.app_active ? 1 : 0;
     normEntity.application_type = entity.application_type;
 
     switch (entitySection) {
@@ -136,7 +135,9 @@ const normalizeEntity = (entity, entitySection) => {
             normEntity.pem_content = entity.pem_content;
             break;
         case ClientEntitySection.SECURITY_SETTINGS:
-            normEntity.pkce_enabled = entity.pkce_enabled ? 1 : 0;
+            if (entity.client_type === clientTypes.Public) {
+                normEntity.pkce_enabled = entity.pkce_enabled ? 1 : 0;
+            }
             normEntity.otp_enabled = entity.otp_enabled ? 1 : 0;
             normEntity.otp_length = entity.otp_length;
             normEntity.otp_lifetime = entity.otp_lifetime;

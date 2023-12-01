@@ -99,6 +99,7 @@
             userName: '{{ Session::has('username') ? Session::get('username') : ""}}',
         }
 
+        window.CLIENT_TYPES = clientTypes;
         window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;
 
         window.UPDATE_CLIENT_DATA_ENDPOINT = '{!!URL::action("Api\ClientApiController@update",array("id"=>"@client_id"))!!}';

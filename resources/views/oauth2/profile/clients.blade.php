@@ -26,11 +26,11 @@
     <script>
         const initialValues = {
             app_name: '',
-            app_web_site_url: '',
+            website: '',
             app_description: '',
-            app_active: false,
+            active: false,
             application_type: 'WEB_APPLICATION',
-            app_admin_users: []
+            admin_users: []
         }
 
         const menuConfig = {

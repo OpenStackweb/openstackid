@@ -157,25 +157,25 @@ const NewClientDialog = ({onSave, fetchAdminUsersURL}) => {
                                 />
                             </FormControl>
                             <FormControl variant="outlined" className={styles.form_control}>
-                                <FormLabel htmlFor="app_web_site_url">
+                                <FormLabel htmlFor="website">
                                     Application Web Site Url (optional)
                                 </FormLabel>
                                 <TextField
-                                    id="app_web_site_url"
-                                    name="app_web_site_url"
+                                    id="website"
+                                    name="website"
                                     variant="outlined"
                                     fullWidth
                                     size="small"
                                     inputProps={{maxLength: 100}}
                                     autoFocus={true}
-                                    value={formik.values.app_web_site_url}
+                                    value={formik.values.website}
                                     onChange={formik.handleChange}
                                     error={
-                                        formik.touched.app_web_site_url &&
-                                        Boolean(formik.errors.app_web_site_url)
+                                        formik.touched.website &&
+                                        Boolean(formik.errors.website)
                                     }
                                     helperText={
-                                        formik.touched.app_web_site_url && formik.errors.app_web_site_url
+                                        formik.touched.website && formik.errors.website
                                     }
                                 />
                             </FormControl>
@@ -245,8 +245,8 @@ const NewClientDialog = ({onSave, fetchAdminUsersURL}) => {
                                     Admin Users
                                 </FormLabel>
                                 <UsersSelector
-                                    id="app_admin_users"
-                                    name="app_admin_users"
+                                    id="admin_users"
+                                    name="admin_users"
                                     fetchUsersURL={fetchAdminUsersURL}
                                     onChange={formik.handleChange}
                                 />
@@ -255,10 +255,10 @@ const NewClientDialog = ({onSave, fetchAdminUsersURL}) => {
                                 <FormControlLabel
                                     control={
                                         <Checkbox
-                                            checked={formik.values.app_active}
+                                            checked={formik.values.active}
                                             onChange={formik.handleChange}
-                                            id="app_active"
-                                            name="app_active"
+                                            id="active"
+                                            name="active"
                                             color="primary"
                                         />
                                     }
