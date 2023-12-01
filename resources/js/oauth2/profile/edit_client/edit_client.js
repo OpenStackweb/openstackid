@@ -30,7 +30,8 @@ import {
     regenerateClientSecret,
     revokeToken,
     removeScope,
-    updateClientData
+    updateClientData,
+    ClientEntitySection
 } from "./actions";
 
 import styles from "./edit_client.module.scss";
@@ -99,13 +100,15 @@ export const EditClientPage = (
         });
     }
 
-    const handleSave = (values) => updateClientData(id, values);
+    const handleOauthDataSave = (values) => updateClientData(id, values, ClientEntitySection.OAUTH);
+
+    const handleSecuritySettingsSave = (values) => updateClientData(id, values, ClientEntitySection.SECURITY_SETTINGS);
+
+    const handleLogoutOptionsSave = (values) => updateClientData(id, values, ClientEntitySection.LOGOUT_OPTIONS);
 
     const handleRevokeAccessToken = (tokenId, value) => revokeToken(id, value, 'access-token');
 
     const handleRevokeRefreshToken = (tokenId, value) => revokeToken(id, value, 'refresh-token');
-
-    const handleSecuritySettingsSave = (values) => updateClientData(id, values);
 
     const handleAccordionChange = (panel) => (event, isExpanded) => {
         setExpanded(isExpanded ? panel : false);
@@ -178,7 +181,7 @@ export const EditClientPage = (
                                         fetchAdminUsersURL={fetchAdminUsersURL}
                                         initialValues={refreshedValues}
                                         onClientSecretRegenerate={handleClientSecretRegenerate}
-                                        onSavePromise={handleSave}
+                                        onSavePromise={handleOauthDataSave}
                                     />
                                 </AccordionDetails>
                             </Accordion>
@@ -244,7 +247,7 @@ export const EditClientPage = (
                                         clientTypes={clientTypes}
                                         initialValues={refreshedValues}
                                         onMainSettingsSavePromise={handleSecuritySettingsSave}
-                                        onLogoutOptionsSavePromise={handleSave}
+                                        onLogoutOptionsSavePromise={handleLogoutOptionsSave}
                                         supportedContentEncryptionAlgorithms={supportedContentEncryptionAlgorithms}
                                         supportedKeyManagementAlgorithms={supportedKeyManagementAlgorithms}
                                         supportedSigningAlgorithms={supportedSigningAlgorithms}

@@ -801,9 +801,7 @@ class Client extends BaseEntity implements IClient
 
     public function getWebsite()
     {
-        $res = $this->website;
-        if(empty($res)) $res = '#';
-        return $res;
+        return $this->website;
     }
 
     /**
@@ -872,9 +870,7 @@ class Client extends BaseEntity implements IClient
      */
     public function getPolicyUri()
     {
-       $res = $this->policy_uri;
-       if(empty($res)) $res = '#';
-       return $res;
+        return $this->policy_uri;
     }
 
     /**
@@ -882,9 +878,7 @@ class Client extends BaseEntity implements IClient
      */
     public function getTermOfServiceUri()
     {
-        $res = $this->tos_uri;
-        if(empty($res)) $res = '#';
-        return $res;
+        return $this->tos_uri;
     }
 
     /**

@@ -66,7 +66,8 @@ final class ClientAdminSerializer extends ClientSerializer
         foreach ($client->getAdminUsers() as $admin_user) {
             $admin_users[] = [
                 'id' => $admin_user->id,
-                'full_name' => "{$admin_user->first_name} {$admin_user->last_name}"
+                'full_name' => "{$admin_user->first_name} {$admin_user->last_name}",
+                'email' => $admin_user->email
             ];
         }
         $values['admin_users'] = $admin_users;

@@ -84,7 +84,7 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
                         title="Logout Uri (optional)"
                         tooltip=""
                         type="url"
-                        value={formik.values.logout_uri}
+                        value={formik.values.logout_uri ?? ''}
                         touched={formik.touched.logout_uri}
                         errors={formik.errors.logout_uri}
                         onChange={formik.handleChange}
