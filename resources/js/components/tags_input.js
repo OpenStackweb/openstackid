@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import Chip from "@material-ui/core/Chip";
 import {makeStyles} from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
-import Downshift from "downshift";
+import Autocomplete from "@material-ui/lab/Autocomplete";
 
 const useStyles = makeStyles(theme => ({
     chip: {
@@ -16,16 +16,15 @@ export const getTags = (value) => Array.isArray(value) ? value : value?.split(',
 const TagsInput = ({...props}) => {
     const classes = useStyles();
     const {id, name, selectedTags, isValid, placeholder, onChange, tags, type, ...other} = props;
-    const [inputValue, setInputValue] = useState("");
-    const [selectedItem, setSelectedItem] = useState([]);
+    const [selectedItems, setSelectedItems] = useState(tags ?? []);
 
     useEffect(() => {
-        setSelectedItem(tags);
+        setSelectedItems(tags);
     }, [tags]);
 
     useEffect(() => {
-        if (selectedTags) selectedTags(selectedItem);
-    }, [selectedItem, selectedTags]);
+        if (selectedTags) selectedTags(selectedItems);
+    }, [selectedItems, selectedTags]);
 
     function isValidHttpUrl(string) {
         try {
@@ -59,100 +58,72 @@ const TagsInput = ({...props}) => {
     }
 
     function handleKeyDown(event) {
+        const inputValue = event.target.value.trim();
+
         if (event.key === "Enter") {
-            const value = event.target.value.trim();
-            const newSelectedItem = [...selectedItem];
-            const duplicatedValues = newSelectedItem.indexOf(value);
+            const newSelectedItems = [...selectedItems];
+            const duplicatedValues = newSelectedItems.indexOf(inputValue);
 
             if (duplicatedValues !== -1) {
-                setInputValue("");
                 return;
             }
-            if (!value.replace(/\s/g, "").length) return;
+            if (!inputValue.replace(/\s/g, "").length) return;
 
-            if ((isValid && !isValid(value)) ||
-                (type === "url" && !isValidHttpUrl(value)) ||
-                (type === "email" && !isValidEmail(value))) {
-                setInputValue("");
+            if ((isValid && !isValid(inputValue)) ||
+                (type === "url" && !isValidHttpUrl(inputValue)) ||
+                (type === "email" && !isValidEmail(inputValue))) {
                 return;
             }
-
-            newSelectedItem.push(value);
-            setSelectedItem(newSelectedItem);
-            setInputValue("");
-
-            notifyChange(newSelectedItem);
+            newSelectedItems.push(inputValue);
+            setSelectedItems(newSelectedItems);
+            notifyChange(newSelectedItems);
+        } else if (event.key === "Backspace" && selectedItems.length > 0 && !inputValue.length) {
+            const newSelectedItems = selectedItems.slice(0, selectedItems.length - 1);
+            setSelectedItems(newSelectedItems);
+            notifyChange(newSelectedItems);
         }
-        if (
-            selectedItem.length &&
-            !inputValue.length &&
-            event.key === "Backspace"
-        ) {
-            setSelectedItem(selectedItem.slice(0, selectedItem.length - 1));
-        }
-    }
-
-    function handleChange(item) {
-        let newSelectedItem = [...selectedItem];
-        if (newSelectedItem.indexOf(item) === -1) {
-            newSelectedItem = [...newSelectedItem, item];
-        }
-        setInputValue("");
-        setSelectedItem(newSelectedItem);
     }
 
     const handleDelete = item => () => {
-        const newSelectedItem = [...selectedItem];
-        newSelectedItem.splice(newSelectedItem.indexOf(item), 1);
-        setSelectedItem(newSelectedItem);
-        notifyChange(newSelectedItem);
+        const newSelectedItems = [...selectedItems];
+        newSelectedItems.splice(newSelectedItems.indexOf(item), 1);
+        setSelectedItems(newSelectedItems);
+        notifyChange(newSelectedItems);
     };
 
-    function handleInputChange(event) {
-        setInputValue(event.target.value);
-    }
-
     return (
-        <Downshift
-            id="downshift-multiple"
-            inputValue={inputValue}
-            onChange={handleChange}
-            selectedItem={selectedItem}
-        >
-            {({getInputProps}) => {
-                const {onBlur, onChange, onFocus, ...inputProps} = getInputProps({
-                    onKeyDown: handleKeyDown,
-                    placeholder
-                });
-                return (
-                    <div>
-                        <TextField
-                            InputProps={{
-                                startAdornment: selectedItem.map(item => {
-                                    if (!item) return null;
-                                    return <Chip
-                                        key={item}
-                                        tabIndex={-1}
-                                        label={item}
-                                        className={classes.chip}
-                                        size="small"
-                                        onDelete={handleDelete(item)}
-                                    />
-                                }),
-                                onBlur,
-                                onChange: event => {
-                                    handleInputChange(event);
-                                    onChange(event);
-                                },
-                                onFocus
-                            }}
-                            {...other}
-                            {...inputProps}
-                        />
-                    </div>
-                );
-            }}
-        </Downshift>
+        <Autocomplete
+            id={id}
+            name={name}
+            size="small"
+            multiple
+            disableClearable={true}
+            value={selectedItems}
+            freeSolo
+            options={[]}
+            renderTags={(value, getTagProps) =>
+                value.map(item => {
+                    if (!item) return null;
+                    return <Chip
+                        key={item}
+                        tabIndex={-1}
+                        label={item}
+                        className={classes.chip}
+                        size="small"
+                        onDelete={handleDelete(item)}
+                    />
+                })
+            }
+            renderInput={(params) => (
+                <TextField
+                    {...other}
+                    {...params}
+                    placeholder={placeholder}
+                    variant="outlined"
+                    onKeyDown={handleKeyDown}
+                />
+            )}
+        />
     );
 }
 

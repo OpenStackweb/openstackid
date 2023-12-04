@@ -90,6 +90,14 @@ export const removePublicKey = async (clientId, keyId) => {
         .replace('@public_key_id', keyId))({'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
+const normalizePKCEDependencies = (entity) => {
+    if (!entity.pkce_enabled) {
+        entity.use_refresh_token = 0;
+        entity.rotate_refresh_token = 0;
+    }
+    return entity;
+}
+
 const normalizeEntity = (entity, entitySection) => {
     let normEntity = {};
     const clientTypes = window.CLIENT_TYPES;
@@ -123,6 +131,11 @@ const normalizeEntity = (entity, entitySection) => {
                 entity.redirect_uris.filter(r => r).join(',') : entity.redirect_uris;
             normEntity.allowed_origins = Array.isArray(entity.allowed_origins) ?
                 entity.allowed_origins.filter(a => a).join(',') : entity.allowed_origins;
+
+            if (entity.client_type === clientTypes.Public) {
+                normEntity.pkce_enabled = entity.pkce_enabled ? 1 : 0;
+                normEntity = normalizePKCEDependencies(normEntity);
+            }
             break;
         case ClientEntitySection.PUBLIC_KEYS:
             normEntity.kid = entity.kid;
@@ -137,6 +150,7 @@ const normalizeEntity = (entity, entitySection) => {
         case ClientEntitySection.SECURITY_SETTINGS:
             if (entity.client_type === clientTypes.Public) {
                 normEntity.pkce_enabled = entity.pkce_enabled ? 1 : 0;
+                normEntity = normalizePKCEDependencies(normEntity);
             }
             normEntity.otp_enabled = entity.otp_enabled ? 1 : 0;
             normEntity.otp_length = entity.otp_length;

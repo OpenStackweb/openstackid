@@ -53,12 +53,13 @@ export const EditClientPage = (
         supportedTokenEndpointAuthMethods,
         supportedJSONWebKeyTypes,
     }) => {
-    const {id, client_id, client_name, modified_by, owner_name} = entity;
+    const {id, client_name, modified_by, owner_name, use_refresh_token} = entity;
 
     const [selScopes, setSelScopes] = useState([]);
     const [copyingScopes, setCopyingScopes] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const [refreshedValues, setRefreshedValues] = useState({...initialValues});
+    const [useRefreshToken, setUseRefreshToken] = useState(use_refresh_token);
 
     useEffect(() => {
         setSelScopes(scopes.filter(scope => selectedScopes.includes(scope.id)));
@@ -95,11 +96,8 @@ export const EditClientPage = (
         setCopyingScopes(true);
 
         const scopesToCopy = selScopes.map(scope => scope.name);
-
         scopesToCopy.push('openid')
-
-        if (entity.use_refresh_token)
-            scopesToCopy.push('offline_access')
+        if (useRefreshToken) scopesToCopy.push('offline_access')
 
         navigator.clipboard.writeText(scopesToCopy.join(' ')).then(() => {
             setTimeout(() => {
@@ -117,6 +115,10 @@ export const EditClientPage = (
     const handleRevokeAccessToken = (tokenId, value) => revokeToken(id, value, 'access-token');
 
     const handleRevokeRefreshToken = (tokenId, value) => revokeToken(id, value, 'refresh-token');
+
+    const handleUsePKCEChange = (value) => {
+        setRefreshedValues({...refreshedValues, can_request_refresh_tokens: value});
+    }
 
     const handleAccordionChange = (panel) => (event, isExpanded) => {
         setExpanded(isExpanded ? panel : false);
@@ -189,6 +191,9 @@ export const EditClientPage = (
                                         fetchAdminUsersURL={fetchAdminUsersURL}
                                         initialValues={refreshedValues}
                                         onClientSecretRegenerate={handleClientSecretRegenerate}
+                                        onRefreshTokenChange={(value) => {
+                                            setUseRefreshToken(value)
+                                        }}
                                         onSavePromise={handleOauthDataSave}
                                     />
                                 </AccordionDetails>
@@ -261,6 +266,7 @@ export const EditClientPage = (
                                         supportedSigningAlgorithms={supportedSigningAlgorithms}
                                         supportedTokenEndpointAuthMethods={supportedTokenEndpointAuthMethods}
                                         supportedJSONWebKeyTypes={supportedJSONWebKeyTypes}
+                                        onUsePKCEChange={handleUsePKCEChange}
                                     />
                                 </AccordionDetails>
                             </Accordion>

@@ -35,9 +35,11 @@ const OauthPanel = ({
                         fetchAdminUsersURL,
                         initialValues,
                         onClientSecretRegenerate,
+                        onRefreshTokenChange,
                         onSavePromise
                     }) => {
-    const {application_type, can_request_refresh_tokens, client_type, is_own} = entity;
+    const {application_type, client_type, is_own} = entity;
+    const {can_request_refresh_tokens} = initialValues;
 
     const [loading, setLoading] = useState(false);
     const [copyEventInfo, setCopyEventInfo] = useState({});
@@ -68,6 +70,11 @@ const OauthPanel = ({
         } catch (err) {
             return false;
         }
+    }
+
+    const handleRefreshTokenChange = (ev) => {
+        formik.handleChange(ev);
+        if (onRefreshTokenChange) onRefreshTokenChange(ev.target.checked);
     }
 
     const buildValidationSchema = () => {
@@ -203,7 +210,7 @@ const OauthPanel = ({
                                 title="Use Refresh Tokens"
                                 tooltip=""
                                 value={formik.values.use_refresh_token}
-                                onChange={formik.handleChange}
+                                onChange={handleRefreshTokenChange}
                             />
                             <CheckboxFormControl
                                 id="rotate_refresh_token"

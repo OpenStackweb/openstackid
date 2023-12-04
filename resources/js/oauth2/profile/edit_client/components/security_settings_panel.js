@@ -23,10 +23,16 @@ const SecuritySettingsPanel = (
         supportedSigningAlgorithms,
         supportedTokenEndpointAuthMethods,
         supportedJSONWebKeyTypes,
+        onUsePKCEChange,
     }) => {
     const {id, client_type, is_allowed_to_use_token_endpoint_auth} = entity;
 
     const [loading, setLoading] = useState(false);
+
+    const handleUsePKCEChange = (ev) => {
+        formik.handleChange(ev);
+        if (onUsePKCEChange) onUsePKCEChange(ev.target.checked);
+    }
 
     const formik = useFormik({
         initialValues: initialValues,
@@ -59,10 +65,10 @@ const SecuritySettingsPanel = (
                             {client_type === clientTypes.Public &&
                                 <CheckboxFormControl
                                     id="pkce_enabled"
-                                    title="Use PCKE?"
+                                    title="Use PKCE?"
                                     tooltip="Use Proof Key for Code Exchange instead of a Client Secret (Public Clients)"
                                     value={formik.values.pkce_enabled}
-                                    onChange={formik.handleChange}
+                                    onChange={handleUsePKCEChange}
                                 />
                             }
                             <CheckboxFormControl

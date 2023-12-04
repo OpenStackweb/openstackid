@@ -20,7 +20,7 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
 
     const buildValidationSchema = () => {
         return object({
-            logout_uri: string().matches(/^https:\/\//, {message: 'URL must be SSL'}),
+            logout_uri: string().nullable(true).matches(/^https:\/\//, {message: 'URL must be SSL'}),
         });
     }
 
