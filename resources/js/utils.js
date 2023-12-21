@@ -26,7 +26,7 @@ export const handleThirdPartyProvidersVerbiage = (provider) => {
     let text = '';
     const signin = 'Sign in';
     const login = 'Login';
-    switch(provider) {
+    switch(provider?.toLocaleLowerCase()) {
         case 'facebook':
             text = login;
             break;
