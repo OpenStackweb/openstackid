@@ -368,7 +368,7 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
                             target="_self"
                             title={`Sign In with ${provider.label}`}
                             href={`${formAction}/${provider.name}`}>
-                            {provider.label === "facebook" ? "Log in with " : "Sign in with "}{provider.label}
+                            {provider.name === "facebook" ? "Log in with " : "Sign in with "}{provider.label}
                         </Button>
                     );
                 })
