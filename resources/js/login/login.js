@@ -23,6 +23,7 @@ import { emailValidator } from '../validator';
 import Grid from '@material-ui/core/Grid';
 import Swal from 'sweetalert2'
 import Banner from '../components/banner/banner';
+import { handleThirdPartyProvidersVerbiage } from '../utils';
 
 import styles from './login.module.scss'
 import "./third_party_identity_providers.scss";
@@ -358,6 +359,7 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
             {allowNativeAuth && <DividerWithText>Or</DividerWithText>}
             {
                 thirdPartyProviders.map((provider) => {
+                    const verbiage =  `${handleThirdPartyProvidersVerbiage(provider.name)} with ${provider.label}`;
                     return (
                         <Button
                             disabled={disableInput}
@@ -366,9 +368,9 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
                             className={styles.third_party_idp_button + ` ${provider.name}`}
                             color="primary"
                             target="_self"
-                            title={`Sign In with ${provider.label}`}
+                            title={verbiage}
                             href={`${formAction}/${provider.name}`}>
-                            {provider.name === "facebook" ? "Log in with " : "Sign in with "}{provider.label}
+                            {verbiage}
                         </Button>
                     );
                 })
