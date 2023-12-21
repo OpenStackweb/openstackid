@@ -182,7 +182,7 @@ const OTPInputForm = ({
                 required
                 fullWidth
                 autoFocus={true}
-                label="Enter Your verification code"
+                label="Enter Your Single-use code"
                 autoComplete="new-password"
                 error={passwordError != ""}
                 helperText={passwordError}
@@ -203,7 +203,7 @@ const OTPInputForm = ({
                 }}
 
             />
-            <p>A Verification Code was just sent to your Email.</p>
+            <p>A single-use code was just sent to your Email.</p>
             <FormControlLabel
                 disabled={disableInput}
                 control={<Checkbox value="remember" name="remember" id="remember" color="primary" />}
@@ -255,7 +255,7 @@ const HelpLinks = ({
             {
                 showEmitOtpAction &&
                 <Link href="#" onClick={emitOtpAction} variant="body2" target="_self">
-                    Get A Login Code emailed to you
+                    Get A Single-use Code emailed to you
                 </Link>
             }
             {
@@ -340,7 +340,7 @@ const ExistingAccountActions = ({emitOtpAction, forgotPasswordAction, userName})
                         type="button"
                         className={styles.secondary_btn}
                         color="primary">
-                    Login by emailing me a one time use code
+                    Sign in by emailing me a single-use code
                 </Button>
             </Grid>
             <Grid item xs={12}>
@@ -368,7 +368,7 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
                             target="_self"
                             title={`Sign In with ${provider.label}`}
                             href={`${formAction}/${provider.name}`}>
-                            {provider.label}
+                            {provider.label === "facebook" ? "Log in with " : "Sign in with "}{provider.label}
                         </Button>
                     );
                 })
@@ -452,7 +452,7 @@ class LoginPage extends React.Component {
         if (this.state.user_password == '') {
             let error = 'Password is empty';
             if (this.state.authFlow == 'OTP') {
-                error = 'Verification Code is empty';
+                error = 'Single-use code is empty';
             }
             this.setState({ ...this.state, errors: { ...this.state.errors, password: error } });
             ev.preventDefault();
@@ -566,7 +566,7 @@ class LoginPage extends React.Component {
                                                                 src={this.props.appLogo}/></a>
                         </Typography>
                         <Typography component="h1" variant="h5">
-                            {this.state.errors.email ? 'Create an account for:' : 'Login'}
+                            {this.state.errors.email ? 'Create an account for:' : 'Sign in'}
                             {this.state.user_fullname &&
                                 <Chip
                                     avatar={<Avatar alt={this.state.user_fullname} src={this.state.user_pic}/>}
