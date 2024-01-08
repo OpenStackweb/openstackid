@@ -15,3 +15,32 @@ export const handleErrorResponse = (err) => {
     }
     return Swal("Something went wrong!", null, "error");
 }
+
+/**
+ * 
+ * @param {string} provider 
+ * @returns a text string of either Sign in or Login depending on which provider
+ */
+export const handleThirdPartyProvidersVerbiage = (provider) => {
+    // we can edit text if things change in the future with these providers
+    let text = '';
+    const signin = 'Sign in';
+    const login = 'Login';
+    switch(provider?.toLowerCase()) {
+        case 'facebook':
+            text = login;
+            break;
+        case 'linkedin':
+            text = signin;
+            break;
+        case 'apple':
+            text = signin;
+            break;
+        case 'twitter':
+            text = signin;
+            break;
+        default: 
+            text = signin;
+    }
+    return text;
+}
