@@ -71,8 +71,13 @@ export const deactivateClient = async (id, token) => {
 }
 
 const normalizeEntity = (entity) => {
-    entity.active = entity.active ? 1 : 0;
-    entity['app_admin_users[]'] = entity.app_admin_users.map(id => parseInt(id));
-    delete entity['app_admin_users']
-    return entity;
+    const normEntity = {...entity}
+
+    normEntity.active = normEntity.active ? 1 : 0;
+
+    if (normEntity.admin_users) {
+        normEntity.admin_users = entity.admin_users.map((au) => au.id);
+    }
+
+    return normEntity;
 }

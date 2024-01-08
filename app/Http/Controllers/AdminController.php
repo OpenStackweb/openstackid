@@ -22,6 +22,9 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Redirect;
+use jwk\JSONWebKeyTypes;
+use OAuth2\Models\IClient;
+use OAuth2\OAuth2Protocol;
 use OAuth2\Repositories\IAccessTokenRepository;
 use OAuth2\Repositories\IApiEndpointRepository;
 use OAuth2\Repositories\IApiRepository;
@@ -251,15 +254,17 @@ class AdminController extends Controller {
         $final_scopes     = [];
         $processed_scopes = [];
         foreach($merged_scopes as  $test_scope){
-            if(isset($processed_scopes[$test_scope->getId()])) continue;
+            if (isset($processed_scopes[$test_scope->getId()])) continue;
 
             $processed_scopes[$test_scope->getId()] = $test_scope->getId();
-            $final_scopes[] = $test_scope;
+
+            $final_scopes[] = SerializerRegistry::getInstance()->getSerializer($test_scope)->serialize('api');
         }
 
         usort($final_scopes, function($elem1, $elem2){
-            return $elem1->getApiId() > $elem2->getApiId() ;
+            return $elem1['api']['id'] > $elem2['api']['id'];
         });
+
         // scope pre processing
 
         $access_tokens = $this->access_token_repository->getAllValidByClientIdentifier($client->getId(), new PagingInfo(1 , self::TokenPageSize));
@@ -269,23 +274,43 @@ class AdminController extends Controller {
             $token->setFriendlyScopes(implode(',', $friendly_scopes));
         }
 
-        $refresh_tokens = $this->refresh_token_repository->getAllValidByClientIdentifier($client->getId(), new PagingInfo(1 , self::TokenPageSize));
+        $refresh_tokens = $this->refresh_token_repository->getAllValidByClientIdentifier($client->getId(), new PagingInfo(1, self::TokenPageSize));
 
         foreach ($refresh_tokens->getItems() as $token) {
             $friendly_scopes = $this->scope_repository->getFriendlyScopesByName(explode(' ', $token->scope));
             $token->setFriendlyScopes(implode(',', $friendly_scopes));
         }
 
+        $app_types = [
+            'JSClient' => IClient::ApplicationType_JS_Client,
+            'Native' => IClient::ApplicationType_Native,
+            'Service' => IClient::ApplicationType_Service,
+            'WebApp' => IClient::ApplicationType_Web_App
+        ];
+
+        $client_types = [
+            'Public' => IClient::ClientType_Public,
+            'Confidential' => IClient::ClientType_Confidential
+        ];
+
         return View::make("oauth2.profile.edit-client",
             [
-                'client'               => $client,
-                'selected_scopes'      => $aux_scopes,
-                'scopes'               => $final_scopes,
-                'access_tokens'        => $access_tokens->getItems(),
-                'access_tokens_pages'  => $access_tokens->getTotal() > 0 ? intval(ceil($access_tokens->getTotal() / self::TokenPageSize)) : 0,
-                "use_system_scopes"    => $user->canUseSystemScopes(),
-                'refresh_tokens'       => $refresh_tokens->getItems(),
+                'app_types' => json_encode($app_types),
+                'client' => json_encode(SerializerRegistry::getInstance()
+                    ->getSerializer($client, SerializerRegistry::SerializerType_Private)->serialize()),
+                'client_types' => json_encode($client_types),
+                'selected_scopes' => json_encode($aux_scopes),
+                'scopes' => json_encode($final_scopes),
+                'access_tokens' => $access_tokens->getItems(),
+                'access_tokens_pages' => $access_tokens->getTotal() > 0 ? intval(ceil($access_tokens->getTotal() / self::TokenPageSize)) : 0,
+                'use_system_scopes' => $user->canUseSystemScopes(),
+                'refresh_tokens' => $refresh_tokens->getItems(),
                 'refresh_tokens_pages' => $refresh_tokens->getTotal() > 0 ? intval(ceil($refresh_tokens->getTotal() / self::TokenPageSize)) : 0,
+                'supportedSigningAlgorithms' => json_encode(array_values(OAuth2Protocol::getSigningAlgorithmsPerClientType($client))),
+                'supportedKeyManagementAlgorithms' => json_encode(array_values(OAuth2Protocol::getKeyManagementAlgorithmsPerClientType($client))),
+                'supportedContentEncryptionAlgorithms' => json_encode(OAuth2Protocol::$supported_content_encryption_algorithms),
+                'supportedTokenEndpointAuthMethods' => json_encode(array_values(OAuth2Protocol::getTokenEndpointAuthMethodsPerClientType($client))),
+                'supportedJSONWebKeyTypes' => json_encode(JSONWebKeyTypes::$supported_keys),
             ]);
     }
 

@@ -117,6 +117,7 @@ export const putRawRequest = (endpoint) => (payload = null, params={}, headers =
         end(key);
         return Promise.resolve({response: json});
     }).catch((error) => {
+        console.log('error', error)
         end(key);
         return Promise.reject(error);
     })

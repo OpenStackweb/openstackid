@@ -21,6 +21,7 @@ use App\ModelSerializers\OAuth2\ApiEndpointSerializer;
 use App\ModelSerializers\OAuth2\ApiScopeGroupSerializer;
 use App\ModelSerializers\OAuth2\ApiScopeSerializer;
 use App\ModelSerializers\OAuth2\ApiSerializer;
+use App\ModelSerializers\OAuth2\ClientAdminSerializer;
 use App\ModelSerializers\OAuth2\ClientSerializer;
 use App\ModelSerializers\OAuth2\RefreshTokenSerializer;
 use App\ModelSerializers\OAuth2\ResourceServerSerializer;
@@ -91,15 +92,19 @@ final class SerializerRegistry
 
         // oauth2 mappings
         $this->registry["ResourceServer"] = ResourceServerSerializer::class;
-        $this->registry["Api"]              = ApiSerializer::class;
-        $this->registry["ApiScope"]         = ApiScopeSerializer::class;
-        $this->registry["ApiEndpoint"]      = ApiEndpointSerializer::class;
-        $this->registry["Client"]           = ClientSerializer::class;
-        $this->registry["AccessToken"]      = AccessTokenSerializer::class;
-        $this->registry["RefreshToken"]     = RefreshTokenSerializer::class;
-        $this->registry["ApiScopeGroup"]    = ApiScopeGroupSerializer::class;
+        $this->registry["Api"] = ApiSerializer::class;
+        $this->registry["ApiScope"] = ApiScopeSerializer::class;
+        $this->registry["ApiEndpoint"] = ApiEndpointSerializer::class;
+        $this->registry["AccessToken"] = AccessTokenSerializer::class;
+        $this->registry["RefreshToken"] = RefreshTokenSerializer::class;
+        $this->registry["ApiScopeGroup"] = ApiScopeGroupSerializer::class;
         $this->registry["ServerPrivateKey"] = ServerPrivateKeySerializer::class;
-        $this->registry["ClientPublicKey"]  =  ClientPublicKeySerializer::class;
+        $this->registry["ClientPublicKey"] = ClientPublicKeySerializer::class;
+
+        $this->registry["Client"] = [
+            self::SerializerType_Public => ClientSerializer::class,
+            self::SerializerType_Private => ClientAdminSerializer::class,
+        ];
     }
 
     /**

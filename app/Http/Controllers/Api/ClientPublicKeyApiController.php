@@ -12,16 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Http\Controllers\GetAllTrait;
 use OAuth2\Services\IClientPublicKeyService;
+use utils\Filter;
+use utils\FilterElement;
 use Utils\Services\ILogService;
 use OAuth2\Repositories\IClientPublicKeyRepository;
 use Illuminate\Support\Facades\Request;
+
 /**
  * Class ClientPublicKeyApiController
  * @package App\Http\Controllers\Api
  */
 final class ClientPublicKeyApiController extends AsymmetricKeyApiController
 {
+    use GetAllTrait;
+
     /**
      * @param IClientPublicKeyRepository $repository
      * @param IClientPublicKeyService $service
@@ -30,7 +37,7 @@ final class ClientPublicKeyApiController extends AsymmetricKeyApiController
     public function __construct
     (
         IClientPublicKeyRepository $repository,
-        IClientPublicKeyService $service,
+        IClientPublicKeyService    $service,
         ILogService $log_service
     )
     {
@@ -40,38 +47,48 @@ final class ClientPublicKeyApiController extends AsymmetricKeyApiController
     /**
      * @return array
      */
-    protected function getCreatePayload():array{
-        $payload =  Request::All();
+    protected function getCreatePayload(): array
+    {
+        $payload = Request::All();
         return array_merge($payload, $this->extra_create_payload_params);
     }
 
+    protected function applyExtraFilters(Filter $filter): Filter
+    {
+        $client_id = Request::route('id');
+        $filter->addFilterCondition(FilterElement::makeEqual("owner_id", intval($client_id)));
+        return $filter;
+    }
+
     private $extra_create_payload_params = [];
+
     /**
-     * @param int $client_id
+     * @param int $owner_id
      * @return mixed
      */
-    public function _create($client_id)
+    public function _create($owner_id)
     {
-        $this->extra_create_payload_params['client_id'] = $client_id;
+        $this->extra_create_payload_params['owner_id'] = $owner_id;
         return $this->create();
     }
 
     /**
-     * @param int $client_id
+     * @param int $owner_id
      * @param int $public_key_id
      * @return mixed
      */
-    public function _update($client_id, $public_key_id)
+    public function _update($owner_id, $public_key_id)
     {
         return $this->update($public_key_id);
     }
 
     /**
-     * @param int $client_id
+     * @param int $owner_id
      * @param int $public_key_id
      * @return mixed
      */
-    public function _delete($client_id, $public_key_id){
+    public function _delete($owner_id, $public_key_id)
+    {
         return $this->delete($public_key_id);
     }
 

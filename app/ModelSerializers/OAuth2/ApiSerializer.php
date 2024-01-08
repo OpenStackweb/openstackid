@@ -21,9 +21,10 @@ use Models\OAuth2\Api;
 final class ApiSerializer extends BaseSerializer
 {
     protected static $array_mappings = [
-        'Name'        => 'name:json_string',
+        'Name' => 'name:json_string',
         'Description' => 'description:json_string',
-        'Active'      => 'active:json_boolean',
+        'Logo' => 'logo:json_string',
+        'Active' => 'active:json_boolean',
         'ResourceServerId' => 'resource_server_id:json_int',
     ];
 

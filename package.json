@@ -79,6 +79,7 @@
     "@material-ui/lab": "^4.0.0-alpha.61",
     "@material-ui/styles": "^4.11.5",
     "@mui/x-data-grid": "^4.0.2",
+    "@wojtekmaj/react-daterange-picker": "^5.4.2",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "bloodhound-js": "^1.2.3",
     "bootstrap": "^3.3.7",

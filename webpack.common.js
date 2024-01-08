@@ -30,6 +30,7 @@ module.exports = {
         resetPassword: './resources/js/reset_password/reset_password.js',
         setPassword: './resources/js/set_password/set_password.js',
         signup: './resources/js/signup/signup.js',
+        editClient: './resources/js/oauth2/profile/edit_client/edit_client_wrapper.js',
     },
     output: {
         filename: '[name].js',

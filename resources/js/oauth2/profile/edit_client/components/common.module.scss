@@ -1,0 +1,32 @@
+.main_container {
+  max-width: 1024px !important;
+  width: 100%;
+
+  .form_control {
+    margin-top: 15px;
+
+    label {
+      margin-bottom: 5px !important;
+      display: flex;
+      align-items: center;
+    }
+
+    .outline_input {
+      height: 45px;
+    }
+
+    .button {
+      width: 120px;
+    }
+
+    .error_label {
+      color: #f44336;
+      font-size: 0.75rem;
+      margin: 4px 0 4px 14px;
+    }
+  }
+
+  .paper {
+    padding: 10px;
+  }
+}

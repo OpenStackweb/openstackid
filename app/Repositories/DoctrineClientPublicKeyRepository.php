@@ -22,6 +22,15 @@ class DoctrineClientPublicKeyRepository
     extends DoctrineAsymmetricKeyRepository
     implements IClientPublicKeyRepository
 {
+    /**
+     * @return array
+     */
+    protected function getFilterMappings()
+    {
+        return [
+            'owner_id' => 'e.owner',
+        ];
+    }
 
     /**
      * @return string
