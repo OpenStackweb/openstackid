@@ -28,8 +28,8 @@ final class SocialLoginProviders
 
     const ValidProviders = [
         self::Facebook,
-        self::Apple,
         self::LinkedIn,
+        self::Apple,
         //self::Google
         self::OKTA,
     ];

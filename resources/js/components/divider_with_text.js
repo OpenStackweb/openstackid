@@ -7,7 +7,7 @@ const useStyles = makeStyles(theme => ({
         alignItems: "center"
     },
     border: {
-        borderBottom: "1px solid #3fa2f7",
+        borderBottom: "1px solid #4A4A4A",
         width: "100%"
     },
     content: {
@@ -17,7 +17,7 @@ const useStyles = makeStyles(theme => ({
         paddingLeft: theme.spacing(2),
         fontWeight: 500,
         fontSize: 16,
-        color: "#3fa2f7"
+        color: "#4A4A4A"
     }
 }));
 

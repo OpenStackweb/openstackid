@@ -76,10 +76,12 @@ p > a {
 
 .third_party_idp_button {
   width: 100%;
+  height: 40px;
   margin-top: 5px !important;
   margin-bottom: 5px !important;
-  position:relative;
+  position: relative;
   box-sizing: border-box;
+  font-weight: 400 !important;
 }
 
 .third_party_idp_button:before{
