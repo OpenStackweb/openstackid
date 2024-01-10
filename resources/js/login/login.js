@@ -65,10 +65,10 @@ const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput,
 }
 
 const PasswordInputForm = ({
-    formAction,
-    onAuthenticate,
-    disableInput,
-    showPassword,
+                               formAction,
+                               onAuthenticate,
+                               disableInput,
+                               showPassword,
                                passwordValue,
                                passwordError,
                                onUserPasswordChange,
@@ -356,10 +356,10 @@ const ExistingAccountActions = ({emitOtpAction, forgotPasswordAction, userName})
 const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableInput, allowNativeAuth }) => {
     return (
         <>
-            {allowNativeAuth && <DividerWithText>Or</DividerWithText>}
+            {allowNativeAuth && <DividerWithText>or</DividerWithText>}
             {
                 thirdPartyProviders.map((provider) => {
-                    const verbiage =  `${handleThirdPartyProvidersVerbiage(provider.name)} with ${provider.label}`;
+                    const verbiage = `${handleThirdPartyProvidersVerbiage(provider.name)} with ${provider.label}`;
                     return (
                         <Button
                             disabled={disableInput}
@@ -696,7 +696,8 @@ const theme = createTheme({
     overrides: {
         MuiButton: {
             containedPrimary: {
-                color: 'white'
+                color: 'white',
+                textTransform: 'none'
             }
         }
     }
