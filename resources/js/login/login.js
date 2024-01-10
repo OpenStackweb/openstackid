@@ -183,7 +183,7 @@ const OTPInputForm = ({
                 required
                 fullWidth
                 autoFocus={true}
-                label="Enter Your Single-use code"
+                label="Enter Your Single-use Code"
                 autoComplete="new-password"
                 error={passwordError != ""}
                 helperText={passwordError}
@@ -197,17 +197,17 @@ const OTPInputForm = ({
                                 onMouseDown={handleMouseDownPassword}
                                 edge="end"
                             >
-                                {showPassword ? <Visibility /> : <VisibilityOff />}
+                                {showPassword ? <Visibility/> : <VisibilityOff/>}
                             </IconButton>
                         </InputAdornment>
                     )
                 }}
 
             />
-            <p>A single-use code was just sent to your Email.</p>
+            <p>A single-use code was just sent to your email.</p>
             <FormControlLabel
                 disabled={disableInput}
-                control={<Checkbox value="remember" name="remember" id="remember" color="primary" />}
+                control={<Checkbox value="remember" name="remember" id="remember" color="primary"/>}
                 label="Remember me"
             />
             <input type="hidden" value={userNameValue} id="username" name="username" />
