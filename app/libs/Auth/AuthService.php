@@ -206,7 +206,7 @@ final class AuthService extends AbstractService implements IAuthService
                     )
                 );
 
-                throw new AuthenticationException("Non existent OTP.");
+                throw new AuthenticationException("Non existent single-use code.");
             }
 
             $otp->logRedeemAttempt();
@@ -216,23 +216,23 @@ final class AuthService extends AbstractService implements IAuthService
         return $this->tx_service->transaction(function () use ($otp, $otpClaim, $client, $remember) {
 
             if (!$otp->isAlive()) {
-                throw new AuthenticationException("OTP is expired.");
+                throw new AuthenticationException("Single-use code is expired.");
             }
 
             if (!$otp->isValid()) {
-                throw new AuthenticationException("OTP is not valid.");
+                throw new AuthenticationException("Single-use code is not valid.");
             }
 
             if ($otp->getValue() != $otpClaim->getValue()) {
-                throw new AuthenticationException("OTP mismatch.");
+                throw new AuthenticationException("Single-use code mismatch.");
             }
 
             if(!empty($otpClaim->getScope()) && !$otp->allowScope($otpClaim->getScope()))
-                throw new InvalidOTPException("OTP Requested scopes escalates former scopes.");
+                throw new InvalidOTPException("Single-use code requested scopes escalates former scopes.");
 
             if (($otp->hasClient() && is_null($client)) ||
                 ($otp->hasClient() && !is_null($client) && $client->getClientId() != $otp->getClient()->getClientId())) {
-                throw new AuthenticationException("OTP audience mismatch.");
+                throw new AuthenticationException("Single-use code audience mismatch.");
             }
 
             $user = $this->getUserByUsername($otp->getUserName());

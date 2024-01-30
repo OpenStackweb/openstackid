@@ -23,7 +23,8 @@ import { emailValidator } from '../validator';
 import Grid from '@material-ui/core/Grid';
 import Swal from 'sweetalert2'
 import Banner from '../components/banner/banner';
-import { handleThirdPartyProvidersVerbiage } from '../utils';
+import OtpInput from 'react-otp-input';
+import {handleThirdPartyProvidersVerbiage} from '../utils';
 
 import styles from './login.module.scss'
 import "./third_party_identity_providers.scss";
@@ -155,82 +156,76 @@ const PasswordInputForm = ({
 }
 
 const OTPInputForm = ({
-    formAction,
-    onAuthenticate,
-    disableInput,
-    showPassword,
-    passwordValue,
-    passwordError,
-    onUserPasswordChange,
-    handleClickShowPassword,
-    handleMouseDownPassword,
-    userNameValue,
-    csrfToken,
-    shouldShowCaptcha,
-    captchaPublicKey,
-    onChangeRecaptcha
-}) => {
+                          disableInput,
+                          formAction,
+                          onAuthenticate,
+                          otpCode,
+                          otpError,
+                          otpLength,
+                          onCodeChange,
+                          userNameValue,
+                          csrfToken,
+                          shouldShowCaptcha,
+                          captchaPublicKey,
+                          onChangeRecaptcha,
+                          onReset
+                      }) => {
     return (
-        <form method="post" action={formAction} onSubmit={onAuthenticate} target='_self'>
-            <TextField
-                id="password"
-                name="password"
-                disabled={disableInput}
-                type={showPassword ? 'text' : 'password'}
-                value={passwordValue}
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                autoFocus={true}
-                label="Enter Your Single-use Code"
-                autoComplete="new-password"
-                error={passwordError != ""}
-                helperText={passwordError}
-                onChange={onUserPasswordChange}
-                InputProps={{
-                    endAdornment: (
-                        <InputAdornment position="end">
-                            <IconButton
-                                aria-label="toggle code visibility"
-                                onClick={handleClickShowPassword}
-                                onMouseDown={handleMouseDownPassword}
-                                edge="end"
-                            >
-                                {showPassword ? <Visibility/> : <VisibilityOff/>}
-                            </IconButton>
-                        </InputAdornment>
-                    )
-                }}
-
-            />
-            <p>A single-use code was just sent to your email.</p>
-            <FormControlLabel
-                disabled={disableInput}
-                control={<Checkbox value="remember" name="remember" id="remember" color="primary"/>}
-                label="Remember me"
-            />
-            <input type="hidden" value={userNameValue} id="username" name="username" />
-            <input type="hidden" value={csrfToken} id="_token" name="_token" />
-            <input type="hidden" value="otp" id="flow" name="flow" />
-            <input type="hidden" value="email" id="connection" name="connection" />
-            {shouldShowCaptcha() &&
-                <ReCAPTCHA
-                    className={styles.recaptcha}
-                    sitekey={captchaPublicKey}
-                    onChange={onChangeRecaptcha}
-                />
-            }
-            <Button variant="contained"
-                disabled={disableInput}
-                className={styles.continue_btn}
-                color="primary"
-                type="submit"
-                target='_self'
-                onClick={onAuthenticate}>
-                Verify
-            </Button>
-        </form>
+        <>
+            <form method="post" action={formAction} onSubmit={onAuthenticate} target='_self'
+                  className={styles.otp_form}>
+                <div className={styles.subtitle}>Enter the single-use code sent to your email:</div>
+                <div className={styles.code_input}>
+                    <OtpInput
+                        id="otp_code"
+                        value={otpCode}
+                        onChange={onCodeChange}
+                        numInputs={otpLength}
+                        renderInput={(props) => <input {...props} />}
+                        shouldAutoFocus={true}
+                        hasErrored={!otpError}
+                        errorStyle={{border: '1px solid #e5424d'}}
+                        data-testid="otp_code"
+                    />
+                </div>
+                {otpError &&
+                    <p className={styles.error_label} dangerouslySetInnerHTML={{__html: otpError}}></p>
+                }
+                <div>
+                    <Button variant="contained"
+                            disabled={disableInput}
+                            color="primary"
+                            type="submit"
+                            target='_self'
+                            onClick={onAuthenticate}>
+                        CONTINUE
+                    </Button>
+                </div>
+                <div className={styles.footer_instructions}>
+                    <p className={styles.otp_p}>
+                        <Link href="#" onClick={onReset} variant="body2" target="_self">
+                            Sign in using a different e-mail
+                        </Link>
+                    </p>
+                    <div className={styles.after_login_instructions}>
+                        <div>After you login you will be e-mailed a link to</div>
+                        <div>set a password and complete your account.</div>
+                    </div>
+                </div>
+                <input type="hidden" value={userNameValue} id="username" name="username"/>
+                <input type="hidden" value={csrfToken} id="_token" name="_token"/>
+                <input type="hidden" value="otp" id="flow" name="flow"/>
+                <input type="hidden" value={otpCode} id="password" name="password"/>
+                <input type="hidden" value="email" id="connection" name="connection"/>
+                {shouldShowCaptcha() &&
+                    <ReCAPTCHA
+                        className={styles.recaptcha}
+                        sitekey={captchaPublicKey}
+                        onChange={onChangeRecaptcha}
+                    />
+                }
+            </form>
+        </>
     );
 }
 
@@ -375,10 +370,13 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
                     );
                 })
             }
-            <p>If you have a login, you may still choose to use a social login with <b>the same email address</b> to access your account.</p>
+            <p>If you have a login, you may still choose to use a social login with <b>the same email address</b> to
+                access your account.</p>
         </>
     );
 }
+
+const otp_flow = 'otp';
 
 class LoginPage extends React.Component {
 
@@ -387,12 +385,14 @@ class LoginPage extends React.Component {
         this.state = {
             user_name: props.userName,
             user_password: '',
+            otpCode: '',
             user_pic: props.hasOwnProperty('user_pic') ? props.user_pic : null,
             user_fullname: props.hasOwnProperty('user_fullname') ? props.user_fullname : null,
             user_verified: props.hasOwnProperty('user_verified') ? props.user_verified : false,
             errors: {
-                email: "",
-                password: props.authError != "" ? props.authError : "",
+                email: '',
+                otp: props.authError != '' ? props.authError : '',
+                password: props.authError != '' ? props.authError : '',
             },
             captcha_value: '',
             showPassword: false,
@@ -401,6 +401,10 @@ class LoginPage extends React.Component {
             allowNativeAuth: props.allowNativeAuth,
             showInfoBanner: props.showInfoBanner,
             infoBannerContent: props.infoBannerContent,
+        }
+
+        if (props.authError != '' && !this.state.user_fullname) {
+            this.state.user_fullname = props.userName;
         }
 
         if (this.state.errors.password && this.state.errors.password.includes("is not yet verified")) {
@@ -413,6 +417,7 @@ class LoginPage extends React.Component {
         this.onAuthenticate = this.onAuthenticate.bind(this);
         this.onChangeRecaptcha = this.onChangeRecaptcha.bind(this);
         this.onUserPasswordChange = this.onUserPasswordChange.bind(this);
+        this.onOTPCodeChange = this.onOTPCodeChange.bind(this);
         this.shouldShowCaptcha = this.shouldShowCaptcha.bind(this);
         this.handleClickShowPassword = this.handleClickShowPassword.bind(this);
         this.handleMouseDownPassword = this.handleMouseDownPassword.bind(this);
@@ -427,10 +432,11 @@ class LoginPage extends React.Component {
             let { response } = payload;
             this.setState({
                 ...this.state,
-                authFlow: "otp",
+                authFlow: otp_flow,
                 errors: {
-                    email: "",
-                    password: "",
+                    email: '',
+                    otp: '',
+                    password: ''
                 },
                 user_verified: true,
                 user_fullname: user_fullname,
@@ -451,17 +457,20 @@ class LoginPage extends React.Component {
     }
 
     onAuthenticate(ev) {
-        if (this.state.user_password == '') {
-            let error = 'Password is empty';
-            if (this.state.authFlow == 'OTP') {
-                error = 'Single-use code is empty';
+        if (this.state.authFlow === otp_flow) {
+            if (this.state.otpCode == '') {
+                this.setState({...this.state, errors: {...this.state.errors, otp: 'Single-use code is empty'}});
+                ev.preventDefault();
+                return false;
             }
-            this.setState({ ...this.state, errors: { ...this.state.errors, password: error } });
+        } else if (this.state.user_password == '') {
+            this.setState({...this.state, errors: {...this.state.errors, password: 'Password is empty'}});
             ev.preventDefault();
             return false;
         }
+
         if (this.state.captcha_value == '' && this.shouldShowCaptcha()) {
-            this.setState({ ...this.state, errors: { ...this.state.errors, password: 'you must check CAPTCHA' } });
+            this.setState({...this.state, errors: {...this.state.errors, password: 'you must check CAPTCHA'}});
             ev.preventDefault();
             return false;
         }
@@ -478,17 +487,21 @@ class LoginPage extends React.Component {
     }
 
     onUserPasswordChange(ev) {
-        let { errors } = this.state;
-        let { value, id } = ev.target;
+        let {errors} = this.state;
+        let {value, id} = ev.target;
         if (value == "") // clean error
             errors[id] = '';
-        this.setState({ ...this.state, user_password: value, errors: { ...errors } });
+        this.setState({...this.state, user_password: value, errors: {...errors}});
+    }
+
+    onOTPCodeChange(value) {
+        this.setState({...this.state, otpCode: value});
     }
 
     onValidateEmail(ev) {
 
         ev.preventDefault();
-        let { user_name } = this.state;
+        let {user_name} = this.state;
         user_name = user_name.trim();
 
         if (user_name == '') {
@@ -510,6 +523,7 @@ class LoginPage extends React.Component {
                 user_verified: true,
                 errors: {
                     email: '',
+                    otp: '',
                     password: ''
                 },
                 disableInput: false
@@ -542,8 +556,9 @@ class LoginPage extends React.Component {
     handleDelete() {
         this.setState({
             ...this.state, user_name: null, user_pic: null, user_fullname: null, user_verified: false, authFlow: "password", errors: {
-                email: "",
-                password: "",
+                email: '',
+                otp: '',
+                password: ''
             },
         });
     }
@@ -564,8 +579,9 @@ class LoginPage extends React.Component {
                 <Container className={styles.login_container}>
                     <div className={styles.inner_container}>
                         <Typography component="h1" className={styles.app_logo_container}>
-                            <a href={window.location.href} target='_self'><img className={styles.app_logo} alt={this.props.appName}
-                                                                src={this.props.appLogo}/></a>
+                            <a href={window.location.href} target='_self'><img className={styles.app_logo}
+                                                                               alt={this.props.appName}
+                                                                               src={this.props.appLogo}/></a>
                         </Typography>
                         <Typography component="h1" variant="h5">
                             {this.state.errors.email ? 'Create an account for:' : 'Sign in'}
@@ -661,22 +677,21 @@ class LoginPage extends React.Component {
                             // proceed to ask for password ( 2nd step )
                             <>
                                 <OTPInputForm
+                                    disableInput={this.state.disableInput}
                                     formAction={this.props.formAction}
                                     onAuthenticate={this.onAuthenticate}
-                                    disableInput={this.state.disableInput}
-                                    showPassword={this.state.showPassword}
-                                    passwordValue={this.state.user_password}
-                                    passwordError={this.state.errors.password}
-                                    onUserPasswordChange={this.onUserPasswordChange}
-                                    handleClickShowPassword={this.handleClickShowPassword}
-                                    handleMouseDownPassword={this.handleMouseDownPassword}
+                                    otpCode={this.state.otpCode}
+                                    otpError={this.state.errors.otp}
+                                    otpLength={this.props.otpLength}
+                                    onCodeChange={this.onOTPCodeChange}
                                     userNameValue={this.state.user_name}
                                     csrfToken={this.props.token}
                                     shouldShowCaptcha={this.shouldShowCaptcha}
                                     captchaPublicKey={this.props.captchaPublicKey}
                                     onChangeRecaptcha={this.onChangeRecaptcha}
+                                    onReset={this.handleDelete}
                                 />
-                                <OTPHelpLinks emitOtpAction={this.handleEmitOtpAction} />
+                                <OTPHelpLinks emitOtpAction={this.handleEmitOtpAction}/>
                             </>
                         }
                     </div>

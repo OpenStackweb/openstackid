@@ -105,6 +105,7 @@
     "pure": "^2.85.0",
     "pwstrength-bootstrap": "^3.0.10",
     "react-google-recaptcha": "^2.1.0",
+    "react-otp-input": "^3.1.1",
     "react-password-strength-bar": "^0.4.0",
     "react-simplemde-editor": "^5.2.0",
     "simplemde": "^1.11.2",
