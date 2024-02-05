@@ -255,7 +255,8 @@ final class UserController extends OpenIdController
             return $this->ok(
                 [
                     'pic' => $user->getPic(),
-                    'full_name' => $user->getFullName()
+                    'full_name' => $user->getFullName(),
+                    'has_password_set' => $user->hasPasswordSet()
                 ]
             );
         } catch (ValidationException $ex) {

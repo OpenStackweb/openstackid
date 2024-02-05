@@ -377,6 +377,7 @@ const ThirdPartyIdentityProviders = ({ thirdPartyProviders, formAction, disableI
 }
 
 const otp_flow = 'otp';
+const password_flow = 'password';
 
 class LoginPage extends React.Component {
 
@@ -424,12 +425,11 @@ class LoginPage extends React.Component {
         this.handleEmitOtpAction = this.handleEmitOtpAction.bind(this);
     }
 
-    handleEmitOtpAction(ev) {
-        ev.preventDefault();
+    emitOtpAction() {
         let user_fullname = this.state.user_fullname ? this.state.user_fullname : this.state.user_name;
 
         emitOTP(this.state.user_name, this.props.token).then((payload) => {
-            let { response } = payload;
+            let {response} = payload;
             this.setState({
                 ...this.state,
                 authFlow: otp_flow,
@@ -442,10 +442,15 @@ class LoginPage extends React.Component {
                 user_fullname: user_fullname,
             });
         }, (error) => {
-            let { response, status, message } = error;
+            let {response, status, message} = error;
             Swal('Oops...', 'Something went wrong!', 'error')
         });
         return false;
+    }
+
+    handleEmitOtpAction(ev) {
+        ev.preventDefault();
+        return this.emitOtpAction();
     }
 
     shouldShowCaptcha() {
@@ -521,13 +526,20 @@ class LoginPage extends React.Component {
                 user_pic: response.pic,
                 user_fullname: response.full_name,
                 user_verified: true,
+                authFlow: response.has_password_set ? password_flow : otp_flow,
                 errors: {
                     email: '',
                     otp: '',
                     password: ''
                 },
                 disableInput: false
-            })
+            }, function () {
+                //Once the state is updated, it's now possible to trigger emitOtpAction.
+                //No need to wait for the component to update.
+                if (!response.has_password_set) {
+                    this.emitOtpAction();
+                }
+            });
         }, (error) => {
 
             let { response, status, message } = error;
@@ -638,7 +650,7 @@ class LoginPage extends React.Component {
                                 }
                             </>
                         }
-                        {this.state.user_verified && this.state.authFlow == 'password' &&
+                        {this.state.user_verified && this.state.authFlow == password_flow &&
                             // proceed to ask for password ( 2nd step )
                             <>
                                 <PasswordInputForm
@@ -673,7 +685,7 @@ class LoginPage extends React.Component {
                                 />
                             </>
                         }
-                        {this.state.user_verified && this.state.authFlow == 'otp' &&
+                        {this.state.user_verified && this.state.authFlow == otp_flow &&
                             // proceed to ask for password ( 2nd step )
                             <>
                                 <OTPInputForm
