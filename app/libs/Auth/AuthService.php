@@ -14,6 +14,8 @@
 
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
+use App\Mail\OTPRegistrationReminderEmail;
+use App\Mail\WelcomeNewUserEmail;
 use App\Services\AbstractService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRepository;
@@ -21,6 +23,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
@@ -268,15 +271,20 @@ final class AuthService extends AbstractService implements IAuthService
             foreach ($grants2Revoke as $otp2Revoke){
                 try {
                     Log::debug(sprintf("AuthService::loginWithOTP revoking otp %s ", $otp2Revoke->getValue()));
-                    if($otp2Revoke->getValue() !== $otpClaim->getValue())
+                    if ($otp2Revoke->getValue() !== $otpClaim->getValue())
                         $otp2Revoke->redeem();
-                }
-                catch (Exception $ex){
+                } catch (Exception $ex) {
                     Log::warning($ex);
                 }
             }
 
             Auth::login($user, $remember);
+
+            if (!$user->hasPasswordSet()) {
+                $request = $this->auth_user_service->generatePasswordResetRequest($user->getEmail());
+                $reset_password_link = $request->getResetLink();
+                Mail::queue(new OTPRegistrationReminderEmail($user, $reset_password_link));
+            }
 
             return $otp;
         });

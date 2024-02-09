@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\URL;
  * Class WelcomeNewUserEmail
  * @package App\Mail
  */
-final class WelcomeNewUserEmail extends Mailable
+class WelcomeNewUserEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
