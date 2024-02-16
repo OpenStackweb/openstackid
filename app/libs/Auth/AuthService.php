@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use App\Jobs\GenerateOTPRegistrationReminder;
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use App\Mail\OTPRegistrationReminderEmail;
@@ -281,9 +282,8 @@ final class AuthService extends AbstractService implements IAuthService
             Auth::login($user, $remember);
 
             if (!$user->hasPasswordSet()) {
-                $request = $this->auth_user_service->generatePasswordResetRequest($user->getEmail());
-                $reset_password_link = $request->getResetLink();
-                Mail::queue(new OTPRegistrationReminderEmail($user, $reset_password_link));
+                // trigger background job
+                GenerateOTPRegistrationReminder::dispatch($user);
             }
 
             return $otp;
