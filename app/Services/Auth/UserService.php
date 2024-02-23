@@ -500,7 +500,7 @@ final class UserService extends AbstractService implements IUserService
         return $this->tx_service->transaction(function() use($user_id){
 
             $user = $this->user_repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User) return null;
+            if(!$user instanceof User) return null;
 
             $reset_password_link = null;
 
@@ -528,7 +528,7 @@ final class UserService extends AbstractService implements IUserService
         return $this->tx_service->transaction(function() use($user_id) {
             Log::debug(sprintf("UserService::initializeUser %s", $user_id));
             $user = $this->user_repository->getById($user_id);
-            if(is_null($user) || !$user instanceof User) return null;
+            if(!$user instanceof User) return null;
 
             if(!$user->isEmailVerified()) {
                 Log::debug(sprintf("UserService::initializeUser %s email not verified", $user_id));

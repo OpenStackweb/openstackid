@@ -15,8 +15,6 @@
 use App\Jobs\GenerateOTPRegistrationReminder;
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
-use App\Mail\OTPRegistrationReminderEmail;
-use App\Mail\WelcomeNewUserEmail;
 use App\Services\AbstractService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRepository;
@@ -24,7 +22,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
@@ -240,8 +237,8 @@ final class AuthService extends AbstractService implements IAuthService
             }
 
             $user = $this->getUserByUsername($otp->getUserName());
-
-            if (is_null($user)) {
+            $new_user = is_null($user);
+            if ($new_user) {
                 // we need to create a new one ( auto register)
 
                 Log::debug(sprintf("AuthService::loginWithOTP user %s does not exists ...", $otp->getUserName()));
@@ -281,7 +278,7 @@ final class AuthService extends AbstractService implements IAuthService
 
             Auth::login($user, $remember);
 
-            if (!$user->hasPasswordSet()) {
+            if (!$user->hasPasswordSet() && !$new_user) {
                 // trigger background job
                 GenerateOTPRegistrationReminder::dispatch($user);
             }
