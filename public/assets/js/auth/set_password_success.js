@@ -9,7 +9,7 @@
         if(redirect.length > 0){
             var href = $(redirect).attr('href');
             if(email != '')
-                href = href +'?email=' + email;
+                href = href +'#login=1&email=' + email;
 
             setTimeout(function(){ window.location = href; }, 3000);
             return;
