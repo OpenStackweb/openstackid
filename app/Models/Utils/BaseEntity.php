@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Doctrine\ORM\Event\PreUpdateEventArgs;
 use models\utils\IEntity;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping AS ORM;
@@ -19,11 +21,13 @@ use Doctrine\ORM\QueryBuilder;
 use LaravelDoctrine\ORM\Facades\Registry;
 /***
  * @ORM\MappedSuperclass
+ * @ORM\HasLifecycleCallbacks
  * Class BaseEntity
  * @package App\Models\Utils
  */
 class BaseEntity implements IEntity
 {
+    const DefaultTimeZone = 'UTC';
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -93,7 +97,7 @@ class BaseEntity implements IEntity
 
     public function __construct()
     {
-        $now = new \DateTime('now', new \DateTimeZone('UTC'));
+        $now = new \DateTime('now', new \DateTimeZone(self::DefaultTimeZone));
         $this->id = 0;
         $this->created_at = $now;
         $this->updated_at = $now;
@@ -160,5 +164,14 @@ class BaseEntity implements IEntity
      */
     public function __get($name) {
         return $this->{$name};
+    }
+
+    /**
+     * @ORM\PreUpdate:
+     */
+    public function updating(PreUpdateEventArgs $args)
+    {
+        $now = new \DateTime('now', new \DateTimeZone(self::DefaultTimeZone));
+        $this->updated_at = $now;
     }
 }
