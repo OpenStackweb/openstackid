@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use App\Jobs\GenerateOTPRegistrationReminder;
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use App\Services\AbstractService;
@@ -206,7 +207,7 @@ final class AuthService extends AbstractService implements IAuthService
                     )
                 );
 
-                throw new AuthenticationException("Non existent OTP.");
+                throw new AuthenticationException("Non existent single-use code.");
             }
 
             $otp->logRedeemAttempt();
@@ -216,28 +217,28 @@ final class AuthService extends AbstractService implements IAuthService
         return $this->tx_service->transaction(function () use ($otp, $otpClaim, $client, $remember) {
 
             if (!$otp->isAlive()) {
-                throw new AuthenticationException("OTP is expired.");
+                throw new AuthenticationException("Single-use code is expired.");
             }
 
             if (!$otp->isValid()) {
-                throw new AuthenticationException("OTP is not valid.");
+                throw new AuthenticationException("Single-use code is not valid.");
             }
 
             if ($otp->getValue() != $otpClaim->getValue()) {
-                throw new AuthenticationException("OTP mismatch.");
+                throw new AuthenticationException("Single-use code mismatch.");
             }
 
             if(!empty($otpClaim->getScope()) && !$otp->allowScope($otpClaim->getScope()))
-                throw new InvalidOTPException("OTP Requested scopes escalates former scopes.");
+                throw new InvalidOTPException("Single-use code requested scopes escalates former scopes.");
 
             if (($otp->hasClient() && is_null($client)) ||
                 ($otp->hasClient() && !is_null($client) && $client->getClientId() != $otp->getClient()->getClientId())) {
-                throw new AuthenticationException("OTP audience mismatch.");
+                throw new AuthenticationException("Single-use code audience mismatch.");
             }
 
             $user = $this->getUserByUsername($otp->getUserName());
-
-            if (is_null($user)) {
+            $new_user = is_null($user);
+            if ($new_user) {
                 // we need to create a new one ( auto register)
 
                 Log::debug(sprintf("AuthService::loginWithOTP user %s does not exists ...", $otp->getUserName()));
@@ -268,15 +269,19 @@ final class AuthService extends AbstractService implements IAuthService
             foreach ($grants2Revoke as $otp2Revoke){
                 try {
                     Log::debug(sprintf("AuthService::loginWithOTP revoking otp %s ", $otp2Revoke->getValue()));
-                    if($otp2Revoke->getValue() !== $otpClaim->getValue())
+                    if ($otp2Revoke->getValue() !== $otpClaim->getValue())
                         $otp2Revoke->redeem();
-                }
-                catch (Exception $ex){
+                } catch (Exception $ex) {
                     Log::warning($ex);
                 }
             }
 
             Auth::login($user, $remember);
+
+            if (!$user->hasPasswordSet() && !$new_user) {
+                // trigger background job
+                GenerateOTPRegistrationReminder::dispatch($user);
+            }
 
             return $otp;
         });

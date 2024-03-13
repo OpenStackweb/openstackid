@@ -38,16 +38,19 @@
             flow: 'password',
             thirdPartyProviders: [
                 @foreach($supported_providers as $provider => $label)
-                {label: "{{$label}}", name:"{{$provider}}"},
-                 @endforeach
+                {
+                    label: "{{$label}}", name: "{{$provider}}"
+                },
+                @endforeach
             ],
-            forgotPasswordAction:'{{ URL::action("Auth\ForgotPasswordController@showLinkRequestForm") }}',
-            verifyEmailAction:'{{ URL::action("Auth\EmailVerificationController@showVerificationForm") }}',
-            helpAction:'mailto:{!! Config::get("app.help_email") !!}',
-            createAccountAction:'{{ URL::action("Auth\RegisterController@showRegistrationForm") }}',
-            allowNativeAuth: parseInt('{{ Config::get("auth.allows_native_auth", 1) }}') === 1 ? true: false,
-            showInfoBanner: parseInt('{{ Config::get("app.show_info_banner", 0) }}') === 1 ? true: false,
+            forgotPasswordAction: '{{ URL::action("Auth\ForgotPasswordController@showLinkRequestForm") }}',
+            verifyEmailAction: '{{ URL::action("Auth\EmailVerificationController@showVerificationForm") }}',
+            helpAction: 'mailto:{!! Config::get("app.help_email") !!}',
+            createAccountAction: '{{ URL::action("Auth\RegisterController@showRegistrationForm") }}',
+            allowNativeAuth: parseInt('{{ Config::get("auth.allows_native_auth", 1) }}') === 1 ? true : false,
+            showInfoBanner: parseInt('{{ Config::get("app.show_info_banner", 0) }}') === 1 ? true : false,
             infoBannerContent: '{!! html_entity_decode(Config::get("app.info_banner_content")) !!}',
+            otpLength: {{ Config::get("otp.length") }}
         }
 
         @if(Session::has('max_login_attempts_2_show_captcha'))

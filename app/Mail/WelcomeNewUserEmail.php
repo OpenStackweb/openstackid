@@ -15,7 +15,6 @@ use Auth\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
@@ -24,7 +23,7 @@ use Illuminate\Support\Facades\URL;
  * Class WelcomeNewUserEmail
  * @package App\Mail
  */
-final class WelcomeNewUserEmail extends Mailable
+class WelcomeNewUserEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -101,8 +100,10 @@ final class WelcomeNewUserEmail extends Mailable
         if($user->createdByOTP()){
             $this->user_created_by_otp = true;
             $otp = $user->getCreatedByOtp();
-            $otp_redirect_url = $otp->getRedirectUrl();
-            $this->site_base_url = !empty($otp_redirect_url) ? parse_url($otp_redirect_url)['host'] : null;
+            if(!is_null($otp)) {
+                $otp_redirect_url = $otp->getRedirectUrl();
+                $this->site_base_url = !empty($otp_redirect_url) ? parse_url($otp_redirect_url)['host'] : null;
+            }
         }
 
         $this->reset_password_link = $reset_password_link;

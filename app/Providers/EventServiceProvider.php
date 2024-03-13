@@ -75,7 +75,7 @@ final class EventServiceProvider extends ServiceProvider
         Event::listen(UserEmailVerified::class, function($event)
         {
             $service   = App::make(IUserService::class);
-            if(is_null($service) || !$service instanceof IUserService) return;
+            if(!$service instanceof IUserService) return;
             $service->sendSuccessfulVerificationEmail($event->getUserId());
         });
 
@@ -83,7 +83,7 @@ final class EventServiceProvider extends ServiceProvider
         {
             // new user created
             $service = App::make(IUserService::class);
-            if(is_null($service) || !$service instanceof IUserService) return;
+            if(!$service instanceof IUserService) return;
             $service->initializeUser($event->getUserId());
         });
 

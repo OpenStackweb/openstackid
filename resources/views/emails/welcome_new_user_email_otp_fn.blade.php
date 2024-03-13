@@ -5,26 +5,38 @@
         <tbody>
         <tr>
             @if(!empty($site_base_url))
-                <td align="center" style="font-size:0px;padding:10px 25px;padding-right:25px;padding-left:25px;word-break:break-word;">
+                <td align="center"
+                    style="font-size:0px;padding:10px 25px;padding-right:25px;padding-left:25px;word-break:break-word;">
                     <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">
-                        Thank you for using a one-time-use code to verify your email address on
-                        {!! $site_base_url !!}. You now have an {!! Config::get('app.app_name') !!} using the email address <a href="#" style="text-decoration:none !important;color:black !important; cursor:default !important">{!!$user_email!!}</a>.
+                        Thank you for using a single-use code to verify your email address on
+                        {!! $site_base_url !!}. You now have an {!! Config::get('app.app_name') !!} using the email
+                        address <a href="#"
+                                   style="text-decoration:none !important;color:black !important; cursor:default !important">{!!$user_email!!}</a>.
                     </div>
                 </td>
             @else
-                <td align="center" style="font-size:0px;padding:10px 25px;padding-right:25px;padding-left:25px;word-break:break-word;">
+                <td align="center"
+                    style="font-size:0px;padding:10px 25px;padding-right:25px;padding-left:25px;word-break:break-word;">
                     <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">
-                        Thank you for using a one-time-use code to verify your email address. You now have an {!! Config::get('app.app_name') !!} using the email address <a href="#" style="text-decoration:none !important;color:black !important; cursor:default !important">{!!$user_email!!}</a>.
+                        Thank you for using a single-use code to verify your email address. You now have
+                        an {!! Config::get('app.app_name') !!} using the email address <a href="#"
+                                                                                          style="text-decoration:none !important;color:black !important; cursor:default !important">{!!$user_email!!}</a>.
                     </div>
                 </td>
             @endif
         </tr>
         @if(!empty($reset_password_link))
-        <tr>
-            <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">In order to login more quickly in the future you can <a href="{!! $reset_password_link !!}" target="_blank">set a password</a> (this link expires in {!! $reset_password_link_lifetime !!} min but you can always use the <a href="{!! URL::action("Auth\ForgotPasswordController@showLinkRequestForm") !!}?email={!! $user_email !!}" target="_blank">reset your password</a> option to get a new one).</div>
-            </td>
-        </tr>
+            <tr>
+                <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                    <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">
+                        In order to login more quickly in the future you can <a href="{!! $reset_password_link !!}"
+                                                                                target="_blank">set a password</a> (this
+                        link expires in {!! $reset_password_link_lifetime !!} min but you can always use the <a
+                                href="{!! URL::action("Auth\ForgotPasswordController@showLinkRequestForm") !!}?email={!! $user_email !!}"
+                                target="_blank">reset your password</a> option to get a new one).
+                    </div>
+                </td>
+            </tr>
         @endif
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">

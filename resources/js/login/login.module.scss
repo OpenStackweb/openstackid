@@ -34,11 +34,6 @@ p > a {
     margin-bottom: 15%;
   }
 
-  .continue_btn {
-    float: right;
-    margin-top: 30%;
-  }
-
   .secondary_btn {
     min-width: 300px;
     text-transform: none;
@@ -55,8 +50,45 @@ p > a {
     width: 100%;
     border: 1px solid;
     margin-bottom: 5%;
-      margin-top: 5%;
+    margin-top: 5%;
+  }
+
+  .otp_form {
+    .subtitle {
+      font-weight: bold;
+      margin-top: 10px;
     }
+
+    .code_input {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+
+      input {
+        height: 60px;
+        min-width: 42px;
+        font-size: 32px;
+        background-color: #DADADB;
+        border: 1px solid #AFB0B2;
+        border-radius: 5px;
+        padding: 5px;
+        display: inline-flex;
+        text-transform: uppercase;
+        text-align: center;
+        margin: 0 5px;
+      }
+    }
+
+    .footer_instructions {
+      margin-top: 20px;
+      text-align: center;
+
+      .after_login_instructions {
+        margin-top: 20px;
+      }
+    }
+  }
 }
 
 .paper_root {
