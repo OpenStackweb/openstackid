@@ -2018,7 +2018,8 @@ SQL;
         if($field === 'password') $value = "********";
         if($value instanceof \DateTime)
             $value = $value->format('Y-m-d H:i:s');
-        return sprintf("%s: %s", $field, $value);
+        if(empty($value)) $value = "EMPTY";
+        return $value;
     }
     /**
      * @ORM\PreUpdate:
@@ -2072,10 +2073,10 @@ SQL;
 
         $action = sprintf
         (
-            "User %s updated from %s to %s", $this->email, implode(", ", $old_fields_changed), implode(", ", $new_fields_changed)
+            "USER UPDATED from %s to %s", implode(", ", $old_fields_changed), implode(", ", $new_fields_changed)
         );
 
-        Event::dispatch(new AddUserAction($this->id, IPHelper::getUserIp(), $action));
+        AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
     }
 
 }

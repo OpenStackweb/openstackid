@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from "react";
 import {DataGrid, getGridDateOperators} from "@mui/x-data-grid";
 import moment from "moment";
+import Tooltip from '@material-ui/core/Tooltip'
 
 const UserActionsGrid = ({getUserActions, pageSize}) => {
     const [page, setPage] = useState(1);
@@ -13,7 +14,14 @@ const UserActionsGrid = ({getUserActions, pageSize}) => {
 
     const uaColumns = [
         {field: 'realm', headerName: 'From Realm', width: 380},
-        {field: 'user_action', headerName: 'Action', width: 150},
+        {
+            field: 'user_action', headerName: 'Action', width: 150 ,
+            renderCell: (params) =>  (
+                <Tooltip title={params.value} >
+                    <span className="table-cell-trucate">{params.value}</span>
+                </Tooltip>
+            ),
+        },
         {field: 'from_ip', headerName: 'From IP', width: 150},
         {
             field: 'created_at',

@@ -60,7 +60,7 @@ final class AddUserAction implements ShouldQueue
     public function handle(IUserActionService $service){
         Log::debug(sprintf("AddUserAction::handle"));
         try{
-            $service->addUserAction($this->user_id, $this->ip, $this->action);
+            $service->addUserAction($this->user_id, $this->ip, $this->action, "From Site");
         }
         catch (\Exception $ex) {
             Log::error($ex);
