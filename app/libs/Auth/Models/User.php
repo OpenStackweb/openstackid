@@ -11,9 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Events\UserCreated;
 use App\Events\UserLocked;
 use App\Events\UserSpamStateUpdated;
+use App\Jobs\AddUserAction;
 use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\Auth\Models\UserRegistrationRequest;
 use App\libs\Utils\PunnyCodeHelper;
@@ -44,6 +46,7 @@ use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 use App\Models\Utils\BaseEntity;
 use Doctrine\ORM\Mapping AS ORM;
+use Utils\IPHelper;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineUserRepository")
@@ -2001,6 +2004,78 @@ SQL;
      */
     public function createdByOTP():bool{
         return !is_null($this->created_by_otp);
+    }
+
+    /**
+     * @ORM\PostUpdate:
+     */
+    public function updated($args)
+    {
+
+    }
+
+    private function formatFieldValue(string $field, $value):string{
+        if($field === 'password') $value = "********";
+        if($value instanceof \DateTime)
+            $value = $value->format('Y-m-d H:i:s');
+        return sprintf("%s: %s", $field, $value);
+    }
+    /**
+     * @ORM\PreUpdate:
+     */
+    public function updating(PreUpdateEventArgs $args)
+    {
+        $fields_2_check = [
+            'identifier',
+            'public_profile_show_photo',
+            'public_profile_show_fullname',
+            'public_profile_show_email',
+            'public_profile_allow_chat_with_me',
+            'active',
+            'first_name',
+            'last_name',
+            'email',
+            'address1',
+            'address2',
+            'state',
+            'city',
+            'post_code',
+            'country_iso_code',
+            'second_email',
+            'third_email',
+            'gender',
+            'gender_specify',
+            'statement_of_interest',
+            'bio',
+            'irc',
+            'linked_in_profile',
+            'twitter_name',
+            'github_user',
+            'wechat_user',
+            'password',
+            'email_verified',
+            'language',
+            'birthday',
+            'company',
+            'job_title',
+            'phone_number',
+        ];
+        $old_fields_changed = [];
+        $new_fields_changed = [];
+
+        foreach($fields_2_check as $field){
+            if($args->hasChangedField($field)){
+                $old_fields_changed[] = sprintf("%s: %s", $field, self::formatFieldValue($field, $args->getOldValue($field)));
+                $new_fields_changed[] = sprintf("%s: %s", $field, self::formatFieldValue($field, $args->getNewValue($field)));
+            }
+        }
+
+        $action = sprintf
+        (
+            "User %s updated from %s to %s", $this->email, implode(", ", $old_fields_changed), implode(", ", $new_fields_changed)
+        );
+
+        Event::dispatch(new AddUserAction($this->id, IPHelper::getUserIp(), $action));
     }
 
 }
