@@ -14,7 +14,7 @@
 @section('scripts')
     <script>
         let error = '';
-        const initialValues = { 
+        const initialValues = {
             email: '{!! $email ?? '' !!}',
             password: '',
             password_confirmation: '',
@@ -22,11 +22,13 @@
         const passwordPolicy = {
             min_length: {{ Config::get("auth.password_min_length") }},
             max_length: {{ Config::get("auth.password_max_length") }},
+            shape_pattern: '{{ Config::get("auth.password_shape_pattern") }}',
+            shape_warning: '{{ Config::get("auth.password_shape_warning") }}'
         }
         @if ($errors->any())
-            @foreach($errors->all() as $error)
-                error += '<p>{!! $error !!}<p/>';
-            @endforeach
+                @foreach($errors->all() as $error)
+            error += '<p>{!! $error !!}<p/>';
+        @endforeach
 
             initialValues.email = "{{old('email')}}";
         @endif

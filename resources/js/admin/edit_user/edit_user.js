@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import ReactDOM from "react-dom";
 import ArrowBack from '@material-ui/icons/ArrowBack';
 import Button from "@material-ui/core/Button";
@@ -25,10 +25,11 @@ import ProfileImageUploader from "./components/profile_image_uploader/profile_im
 import Navbar from "../../components/navbar/navbar";
 import Divider from "@material-ui/core/Divider";
 import Link from "@material-ui/core/Link";
-import PasswordChangePanel from "./components/password_change_panel";
+import PasswordChangePanel from "../../components/password_change_panel";
 import LoadingIndicator from "../../components/loading_indicator";
 import TopLogo from "../../components/top_logo/top_logo";
 import {handleErrorResponse} from "../../utils";
+import {buildPasswordValidationSchema} from "../../validator";
 
 import styles from "./edit_user.module.scss";
 
@@ -65,15 +66,7 @@ const EditUserPage = ({
                 .email("Enter a valid email"),
             third_email: string("Email is required")
                 .email("Enter a valid email"),
-            password: string()
-                .min(passwordPolicy.min_length, `Password must be at least ${passwordPolicy.min_length} characters`)
-                .max(passwordPolicy.max_length, `Password must be at most ${passwordPolicy.max_length} characters`)
-                .matches(
-                    /^(?=.*[a-z])(?=.*[!@#$%^&*])/,
-                    "Password must include a special character"
-                ),
-            password_confirmation: string()
-                .oneOf([ref('password'), null], 'Passwords must match')
+            ...buildPasswordValidationSchema(passwordPolicy)
         });
     }
 
