@@ -19,6 +19,7 @@ import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
 import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
+import {buildPasswordValidationSchema} from "../validator";
 
 import styles from "./set_password.module.scss";
 
@@ -67,15 +68,7 @@ const SetPasswordPage = ({
       country_iso_code: string("Select a country").required(
         "Country is required"
       ),
-      password: string("Enter your password")
-        .min(
-          passwordPolicy.min_length,
-          `Password should be of minimum ${passwordPolicy.min_length} characters length`
-        )
-        .required("Password is required"),
-      password_confirmation: string("Confirm your password")
-        .required("Password confirmation is required")
-        .oneOf([ref("password")], "Passwords do not match"),
+      ...buildPasswordValidationSchema(passwordPolicy, true)
     });
 
   const formik = useFormik({

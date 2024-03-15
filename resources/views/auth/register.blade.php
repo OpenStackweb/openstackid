@@ -26,16 +26,18 @@
         const passwordPolicy = {
             min_length: {{ Config::get("auth.password_min_length") }},
             max_length: {{ Config::get("auth.password_max_length") }},
+            shape_pattern: '{{ Config::get("auth.password_shape_pattern") }}',
+            shape_warning: '{{ Config::get("auth.password_shape_warning") }}'
         }
         @if ($errors->any())
-            @foreach($errors->all() as $error)
-                signUpError += '<p>{!! $error !!}<p/>';
-            @endforeach
+                @foreach($errors->all() as $error)
+            signUpError += '<p>{!! $error !!}<p/>';
+        @endforeach
 
             initialValues.first_name = "{{old('first_name')}}";
-            initialValues.last_name = "{{old('last_name')}}";
-            initialValues.email = "{{old('email')}}";
-            initialValues.country_iso_code = "{{old('country_iso_code')}}";
+        initialValues.last_name = "{{old('last_name')}}";
+        initialValues.email = "{{old('email')}}";
+        initialValues.country_iso_code = "{{old('country_iso_code')}}";
         @endif
 
         let countries = [];

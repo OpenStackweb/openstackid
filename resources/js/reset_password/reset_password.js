@@ -19,6 +19,7 @@ import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
 
 import styles from "./reset_password.module.scss";
+import {buildPasswordValidationSchema} from "../validator";
 
 const ResetPasswordPage = ({
   appLogo,
@@ -51,22 +52,9 @@ const ResetPasswordPage = ({
     formEl.current.submit();
   };
 
-  const buildValidationSchema = (passwordPolicy) =>
-    object({
-      password: string("Enter your password")
-        .min(
-          passwordPolicy.min_length,
-          `Password should be of minimum ${passwordPolicy.min_length} characters length`
-        )
-        .required("Password is required"),
-      password_confirmation: string("Confirm your password")
-        .required("Password confirmation is required")
-        .oneOf([ref("password")], "Passwords do not match"),
-    });
-
   const formik = useFormik({
     initialValues: initialValues,
-    validationSchema: buildValidationSchema(passwordPolicy),
+    validationSchema: object(...buildPasswordValidationSchema(passwordPolicy, true)),
     onSubmit: (values) => {
       const recaptchaResponse = captcha.current.getValue();
       if (!recaptchaResponse) {

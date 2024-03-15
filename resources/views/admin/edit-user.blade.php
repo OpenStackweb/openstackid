@@ -62,6 +62,8 @@
         const passwordPolicy = {
             min_length: {{ Config::get("auth.password_min_length") }},
             max_length: {{ Config::get("auth.password_max_length") }},
+            shape_pattern: '{{ Config::get("auth.password_shape_pattern") }}',
+            shape_warning: '{{ Config::get("auth.password_shape_warning") }}'
         }
 
         let countries = [];
