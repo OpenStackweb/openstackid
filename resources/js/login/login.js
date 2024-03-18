@@ -88,7 +88,6 @@ const PasswordInputForm = ({
             <TextField
                 id="password"
                 name="password"
-                disabled={disableInput}
                 type={showPassword ? 'text' : 'password'}
                 value={passwordValue}
                 variant="outlined"
@@ -121,7 +120,6 @@ const PasswordInputForm = ({
                 <Grid item xs={12}>
                     <Button variant="contained"
                             disabled={disableInput}
-                            onClick={onAuthenticate}
                             type="submit"
                             color="primary">
                         Continue
@@ -149,6 +147,7 @@ const PasswordInputForm = ({
             <ExistingAccountActions
                 emitOtpAction={handleEmitOtpAction}
                 userName={userNameValue}
+                disableInput={disableInput}
                 forgotPasswordAction={forgotPasswordAction}
             />
         </form>
@@ -196,8 +195,7 @@ const OTPInputForm = ({
                             disabled={disableInput}
                             color="primary"
                             type="submit"
-                            target='_self'
-                            onClick={onAuthenticate}>
+                            target='_self'>
                         CONTINUE
                     </Button>
                 </div>
@@ -323,7 +321,7 @@ const EmailErrorActions = ({ emitOtpAction, createAccountAction, onValidateEmail
     );
 }
 
-const ExistingAccountActions = ({emitOtpAction, forgotPasswordAction, userName}) => {
+const ExistingAccountActions = ({emitOtpAction, forgotPasswordAction, userName, disableInput}) => {
     if (userName) {
         forgotPasswordAction = `${forgotPasswordAction}?email=${encodeURIComponent(userName)}`;
     }
@@ -334,13 +332,16 @@ const ExistingAccountActions = ({emitOtpAction, forgotPasswordAction, userName})
                 <Button variant="contained"
                         onClick={emitOtpAction}
                         type="button"
+                        disabled={disableInput}
                         className={styles.secondary_btn}
                         color="primary">
                     Sign in by emailing me a single-use code
                 </Button>
             </Grid>
             <Grid item xs={12}>
-                <Link href={forgotPasswordAction} target="_self" variant="body2">
+                <Link
+                    disabled={disableInput}
+                    href={forgotPasswordAction} target="_self" variant="body2">
                     Reset your password
                 </Link>
             </Grid>
@@ -464,21 +465,22 @@ class LoginPage extends React.Component {
     onAuthenticate(ev) {
         if (this.state.authFlow === otp_flow) {
             if (this.state.otpCode == '') {
-                this.setState({...this.state, errors: {...this.state.errors, otp: 'Single-use code is empty'}});
+                this.setState({...this.state, disableInput: false, errors: {...this.state.errors, otp: 'Single-use code is empty'}});
                 ev.preventDefault();
                 return false;
             }
         } else if (this.state.user_password == '') {
-            this.setState({...this.state, errors: {...this.state.errors, password: 'Password is empty'}});
+            this.setState({...this.state, disableInput: false, errors: {...this.state.errors, password: 'Password is empty'}});
             ev.preventDefault();
             return false;
         }
 
         if (this.state.captcha_value == '' && this.shouldShowCaptcha()) {
-            this.setState({...this.state, errors: {...this.state.errors, password: 'you must check CAPTCHA'}});
+            this.setState({...this.state, disableInput: false, errors: {...this.state.errors, password: 'you must check CAPTCHA'}});
             ev.preventDefault();
             return false;
         }
+        this.setState({ ...this.state, disableInput: true });
         return true;
     }
 
