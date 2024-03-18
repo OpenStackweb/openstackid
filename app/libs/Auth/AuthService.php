@@ -282,7 +282,7 @@ final class AuthService extends AbstractService implements IAuthService
                 // trigger background job
                 GenerateOTPRegistrationReminder::dispatch($user);
             }
-
+            Log::debug(sprintf("AuthService::loginWithOTP user %s logged in.", $user->getId()));
             return $otp;
         });
     }

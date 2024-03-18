@@ -50,7 +50,6 @@ use Strategies\OAuth2ConsentStrategy;
 use Strategies\OAuth2LoginStrategy;
 use Strategies\OpenIdConsentStrategy;
 use Strategies\OpenIdLoginStrategy;
-use Utils\IPHelper;
 use Utils\Services\IAuthService;
 use Utils\Services\IServerConfigurationService;
 use Utils\Services\IServerConfigurationService as IUtilsServerConfigurationService;
@@ -395,7 +394,7 @@ final class UserController extends OpenIdController
                         // check if we have a former oauth2 request
                         if ($this->oauth2_memento_service->exists()) {
 
-                            Log::debug("UserController::getOTP exist a oauth auth request on session");
+                            Log::debug("UserController::postLogin exist a oauth auth request on session");
 
                             $oauth_auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build
                             (

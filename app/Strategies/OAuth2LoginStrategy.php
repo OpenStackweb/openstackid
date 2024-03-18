@@ -94,6 +94,8 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
 
     public function postLogin(array $params = [])
     {
+        Log::debug(sprintf("OAuth2LoginStrategy::postLogin params %s", json_encode($params)));
+
         $auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build(
             OAuth2Message::buildFromMemento(
                 $this->memento_service->load()
