@@ -85,14 +85,15 @@ class DefaultLoginStrategy implements ILoginStrategy
     public function errorLogin(array $params)
     {
         $response = Redirect::action('UserController@getLogin');
+        if(isset($params['error_message']))
+            $response = $response->with('flash_notice', $params['error_message']);
+        if(isset($params['validator'])) {
+            $response = $response->withErrors($params['validator']);
+            unset($params['validator']);
+        }
 
         foreach ($params as $key => $val)
             $response = $response->with($key, $val);
-
-        if(isset($params['error_message']))
-            $response = $response->with('flash_notice', $params['error_message']);
-        if(isset($params['validator']))
-            $response = $response->withErrors($params['validator']);
         return $response;
     }
 }

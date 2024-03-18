@@ -158,6 +158,7 @@ final class UserController extends OpenIdController
     )
     {
 
+
         $this->openid_memento_service = $openid_memento_service;
         $this->oauth2_memento_service = $oauth2_memento_service;
         $this->auth_service = $auth_service;
@@ -449,6 +450,10 @@ final class UserController extends OpenIdController
                 'validator'                         => $validator,
             ];
 
+            if (is_null($user) && isset($data['username'])) {
+                $user = $this->auth_service->getUserByUsername($data['username']);
+            }
+
             if(!is_null($user)){
                 $response_data['user_fullname'] = $user->getFullName();
                 $response_data['user_pic'] = $user->getPic();
@@ -459,6 +464,7 @@ final class UserController extends OpenIdController
             (
                 $response_data
             );
+
         } catch (UnverifiedEmailMemberException $ex1) {
             Log::warning($ex1);
 
@@ -470,6 +476,10 @@ final class UserController extends OpenIdController
                 'username'                          => $username,
                 'error_message'                     => $ex1->getMessage()
             ];
+
+            if (is_null($user) && isset($data['username'])) {
+                $user = $this->auth_service->getUserByUsername($data['username']);
+            }
 
             if(!is_null($user)){
                 $response_data['user_fullname'] = $user->getFullName();
