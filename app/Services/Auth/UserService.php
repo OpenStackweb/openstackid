@@ -130,10 +130,20 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function () use ($payload, $otp) {
 
+            Log::debug(sprintf("UserService::registerUser payload %s", json_encode($payload)));
+
             $email = trim($payload['email']);
             $former_user = $this->user_repository->getByEmailOrName($email);
+
             if (!is_null($former_user))
-                throw new ValidationException(sprintf("email %s belongs to another user !!!", $email));
+                throw new ValidationException
+                (
+                    sprintf
+                    (
+                        "Email %s belongs to another user.",
+                        $email
+                    )
+                );
 
             $default_groups = $this->group_repository->getDefaultOnes();
             if (count($default_groups) > 0) {
@@ -153,6 +163,39 @@ final class UserService extends AbstractService implements IUserService
             if (!is_null($formerRequest)) {
                 if (!$formerRequest->isRedeem()) {
                     $formerRequest->redeem();
+                    if(!is_null($otp)) {
+
+                        Log::debug
+                        (
+                            sprintf("UserService::registerUser user %s has been created from OTP %s", $user->getEmail(), $otp->getId())
+                        );
+                        // first name
+                        $first_name = $formerRequest->getFirstName();
+                        if(!empty($first_name))
+                            $user->setFirstName($first_name);
+
+                        // last name
+                        $last_name = $formerRequest->getLastName();
+                        if(!empty($last_name))
+                            $user->setLastName($last_name);
+
+                        // company
+                        $company = $formerRequest->getCompany();
+                        if(!empty($company))
+                            $user->setCompany($company);
+
+                        Log::debug
+                        (
+                            sprintf
+                            (
+                                "UserService::registerUser user %s has been updated from former reg request data fname %s lname %s company %s",
+                                $user->getEmail(),
+                                $first_name,
+                                $last_name,
+                                $company
+                            )
+                        );
+                    }
                 }
             }
 
@@ -329,13 +372,13 @@ final class UserService extends AbstractService implements IUserService
             $request = $this->request_reset_password_repository->getByToken($token);
 
             if (is_null($request))
-                throw new EntityNotFoundException("request not found");
+                throw new EntityNotFoundException("Request not found.");
 
             if (!$request->isValid())
-                throw new UserPasswordResetRequestVoidException("request is void");
+                throw new UserPasswordResetRequestVoidException("Request is void.");
 
             if ($request->isRedeem()) {
-                throw new ValidationException("request is already redeem");
+                throw new ValidationException("Request is already redeem.");
             }
 
             $user = $request->getOwner();
@@ -359,7 +402,7 @@ final class UserService extends AbstractService implements IUserService
 
             $client = $this->client_repository->getClientById($client_id);
             if (is_null($client))
-                throw new EntityNotFoundException("client not found!");
+                throw new EntityNotFoundException("Client not found.");
 
             $email = $payload['email'];
             $former_user = $this->user_repository->getByEmailOrName($email);
@@ -410,7 +453,7 @@ final class UserService extends AbstractService implements IUserService
 
             $formerRequest = $this->user_registration_request_repository->getById($id);
             if (is_null($formerRequest) || !$formerRequest instanceof UserRegistrationRequest) {
-                 throw new EntityNotFoundException(sprintf("User Registration Request %s not found", $id));
+                 throw new EntityNotFoundException(sprintf("User Registration Request %s not found.", $id));
             }
 
             if ($formerRequest->isRedeem()) {
