@@ -56,13 +56,17 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
     {
         $response =  Redirect::action('UserController@getLogin');
 
-        foreach ($data as $key => $val)
-            $response= $response->with($key, $val);
-
         if(isset($data['error_message']))
             $response = $response->with('flash_notice', $data['error_message']);
-        if(isset($data['validator']))
+
+        if(isset($data['validator'])) {
             $response = $response->withErrors($data['validator']);
+            // remove validator from data bc should not be serialized on session
+            unset($data['validator']);
+        }
+
+        foreach ($data as $key => $val)
+            $response = $response->with($key, $val);
 
         return $response;
     }
