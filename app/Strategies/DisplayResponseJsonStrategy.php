@@ -91,6 +91,8 @@ class DisplayResponseJsonStrategy implements IDisplayResponseStrategy
             {
                 array_push($data['error_message'],$e[0]);
             }
+            // remove validator from data bc should not be serialized on json response
+            unset($data['validator']);
         }
         return Response::json($data, 412);
     }

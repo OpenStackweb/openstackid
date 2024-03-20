@@ -85,10 +85,13 @@ class DefaultLoginStrategy implements ILoginStrategy
     public function errorLogin(array $params)
     {
         $response = Redirect::action('UserController@getLogin');
+
         if(isset($params['error_message']))
             $response = $response->with('flash_notice', $params['error_message']);
+
         if(isset($params['validator'])) {
             $response = $response->withErrors($params['validator']);
+            // remove validator from data bc should not be serialized on session
             unset($params['validator']);
         }
 
