@@ -50,21 +50,34 @@ class OAuth2PasswordlessOTPMail extends Mailable
     public $subject;
 
     /**
-     * OAuth2PasswordlessOTPMail constructor.
+     * @var string|null
+     */
+    public $reset_password_link;
+
+    /**
+     * @var int|null
+     */
+    public $reset_password_link_lifetime;
+
+    /**
      * @param string $to
      * @param string $otp
      * @param int $lifetime
+     * @param string|null $reset_password_link
      */
     public function __construct
     (
         string $to,
         string $otp,
-        int $lifetime
+        int $lifetime,
+        string $reset_password_link = null
     )
     {
         $this->email = trim($to);
         $this->otp = trim($otp);
         $this->lifetime = $lifetime / 60;
+        $this->reset_password_link = $reset_password_link;
+        $this->reset_password_link_lifetime = Config::get("auth.password_reset_lifetime")/60;
     }
     /**
      * Build the message.

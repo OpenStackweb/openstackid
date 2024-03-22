@@ -130,10 +130,4 @@ interface IUserService
      */
     public function updateRegistrationRequest(int $id, array $payload):UserRegistrationRequest;
 
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws \Exception
-     */
-    public function sendOTPRegistrationReminder(int $user_id);
 }

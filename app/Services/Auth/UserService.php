@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use App\Events\UserPasswordResetSuccessful;
 use App\Jobs\PublishUserCreated;
 use App\Jobs\PublishUserUpdated;
@@ -23,7 +22,6 @@ use App\libs\Auth\Repositories\IGroupRepository;
 use App\libs\Auth\Repositories\ISpamEstimatorFeedRepository;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
-use App\Mail\OTPRegistrationReminderEmail;
 use App\Mail\UserEmailVerificationRequest;
 use App\Mail\UserEmailVerificationSuccess;
 use App\Mail\UserPasswordResetRequestMail;
@@ -602,26 +600,6 @@ final class UserService extends AbstractService implements IUserService
             }
 
             return $user;
-        });
-    }
-
-    /**
-     * @param int $user_id
-     * @return void
-     * @throws \Exception
-     */
-    public function sendOTPRegistrationReminder(int $user_id){
-        $this->tx_service->transaction(function() use($user_id) {
-            Log::debug(sprintf("UserService::sendOTPRegistrationReminder %s", $user_id));
-            $user = $this->user_repository->getById($user_id);
-            if( !$user instanceof User)
-                throw new EntityNotFoundException(sprintf("User %s not found.", $user_id));
-
-            if ($user->hasPasswordSet())
-                throw new ValidationException(sprintf("User %s already has password set.", $user->getId()));
-
-            $request = $this->generatePasswordResetRequest($user->getEmail());
-            Mail::queue(new OTPRegistrationReminderEmail($user, $request->getResetLink()));
         });
     }
 }

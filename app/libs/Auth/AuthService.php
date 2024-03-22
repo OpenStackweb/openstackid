@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 
-use App\Jobs\GenerateOTPRegistrationReminder;
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use App\Services\AbstractService;
@@ -278,10 +277,6 @@ final class AuthService extends AbstractService implements IAuthService
 
             Auth::login($user, $remember);
 
-            if (!$user->hasPasswordSet() && !$new_user) {
-                // trigger background job
-                GenerateOTPRegistrationReminder::dispatch($user);
-            }
             Log::debug(sprintf("AuthService::loginWithOTP user %s logged in.", $user->getId()));
             return $otp;
         });

@@ -567,7 +567,8 @@ class LoginPage extends React.Component {
         return true;
     }
 
-    handleDelete() {
+    handleDelete(ev) {
+        ev.preventDefault();
         this.setState({
             ...this.state, user_name: null, user_pic: null, user_fullname: null, user_verified: false, authFlow: "password", errors: {
                 email: '',
@@ -575,9 +576,11 @@ class LoginPage extends React.Component {
                 password: ''
             },
         });
+        return false;
     }
 
     handleClickShowPassword(ev) {
+        ev.preventDefault();
         this.setState({ ...this.state, showPassword: !this.state.showPassword })
     }
 

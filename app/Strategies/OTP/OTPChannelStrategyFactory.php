@@ -12,6 +12,9 @@
  * limitations under the License.
  **/
 
+use App\Services\Auth\IUserService;
+use Auth\Repositories\IUserRepository;
+use Illuminate\Support\Facades\App;
 use OAuth2\Exceptions\InvalidOAuth2Request;
 use OAuth2\OAuth2Protocol;
 /**
@@ -24,7 +27,11 @@ final class OTPChannelStrategyFactory
 
         switch ($connection) {
             case OAuth2Protocol::OAuth2PasswordlessConnectionEmail:
-                return new OTPChannelEmailStrategy();
+                return new OTPChannelEmailStrategy
+                (
+                    App::make(IUserService::class),
+                    App::make(IUserRepository::class),
+                );
             case OAuth2Protocol::OAuth2PasswordlessConnectionInline:
                 return new OTPChannelNullStrategy();
         }
