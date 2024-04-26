@@ -156,8 +156,8 @@ final class LaravelMailerHandler extends MailHandler
                 $message
                     ->to($to)
                     ->subject($subject)
-                    ->setBody($content, 'text/html')
-                    ->setFrom($this->from);
+                    ->html($content)
+                    ->from($this->from);
             });
         }
     }
