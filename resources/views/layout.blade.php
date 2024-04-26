@@ -4,41 +4,42 @@
     @yield('title')
     <base href="{!! Config::get('app.url') !!}" target="_blank">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="{!! Config::get('app.tenant_favicon') !!}" />
+    <link rel="shortcut icon" href="{!! Config::get('app.tenant_favicon') !!}"/>
     @yield('meta')
-    {!! HTML::style('assets/css/index.css') !!}
-    {!! HTML::style('assets/css/main.css') !!}
-    {!! HTML::style('assets/bootstrap-tagsinput/bootstrap-tagsinput-typeahead.css') !!}
-    {!! HTML::style('assets/bootstrap-tagsinput/bootstrap-tagsinput.css') !!}
-    {!! HTML::style('assets/sweetalert2/sweetalert2.css') !!}
+    <link href="{{ asset('assets/css/index.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/bootstrap-tagsinput/bootstrap-tagsinput-typeahead.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/bootstrap-tagsinput/bootstrap-tagsinput.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/sweetalert2/sweetalert2.css') }}" rel="stylesheet">
     @yield('css')
 </head>
 <body>
 
-    <div class="container">
-        <header class="row header">
-            <div class="col-md-12">
-                <p id="logo">
-                    <a href="/" target="_self" ><img alt="{!! Config::get("app.app_name") !!}" src="{!!  Config::get('app.logo_url') !!}"></a>
-                </p>
-            </div>
-        </header>
-        <div class="row" id="main-content">
-            @yield('content')
+<div class="container">
+    <header class="row header">
+        <div class="col-md-12">
+            <p id="logo">
+                <a href="/" target="_self"><img alt="{!! Config::get("app.app_name") !!}"
+                                                src="{!!  Config::get('app.logo_url') !!}"></a>
+            </p>
         </div>
-        <footer class="row"></footer>
+    </header>
+    <div class="row" id="main-content">
+        @yield('content')
     </div>
-    {!! HTML::script('assets/index.js')!!}
-    {!! HTML::script('assets/js/ajax.utils.js')!!}
-    {!! HTML::script('assets/js/jquery.cleanform.js')!!}
-    {!! HTML::script('assets/js/jquery.serialize.js')!!}
-    {!! HTML::script('assets/js/jquery.validate.additional.custom.methods.js')!!}
-    {!! HTML::script('assets/typeahead/typeahead.bundle.js')!!}
-    {!! HTML::script('assets/bootstrap-tagsinput/bootstrap-tagsinput.js')!!}
-    {!! HTML::script('assets/sweetalert2/sweetalert2.js')!!}
-    {!! HTML::script('assets/urijs/URI.min.js')!!}
-    {!! HTML::script('assets/js/jquery-ajax-loader.js')!!}
-    @yield('scripts')
-    <span class="version hidden">{!! Config::get('app.version') !!}</span>
+    <footer class="row"></footer>
+</div>
+<script type="text/javascript" src="{{ asset('assets/index.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/js/ajax.utils.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/js/jquery.cleanform.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/js/jquery.serialize.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/js/jquery.validate.additional.custom.methods.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/typeahead/typeahead.bundle.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/bootstrap-tagsinput/bootstrap-tagsinput.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/sweetalert2/sweetalert2.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/urijs/URI.min.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/js/jquery-ajax-loader.js') }}"></script>
+@yield('scripts')
+<span class="version hidden">{!! Config::get('app.version') !!}</span>
 </body>
 </html>
