@@ -46,7 +46,10 @@ use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 use App\Models\Utils\BaseEntity;
-use Doctrine\ORM\Mapping AS ORM;
+use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\PostPersist;
+use Doctrine\ORM\Mapping\PreRemove;
+use Doctrine\ORM\Mapping\PreUpdate;
 use Utils\IPHelper;
 
 /**
@@ -1927,7 +1930,7 @@ SQL;
     }
 
     /**
-     * @ORM\postPersist
+     * @PostPersist
      */
     public function postPersist($args)
     {
@@ -1935,14 +1938,14 @@ SQL;
     }
 
     /**
-     * @ORM\preRemove
+     * @PreRemove
      */
     public function preRemove($args)
     {
     }
 
     /**
-     * @ORM\preUpdate
+     * @PreUpdate
      * @param PreUpdateEventArgs $args
      */
     public function preUpdate(PreUpdateEventArgs $args)

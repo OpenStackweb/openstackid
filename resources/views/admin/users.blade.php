@@ -9,7 +9,7 @@
     <legend>Users</legend>
     <div class="row">
        <div class="col-md-12">
-           {!! HTML::link( null,'Add New User',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add an user', 'target'=>'_self']) !!}
+           {!! HTML()->a( null,'Add New User',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add an user', 'target'=>'_self']) !!}
        </div>
     </div>
     <div class="row">
@@ -67,11 +67,11 @@
 @stop
 @section('scripts')
 
-    {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
-    {!! HTML::script("assets/js/urlfragment.jquery.js") !!}
-    {!! HTML::script("assets/moment/min/moment.min.js") !!}
-    {!! HTML::script('assets/js/basic-crud.js') !!}
-    {!! HTML::script('assets/js/admin/users.js') !!}
+    <script type="text/javascript" src="{{ asset('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/urlfragment.jquery.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/moment/min/moment.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/basic-crud.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/admin/users.js') }}"></script>
 
     <script type="application/javascript">
         var urls = {

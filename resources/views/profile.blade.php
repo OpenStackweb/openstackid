@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/profile.css') !!}
+    <link href="{{ asset('assets/css/profile.css') }}" rel="stylesheet">
 @append
 @section('scripts')
     <script>
@@ -112,5 +112,5 @@
         window.SAVE_PIC_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMyPic")!!}';
         window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;
     </script>
-    {!! HTML::script('assets/profile.js') !!}
+    <script type="text/javascript" src="{{ asset('assets/profile.js') }}"></script>
 @append
