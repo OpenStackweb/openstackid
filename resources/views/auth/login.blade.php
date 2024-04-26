@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/login.css') !!}
+    <link href="{{ asset('assets/css/login.css') }}" rel="stylesheet">
 @append
 @section('content')
 
@@ -68,15 +68,15 @@
         @if(Session::has('user_pic'))
             config.user_pic = '{{Session::get("user_pic")}}';
         @endif
-        @if(Session::has('user_verified'))
+                @if(Session::has('user_verified'))
             config.user_verified = {{Session::get('user_verified')}};
         @endif
-        @if(Session::has('flow'))
+                @if(Session::has('flow'))
             config.flow = '{{Session::get('flow')}}';
         @endif
 
-        window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
+            window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
         window.EMIT_OTP_ENDPOINT = config.emitOtpAction;
     </script>
-    {!! HTML::script('assets/login.js') !!}
+    <script type="text/javascript" src="{{ asset('assets/login.js') }}"></script>
 @append
