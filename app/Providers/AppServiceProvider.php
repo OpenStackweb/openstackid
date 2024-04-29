@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        if(!App::isLocal())
+        if(App::isProduction())
             URL::forceScheme('https');
 
         $logger = Log::getLogger();
@@ -43,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
             $handler->setLevel(Config::get('log.level', 'error'));
         }
 
+        Log::debug(sprintf("AppServiceProvider::boot - app is local %s", config('app.env')));
         //set email log
         $to   = Config::get('log.to_email');
         $from = Config::get('log.from_email');
