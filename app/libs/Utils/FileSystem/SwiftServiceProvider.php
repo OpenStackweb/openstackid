@@ -55,7 +55,7 @@ final class SwiftServiceProvider extends ServiceProvider
                 if (!empty($userName) && !empty($userPassword)) {
 
                     $configOptions['user'] = [
-                        'username' => $userName,
+                        'name' => $userName,
                         'password' => $userPassword,
                         'domain' => ['id' => $config["user_domain"] ?? 'default']
                     ];
