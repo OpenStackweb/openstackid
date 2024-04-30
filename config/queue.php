@@ -87,37 +87,6 @@ return [
             ],
         ],
 
-        'rabbitmq' => [
-            'driver' => 'rabbitmq',
-            'hosts' => [
-                [
-                    'host' => env('RABBITMQ_HOST', '127.0.0.1'),
-                    'port' => $rabbit_port,
-                    'user' => env('RABBITMQ_LOGIN', 'guest'),
-                    'password' => env('RABBITMQ_PASSWORD', 'guest'),
-                    'vhost' => env('RABBITMQ_VHOST', '/'),
-                ],
-            ],
-            'options' => [
-                'ssl_options' => [
-                    // @see https://www.php.net/manual/en/context.ssl.php
-                    'cafile' => env('RABBITMQ_SSL_CAFILE', null),
-                    'local_cert' => env('RABBITMQ_SSL_LOCALCERT', null),
-                    'local_pk' => env('RABBITMQ_SSL_LOCALKEY', null),
-                    'verify_peer' => env('RABBITMQ_SSL_VERIFY_PEER', true),
-                    'passphrase' => env('RABBITMQ_SSL_PASSPHRASE', null),
-                ],
-                'queue' => [
-                    'exchange' => env('RABBITMQ_EXCHANGE_NAME'),
-                    'exchange_type' => env('RABBITMQ_EXCHANGE_TYPE', 'fanout'),
-                    'passive' => env('RABBITMQ_QUEUE_PASSIVE', false),
-                    'durable' => env('RABBITMQ_QUEUE_DURABLE', true),
-                    'exclusive' => env('RABBITMQ_QUEUE_EXCLUSIVE', false),
-                    'auto_delete' => env('RABBITMQ_QUEUE_AUTODELETE', true),
-                ],
-            ],
-        ],
-
     ],
 
     /*
