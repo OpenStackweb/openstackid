@@ -1,11 +1,17 @@
 FROM php:8.2-fpm
+
 ARG DEBIAN_FRONTEND=noninteractive
 ARG NVM_VERSION="v0.39.7"
-ENV NVM_VERSION=$NVM_VERSION
-# base packages
-ENV NODE_VERSION="16.17.1"
-ENV NVM_DIR=/root/.nvm
+ARG GITHUB_OAUTH_TOKEN
+ARG XDEBUG_VERSION="xdebug-3.3.2"
 
+ENV NVM_VERSION=$NVM_VERSION
+ENV NODE_VERSION="16.17.1"
+ENV NVM_DIR /usr/local/nvm
+ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV GITHUB_OAUTH_TOKEN=$GITHUB_OAUTH_TOKEN
+ENV PHP_DIR /usr/local/etc/php
+# base packages
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -16,27 +22,26 @@ RUN apt-get update && apt-get install -y \
     unzip \
     redis-tools \
     nano \
-    gpg \
-    gettext
+    gpg
 
 RUN apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath sockets gettext
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath sockets
+# XDEBUG
+RUN yes | pecl install ${XDEBUG_VERSION}
+COPY docker-compose/php/docker-php-ext-xdebug.ini $PHP_DIR/conf.d/docker-php-ext-xdebug.ini
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# install nvm and yarn
-
-RUN echo "Package: node* \nPin: release *\nPin-Priority: -1" > /etc/apt/preferences.d/no-debian-nodejs && \
-    mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    NODE_MAJOR=18 && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update && \
-    apt-get install nodejs -y
 # nvm
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh | bash
-RUN  \. ~/.nvm/nvm.sh && nvm install $NODE_VERSION
+
+RUN mkdir $NVM_DIR  \
+    && curl https://raw.githubusercontent.com/creationix/nvm/$NVM_VERSION/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && nvm use default
+
+ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
 
 # yarn
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
@@ -44,6 +49,7 @@ RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources
 RUN  apt update && apt install -y yarn
 
 WORKDIR /var/www
-COPY .env.local .env
+COPY . /var/www
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 RUN composer config -g github-oauth.github.com $GITHUB_OAUTH_TOKEN
