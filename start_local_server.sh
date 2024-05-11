@@ -10,4 +10,3 @@ docker compose run --rm app yarn install
 docker compose run --rm app yarn build
 docker compose up -d
 docker compose exec app /bin/bash
-)

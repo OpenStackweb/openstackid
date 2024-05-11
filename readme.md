@@ -84,3 +84,21 @@ php artisan view:clear
 php artisan cache:clear
 
 ./vendor/bin/phpunit
+
+# install docker compose 
+
+https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04
+
+# remote docker debugging
+
+1. Config the PHPStorm CLI interpreter ( Docker Image )
+2. Config the Server setting in PHPStorm ( 0.0.0.0 / 80 and map root to /var/www)
+3. Setup debug configuration
+see
+https://www.tsukie.com/en/technologies/debug-laravel-web-application-in-docker-with-xdebug-and-phpstorm
+and 
+https://medium.com/the-sensiolabs-tech-blog/how-to-use-xdebug-in-docker-phpstorm-76d998ef2534
+
+# Docker Compose
+
+https://gist.github.com/mkfares/41c9609fcde8d9f665210034e99d4bd9
