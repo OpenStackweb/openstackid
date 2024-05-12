@@ -6,11 +6,12 @@ ARG GITHUB_OAUTH_TOKEN
 ARG XDEBUG_VERSION="xdebug-3.3.2"
 
 ENV NVM_VERSION=$NVM_VERSION
-ENV NODE_VERSION="16.17.1"
+ENV NODE_VERSION="18.20.2"
 ENV NVM_DIR /usr/local/nvm
 ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV GITHUB_OAUTH_TOKEN=$GITHUB_OAUTH_TOKEN
 ENV PHP_DIR /usr/local/etc/php
+
 # base packages
 RUN apt-get update && apt-get install -y \
     git \
@@ -22,7 +23,11 @@ RUN apt-get update && apt-get install -y \
     unzip \
     redis-tools \
     nano \
+    python3 \
+    make \
+    g++\
     gpg
+
 
 RUN apt clean && rm -rf /var/lib/apt/lists/*
 
