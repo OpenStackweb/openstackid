@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/editUser.css') !!}
+    <link href="{{ asset('assets/css/editUser.css') }}" rel="stylesheet"></link>
 @append
 @section('scripts')
     <script>
@@ -95,5 +95,5 @@
         window.GET_USER_ACCESS_TOKENS_ENDPOINT = '{{URL::action("Api\ClientApiController@getAllAccessTokens")}}';
         window.REVOKE_ACCESS_TOKENS_ENDPOINT = '{!!URL::action("Api\UserApiController@revokeToken", ["id" => $user_id, "value"=>"@value"])!!}';
     </script>
-    {!! HTML::script('assets/editUser.js') !!}
+    <script type="text/javascript" src="{{ asset('assets/editUser.js') }}"></script>
 @append
