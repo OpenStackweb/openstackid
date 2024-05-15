@@ -40,13 +40,13 @@ return [
 
         'single' => [
             'driver' => 'single',
-            'path' => storage_path('/logs/laravel.log'),
+            'path' => storage_path('/ogs/laravel.log'),
             'level' => env('LOG_LEVEL', 'error'),
         ],
 
         'daily' => [
             'driver' => 'daily',
-            'path' => storage_path('/logs/laravel.log'),
+            'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'error'),
             'days' => 7,
         ],
