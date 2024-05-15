@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/editUser.css') !!}
+    <link href="{{ asset('assets/css/editUser.css') }}" rel="stylesheet"></link>
 @append
 @section('scripts')
     <script>
@@ -91,5 +91,5 @@
         window.SAVE_PROFILE_ENDPOINT = '{!!URL::action("Api\UserApiController@update",["id" => $user_id])!!}';
         window.SAVE_PIC_ENDPOINT = '{!!URL::action("Api\UserApiController@updatePic",["id" => $user_id])!!}';
     </script>
-    {!! HTML::script('assets/editUser.js') !!}
+    <script type="text/javascript" src="{{ asset('assets/editUser.js') }}"></script>
 @append

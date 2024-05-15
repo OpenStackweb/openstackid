@@ -26,12 +26,13 @@ RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++\
-    gpg
+    gpg \
+    gettext
 
 
 RUN apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath sockets
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath sockets gettext
 # XDEBUG
 RUN yes | pecl install ${XDEBUG_VERSION}
 COPY docker-compose/php/docker-php-ext-xdebug.ini $PHP_DIR/conf.d/docker-php-ext-xdebug.ini
@@ -58,3 +59,4 @@ COPY . /var/www
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 RUN composer config -g github-oauth.github.com $GITHUB_OAUTH_TOKEN
+RUN chmod 777 -R storage
