@@ -15,7 +15,9 @@
                             <tr>
                                 <th><i class="icon-info-sign accordion-toggle" title="Time is on UTC"></i>&nbsp;Issued</th>
                                 <th>Scopes</th>
-                                <th><i class="icon-info-sign accordion-toggle" title="Lifetime is on seconds"></i>&nbsp;Remaining Lifetime</th>
+                                <th><i class="icon-info-sign accordion-toggle" title="Lifetime is on seconds"></i>&nbsp;Remaining
+                                    Lifetime
+                                </th>
                                 <th>&nbsp;</th>
                             </tr>
                             </thead>
@@ -25,7 +27,7 @@
                                     <td>{!! $access_token->created_at->format('Y-m-d H:i:s') !!}</td>
                                     <td>{!! $access_token->scope !!}</td>
                                     <td>{!! $access_token->getRemainingLifetime() !!}</td>
-                                    <td>{!! HTML::link(URL::action("Api\ClientApiController@revokeToken",array("id"=>$client->id,"value"=>$access_token->value,'hint'=>'access-token')),'Revoke',array('class'=>'btn btn-default btn-md active btn-delete revoke-token revoke-access-token','title'=>'Revoke Access Token','data-value'=>$access_token->value,'data-hint'=>'access-token', 'target'=>'_self')) !!}</td>
+                                    <td>{!! link_to(URL::action("Api\ClientApiController@revokeToken",array("id"=>$client->id,"value"=>$access_token->value,'hint'=>'access-token')),'Revoke',array('class'=>'btn btn-default btn-md active btn-delete revoke-token revoke-access-token','title'=>'Revoke Access Token','data-value'=>$access_token->value,'data-hint'=>'access-token', 'target'=>'_self')) !!}</td>
                                 </tr>
                             @endforeach
                             </tbody>
@@ -35,7 +37,7 @@
                 <div class="row">
                     <div class="col-md-12">
                         <ul class="pagination" id="access_token_paginator">
-                             <?php for($i = 0 ; $i < $access_tokens_pages ; $i++){  ?>
+                            <?php for($i = 0 ; $i < $access_tokens_pages ; $i++){  ?>
                             <li <?php if($i == 0) echo "class='active'" ?>><a target="_self" class="access_token_page" href="#" data-page-nbr="{!! $i+1 !!}">{!! $i+1 !!}</a></li>
                             <?php } ?>
                         </ul>
@@ -77,7 +79,7 @@
                                     @else
                                         <td>{!! $refresh_token->getRemainingLifetime() !!}</td>
                                     @endif
-                                    <td>{!! HTML::link(URL::action("Api\ClientApiController@revokeToken",array("id"=>$client->id,"value"=>$refresh_token->value,'hint'=>'refresh-token')),'Revoke',array('class'=>'btn btn-default btn-md active btn-delete revoke-token revoke-refresh-token','title'=>'Revoke Refresh Token','data-value'=>$refresh_token->value,'data-hint'=>'refresh-token', 'target'=>'_self')) !!}</td>
+                                    <td>{!! link_to(URL::action("Api\ClientApiController@revokeToken",array("id"=>$client->id,"value"=>$refresh_token->value,'hint'=>'refresh-token')),'Revoke',array('class'=>'btn btn-default btn-md active btn-delete revoke-token revoke-refresh-token','title'=>'Revoke Refresh Token','data-value'=>$refresh_token->value,'data-hint'=>'refresh-token', 'target'=>'_self')) !!}</td>
                                 </tr>
                             @endforeach
                             </tbody>
@@ -115,5 +117,5 @@
 		}
 	};
 </script>
-{!! HTML::script('assets/js/oauth2/profile/edit-client-tokens.js') !!}
+{!! script_to('assets/js/oauth2/profile/edit-client-tokens.js') !!}
 @append

@@ -9,7 +9,7 @@
     <legend>Users</legend>
     <div class="row">
        <div class="col-md-12">
-           {!! HTML()->a( null,'Add New User',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add an user', 'target'=>'_self']) !!}
+           {!! link_to( null,'Add New User',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add an user', 'target'=>'_self']) !!}
        </div>
     </div>
     <div class="row">
@@ -67,11 +67,11 @@
 @stop
 @section('scripts')
 
-    <script type="text/javascript" src="{{ asset('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('assets/js/urlfragment.jquery.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('assets/moment/min/moment.min.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('assets/js/basic-crud.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('assets/js/admin/users.js') }}"></script>
+    {!! script_to('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
+    {!! script_to('assets/js/urlfragment.jquery.js') !!}
+    {!! script_to('assets/moment/min/moment.min.js') !!}
+    {!! script_to('assets/js/basic-crud.js') !!}
+    {!! script_to('assets/js/admin/users.js') !!}
 
     <script type="application/javascript">
         var urls = {

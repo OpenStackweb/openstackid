@@ -8,7 +8,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/editClient.css') !!}
+    {!! style_to('assets/css/editClient.css') !!}
 @append
 
 @section('header_right')
@@ -117,5 +117,5 @@
         window.GET_PUBLIC_KEYS_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@getAll",array("id"=>"@client_id"))!!}';
         window.REMOVE_PUBLIC_KEY_ENDPOINT = '{!!URL::action("Api\ClientPublicKeyApiController@_delete",array("id"=>"@client_id", "public_key_id"=>"@public_key_id"))!!}';
     </script>
-    {!! HTML::script('assets/editClient.js') !!}
+    {!! script_to('assets/editClient.js') !!}
 @append

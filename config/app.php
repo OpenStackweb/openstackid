@@ -156,7 +156,6 @@ return [
         Strategies\StrategyProvider::class,
         OAuth2\OAuth2ServiceProvider::class,
         OpenId\OpenIdServiceProvider::class,
-        Spatie\Html\HtmlServiceProvider::class,
         \Providers\OAuth2\ClientAuthContextValidatorFactoryProvider::class,
         Kuttumiah\Recaptcha\RecaptchaServiceProvider::class,
         Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
@@ -172,6 +171,7 @@ return [
         \App\libs\Utils\FileSystem\SwiftServiceProvider::class,
         // remove 'Laravel\Socialite\SocialiteServiceProvider',
         \SocialiteProviders\Manager\ServiceProvider::class, // add
+        \App\libs\Utils\Html\HtmlServiceProvider::class,
     ],
 
     /*
@@ -216,7 +216,6 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
-        'HTML' => Spatie\Html\Facades\Html::class,
         'Recaptcha' => Kuttumiah\Recaptcha\Facades\Recaptcha::class,
         'ServerConfigurationService' => \Services\Facades\ServerConfigurationService::class,
         'ExternalUrlService' => \Services\Facades\ExternalUrlService::class,
