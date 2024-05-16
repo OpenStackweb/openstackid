@@ -36,7 +36,7 @@
                     @endif
                 </td>
                 <td>
-                    {!! HTML::link(URL::action("Api\\ApiBannedIPController@delete",array("id"=>$ip->id)),'Revoke',array('data-ip-id'=>$ip->id,'class'=>'btn btn-default btn-md active revoke-ip','title'=>'Revoke given banned ip address', 'target'=>'_self')) !!}
+                    {!! link_to(URL::action("Api\\ApiBannedIPController@delete",array("id"=>$ip->id)),'Revoke',array('data-ip-id'=>$ip->id,'class'=>'btn btn-default btn-md active revoke-ip','title'=>'Revoke given banned ip address', 'target'=>'_self')) !!}
                 </td>
             </tr>
             @endforeach
@@ -48,5 +48,5 @@
 @stop
 
 @section('scripts')
-{!! HTML::script('assets/js/admin/banned-ips.js') !!}
+    {!! script_to('assets/js/admin/banned-ips.js') !!}
 @append

@@ -9,7 +9,7 @@
     <legend>Groups</legend>
     <div class="row">
         <div class="col-md-12">
-            {!! HTML::link( null,'Add New Group',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add a Group', 'target'=>'_self']) !!}
+            {!! link_to( null,'Add New Group',['class'=>'btn btn-primary btn-md active add-item-button','title'=>'Add a Group', 'target'=>'_self']) !!}
         </div>
     </div>
     <div class="row">
@@ -64,10 +64,10 @@
 @stop
 @section('scripts')
 
-    {!! HTML::script("assets/js/urlfragment.jquery.js") !!}
-    {!! HTML::script("assets/moment/min/moment.min.js") !!}
-    {!! HTML::script('assets/js/basic-crud.js') !!}
-    {!! HTML::script('assets/js/admin/groups.js') !!}
+    {!! script_to("assets/js/urlfragment.jquery.js") !!}
+    {!! script_to("assets/moment/min/moment.min.js") !!}
+    {!! script_to('assets/js/basic-crud.js') !!}
+    {!! script_to('assets/js/admin/groups.js') !!}
 
     <script type="application/javascript">
         var urls = {

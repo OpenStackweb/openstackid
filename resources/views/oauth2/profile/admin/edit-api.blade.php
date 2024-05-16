@@ -54,7 +54,7 @@
         </div>
         <div class="row">
             <div class="col-md-12">
-                {!! HTML::link(URL::action("Api\ApiScopeController@create",null),'Register Scope',array('class'=>'btn active btn-primary add-scope','title'=>'Adds a New API Scope', 'target'=>'_self')) !!}
+                {!! link_to(URL::action("Api\ApiScopeController@create",null),'Register Scope',array('class'=>'btn active btn-primary add-scope','title'=>'Adds a New API Scope', 'target'=>'_self')) !!}
             </div>
         </div>
         <div class="row">
@@ -88,16 +88,17 @@
                             value="{!!$scope->id!!}"/>
                         </td>
                         <td width="5%">
-                            <input type="checkbox" data-scope-id="{!!$scope->id!!}" class="scope-system-checkbox" id="scope-system_{!!$scope->id!!}"
-                            @if ( $scope->system)
-                            checked
-                            @endif
-                            value="{!!$scope->id!!}"/>
+                            <input type="checkbox" data-scope-id="{!!$scope->id!!}" class="scope-system-checkbox"
+                                   id="scope-system_{!!$scope->id!!}"
+                                   @if ( $scope->system)
+                                   checked
+                                   @endif
+                                   value="{!!$scope->id!!}"/>
                         </td>
                         <td width="15%">
                             &nbsp;
-                            {!! HTML::link(URL::action("AdminController@editScope",array("id"=>$scope->id)),'Edit',array('class'=>'btn btn-default active edit-scope','title'=>'Edits a Registered API Scope', 'target'=>'_self')) !!}
-                            {!! HTML::link(URL::action("Api\ApiScopeController@delete",array("id"=>$scope->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-scope','title'=>'Deletes a Registered API Scope', 'target'=>'_self'))!!}
+                            {!! link_to(URL::action("AdminController@editScope",array("id"=>$scope->id)),'Edit',array('class'=>'btn btn-default active edit-scope','title'=>'Edits a Registered API Scope', 'target'=>'_self')) !!}
+                            {!! link_to(URL::action("Api\ApiScopeController@delete",array("id"=>$scope->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-scope','title'=>'Deletes a Registered API Scope', 'target'=>'_self'))!!}
                         </td>
                     </tr>
                     @endforeach
@@ -129,7 +130,7 @@
         </div>
         <div class="row">
             <div class="col-md-12">
-                {!! HTML::link(URL::action("Api\\ApiEndpointController@create",null),'Register Endpoint',array('class'=>'btn active btn-primary add-endpoint','title'=>'Adds a New API Endpoint', 'target'=>'_self')) !!}
+                {!! link_to(URL::action("Api\\ApiEndpointController@create",null),'Register Endpoint',array('class'=>'btn active btn-primary add-endpoint','title'=>'Adds a New API Endpoint', 'target'=>'_self')) !!}
             </div>
         </div>
         <div class="row">
@@ -149,18 +150,19 @@
                     <tr>
                         <td width="30%">{!! $endpoint->name !!}</td>
                         <td width="5%">
-                            <input type="checkbox" data-endpoint-id="{!!$endpoint->id!!}" class="endpoint-active-checkbox" id="endpoint-active_{!!$endpoint->id!!}"
-                            @if ( $endpoint->active)
-                            checked
-                            @endif
-                            value="{!!$endpoint->id!!}"/>
+                            <input type="checkbox" data-endpoint-id="{!!$endpoint->id!!}"
+                                   class="endpoint-active-checkbox" id="endpoint-active_{!!$endpoint->id!!}"
+                                   @if ( $endpoint->active)
+                                   checked
+                                   @endif
+                                   value="{!!$endpoint->id!!}"/>
                         </td>
                         <td width="45%">{!!$endpoint->route!!}</td>
                         <td width="5%">{!!$endpoint->http_method!!}</td>
                         <td width="15%">
                             &nbsp;
-                            {!! HTML::link(URL::action("AdminController@editEndpoint",array("id"=>$endpoint->id)),'Edit',array('class'=>'btn btn-default active edit-endpoint','title'=>'Edits a Registered API Endpoint', 'target'=>'_self')) !!}
-                            {!! HTML::link(URL::action("Api\ApiEndpointController@delete",array("id"=>$endpoint->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-endpoint','title'=>'Deletes a Registered API Endpoint', 'target'=>'_self'))!!}
+                            {!! link_to(URL::action("AdminController@editEndpoint",array("id"=>$endpoint->id)),'Edit',array('class'=>'btn btn-default active edit-endpoint','title'=>'Edits a Registered API Endpoint', 'target'=>'_self')) !!}
+                            {!! link_to(URL::action("Api\ApiEndpointController@delete",array("id"=>$endpoint->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-endpoint','title'=>'Deletes a Registered API Endpoint', 'target'=>'_self'))!!}
                         </td>
                     </tr>
                     @endforeach
@@ -203,6 +205,6 @@
         success: '@lang("messages.global_successfully_save_entity", array("entity" => "API"))'
     };
 </script>
-{!! HTML::script('assets/js/oauth2/profile/admin/edit-api.js') !!}
+{!! script_to('assets/js/oauth2/profile/admin/edit-api.js') !!}
 
 @append

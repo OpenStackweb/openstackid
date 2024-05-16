@@ -8,7 +8,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/consent.css') !!}
+    {!! style_to('assets/css/consent.css') !!}
 @append
 
 @section('header_right')
@@ -53,5 +53,5 @@
         }
 
     </script>
-    {!! HTML::script('assets/consent.js') !!}
+    {!! script_to('assets/consent.js') !!}
 @append
