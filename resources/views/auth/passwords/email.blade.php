@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/forgotPassword.css') !!}
+    {!! style_to('assets/css/forgotPassword.css') !!}
 @append
 @section('content')
 
@@ -39,5 +39,5 @@
             submitButtonText: '{{ __("Send Password Reset Link") }}',
         }
     </script>
-    {!! HTML::script('assets/forgotPassword.js') !!}
+    {!! script_to('assets/forgotPassword.js') !!}
 @append

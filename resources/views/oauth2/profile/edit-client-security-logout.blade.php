@@ -33,5 +33,5 @@
     <button type="submit" class="btn btn-default btn-md active">Save</button>
 </form>
 @section('scripts')
-    {!! HTML::script('assets/js/oauth2/profile/edit-client-security-logout.js') !!}
+    {!! script_to('assets/js/oauth2/profile/edit-client-security-logout.js') !!}
 @append
