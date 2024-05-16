@@ -34,7 +34,7 @@
                             <td>{!!$access_token->created_at->format("Y-m-d H:i:s")!!}</td>
                             <td>{!!$access_token->getClient()->app_name!!}</td>
                             <td>{!!$access_token->scope!!}</td>
-                            <td>{!! HTML::link(URL::action("Api\\UserApiController@revokeMyToken",array("id"=>$user_id,"value"=>$access_token->value, "hint"=>'access-token')),'Revoke Access',array('data-value' => $access_token->value,'data-hint'=>'access-token','class'=>'btn btn-default btn-md active btn-delete revoke-token','title'=>'Revoke Access Token', 'target'=>'_self')) !!}</td>
+                            <td>{!! link_to(URL::action("Api\\UserApiController@revokeMyToken",array("id"=>$user_id,"value"=>$access_token->value, "hint"=>'access-token')),'Revoke Access',array('data-value' => $access_token->value,'data-hint'=>'access-token','class'=>'btn btn-default btn-md active btn-delete revoke-token','title'=>'Revoke Access Token', 'target'=>'_self')) !!}</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -79,7 +79,7 @@
                             <td>{!!$refresh_token->created_at->format("Y-m-d H:i:s")!!}</td>
                             <td>{!!$refresh_token->getClient()->app_name!!}</td>
                             <td>{!!$refresh_token->scope!!}</td>
-                            <td>{!! HTML()->a(URL::action("Api\\UserApiController@revokeMyToken",array("id" => $user_id,"value" => $refresh_token->value, "hint" => 'refresh-token')),'Revoke Access',array('data-value' => $refresh_token->value,'data-hint' => 'refresh_token','class' => 'btn btn-default btn-md active btn-delete revoke-token','title' => 'Revoke Access Token', 'target'=>'_self')) !!}</td>
+                            <td>{!! link_to(URL::action("Api\\UserApiController@revokeMyToken",array("id" => $user_id,"value" => $refresh_token->value, "hint" => 'refresh-token')),'Revoke Access',array('data-value' => $refresh_token->value,'data-hint' => 'refresh_token','class' => 'btn btn-default btn-md active btn-delete revoke-token','title' => 'Revoke Access Token', 'target'=>'_self')) !!}</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -113,5 +113,5 @@
             }
         };
 </script>
-<script type="text/javascript" src="{{ asset('assets/js/oauth2/profile/edit-user-grants.js') }}"></script>
+{!! script_to('assets/js/oauth2/profile/edit-user-grants.js') !!}
 @append

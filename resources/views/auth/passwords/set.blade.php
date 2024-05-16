@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/setPassword.css') !!}
+    {!! style_to('assets/css/setPassword.css') !!}
 @append
 @section('content')
 
@@ -62,6 +62,6 @@
             token: '{{ $token }}'
         }
     </script>
-    {!! HTML::script('assets/setPassword.js') !!}
+    {!! script_to('assets/setPassword.js') !!}
 @append
 

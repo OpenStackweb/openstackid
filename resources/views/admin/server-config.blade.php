@@ -97,5 +97,5 @@
 @stop
 
 @section('scripts')
-{!! HTML::script('assets/js/admin/server-config.js') !!}
+{!! script_to('assets/js/admin/server-config.js') !!}
 @append
