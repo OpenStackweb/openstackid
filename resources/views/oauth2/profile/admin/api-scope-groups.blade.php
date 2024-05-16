@@ -17,7 +17,7 @@
 
     <div class="row">
         <div class="col-md-12">
-            {!! HTML::link(URL::action("Api\ApiScopeGroupController@create"),'Add Api Scope Group',array('class'=>'btn active btn-primary add-api-scope-group','title'=>'Adds a New Api Scope Group', 'target'=>'_self')) !!}
+            {!! link_to(URL::action("Api\ApiScopeGroupController@create"),'Add Api Scope Group',array('class'=>'btn active btn-primary add-api-scope-group','title'=>'Adds a New Api Scope Group', 'target'=>'_self')) !!}
         </div>
     </div>
 
@@ -34,7 +34,8 @@
             <tr id="{!! $group->id !!}">
                 <td>{!!$group->name!!}</td>
                 <td>
-                    <input type="checkbox" class="api-scope-group-active-checkbox" id="api-scope-group-active_{!!$group->id!!}"
+                    <input type="checkbox" class="api-scope-group-active-checkbox"
+                           id="api-scope-group-active_{!!$group->id!!}"
                            data-group-id="{!!$group->id!!}"
                            @if ( $group->active)
                            checked
@@ -43,17 +44,17 @@
                 </td>
                 <td>
                     &nbsp;
-                    {!! HTML::link(URL::action("AdminController@editApiScopeGroup",array("id"=>$group->id)),'Edit',array('class'=>'btn btn-default active edit-api-scope-group','title'=>'Edit a Registered Api Scope Group', 'target '=>'_self')) !!}
-                    {!! HTML::link(URL::action("Api\ApiScopeGroupController@delete",array("id"=>$group->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-api-scope-group','title'=>'Deletes a Registered Api Scope Group', 'target'=>'_self')) !!}
+                    {!! link_to(URL::action("AdminController@editApiScopeGroup",array("id"=>$group->id)),'Edit',array('class'=>'btn btn-default active edit-api-scope-group','title'=>'Edit a Registered Api Scope Group', 'target '=>'_self')) !!}
+                    {!! link_to(URL::action("Api\ApiScopeGroupController@delete",array("id"=>$group->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-api-scope-group','title'=>'Deletes a Registered Api Scope Group', 'target'=>'_self')) !!}
                 </td>
             </tr>
         @endforeach
         </tbody>
     </table>
-    <div  id="info-api-scope-groups" class="alert alert-danger private-keys-empty-message" role="alert"
+    <div id="info-api-scope-groups" class="alert alert-danger private-keys-empty-message" role="alert"
          @if($groups->getTotal() > 0)
          style="display: none"
-         @endif
+            @endif
     >
         <p>There are not any available Api Scope Groups</p>
     </div>
@@ -78,7 +79,7 @@
             fetchScopes: '{!!URL::action("Api\ApiScopeController@getAll")!!}'
         };
     </script>
-    {!! HTML::script('assets/js/oauth2/profile/admin/api-scope-groups.js') !!}
+    {!! script_to('assets/js/oauth2/profile/admin/api-scope-groups.js') !!}
 @append
 
 @section('css')

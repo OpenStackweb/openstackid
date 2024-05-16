@@ -10,6 +10,6 @@
     </div>
 @stop
 @section('scripts')
-    {!! HTML::script('assets/crypto-js/crypto-js.js')!!}
-    {!! HTML::script('assets/jquery-cookie/jquery.cookie.js')!!}
+    {!! script_to('assets/crypto-js/crypto-js.js')!!}
+    {!! script_to('assets/jquery-cookie/jquery.cookie.js')!!}
 @append
