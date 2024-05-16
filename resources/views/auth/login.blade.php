@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    <link href="{{ asset('assets/css/login.css') }}" rel="stylesheet">
+    {!! style_to('assets/css/login.css') !!}
 @append
 @section('content')
 
@@ -78,5 +78,5 @@
             window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
         window.EMIT_OTP_ENDPOINT = config.emitOtpAction;
     </script>
-    <script type="text/javascript" src="{{ asset('assets/login.js') }}"></script>
+    {!! script_to('assets/login.js') !!}
 @append

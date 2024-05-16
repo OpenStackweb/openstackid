@@ -6,7 +6,7 @@
     <meta http-equiv="X-XRDS-Location" content="{!! URL::action("OpenId\DiscoveryController@idp") !!}"/>
 @append
 @section('css')
-    <link href="{{ asset('assets/css/home.css') }}" rel="stylesheet">
+    {!! style_to('assets/css/home.css') !!}
 @append
 
 @section('scripts')
@@ -22,5 +22,5 @@
             signUpUrl: '{!! URL::action("Auth\RegisterController@showRegistrationForm") !!}',
         }
     </script>
-    <script type="text/javascript" src="{{ asset('assets/home.js') }}"></script>
+    {!! script_to('assets/home.js') !!}
 @append

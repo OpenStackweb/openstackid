@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    <link href="{{ asset('assets/css/profile.css') }}" rel="stylesheet">
+    {!! style_to('assets/css/profile.css') !!}
 @append
 @section('scripts')
     <script>
@@ -109,5 +109,5 @@
         window.SAVE_PROFILE_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMe") !!}';
         window.SAVE_PIC_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMyPic")!!}';
     </script>
-    <script type="text/javascript" src="{{ asset('assets/profile.js') }}"></script>
+    {!! script_to('assets/profile.js') !!}
 @append
