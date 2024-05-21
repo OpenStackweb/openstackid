@@ -604,10 +604,10 @@ class LoginPage extends React.Component {
                             {this.state.errors.email ? 'Create an account for:' : 'Sign in'}
                             {this.state.user_fullname &&
                                 <Chip
-                                    avatar={<Avatar alt={this.state.user_fullname} src={this.state.user_pic}/>}
+                                    avatar={<Avatar alt={this.state.user_name} src={this.state.user_pic}/>}
                                     variant="outlined"
                                     className={styles.valid_user_name_chip}
-                                    label={this.state.user_fullname}
+                                    label={this.state.user_name}
                                     onDelete={this.handleDelete}/>
                             }
                         </Typography>
