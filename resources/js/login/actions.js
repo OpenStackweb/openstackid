@@ -1,5 +1,4 @@
-import {getRawRequest, postRawRequest} from '../base_actions'
-
+import {postRawRequest} from '../base_actions'
 
 export const verifyAccount = (email, token) => {
 
