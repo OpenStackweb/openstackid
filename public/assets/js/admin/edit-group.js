@@ -54,7 +54,8 @@ GroupMembersCrud.prototype.init = function () {
                 url: urls.fetchUsers,
                 wildcard: '%QUERY%',
                 prepare: function (query, settings) {
-                    settings.url = urls.fetchUsers+'?filter=first_name=@'+query+',last_name=@'+query+',email=@'+query+',full_name=@'+query;
+                    var term = encodeURIComponent(query);
+                    settings.url = urls.fetchUsers+'?filter=first_name=@'+term+',last_name=@'+term+',email=@'+term+',full_name=@'+term;
                     return settings;
                 },
                 transform: function(input){
