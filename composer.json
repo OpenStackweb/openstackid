@@ -46,7 +46,7 @@
     "php-opencloud/openstack": "3.10.0",
     "phpseclib/phpseclib": "2.0.11",
     "predis/predis": "v1.1.7",
-    "s-ichikawa/laravel-sendgrid-driver": "~3.0",
+    "s-ichikawa/laravel-sendgrid-driver": "^4.0",
     "smarcet/jose4php": "1.0.17",
     "socialiteproviders/apple": "^5.0",
     "socialiteproviders/facebook": "^4.1",
