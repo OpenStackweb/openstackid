@@ -14,7 +14,7 @@
 use OpenId\Helpers\AssocHandleGenerator;
 use OpenId\Helpers\OpenIdCryptoHelper;
 use OpenId\Requests\OpenIdDHAssociationSessionRequest;
-use Zend\Crypt\PublicKey\DiffieHellman;
+use Laminas\Crypt\PublicKey\DiffieHellman;
 /**
  * Class DiffieHellmanTest
  */
