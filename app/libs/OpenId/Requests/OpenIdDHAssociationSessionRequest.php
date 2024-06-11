@@ -18,7 +18,7 @@ use OpenId\OpenIdProtocol;
 use OpenId\Exceptions\InvalidAssociationTypeException;
 use OpenId\Exceptions\InvalidSessionTypeException;
 use OpenId\Exceptions\InvalidDHParam;
-use Zend\Crypt\PublicKey\DiffieHellman;
+use Laminas\Crypt\PublicKey\DiffieHellman;
 /**
  * Class OpenIdDHAssociationSessionRequest
  * @package OpenId\Requests
