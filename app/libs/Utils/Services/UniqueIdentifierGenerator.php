@@ -12,7 +12,7 @@
  * limitations under the License.
  **/
 use Utils\Model\Identifier;
-use Zend\Crypt\Hash;
+use Laminas\Crypt\Hash;
 /**
  * Class UniqueIdentifierGenerator
  * @package Utils\Services

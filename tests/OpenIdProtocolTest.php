@@ -17,7 +17,7 @@ use OpenId\Extensions\Implementations\OpenIdSREGExtension;
 use OpenId\Helpers\OpenIdCryptoHelper;
 use OpenId\OpenIdProtocol;
 use Utils\Services\IAuthService;
-use Zend\Crypt\PublicKey\DiffieHellman;
+use Laminas\Crypt\PublicKey\DiffieHellman;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
 use Models\OpenId\OpenIdTrustedSite;
