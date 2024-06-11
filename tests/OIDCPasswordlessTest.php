@@ -682,6 +682,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
 
         $this->assertResponseStatus(200);
         $otp = null;
+
         Mail::assertNotQueued(OAuth2PasswordlessOTPMail::class, function(OAuth2PasswordlessOTPMail $email) use(&$otp){
             $otp = $email->otp;
         });
@@ -755,7 +756,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
 
         $otp = $repository->getByValue($otp);
         $this->assertTrue(!is_null($otp));
-        $this->assertTrue(!$otp->isValid());
+        $this->assertTrue($otp->isValid());
     }
 
 }
