@@ -11,8 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Zend\Crypt\Hash;
-use Zend\Math\Rand;
+use Laminas\Crypt\Hash;
+use Laminas\Math\Rand;
 use Exception;
 use Illuminate\Support\Facades\Hash as HashFacade;
 /**

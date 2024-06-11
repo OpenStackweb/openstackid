@@ -82,7 +82,7 @@ use Utils\Services\ICacheService;
 use Utils\Services\IdentifierGenerator;
 use Utils\Services\ILockManagerService;
 use Utils\Services\IServerConfigurationService;
-use Zend\Crypt\Hash;
+use Laminas\Crypt\Hash;
 use Exception;
 
 /**
