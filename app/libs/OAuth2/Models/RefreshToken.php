@@ -14,7 +14,7 @@
 
 use OAuth2\OAuth2Protocol;
 use Utils\IPHelper;
-use Zend\Math\Rand;
+use Laminas\Math\Rand;
 
 /**
  * Class RefreshToken
