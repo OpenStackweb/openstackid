@@ -37,6 +37,9 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath sockets gettext
 RUN yes | pecl install ${XDEBUG_VERSION}
 COPY docker-compose/php/docker-php-ext-xdebug.ini $PHP_DIR/conf.d/docker-php-ext-xdebug.ini
 
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+RUN echo 'memory_limit = 512M' >> $PHP_INI_DIR/php.ini;
+
 # nvm
 
 RUN mkdir $NVM_DIR  \
