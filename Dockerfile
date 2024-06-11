@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.3-fpm
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG NVM_VERSION="v0.39.7"
