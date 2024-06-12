@@ -58,17 +58,6 @@ final class DoctrineTransactionService implements ITransactionService
                 $em  = Registry::getManager($this->manager_name);
                 $con = $em->getConnection();
 
-                /**
-                 * Some database systems close the connection after a period of time, in MySQL this is system variable
-                 * `wait_timeout`. Given the daemon is meant to run indefinitely we need to make sure we have an open
-                 * connection before working any job. Otherwise we would see `MySQL has gone away` type errors.
-                 */
-
-                if ($con->ping() === false) {
-                    $con->close();
-                    $con->connect();
-                }
-
                 if (!$em->isOpen()) {
                     Log::warning("DoctrineTransactionService::transaction: entity manager is closed!, trying to re open...");
                     $em = Registry::resetManager($this->manager_name);
