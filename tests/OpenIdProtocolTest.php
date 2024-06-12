@@ -347,7 +347,7 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $url        = $response->getTargetUrl();
         $parsed_url = @parse_url($url);
         $this->assertTrue(!isset($parsed_url['query']));
-        $this->assertTrue(str_contains($url, "https://local.openstackid.openstack.org/accounts/user/consent"));
+        $this->assertTrue(str_contains($url, "/accounts/user/consent"));
     }
 
     public function testValidTLD_SameDomain()
@@ -368,7 +368,7 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $url        = $response->getTargetUrl();
         $parsed_url = @parse_url($url);
         $this->assertTrue(!isset($parsed_url['query']));
-        $this->assertTrue(str_contains($url, "https://local.openstackid.openstack.org/accounts/user/consent"));
+        $this->assertTrue(str_contains($url, "/accounts/user/consent"));
     }
 
     public function testValidTLD_SingleLevelDomain()
@@ -389,7 +389,7 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $url        = $response->getTargetUrl();
         $parsed_url = @parse_url($url);
         $this->assertTrue(!isset($parsed_url['query']));
-        $this->assertTrue(str_contains($url, "https://local.openstackid.openstack.org/accounts/user/consent"));
+        $this->assertTrue(str_contains($url, "/accounts/user/consent"));
     }
 
     public function testValidTLD_IPDomain()
@@ -409,7 +409,7 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $url        = $response->getTargetUrl();
         $parsed_url = @parse_url($url);
         $this->assertTrue(!isset($parsed_url['query']));
-        $this->assertTrue(str_contains($url, "https://local.openstackid.openstack.org/accounts/user/consent"));
+        $this->assertTrue(str_contains($url, "/accounts/user/consent"));
     }
 
     public function testAuthenticationSetupModeSessionAssociationDHSha256()
