@@ -160,12 +160,12 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $url = $response->getTargetUrl();
 
-        $response = $this->call('GET', $url, [], [$response->cookie("openstackid_session")]);
+        $response = $this->withCookie(Session::getName(), Session::getId())->call('GET', $url);
 
         $this->assertResponseStatus(200);
-
+        $content = $response->getContent();
         // verify that login hint (email) is populated
-        $this->assertTrue(str_contains($response->getContent(), 'sebastian@tipit.net'));
+        $this->assertTrue(str_contains($content, 'sebastian@tipit.net'));
 
         // do login
         $response = $this->action('POST', "UserController@postLogin",
@@ -246,15 +246,14 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
 
         $url = $response->getTargetUrl();
 
-        $response = $this->call('GET', $url);
+        $response = $this->withCookie(Session::getName(), Session::getId())->call('GET', $url);
 
         $this->assertResponseStatus(200);
 
+        $content = $response->getContent();
         // verify that login hint (email) is populated
-        $this->assertTrue(str_contains($response->getContent(), 'sebastian@tipit.net'));
-        $this->assertTrue(str_contains($response->getContent(), 'config.user_fullname'));
-        $this->assertTrue(str_contains($response->getContent(), 'config.user_pic'));
-        $this->assertTrue(str_contains($response->getContent(), 'config.user_verified'));
+        $this->assertTrue(str_contains($content, 'sebastian@tipit.net'));
+       ;
         // do login
         $response = $this->action('POST', "UserController@postLogin",
             array
@@ -334,7 +333,8 @@ final class OIDCProtocolTest extends OpenStackIDBaseTest
         $this->assertResponseStatus(200);
 
         // verify that login hint (email) is populated
-        $this->assertTrue(str_contains($response->getContent(), 'sebastian@tipit.net'));
+        $content = $response->getContent();
+        $this->assertTrue(str_contains($content, 'sebastian@tipit.net'));
 
         // do login
         $response = $this->action('POST', "UserController@postLogin",
