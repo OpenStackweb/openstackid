@@ -30,14 +30,13 @@ jobs:
       REDIS_DATABASES: 16
       SSL_ENABLED: false
       SESSION_DRIVER: redis
+      PHP_VERSION: 8.3
     services:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: 1qaz2wsx
-          MYSQL_DATABASE: idp_test
-          MYSQL_USER: idp_user
-          MYSQL_PASSWORD: 1qaz2wsx
+          MYSQL_ROOT_PASSWORD:  ${{env.DB_PASSWORD}}
+          MYSQL_DATABASE: ${{env.DB_DATABASE}}
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -45,15 +44,15 @@ jobs:
        - name: Create Redis
          uses: supercharge/redis-github-action@1.7.0
          with:
-           redis-port: 6379
-           redis-password: '1qaz2wsx'
+           redis-port: ${{env.REDIS_PORT}}
+           redis-password: ${{env.REDIS_PASSWORD}}
        # Downloads a copy of the code in your repository before running CI tests
        - name: Check out repository code
          uses: actions/checkout@v4
        - name: Install PHP
          uses: "shivammathur/setup-php@v2"
          with:
-           php-version: "8.3"
+           php-version:  ${{env.PHP_VERSION}}
            extensions: pdo_mysql, mbstring, exif, pcntl, bcmath, sockets, gettext
        - name: Install dependencies
          uses: "ramsey/composer-install@v3"
