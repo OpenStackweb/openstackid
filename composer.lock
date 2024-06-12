@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cea612a92dcd4c6693b8478d71580530",
+    "content-hash": "a1dade4adf975ce4b74ad30dc7191caf",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -5366,16 +5366,16 @@
         },
         {
             "name": "phpseclib/phpseclib",
-            "version": "2.0.11",
+            "version": "2.0.47",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpseclib/phpseclib.git",
-                "reference": "7053f06f91b3de78e143d430e55a8f7889efc08b"
+                "reference": "b7d7d90ee7df7f33a664b4aea32d50a305d35adb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/7053f06f91b3de78e143d430e55a8f7889efc08b",
-                "reference": "7053f06f91b3de78e143d430e55a8f7889efc08b",
+                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/b7d7d90ee7df7f33a664b4aea32d50a305d35adb",
+                "reference": "b7d7d90ee7df7f33a664b4aea32d50a305d35adb",
                 "shasum": ""
             },
             "require": {
@@ -5383,15 +5383,15 @@
             },
             "require-dev": {
                 "phing/phing": "~2.7",
-                "phpunit/phpunit": "^4.8.35|^5.7|^6.0",
-                "sami/sami": "~2.0",
+                "phpunit/phpunit": "^4.8.35|^5.7|^6.0|^9.4",
                 "squizlabs/php_codesniffer": "~2.0"
             },
             "suggest": {
                 "ext-gmp": "Install the GMP (GNU Multiple Precision) extension in order to speed up arbitrary precision integer arithmetic operations.",
                 "ext-libsodium": "SSH2/SFTP can make use of some algorithms provided by the libsodium-php extension.",
                 "ext-mcrypt": "Install the Mcrypt extension in order to speed up a few other cryptographic operations.",
-                "ext-openssl": "Install the OpenSSL extension in order to speed up a wide variety of cryptographic operations."
+                "ext-openssl": "Install the OpenSSL extension in order to speed up a wide variety of cryptographic operations.",
+                "ext-xml": "Install the XML extension to load XML formatted public keys."
             },
             "type": "library",
             "autoload": {
@@ -5456,9 +5456,23 @@
             ],
             "support": {
                 "issues": "https://github.com/phpseclib/phpseclib/issues",
-                "source": "https://github.com/phpseclib/phpseclib/tree/2.0"
+                "source": "https://github.com/phpseclib/phpseclib/tree/2.0.47"
             },
-            "time": "2018-04-15T16:55:05+00:00"
+            "funding": [
+                {
+                    "url": "https://github.com/terrafrost",
+                    "type": "github"
+                },
+                {
+                    "url": "https://www.patreon.com/phpseclib",
+                    "type": "patreon"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/phpseclib/phpseclib",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2024-02-26T04:55:38+00:00"
         },
         {
             "name": "predis/predis",
@@ -6353,25 +6367,25 @@
         },
         {
             "name": "smarcet/jose4php",
-            "version": "1.0.17",
+            "version": "dev-feature/php8.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/smarcet/JOSE4PHP.git",
-                "reference": "665ea87d1e4cf0e59564a131a9194c3ce0c7ac19"
+                "reference": "dd0d78b6336d4b4957fe1d6767b3c91e75cd935b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/smarcet/JOSE4PHP/zipball/665ea87d1e4cf0e59564a131a9194c3ce0c7ac19",
-                "reference": "665ea87d1e4cf0e59564a131a9194c3ce0c7ac19",
+                "url": "https://api.github.com/repos/smarcet/JOSE4PHP/zipball/dd0d78b6336d4b4957fe1d6767b3c91e75cd935b",
+                "reference": "dd0d78b6336d4b4957fe1d6767b3c91e75cd935b",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.1.3",
-                "phpseclib/phpseclib": "2.0.11"
+                "php": "^8.2",
+                "phpseclib/phpseclib": "2.0.47"
             },
             "require-dev": {
-                "mockery/mockery": "0.9.*",
-                "phpunit/phpunit": "^5.7"
+                "mockery/mockery": "^1.6",
+                "phpunit/phpunit": "^9.0|^10.0|^11.0"
             },
             "suggest": {
                 "ext-bcmath": "Required if GMP is not installed",
@@ -6416,9 +6430,9 @@
             ],
             "support": {
                 "issues": "https://github.com/smarcet/JOSE4PHP/issues",
-                "source": "https://github.com/smarcet/JOSE4PHP/tree/master"
+                "source": "https://github.com/smarcet/JOSE4PHP/tree/feature/php8.3"
             },
-            "time": "2019-07-12T23:35:09+00:00"
+            "time": "2024-06-12T21:34:34+00:00"
         },
         {
             "name": "socialiteproviders/apple",
@@ -12026,7 +12040,8 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "greggilbert/recaptcha": 20
+        "greggilbert/recaptcha": 20,
+        "smarcet/jose4php": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
