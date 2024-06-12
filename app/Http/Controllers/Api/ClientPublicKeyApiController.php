@@ -98,7 +98,7 @@ final class ClientPublicKeyApiController extends AsymmetricKeyApiController
     protected function getCreatePayloadValidationRules(): array
     {
             return [
-                'client_id'   => 'required|integer',
+                'owner_id'    => 'required|integer',
                 'kid'         => 'required|text|max:255',
                 'active'      => 'required|boolean',
                 'valid_from'  => 'required|date_format:m/d/Y',

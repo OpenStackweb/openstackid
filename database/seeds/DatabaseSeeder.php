@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
         DB::table('oauth2_api_scope')->delete();
         DB::table('oauth2_api_endpoint')->delete();
         DB::table('oauth2_api')->delete();
+        DB::table('oauth2_client')->delete();
         DB::table('oauth2_resource_server')->delete();
 
         $this->call(ResourceServerSeeder::class);
