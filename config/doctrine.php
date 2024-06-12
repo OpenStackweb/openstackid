@@ -36,7 +36,7 @@ return [
             ],
             'repository' => Doctrine\ORM\EntityRepository::class,
             'proxies'    => [
-                'namespace'     => false,
+                'namespace'     => 'Proxies',
                 'path'          => storage_path('proxies'),
                 'auto_generate' => env('DOCTRINE_PROXY_AUTOGENERATE', false)
             ],
@@ -113,7 +113,6 @@ return [
     |--------------------------------------------------------------------------
     */
     'custom_types'              => [
-        'json'             => LaravelDoctrine\ORM\Types\Json::class,
         'CarbonDate'       => DoctrineExtensions\Types\CarbonDateType::class,
         'CarbonDateTime'   => DoctrineExtensions\Types\CarbonDateTimeType::class,
         'CarbonDateTimeTz' => DoctrineExtensions\Types\CarbonDateTimeTzType::class,

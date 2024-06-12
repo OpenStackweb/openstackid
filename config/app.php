@@ -157,7 +157,7 @@ return [
         OAuth2\OAuth2ServiceProvider::class,
         OpenId\OpenIdServiceProvider::class,
         \Providers\OAuth2\ClientAuthContextValidatorFactoryProvider::class,
-        Kuttumiah\Recaptcha\RecaptchaServiceProvider::class,
+        Greggilbert\Recaptcha\RecaptchaServiceProvider::class,
         Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
         // Doctrine ORM
         LaravelDoctrine\ORM\DoctrineServiceProvider::class,
