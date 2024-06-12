@@ -656,7 +656,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
             if(!is_null($max_age) && $max_age > 0)
             {
-                // must required teh auth_time claim
+                // must required then auth_time claim
                 $this->security_context_service->save
                 (
                     $this->security_context_service->get()->setAuthTimeRequired(true)
@@ -665,7 +665,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 if
                 (
                     !is_null($principal) &&
-                    !is_null($principal->getAuthTime()) &&
+                    $principal->getAuthTime() > 0 &&
                     ($now - $principal->getAuthTime()) > $max_age
                 )
                 {
@@ -709,13 +709,13 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
         if($this->shouldPromptLogin($request))
         {
-            $this->auth_service->logout();
+            $this->auth_service->logout(false);
             return true;
         }
 
         if($this->shouldForceReLogin($request, $client))
         {
-            $this->auth_service->logout();
+            $this->auth_service->logout(false);
             return true;
         }
 
