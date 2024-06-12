@@ -3,13 +3,7 @@
 name: Unit Tests On Push
 
 # Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-     branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+on: push
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -17,12 +11,60 @@ jobs:
   unit-tests:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    container:
-        image: smarcet/openstackid_test:v1.0
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    env:
+      APP_ENV: testing
+      APP_DEBUG: true
+      APP_KEY: base64:4vh0op/S1dAsXKQ2bbdCfWRyCI9r8NNIdPXyZWt9PX4=
+      DEV_EMAIL_TO: smarcet@gmail.com
+      APP_URL: http://localhost
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: idp_test
+      DB_USERNAME: root
+      DB_PASSWORD: 1qaz2wsx
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_PASSWORD: 1qaz2wsx
+      REDIS_DATABASES: 16
+      SSL_ENABLED: false
+      SESSION_DRIVER: redis
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: 1qaz2wsx
+          MYSQL_DATABASE: idp_test
+          MYSQL_USER: idp_user
+          MYSQL_PASSWORD: 1qaz2wsx
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
-       - name: 'Run Unit Tests'
-         run: cd / && ./tests.sh 2>&1 | tee /output.log
+       - name: Create Redis
+         uses: supercharge/redis-github-action@1.7.0
+         with:
+           redis-port: 6379
+           redis-password: '1qaz2wsx'
+       # Downloads a copy of the code in your repository before running CI tests
+       - name: Check out repository code
+         uses: actions/checkout@v4
+       - name: Install PHP
+         uses: "shivammathur/setup-php@v2"
+         with:
+           php-version: "8.3"
+           extensions: pdo_mysql, mbstring, exif, pcntl, bcmath, sockets, gettext
+       - name: Install dependencies
+         uses: "ramsey/composer-install@v3"
+         env:
+           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.PAT }}"} }'
+       - name: 'Run Tests'
+         run: |
+           ./update_doctrine.sh
+           php artisan doctrine:migrations:migrate --no-interaction
+           php artisan db:seed --force
+           vendor/bin/phpunit --verbose
        - name: 'Upload Unit Test Output'
          uses: actions/upload-artifact@v4
          with:
