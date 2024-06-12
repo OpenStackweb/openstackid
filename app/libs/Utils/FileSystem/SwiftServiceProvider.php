@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
 use League\Flysystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 use OpenStack\OpenStack;
+use Illuminate\Filesystem\FilesystemAdapter;
 /**
  * Class SwiftServiceProvider
  * @package App\Services\FileSystem\Swift
@@ -82,7 +83,13 @@ final class SwiftServiceProvider extends ServiceProvider
 
                 $container = $openstackClient->objectStoreV1()->getContainer($config["container"]);
 
-                return new Filesystem(new SwiftAdapter($container));
+                $adapter = new SwiftAdapter($container);
+
+                return new FilesystemAdapter(
+                    new Filesystem($adapter, $config),
+                    $adapter,
+                    $config
+                );
             }
             catch (\Exception $ex){
                 Log::error($ex);

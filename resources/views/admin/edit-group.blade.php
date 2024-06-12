@@ -88,15 +88,16 @@
 @stop
 @section('scripts')
 
-    {!! HTML::script("assets/js/urlfragment.jquery.js") !!}
-    {!! HTML::script("assets/moment/min/moment.min.js") !!}
-    {!! HTML::script('assets/js/basic-crud.js') !!}
-    {!! HTML::script('assets/js/admin/edit-group.js') !!}
+    {!! script_to("assets/js/urlfragment.jquery.js") !!}
+    {!! script_to("assets/moment/min/moment.min.js") !!}
+    {!! script_to('assets/js/basic-crud.js') !!}
+    {!! script_to('assets/js/admin/edit-group.js') !!}
     <style>
         .bootstrap-tagsinput {
             max-width: 90% !important;
         }
-        #btn-add-user{
+
+        #btn-add-user {
             height: 33px;
             width: 33px;
         }

@@ -13,8 +13,8 @@
  **/
 use OpenId\Responses\OpenIdAssociationSessionResponse;
 use OpenId\Exceptions\InvalidDHParam;
-use Zend\Crypt\Exception\InvalidArgumentException;
-use Zend\Crypt\Exception\RuntimeException;
+use Laminas\Crypt\Exception\InvalidArgumentException;
+use Laminas\Crypt\Exception\RuntimeException;
 /**
  * Interface ISessionAssociationStrategy
  * @package OpenId\Handlers\Strategies;

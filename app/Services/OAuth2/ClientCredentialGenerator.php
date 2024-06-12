@@ -16,7 +16,7 @@ use Models\OAuth2\Client;
 use OAuth2\Models\IClient;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Services\IClientCredentialGenerator;
-use Zend\Math\Rand;
+use Laminas\Math\Rand;
 use DateTime;
 use DateInterval;
 /**

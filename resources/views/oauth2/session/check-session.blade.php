@@ -7,7 +7,7 @@
     </div>
 @stop
 @section('scripts')
-    {!! HTML::script('assets/crypto-js/crypto-js.js')!!}
-    {!! HTML::script('assets/jquery-cookie/jquery.cookie.js')!!}
-    {!! HTML::script('assets/js/oauth2/session/check.session.js')!!}
+    {!! script_to('assets/crypto-js/crypto-js.js')!!}
+    {!! script_to('assets/jquery-cookie/jquery.cookie.js')!!}
+    {!! script_to('assets/js/oauth2/session/check.session.js')!!}
 @append

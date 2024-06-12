@@ -12,7 +12,7 @@ Welcome, <a target="_self" href="{!! URL::action("UserController@getProfile") !!
 @section('content')
 <div class="container">
     <h4>{!! Config::get('app.app_name') !!} - Openid verification</h4>
-    {!! Form::open(array('url' => URL::action("UserController@postConsent"),'id'=>'authorization_form', 'method' => 'post',  "autocomplete" => "off", "target" => "_self")) !!}
+    {!! basic_form_open(URL::action("UserController@postConsent"), 'post', array('id'=>'authorization_form', "autocomplete" => "off", "target" => "_self")) !!}
     <legend>
         Sign in to <b>{!! $realm !!}</b> using your {{ Config::get('app.app_name') }}
     </legend>
@@ -24,34 +24,34 @@ Welcome, <a target="_self" href="{!! URL::action("UserController@getProfile") !!
     <div class="form-group">
         <div class="radio">
             <label>
-            {!! Form::radio('trust[]', 'AllowOnce','true',array('id'=>'allow_once','class'=>'input-block-level')) !!}
+                {!! radio_to('trust[]', 'AllowOnce','true',array('id'=>'allow_once','class'=>'input-block-level')) !!}
             Allow Once
             </label>
         </div>
         <div class="radio">
             <label>
-            {!! Form::radio('trust[]', 'AllowForever','',array('id'=>'allow_forever','class'=>'input-block-level')) !!}
+                {!! radio_to('trust[]', 'AllowForever','',array('id'=>'allow_forever','class'=>'input-block-level')) !!}
             Allow Forever
             </label>
          </div>
         <div class="radio">
             <label>
-            {!! Form::radio('trust[]', 'DenyOnce','',array('id'=>'deny_once','class'=>'input-block-level')) !!}
-            Deny Once
+                {!! radio_to('trust[]', 'DenyOnce','',array('id'=>'deny_once','class'=>'input-block-level')) !!}
+                Deny Once
             </label>
         </div>
         <div class="radio">
             <label>
-            {!! Form::radio('trust[]', 'DenyForever','',array('id'=>'deny_forever','class'=>'input-block-level')) !!}
-            Deny Forever
+                {!! radio_to('trust[]', 'DenyForever','',array('id'=>'deny_forever','class'=>'input-block-level')) !!}
+                Deny Forever
             </label>
         </div>
     </div>
-    {!! Form::submit('Ok',array("id" => "send_authorization", 'class' => 'btn btn-default btn-lg active btn-consent-action')) !!}
-    {!! Form::button('Cancel',array('id' => 'cancel_authorization', 'class' => 'btn active btn-lg btn-danger cancel_authorization btn-consent-action')) !!}
-    {!! Form::close() !!}
+    {!! submit_button('Ok',array("id" => "send_authorization", 'class' => 'btn btn-default btn-lg active btn-consent-action')) !!}
+    {!! button_to('Cancel',array('id' => 'cancel_authorization', 'class' => 'btn active btn-lg btn-danger cancel_authorization btn-consent-action')) !!}
+    {!! form_close() !!}
 </div>
 @append
 @section('scripts')
-{!! HTML::script('assets/js/openid/consent.js') !!}
+    {!! script_to('assets/js/openid/consent.js') !!}
 @append

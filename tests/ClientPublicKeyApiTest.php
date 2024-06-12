@@ -46,8 +46,8 @@ class ClientPublicKeyApiTest extends BrowserKitTestCase {
         $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
         $client = EntityManager::getRepository(Client::class)->findOneBy(['client_id' => $client_id]);
 
-        $data = array
-        (
+        $data =
+        [
             'kid'         => 'test key',
             'pem_content' => TestKeys::$public_key2_pem,
             'usage'       => JSONWebKeyPublicKeyUseValues::Signature,
@@ -55,18 +55,17 @@ class ClientPublicKeyApiTest extends BrowserKitTestCase {
             'active'      => false,
             'valid_from'  => '01/01/2016',
             'valid_to'    => '01/15/2016',
-            'alg'         => JSONWebSignatureAndEncryptionAlgorithms::RS512
-        );
+            'alg'         => JSONWebSignatureAndEncryptionAlgorithms::RS512,
+        ];
 
         $response = $this->action("POST", "Api\\ClientPublicKeyApiController@_create",
-            $wildcards = array('id' => $client->id),
+            $wildcards = ['id' => $client->id],
             $data,
             [],
             []);
 
         $content       = $response->getContent();
         $json_response = json_decode($content);
-
         $this->assertResponseStatus(201);
         $this->assertTrue(isset($json_response->id) && !empty($json_response->id));
 

@@ -9,7 +9,7 @@
             email = '{{$email}}';
         @endif
     </script>
-    {!! HTML::script('assets/js/auth/set_password_success.js') !!}
+    {!! script_to('assets/js/auth/set_password_success.js') !!}
 @append
 
 @section('content')

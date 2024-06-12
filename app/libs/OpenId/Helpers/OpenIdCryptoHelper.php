@@ -13,9 +13,9 @@
  **/
 use OpenId\Exceptions\OpenIdCryptoException;
 use OpenId\OpenIdProtocol;
-use Zend\Crypt\PublicKey\DiffieHellman;
-use Zend\Math\Rand;
-use Zend\Math\BigInteger\BigInteger;
+use Laminas\Crypt\PublicKey\DiffieHellman;
+use Laminas\Math\Rand;
+use Laminas\Math\BigInteger\BigInteger;
 use Exception;
 /**
  * Class OpenIdCryptoHelper
