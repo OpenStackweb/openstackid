@@ -18,16 +18,16 @@
     }
   ],
   "require": {
-    "php": "^8.1",
+    "php": "^8.2",
     "ext-pdo": "*",
     "ext-json": "*",
     "ext-openssl": "*",
-    "laravel/framework": "^10.0",
+    "laravel/framework": "^11.0",
     "laravel/helpers": "^1.7.0",
     "laravel/tinker": "2.9.0",
     "laravel-doctrine/orm": "2.1.0",
-    "laravel-doctrine/extensions": "1.6.0",
-    "laravel-doctrine/migrations": "3.1.0",
+    "laravel-doctrine/extensions": "1.7.0",
+    "laravel-doctrine/migrations": "3.2.0",
     "beberlei/doctrineextensions": "1.5.0",
     "laravel/socialite": "^5.12",
     "socialiteproviders/apple": "^5.0",
@@ -58,11 +58,11 @@
   },
   "require-dev": {
     "filp/whoops": "^2.0",
-    "fakerphp/faker": "^1.9.1",
-    "mockery/mockery": "^1.4.4",
-    "nunomaduro/collision": "^6.1",
-    "phpunit/phpunit": "^9.0",
-    "laravel/browser-kit-testing": "6.4.0"
+    "fakerphp/faker": "^1.23",
+    "mockery/mockery": "^1.6",
+    "nunomaduro/collision": "^8.0",
+    "phpunit/phpunit": "^11.0.1",
+    "laravel/browser-kit-testing": "7.2.0"
   },
   "suggest":{
     "lib-openssl": "Required to use AES algorithms (except AES GCM)",

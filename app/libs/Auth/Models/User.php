@@ -62,6 +62,7 @@ class User extends BaseEntity
     implements AuthenticatableContract, IOpenIdUser, IOAuth2User, CanResetPassword
 {
     use Authenticatable;
+
     use CanResetPasswordTrait;
 
     const SpamTypeNone = 'None';
@@ -2080,6 +2081,11 @@ SQL;
         );
 
         AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
+    }
+
+    public function getAuthPasswordName()
+    {
+        return 'password';
     }
 
 }
