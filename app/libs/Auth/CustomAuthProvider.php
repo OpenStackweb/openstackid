@@ -228,4 +228,9 @@ class CustomAuthProvider implements UserProvider
             $dbUser->setRememberToken($user->getRememberToken());
         });
     }
+
+    public function rehashPasswordIfRequired(Authenticatable $user, array $credentials, bool $force = false)
+    {
+       // dont rehash
+    }
 }
