@@ -43,14 +43,14 @@ use Illuminate\Support\Facades\URL;
  * Class OIDCProtocolTest
  * http://openid.net/wordpress-content/uploads/2015/02/OpenID-Connect-Conformance-Profiles.pdf
  */
-final class OIDCProtocolTest extends OpenStackIDBaseTest
+final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
 {
     /**
      * @var string
      */
     private $current_realm;
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         App::singleton(UtilsServiceCatalog::ServerConfigurationService, StubServerConfigurationService::class);

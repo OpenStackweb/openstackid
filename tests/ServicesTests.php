@@ -27,12 +27,8 @@ final class ServicesTests extends TestCase
 {
     public function tearDown():void
     {
+        parent::tearDown();
         Mockery::close();
-    }
-
-    protected function prepareForTests()
-    {
-
     }
 
     private $redis;

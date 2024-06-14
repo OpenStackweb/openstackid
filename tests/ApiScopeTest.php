@@ -22,7 +22,7 @@ final class ApiScopeTest extends BrowserKitTestCase {
 
     private $current_realm;
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         $this->withoutMiddleware();
@@ -31,7 +31,6 @@ final class ApiScopeTest extends BrowserKitTestCase {
 
     /**
      * testGetById
-     * @covers get scope api by id
      */
     public function testGetById(){
 
@@ -54,7 +53,6 @@ final class ApiScopeTest extends BrowserKitTestCase {
 
     /**
      * testGetByPage
-     * @covers get api scopes by list (paginated)
      */
     public function testGetByPage(){
         $response = $this->action("GET", "Api\ApiScopeController@getAll",
@@ -71,7 +69,6 @@ final class ApiScopeTest extends BrowserKitTestCase {
 
     /**
      * testCreate
-     * @covers create a new api scope
      */
     public function testCreate(){
 
@@ -105,7 +102,6 @@ final class ApiScopeTest extends BrowserKitTestCase {
 
     /**
      * testDeleteExisting
-     * @covers deletes an existing api scope
      */
     public function testDeleteExisting(){
 

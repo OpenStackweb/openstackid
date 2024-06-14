@@ -46,7 +46,7 @@ abstract class BrowserKitTestCase extends BaseTestCase
      * This will cause the tests to run quickly.
      *
      */
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         $_SERVER['HTTP_CLIENT_IP'] = "127.0.0.1";
         Artisan::call('doctrine:migrations:migrate', ['--no-interaction' => true]);

@@ -16,11 +16,8 @@ use OAuth2\ResourceServer\IUserService;
 /**
  * Class OAuth2UserServiceApiTest
  */
-final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
+final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTestCase {
 
-    /**
-     * @covers OAuth2UserApiController::get()
-     */
     public function testUpdateMe(){
 
         $first_name_val = 'test_'. str_random(16);
@@ -56,9 +53,6 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTest {
 
     }
 
-    /**
-     * @covers OAuth2UserApiController::get()
-     */
     public function testGetInfo(){
 
         $response = $this->action("GET", "Api\OAuth2\OAuth2UserApiController@me",
