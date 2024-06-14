@@ -19,10 +19,6 @@ use Auth\User;
  */
 final class UserGeneratorServiceTest extends BrowserKitTestCase {
 
-    protected function prepareForTests()
-    {
-        parent::prepareForTests();
-    }
 
     public function testBuildUsers()
     {

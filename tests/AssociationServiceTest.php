@@ -11,6 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Bootstrap\HandleExceptions;
 use OpenId\Services\OpenIdServiceCatalog;
 use OpenId\Helpers\AssociationFactory;
 use OpenId\OpenIdProtocol;
@@ -25,12 +28,8 @@ final class AssociationServiceTest extends BrowserKitTestCase
 
     public function tearDown():void
     {
+        parent::tearDown();
         Mockery::close();
-    }
-
-    protected function prepareForTests()
-    {
-        parent::prepareForTests();
     }
 
     public function testAddPrivateAssociation()

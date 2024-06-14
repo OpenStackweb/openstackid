@@ -16,7 +16,7 @@ use App\libs\OAuth2\IUserScopes;
  * Class OAuth2UserRegistrationServiceApiTest
  * @package Tests
  */
-final class OAuth2UserRegistrationServiceApiTest extends OAuth2ProtectedApiTest
+final class OAuth2UserRegistrationServiceApiTest extends OAuth2ProtectedApiTestCase
 {
     public function testRegisterUserRequestCreation()
     {
