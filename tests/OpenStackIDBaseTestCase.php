@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Class OpenStackIDBaseTest
  */
-abstract class OpenStackIDBaseTest extends BrowserKitTestCase {
+abstract class OpenStackIDBaseTestCase extends BrowserKitTestCase {
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         if (Schema::hasTable('banned_ips'))
             DB::table('banned_ips')->delete();
