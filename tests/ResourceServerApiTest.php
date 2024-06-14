@@ -27,7 +27,7 @@ final class ResourceServerApiTest extends BrowserKitTestCase
 
     private $current_host;
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         //Route::enableFilters();

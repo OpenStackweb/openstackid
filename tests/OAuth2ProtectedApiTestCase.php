@@ -20,7 +20,7 @@ use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class OAuth2ProtectedApiTest
  */
-abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
+abstract class OAuth2ProtectedApiTestCase extends OpenStackIDBaseTestCase {
 
     /**
      * @var string
@@ -41,7 +41,7 @@ abstract class OAuth2ProtectedApiTest extends OpenStackIDBaseTest {
 
     abstract protected function getScopes();
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         $this->current_realm = Config::get('app.url');

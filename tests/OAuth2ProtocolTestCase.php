@@ -23,12 +23,12 @@ use Illuminate\Support\Facades\DB;
  * Class OAuth2ProtocolTest
  * Test Suite for OAuth2 Protocol
  */
-final class OAuth2ProtocolTest extends OpenStackIDBaseTest
+final class OAuth2ProtocolTestCase extends OpenStackIDBaseTestCase
 {
 
     private $current_realm;
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         $this->current_realm = Config::get('app.url');
