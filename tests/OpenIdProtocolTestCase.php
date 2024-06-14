@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\Auth;
  * Class OpenIdProtocolTest
  * Test Suite for OpenId Protocol
  */
-final class OpenIdProtocolTest extends OpenStackIDBaseTest
+final class OpenIdProtocolTestCase extends OpenStackIDBaseTestCase
 {
     private $current_realm;
     private $g;
@@ -54,7 +54,7 @@ final class OpenIdProtocolTest extends OpenStackIDBaseTest
         $this->oauth2_client_secret = 'ITc/6Y5N7kOtGKhg';
     }
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         $this->current_realm = Config::get('app.url');

@@ -48,3 +48,4 @@ model.sql
 /public/assets/*.woff
 /public/assets/*.png
 /public/assets/*.txt
+.phpunit.cache/

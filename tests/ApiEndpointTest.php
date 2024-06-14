@@ -23,7 +23,7 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
     private $current_realm;
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         $this->withoutMiddleware();
@@ -32,7 +32,6 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
     /**
      * testGetById
-     * @covers get api endpoint by id
      */
     public function testGetById(){
 
@@ -54,7 +53,6 @@ final class ApiEndpointTest extends BrowserKitTestCase {
 
     /**
      * testGetByPage
-     * @covers get api endpoint by list (paginated)
      */
     public function testGetByPage(){
         $response = $this->action("GET", "Api\ApiEndpointController@getAll",
