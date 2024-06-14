@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Session;
  * Class OIDCPasswordlessTest
  * @package Tests
  */
-class OIDCPasswordlessTest extends OpenStackIDBaseTest
+class OIDCPasswordlessTestCase extends OpenStackIDBaseTestCase
 {
 
     /**
@@ -86,7 +86,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
      */
     private $current_realm;
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         App::singleton(UtilsServiceCatalog::ServerConfigurationService, StubServerConfigurationService::class);
