@@ -56,38 +56,36 @@ final class DoctrineTransactionService implements ITransactionService
         while (!$done and $retry < self::MaxRetries) {
             try {
                 $em  = Registry::getManager($this->manager_name);
-                $con = $em->getConnection();
-
                 if (!$em->isOpen()) {
                     Log::warning("DoctrineTransactionService::transaction: entity manager is closed!, trying to re open...");
                     $em = Registry::resetManager($this->manager_name);
-                    // new entity manager
-                    $con = $em->getConnection();
                 }
 
-                $con->beginTransaction(); // suspend auto-commit
+                $em->getConnection()->beginTransaction(); // suspend auto-commit
                 $result = $callback($this);
                 $em->flush();
-                $con->commit();
+                $em->getConnection()->commit();
                 $done = true;
-            } catch (RetryableException $ex) {
-                Log::warning("retrying ...");
+            }
+            catch (RetryableException $ex) {
+                Log::warning($ex);
+                Log::warning("DoctrineTransactionService::transaction Retrying ...");
+                $em->close();
+                $em->getConnection()->rollBack();
                 Registry::resetManager($this->manager_name);
-                $con->rollBack();
                 Log::warning($ex);
                 $retry++;
                 if ($retry === self::MaxRetries) {
-                    $em->close();
-                    $con->rollBack();
-                    Registry::resetManager($this->manager_name);
+                    Log::info(sprintf("DoctrineTransactionService::transaction Max Retry Reached %s", $retry));
                     throw $ex;
                 }
-            } catch (Exception $ex) {
-                Log::warning("rolling back transaction");
-                $em->close();
-                $con->rollBack();
-                Registry::resetManager($this->manager_name);
+            }
+            catch (Exception $ex) {
                 Log::warning($ex);
+                $em->close();
+                Log::warning("DoctrineTransactionService::transaction rolling back TX");
+                $em->getConnection()->rollBack();
+                Registry::resetManager($this->manager_name);
                 throw $ex;
             }
         }
