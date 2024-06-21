@@ -11,12 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Doctrine\DBAL\Exception\ConnectionLost;
+use Doctrine\DBAL\TransactionIsolationLevel;
 use Illuminate\Support\Facades\Log;
 use Closure;
 use LaravelDoctrine\ORM\Facades\Registry;
 use Doctrine\DBAL\Exception\RetryableException;
 use Exception;
 use Utils\Db\ITransactionService;
+
 /**
  * Class DoctrineTransactionService
  * @package App\Services\Utils
@@ -40,14 +44,33 @@ final class DoctrineTransactionService implements ITransactionService
     }
 
     /**
-     * Execute a Closure within a transaction.
-     *
-     * @param  Closure $callback
-     * @return mixed
-     *
-     * @throws \Exception
+     * @param Exception $e
+     * @return bool
      */
-    public function transaction(Closure $callback)
+    public function shouldReconnect(\Exception $e):bool
+    {
+        if($e instanceof RetryableException) return true;
+        if($e instanceof ConnectionLost) return true;
+        if($e instanceof \PDOException){
+            switch(intval($e->getCode())){
+                case 2006:
+                    Log::warning("DoctrineTransactionService::shouldReconnect: MySQL server has gone away!");
+                    return true;
+                case 2002:
+                    Log::warning("DoctrineTransactionService::shouldReconnect:  php_network_getaddresses: getaddrinfo failed: nodename nor servname provided, or not known!");
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param Closure $callback
+     * @param int $isolationLevel
+     * @return mixed|null
+     * @throws Exception
+     */
+    public function transaction(Closure $callback,  int $isolationLevel = TransactionIsolationLevel::READ_COMMITTED)
     {
         $retry  = 0;
         $done   = false;
@@ -60,32 +83,41 @@ final class DoctrineTransactionService implements ITransactionService
                     Log::warning("DoctrineTransactionService::transaction: entity manager is closed!, trying to re open...");
                     $em = Registry::resetManager($this->manager_name);
                 }
-
+                $em->getConnection()->setTransactionIsolation($isolationLevel);
                 $em->getConnection()->beginTransaction(); // suspend auto-commit
                 $result = $callback($this);
                 $em->flush();
                 $em->getConnection()->commit();
                 $done = true;
             }
-            catch (RetryableException $ex) {
-                Log::warning($ex);
-                Log::warning("DoctrineTransactionService::transaction Retrying ...");
-                $em->close();
-                $em->getConnection()->rollBack();
-                Registry::resetManager($this->manager_name);
-                Log::warning($ex);
-                $retry++;
-                if ($retry === self::MaxRetries) {
-                    Log::info(sprintf("DoctrineTransactionService::transaction Max Retry Reached %s", $retry));
-                    throw $ex;
-                }
-            }
             catch (Exception $ex) {
-                Log::warning($ex);
+
+                $retry++;
+                $em->getConnection()->close();
                 $em->close();
-                Log::warning("DoctrineTransactionService::transaction rolling back TX");
-                $em->getConnection()->rollBack();
+                if($em->getConnection()->isTransactionActive())
+                    $em->getConnection()->rollBack();
                 Registry::resetManager($this->manager_name);
+
+                if($this->shouldReconnect($ex)){
+                    Log::warning
+                    (
+                        sprintf
+                        (
+                            "DoctrineTransactionService::transaction should reconnect %s retry %s",
+                            $ex->getMessage(),
+                            $retry
+                        )
+                    );
+                    if ($retry === self::MaxRetries) {
+                        Log::warning(sprintf("DoctrineTransactionService::transaction Max Retry Reached %s", $retry));
+                        Log::error($ex);
+                        throw $ex;
+                    }
+                    continue;
+                }
+                Log::warning("DoctrineTransactionService::transaction rolling back TX");
+                Log::error($ex);
                 throw $ex;
             }
         }
