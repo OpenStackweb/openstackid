@@ -39,7 +39,7 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     restart: unless-stopped
     ports:
-      - "32780:3306"
+      - "30780:3306"
     environment:
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_USER: ${DB_USERNAME}
@@ -53,7 +53,7 @@ services:
       retries: 10
     volumes:
       - ./docker-compose/mysql:/docker-entrypoint-initdb.d
-      - /tmp/mysql:/var/lib/mysql
+      - /tmp/mysql_idp:/var/lib/mysql
     networks:
       - idp-local-net
     env_file: ./.env
@@ -62,7 +62,7 @@ services:
     container_name: nginx-idp
     restart: unless-stopped
     ports:
-      - 8000:80
+      - 8001:80
     volumes:
       - ./:/var/www
       - ./docker-compose/nginx:/etc/nginx/conf.d/
