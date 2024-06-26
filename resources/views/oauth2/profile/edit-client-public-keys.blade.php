@@ -1,5 +1,5 @@
 @section('css')
-    {!! HTML::style('assets/css/edit-client-public-keys.css') !!}
+    {!! style_to('assets/css/edit-client-public-keys.css') !!}
 @append
 <table id="public-keys-table" class="table">
     <caption>
@@ -70,5 +70,5 @@
 @include('modal', array ('modal_id' => 'ModalAddPublicKey', 'modal_title' => 'Add Public Key', 'modal_save_css_class' => 'save-public-key', 'modal_save_text' => 'Save', 'modal_form' => 'oauth2.profile.edit-client-public-key-add-form', 'modal_form_data' => array()))
 
 @section('scripts')
-    {!! HTML::script('assets/js/oauth2/profile/edit-client-public-keys.js') !!}
+    {!! script_to('assets/js/oauth2/profile/edit-client-public-keys.js') !!}
 @append

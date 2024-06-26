@@ -3,21 +3,21 @@
     <title>Welcome to {!! Config::get('app.app_name') !!} - Server Admin - Server Private Keys</title>
 @stop
 @section('css')
-    {!! HTML::style('assets/css/private-keys.css') !!}
+    {!! style_to('assets/css/private-keys.css') !!}
 @append
 @section('scripts')
-    {!! HTML::script("assets/moment/min/moment.min.js") !!}
-    {!! HTML::script('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
-    {!! HTML::script('assets/js/oauth2/profile/admin/server-private-keys.js') !!}
+    {!! script_to("assets/moment/min/moment.min.js") !!}
+    {!! script_to('assets/pwstrength-bootstrap/pwstrength-bootstrap.js') !!}
+    {!! script_to('assets/js/oauth2/profile/admin/server-private-keys.js') !!}
 
     <script type="application/javascript">
         var privateKeyUrls =
-        {
-            add: '{!!URL::action("Api\ServerPrivateKeyApiController@create")!!}',
-            get: '{!!URL::action("Api\ServerPrivateKeyApiController@getAll", array("page"=>1,"per_page"=>100))!!}',
-            delete: '{!!URL::action("Api\ServerPrivateKeyApiController@delete",array("id" =>'@id'))!!}',
-            update: '{!!URL::action("Api\ServerPrivateKeyApiController@update",array('id'=> '@id'))!!}'
-        };
+            {
+                add: '{!!URL::action("Api\ServerPrivateKeyApiController@create")!!}',
+                get: '{!!URL::action("Api\ServerPrivateKeyApiController@getAll", array("page"=>1,"per_page"=>100))!!}',
+                delete: '{!!URL::action("Api\ServerPrivateKeyApiController@delete",array("id" =>'@id'))!!}',
+                update: '{!!URL::action("Api\ServerPrivateKeyApiController@update",array('id'=> '@id'))!!}'
+            };
 
         var oauth2_supported_algorithms =
         {

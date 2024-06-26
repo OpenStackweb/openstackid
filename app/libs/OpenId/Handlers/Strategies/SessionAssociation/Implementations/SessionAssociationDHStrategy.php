@@ -17,15 +17,15 @@ use OpenId\Requests\OpenIdDHAssociationSessionRequest;
 use OpenId\Responses\OpenIdDiffieHellmanAssociationSessionResponse;
 use OpenId\Responses\OpenIdDirectGenericErrorResponse;
 use OpenId\Responses\OpenIdResponse;
-use Zend\Crypt\PublicKey\DiffieHellman;
+use Laminas\Crypt\PublicKey\DiffieHellman;
 //services
 use OpenId\Services\IAssociationService;
 use OpenId\Services\IServerConfigurationService;
 use Utils\Services\ILogService;
 use OpenId\Helpers\AssociationFactory;
 use OpenId\Exceptions\InvalidDHParam;
-use Zend\Crypt\Exception\InvalidArgumentException;
-use Zend\Crypt\Exception\RuntimeException;
+use Laminas\Crypt\Exception\InvalidArgumentException;
+use Laminas\Crypt\Exception\RuntimeException;
 /**
  * Class SessionAssociationDHStrategy
  * @package OpenId\Handlers\Strategies\Implementations
