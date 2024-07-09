@@ -1,6 +1,6 @@
 import {getRawRequest, postRawRequest, putRawRequest, deleteRawRequest} from "../../../base_actions";
 
-export const PAGE_SIZE = 100;
+export const PAGE_SIZE = 10;
 
 const parseFilter = (filters) => {
     if (!filters || Object.keys(filters).length === 0 || !filters.value) return [];
