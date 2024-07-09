@@ -15,7 +15,6 @@
 use App\Http\Controllers\Controller;
 use App\libs\Utils\EmailUtils;
 use App\Services\Auth\IUserService;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request as LaravelRequest;

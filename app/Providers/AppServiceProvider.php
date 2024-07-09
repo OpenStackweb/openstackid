@@ -11,11 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\TextUtils;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Validator;
+use models\exceptions\ValidationException;
 use Sokil\IsoCodes\IsoCodesFactory;
 use Validators\CustomValidator;
 use App\Http\Utils\Log\LaravelMailerHandler;
@@ -99,12 +102,28 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Validator::extend("password_policy", function($attribute, $value, $parameters, $validator){
-            $min = 8;
-            $validator->addReplacer('password_policy', function($message, $attribute, $rule, $parameters) use ($validator, $min) {
-                return sprintf("The %s must be %s–30 characters, and must include a special character", $attribute, $min);
+            $password = TextUtils::trim($value);
+
+            $min_length = Config::get("auth.password_min_length");
+            if (strlen($password) < $min_length) {
+                return false;
+            }
+
+            $max_length = Config::get("auth.password_max_length");
+            if (strlen($password) > $max_length) {
+                return false;
+            }
+            $warning = Config::get("auth.password_shape_warning");
+            $pattern = Config::get("auth.password_shape_pattern");
+            if (!preg_match("/$pattern/", $password)) {
+                return false;
+            }
+
+            $validator->addReplacer('password_policy', function($message, $attribute, $rule, $parameters) use ($validator, $min_length, $max_length, $warning) {
+                return sprintf("The %s must be %s–%s characters, and %s", $attribute, $min_length, $max_length, $warning);
             });
 
-            return preg_match("/^((?=.*?[#?!@()$%^&*=_{}[\]:;\"'|<>,.\/~`±§+-])).{8,30}$/", $value);
+            return true;
         });
     }
 

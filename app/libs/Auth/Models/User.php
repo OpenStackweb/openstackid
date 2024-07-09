@@ -1321,12 +1321,28 @@ class User extends BaseEntity
 
     /**
      * @param string $password
+     * @throws ValidationException
      */
     public function setPassword(string $password): void
     {
         $password = TextUtils::trim($password);
 
-        if(empty($this->password_enc)){
+        $min_length = Config::get("auth.password_min_length");
+        if (strlen($password) < $min_length) {
+            throw new ValidationException("Password must be at least $min_length characters.");
+        }
+
+        $max_length = Config::get("auth.password_max_length");
+        if (strlen($password) > $max_length) {
+            throw new ValidationException("Password must be at most $max_length characters.");
+        }
+
+        $pattern = Config::get("auth.password_shape_pattern");
+        if (!preg_match("/$pattern/", $password)) {
+            throw new ValidationException(Config::get("auth.password_shape_warning"));
+        }
+
+        if (empty($this->password_enc)) {
             $this->password_enc = AuthHelper::AlgNative;
         }
         $this->password_salt = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);

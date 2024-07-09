@@ -11,7 +11,7 @@
     <div class="container">
         <div class="well">
             <p> Your password has been successfully reset.</p>
-            <p> Now you can <a target="_self" href="{!!URL::action("UserController@getLogin") !!}">Login</a> here.</p>
+            <p> Now you can <a target="_self" href="{!!URL::action("UserController@getLogin", ['login_hint' => $email]) !!}">Login</a> here.</p>
         </div>
     </div>
 @endsection

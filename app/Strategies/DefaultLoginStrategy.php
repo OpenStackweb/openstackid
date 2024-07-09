@@ -12,8 +12,12 @@
  * limitations under the License.
  **/
 
+use App\libs\Utils\EmailUtils;
+use  Illuminate\Support\Facades\Request;
 use App\libs\Auth\SocialLoginProviders;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
+use OAuth2\OAuth2Protocol;
 use Utils\IPHelper;
 use Services\IUserActionService;
 use Utils\Services\IAuthService;
@@ -48,6 +52,28 @@ class DefaultLoginStrategy implements ILoginStrategy
     {
         Log::debug(sprintf("DefaultLoginStrategy::getLogin"));
 
+        // login hint processing
+        Session::forget(['username', 'user_fullname', 'user_pic', 'user_verified']);
+        $login_hint = null;
+        if(Request::has(OAuth2Protocol::OAuth2Protocol_LoginHint)){
+            $login_hint = Request::query(OAuth2Protocol::OAuth2Protocol_LoginHint);
+            if(!EmailUtils::isValidEmail($login_hint))
+                $login_hint = null;
+        }
+
+        if(!empty($login_hint)) {
+            $user = $this->auth_service->getUserByUsername($login_hint);
+
+            if(!is_null($user)) {
+                Session::put('username', $user->getEmail());
+                Session::put('user_fullname', $user->getFullName());
+                Session::put('user_pic', $user->getPic());
+                Session::put('user_verified', true);
+            }
+        }
+
+        Session::save();
+
         if (Auth::guest())
             return View::make("auth.login", [
                 'supported_providers' => SocialLoginProviders::buildSupportedProviders()
@@ -73,7 +99,7 @@ class DefaultLoginStrategy implements ILoginStrategy
         return Redirect::intended($default_url);
     }
 
-    public function  cancelLogin()
+    public function cancelLogin()
     {
         return Redirect::action("HomeController@index");
     }

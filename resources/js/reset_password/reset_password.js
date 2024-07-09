@@ -15,10 +15,11 @@ import Typography from "@material-ui/core/Typography";
 import Swal from "sweetalert2";
 import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
-import { object, string, ref } from "yup";
+import {object, string} from "yup";
 import Banner from "../components/banner/banner";
 
 import styles from "./reset_password.module.scss";
+import {buildPasswordValidationSchema} from "../validator";
 
 const ResetPasswordPage = ({
   appLogo,
@@ -52,17 +53,9 @@ const ResetPasswordPage = ({
   };
 
   const buildValidationSchema = (passwordPolicy) =>
-    object({
-      password: string("Enter your password")
-        .min(
-          passwordPolicy.min_length,
-          `Password should be of minimum ${passwordPolicy.min_length} characters length`
-        )
-        .required("Password is required"),
-      password_confirmation: string("Confirm your password")
-        .required("Password confirmation is required")
-        .oneOf([ref("password")], "Passwords do not match"),
-    });
+      object({
+        ...buildPasswordValidationSchema(passwordPolicy, true)
+      });
 
   const formik = useFormik({
     initialValues: initialValues,
@@ -174,8 +167,7 @@ const ResetPasswordPage = ({
                 <InfoOutlinedIcon fontSize="small" />
                 &nbsp;
                 <Typography variant="body2">
-                  {`The password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and must include a
-                  special character.`}
+                  {`The Password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and ${passwordPolicy.shape_warning}`}
                 </Typography>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">

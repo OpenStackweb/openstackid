@@ -20,6 +20,7 @@ import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
 import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
+import {buildPasswordValidationSchema} from "../validator";
 
 import styles from "./signup.module.scss";
 
@@ -68,15 +69,7 @@ const SignUpPage = ({
       country_iso_code: string("Select a country").required(
         "Country is required"
       ),
-      password: string("Enter your password")
-        .min(
-          passwordPolicy.min_length,
-          `Password should be of minimum ${passwordPolicy.min_length} characters length`
-        )
-        .required("Password is required"),
-      password_confirmation: string("Confirm your password")
-        .required("Password confirmation is required")
-        .oneOf([ref("password")], "Passwords do not match"),
+      ...buildPasswordValidationSchema(passwordPolicy, true)
     });
 
   const formik = useFormik({
@@ -277,8 +270,7 @@ const SignUpPage = ({
                 <InfoOutlinedIcon fontSize="small" />
                 &nbsp;
                 <Typography variant="body2">
-                  {`The password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and must include a
-                  special character.`}
+                  {`The Password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and ${passwordPolicy.shape_warning}`}
                 </Typography>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">

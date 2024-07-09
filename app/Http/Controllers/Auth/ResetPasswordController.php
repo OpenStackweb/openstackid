@@ -137,7 +137,7 @@ final class ResetPasswordController extends Controller
 
             $this->user_service->resetPassword($payload['token'], $payload['password']);
 
-            return view("auth.passwords.reset_success");
+            return view("auth.passwords.reset_success", ['email'  => $payload['email']]);
         }
         catch (ValidationException $ex){
             Log::warning($ex);
