@@ -1329,12 +1329,12 @@ class User extends BaseEntity
 
         $min_length = Config::get("auth.password_min_length");
         if (strlen($password) < $min_length) {
-            throw new ValidationException("Password must be at least $min_length characters");
+            throw new ValidationException("Password must be at least $min_length characters.");
         }
 
         $max_length = Config::get("auth.password_max_length");
         if (strlen($password) > $max_length) {
-            throw new ValidationException("Password must be at most $max_length characters");
+            throw new ValidationException("Password must be at most $max_length characters.");
         }
 
         $pattern = Config::get("auth.password_shape_pattern");
