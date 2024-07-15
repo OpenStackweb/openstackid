@@ -16,6 +16,7 @@ use App\Http\Controllers\OpenId\DiscoveryController;
 use App\Http\Controllers\OpenId\OpenIdController;
 use App\Http\Controllers\Traits\JsonResponses;
 use App\Http\Utils\CountryList;
+use App\libs\OAuth2\Strategies\LoginHintProcessStrategy;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
@@ -123,7 +124,6 @@ final class UserController extends OpenIdController
     private $security_context_service;
 
     /**
-     * UserController constructor.
      * @param IMementoOpenIdSerializerService $openid_memento_service
      * @param IMementoOAuth2SerializerService $oauth2_memento_service
      * @param IAuthService $auth_service
@@ -138,6 +138,7 @@ final class UserController extends OpenIdController
      * @param IResourceServerService $resource_server_service
      * @param IUtilsServerConfigurationService $utils_configuration_service
      * @param ISecurityContextService $security_context_service
+     * @param LoginHintProcessStrategy $login_hint_process_strategy
      */
     public function __construct
     (
@@ -154,7 +155,8 @@ final class UserController extends OpenIdController
         ITokenService $token_service,
         IResourceServerService $resource_server_service,
         IUtilsServerConfigurationService $utils_configuration_service,
-        ISecurityContextService $security_context_service
+        ISecurityContextService $security_context_service,
+        LoginHintProcessStrategy $login_hint_process_strategy
     )
     {
 
@@ -174,7 +176,7 @@ final class UserController extends OpenIdController
         $this->utils_configuration_service = $utils_configuration_service;
         $this->security_context_service = $security_context_service;
 
-        $this->middleware(function ($request, $next) {
+        $this->middleware(function ($request, $next) use($login_hint_process_strategy){
 
             Log::debug(sprintf("UserController::middleware route %s %s", $request->getMethod(), $request->getRequestUri()));
 
@@ -185,7 +187,8 @@ final class UserController extends OpenIdController
                 (
                     $this->openid_memento_service,
                     $this->user_action_service,
-                    $this->auth_service
+                    $this->auth_service,
+                    $login_hint_process_strategy
                 );
 
                 $this->consent_strategy = new OpenIdConsentStrategy
@@ -203,7 +206,7 @@ final class UserController extends OpenIdController
                     $this->auth_service,
                     $this->oauth2_memento_service,
                     $this->user_action_service,
-                    $this->security_context_service
+                    $login_hint_process_strategy
                 );
 
                 $this->consent_strategy = new OAuth2ConsentStrategy
@@ -216,7 +219,12 @@ final class UserController extends OpenIdController
             } else {
                 //default stuff
                 Log::debug(sprintf("UserController::middleware DEFAULT"));
-                $this->login_strategy = new DefaultLoginStrategy($this->user_action_service, $this->auth_service);
+                $this->login_strategy = new DefaultLoginStrategy
+                (
+                    $this->user_action_service,
+                    $this->auth_service,
+                    $login_hint_process_strategy
+                );
                 $this->consent_strategy = null;
             }
 
