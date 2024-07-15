@@ -50,25 +50,46 @@ final class LoginHintProcessStrategy implements ILoginHintProcessStrategy
      * @return int|string|null
      */
     private function getLoginHint(){
+
         $ctx = $this->security_context_service->get();
-        $Login_hint = null;
+        $login_hint = null;
         if(!is_null($ctx)) {
-            $Login_hint = $ctx->getRequestedUserId();
+            $login_hint = $ctx->getRequestedUserId();
         }
 
-        if(is_null($Login_hint)){
+        if(empty($login_hint)){
+            Log::debug
+            (
+                sprintf
+                (
+                    "LoginHintProcessStrategy::getLoginHint no login hint in security context, trying to get from QS"
+                )
+            );
+
             if(Request::has(OAuth2Protocol::OAuth2Protocol_LoginHint)) {
                 $login_hint = Request::query(OAuth2Protocol::OAuth2Protocol_LoginHint);
-                if (!EmailUtils::isValidEmail($login_hint))
+                Log::debug(sprintf("LoginHintProcessStrategy::getLoginHint login_hint %s from QS", $login_hint));
+                if (!EmailUtils::isValidEmail($login_hint)) {
+                    Log::debug
+                    (
+                        sprintf
+                        (
+                            "LoginHintProcessStrategy::getLoginHint login_hint %s is not a valid email",
+                            $login_hint
+                        )
+                    );
+
                     $login_hint = null;
+                }
             }
         }
 
-        return $Login_hint;
+        return $login_hint;
     }
 
     public function process():void{
         $login_hint = $this->getLoginHint();
+        Log::debug(sprintf("LoginHintProcessStrategy::process login_hint %s", $login_hint));
         // login hint processing
         Session::forget(['username', 'user_fullname', 'user_pic', 'user_verified']);
         if (!is_null($login_hint)) {
