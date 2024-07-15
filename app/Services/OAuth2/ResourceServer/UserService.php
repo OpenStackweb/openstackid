@@ -153,9 +153,14 @@ final class UserService extends OAuth2ProtectedService implements IUserService
                 $data[StandardClaims::TwitterName] = $current_user->getTwitterName();
                 $data[StandardClaims::Company] = $current_user->getCompany();
                 $data[StandardClaims::JobTitle] = $current_user->getJobTitle();
+                // profile sharing permissions
                 $data[StandardClaims::ShowPicture] = $current_user->isPublicProfileShowPhoto();
                 $data[StandardClaims::ShowFullName] = $current_user->isPublicProfileShowFullname();
+                $data[StandardClaims::ShowEmail] = $current_user->isPublicProfileShowEmail();
+                $data[StandardClaims::ShowBio] = $current_user->isPublicProfileShowBio();
+                $data[StandardClaims::ShowSocialMediaInfo] = $current_user->isPublicProfileShowSocialMediaInfo();
                 $data[StandardClaims::AllowChatWithMe] = $current_user->isPublicProfileAllowChatWithMe();
+
                 $user_groups = [];
 
                 foreach ($current_user->getGroups() as $group) {
@@ -207,10 +212,14 @@ final class UserService extends OAuth2ProtectedService implements IUserService
         $claim_set->addClaim(new JWTClaim(StandardClaims::WeChatUser, new StringOrURI($user->getWechatUser())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::TwitterName, new StringOrURI($user->getTwitterName())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::LinkedInProfile, new StringOrURI($user->getLinkedInProfile())));
-        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowPicture, new JsonValue($user->isPublicProfileShowPhoto())));
-        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowFullName, new JsonValue($user->isPublicProfileShowFullname())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::Company, new StringOrURI($user->getCompany())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::JobTitle, new StringOrURI($user->getJobTitle())));
+        // profile sharing pesmissions
+        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowPicture, new JsonValue($user->isPublicProfileShowPhoto())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowEmail, new JsonValue($user->isPublicProfileShowEmail())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowBio, new JsonValue($user->isPublicProfileShowBio())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowSocialMediaInfo, new JsonValue($user->isPublicProfileShowSocialMediaInfo())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowFullName, new JsonValue($user->isPublicProfileShowFullname())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::AllowChatWithMe, new JsonValue($user->isPublicProfileAllowChatWithMe())));
 
         $user_groups = [];

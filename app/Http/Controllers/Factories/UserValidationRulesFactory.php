@@ -1,6 +1,4 @@
 <?php namespace App\Http\Controllers;
-use Auth\User;
-
 /**
  * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +11,7 @@ use Auth\User;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-
+use Auth\User;
 /**
  * Class UserValidationRulesFactory
  * @package App\Http\Controllers
@@ -65,6 +62,8 @@ final class UserValidationRulesFactory
                 'public_profile_show_photo' => 'sometimes|boolean',
                 'public_profile_show_fullname' => 'sometimes|boolean',
                 'public_profile_show_email' => 'sometimes|boolean',
+                'public_profile_show_social_media_info' => 'sometimes|boolean',
+                'public_profile_show_bio' => 'sometimes|boolean',
                 'public_profile_allow_chat_with_me' => 'sometimes|boolean',
             ];
 
@@ -109,6 +108,8 @@ final class UserValidationRulesFactory
             'public_profile_show_photo' => 'sometimes|boolean',
             'public_profile_show_fullname' => 'sometimes|boolean',
             'public_profile_show_email' => 'sometimes|boolean',
+            'public_profile_show_social_media_info' => 'sometimes|boolean',
+            'public_profile_show_bio' => 'sometimes|boolean',
             'public_profile_allow_chat_with_me' => 'sometimes|boolean',
         ];
     }

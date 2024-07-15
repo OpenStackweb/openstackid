@@ -20,6 +20,10 @@ abstract class StandardClaims
 
     const ShowFullName = 'public_profile_show_fullname';
 
+    const ShowSocialMediaInfo = 'public_profile_show_social_media_info';
+
+    const ShowBio = 'public_profile_show_bio';
+
     const AllowChatWithMe = 'public_profile_allow_chat_with_me';
 
     /**

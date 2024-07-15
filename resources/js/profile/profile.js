@@ -714,6 +714,14 @@ const ProfilePage = ({
                                 passwordPolicy={passwordPolicy}/>
                             <Grid item xs={12}>
                                 <FormControlLabel
+                                    control={<Checkbox name="public_profile_show_photo"
+                                                       id="public_profile_show_photo"
+                                                       checked={formik.values.public_profile_show_photo}
+                                                       onChange={formik.handleChange}
+                                                       color="primary"/>}
+                                    label="Show Picture on Public Profile?"
+                                />
+                                <FormControlLabel
                                     control={<Checkbox name="public_profile_show_fullname"
                                                        id="public_profile_show_fullname"
                                                        checked={formik.values.public_profile_show_fullname}
@@ -728,6 +736,22 @@ const ProfilePage = ({
                                                        onChange={formik.handleChange}
                                                        color="primary"/>}
                                     label="Show Email on Public Profile?"
+                                />
+                                <FormControlLabel
+                                    control={<Checkbox name="public_profile_show_bio"
+                                                       id="public_profile_show_bio"
+                                                       checked={formik.values.public_profile_show_bio}
+                                                       onChange={formik.handleChange}
+                                                       color="primary"/>}
+                                    label="Show Bio on Public Profile?"
+                                />
+                                <FormControlLabel
+                                    control={<Checkbox name="public_profile_show_social_media_info"
+                                                       id="public_profile_show_social_media_info"
+                                                       checked={formik.values.public_profile_show_social_media_info}
+                                                       onChange={formik.handleChange}
+                                                       color="primary"/>}
+                                    label="Show Social Media Info on Public Profile?"
                                 />
                                 <FormControlLabel
                                     control={<Checkbox name="public_profile_allow_chat_with_me"

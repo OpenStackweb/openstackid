@@ -16,7 +16,6 @@ use App\ModelSerializers\BaseSerializer;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Group;
 use Auth\User;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * Class BaseUserSerializer
@@ -79,6 +78,8 @@ final class PrivateUserSerializer extends BaseUserSerializer
         'PublicProfileShowPhoto' => 'public_profile_show_photo:json_boolean',
         'PublicProfileShowFullname' => 'public_profile_show_fullname:json_boolean',
         'PublicProfileShowEmail' => 'public_profile_show_email:json_boolean',
+        'PublicProfileShowSocialMediaInfo' => 'public_profile_show_social_media_info:json_boolean',
+        'PublicProfileShowBio' => 'public_profile_show_bio:json_boolean',
         'PublicProfileAllowChatWithMe' => 'public_profile_allow_chat_with_me:json_boolean',
     ];
 

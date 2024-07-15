@@ -14,7 +14,6 @@
 use Auth\Group;
 use Auth\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class UserFactory
@@ -163,6 +162,12 @@ final class UserFactory
 
         if(isset($payload['public_profile_show_email']))
             $user->setPublicProfileShowEmail(boolval($payload['public_profile_show_email']));
+
+        if(isset($payload['public_profile_show_social_media_info']))
+            $user->setPublicProfileShowSocialMediaInfo(boolval($payload['public_profile_show_social_media_info']));
+
+        if(isset($payload['public_profile_show_bio']))
+            $user->setPublicProfileShowBio(boolval($payload['public_profile_show_bio']));
 
         if(isset($payload['public_profile_allow_chat_with_me']))
             $user->setPublicProfileAllowChatWithMe(boolval($payload['public_profile_allow_chat_with_me']));

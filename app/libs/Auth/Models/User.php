@@ -108,6 +108,19 @@ class User extends BaseEntity
     private $public_profile_allow_chat_with_me;
 
     /**
+     * @ORM\Column(name="public_profile_show_social_media_info", options={"default":0}, type="boolean")
+     * @var bool
+     */
+    private $public_profile_show_social_media_info;
+
+    /**
+     * @ORM\Column(name="public_profile_show_bio", options={"default":0}, type="boolean")
+     * @var bool
+     */
+    private $public_profile_show_bio;
+
+
+    /**
      * @ORM\Column(name="last_login_date", type="datetime")
      * @var \DateTime
      */
@@ -438,10 +451,14 @@ class User extends BaseEntity
         parent::__construct();
         $this->active = true;
         $this->email_verified = false;
+        // user profile settings
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
         $this->public_profile_show_fullname = true;
-        $this->public_profile_allow_chat_with_me = true;
+        $this->public_profile_allow_chat_with_me = false;
+        $this->public_profile_show_social_media_info = false;
+        $this->public_profile_show_bio = true;
+
         $this->password = "";
         $this->identifier = null;
         $this->gender_specify = "";
@@ -464,7 +481,6 @@ class User extends BaseEntity
         $this->external_id = null;
         $this->external_provider = null;
         $this->external_pic = null;
-        $this->public_profile_allow_chat_with_me = false;
         $this->created_by_otp = null;
     }
 
@@ -1068,6 +1084,27 @@ class User extends BaseEntity
     {
         $this->public_profile_allow_chat_with_me = $public_profile_allow_chat_with_me;
     }
+
+    public function isPublicProfileShowSocialMediaInfo(): bool
+    {
+        return $this->public_profile_show_social_media_info;
+    }
+
+    public function setPublicProfileShowSocialMediaInfo(bool $public_profile_show_social_media_info): void
+    {
+        $this->public_profile_show_social_media_info = $public_profile_show_social_media_info;
+    }
+
+    public function isPublicProfileShowBio(): bool
+    {
+        return $this->public_profile_show_bio;
+    }
+
+    public function setPublicProfileShowBio(bool $public_profile_show_bio): void
+    {
+        $this->public_profile_show_bio = $public_profile_show_bio;
+    }
+
 
     /**
      * @return \DateTime|null
@@ -2048,6 +2085,8 @@ SQL;
             'public_profile_show_fullname',
             'public_profile_show_email',
             'public_profile_allow_chat_with_me',
+            'public_profile_show_social_media_info',
+            'public_profile_show_bio',
             'active',
             'first_name',
             'last_name',
