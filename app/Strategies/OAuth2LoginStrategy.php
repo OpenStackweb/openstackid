@@ -11,18 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\OAuth2\Strategies\ILoginHintProcessStrategy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
 use OAuth2\Requests\OAuth2AuthenticationRequest;
 use OAuth2\Services\IMementoOAuth2SerializerService;
-use OAuth2\Services\ISecurityContextService;
 use Services\IUserActionService;
 use Utils\IPHelper;
 use Utils\Services\IAuthService;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Session;
 /**
  * Class OAuth2LoginStrategy
  * @package Strategies
@@ -35,28 +35,24 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
      */
     private $memento_service;
 
-    /**
-     * @var ISecurityContextService
-     */
-    private $security_context_service;
+
 
     /**
      * @param IAuthService $auth_service
      * @param IMementoOAuth2SerializerService $memento_service
      * @param IUserActionService $user_action_service
-     * @param ISecurityContextService $security_context_service
+     * @param ILoginHintProcessStrategy $login_hint_process_strategy
      */
     public function __construct
     (
         IAuthService $auth_service,
         IMementoOAuth2SerializerService $memento_service,
         IUserActionService $user_action_service,
-        ISecurityContextService $security_context_service
+        ILoginHintProcessStrategy $login_hint_process_strategy
     )
     {
-        parent::__construct($user_action_service, $auth_service);
+        parent::__construct($user_action_service, $auth_service, $login_hint_process_strategy);
         $this->memento_service          = $memento_service;
-        $this->security_context_service = $security_context_service;
     }
 
     public function getLogin()
@@ -66,18 +62,7 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
         if (!Auth::guest())
             return Redirect::action("UserController@getProfile");
 
-        $requested_user_id = $this->security_context_service->get()->getRequestedUserId();
-        if (!is_null($requested_user_id)) {
-            $userHint = $this->auth_service->getUserById($requested_user_id);
-            if (!is_null($userHint)) {
-                Log::debug(sprintf("OAuth2LoginStrategy::getLogin user %s has saved state", $requested_user_id));
-                Session::put('username', $userHint->getEmail());
-                Session::put('user_fullname', $userHint->getFullName());
-                Session::put('user_pic', $userHint->getPic());
-                Session::put('user_verified', true);
-                Session::save();
-            }
-        }
+        $this->login_hint_process_strategy->process();
 
         $auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build(
             OAuth2Message::buildFromMemento(

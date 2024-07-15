@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use App\libs\OAuth2\Strategies\ILoginHintProcessStrategy;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
@@ -37,6 +38,7 @@ final class StrategyProvider extends ServiceProvider implements DeferrableProvid
 
     public function register()
     {
+        App::singleton(ILoginHintProcessStrategy::class, \App\libs\OAuth2\Strategies\LoginHintProcessStrategy::class);
         //direct response strategy
         App::singleton(OAuth2PostResponse::OAuth2PostResponse, \Strategies\PostResponseStrategy::class);
         App::singleton(OAuth2DirectResponse::OAuth2DirectResponse, \Strategies\DirectResponseStrategy::class);
@@ -66,6 +68,7 @@ final class StrategyProvider extends ServiceProvider implements DeferrableProvid
             OAuth2ServiceCatalog::AuthenticationStrategy,
             OpenIdServiceCatalog::AuthenticationStrategy,
             ILoginStrategyFactory::class,
+            ILoginHintProcessStrategy::class,
         ];
     }
 }

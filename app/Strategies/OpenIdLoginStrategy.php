@@ -13,6 +13,7 @@
  **/
 
 use App\libs\Auth\SocialLoginProviders;
+use App\libs\OAuth2\Strategies\LoginHintProcessStrategy;
 use OpenId\OpenIdMessage;
 use OpenId\OpenIdProtocol;
 use OpenId\Requests\OpenIdAuthenticationRequest;
@@ -39,15 +40,17 @@ final class OpenIdLoginStrategy extends DefaultLoginStrategy
      * @param IMementoOpenIdSerializerService $memento_service
      * @param IUserActionService $user_action_service
      * @param IAuthService $auth_service
+     * @param LoginHintProcessStrategy $login_hint_process_strategy
      */
     public function __construct(
         IMementoOpenIdSerializerService $memento_service,
         IUserActionService $user_action_service,
-        IAuthService $auth_service
+        IAuthService $auth_service,
+        LoginHintProcessStrategy $login_hint_process_strategy
     ) {
         $this->memento_service = $memento_service;
 
-        parent::__construct($user_action_service, $auth_service);
+        parent::__construct($user_action_service, $auth_service, $login_hint_process_strategy);
     }
 
     public function getLogin()
@@ -65,6 +68,8 @@ final class OpenIdLoginStrategy extends DefaultLoginStrategy
                 $params['identity_select'] = true;
             }
             $params['supported_providers'] = SocialLoginProviders::buildSupportedProviders();
+            $this->login_hint_process_strategy->process();
+
             return View::make("auth.login", $params);
         }
         return Redirect::action("UserController@getProfile");

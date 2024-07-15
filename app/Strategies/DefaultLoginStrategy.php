@@ -12,12 +12,9 @@
  * limitations under the License.
  **/
 
-use App\libs\Utils\EmailUtils;
-use  Illuminate\Support\Facades\Request;
+use App\libs\OAuth2\Strategies\LoginHintProcessStrategy;
 use App\libs\Auth\SocialLoginProviders;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
-use OAuth2\OAuth2Protocol;
 use Utils\IPHelper;
 use Services\IUserActionService;
 use Utils\Services\IAuthService;
@@ -41,38 +38,28 @@ class DefaultLoginStrategy implements ILoginStrategy
      */
     protected $auth_service;
 
-    public function __construct(IUserActionService $user_action_service,
-                                IAuthService $auth_service)
+    /**
+     * @var LoginHintProcessStrategy
+     */
+    protected $login_hint_process_strategy;
+
+    public function __construct
+    (
+        IUserActionService $user_action_service,
+        IAuthService $auth_service,
+        LoginHintProcessStrategy $login_hint_process_strategy
+    )
     {
         $this->user_action_service = $user_action_service;
         $this->auth_service        = $auth_service;
+        $this->login_hint_process_strategy = $login_hint_process_strategy;
     }
 
     public function getLogin()
     {
         Log::debug(sprintf("DefaultLoginStrategy::getLogin"));
 
-        // login hint processing
-        Session::forget(['username', 'user_fullname', 'user_pic', 'user_verified']);
-        $login_hint = null;
-        if(Request::has(OAuth2Protocol::OAuth2Protocol_LoginHint)){
-            $login_hint = Request::query(OAuth2Protocol::OAuth2Protocol_LoginHint);
-            if(!EmailUtils::isValidEmail($login_hint))
-                $login_hint = null;
-        }
-
-        if(!empty($login_hint)) {
-            $user = $this->auth_service->getUserByUsername($login_hint);
-
-            if(!is_null($user)) {
-                Session::put('username', $user->getEmail());
-                Session::put('user_fullname', $user->getFullName());
-                Session::put('user_pic', $user->getPic());
-                Session::put('user_verified', true);
-            }
-        }
-
-        Session::save();
+        $this->login_hint_process_strategy->process();
 
         if (Auth::guest())
             return View::make("auth.login", [
