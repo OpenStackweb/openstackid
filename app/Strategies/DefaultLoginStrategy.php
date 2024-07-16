@@ -15,6 +15,7 @@
 use App\libs\OAuth2\Strategies\LoginHintProcessStrategy;
 use App\libs\Auth\SocialLoginProviders;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Utils\IPHelper;
 use Services\IUserActionService;
 use Utils\Services\IAuthService;

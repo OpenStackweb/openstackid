@@ -91,7 +91,7 @@ final class LoginHintProcessStrategy implements ILoginHintProcessStrategy
         $login_hint = $this->getLoginHint();
         Log::debug(sprintf("LoginHintProcessStrategy::process login_hint %s", $login_hint));
         // login hint processing
-        Session::forget(['username', 'user_fullname', 'user_pic', 'user_verified']);
+
         if (!is_null($login_hint)) {
             $user = null;
 
@@ -121,12 +121,11 @@ final class LoginHintProcessStrategy implements ILoginHintProcessStrategy
 
             if (!is_null($user)) {
                 Log::debug(sprintf("LoginHintProcessStrategy::process user %s has saved state", $login_hint));
-                Session::put('username', $user->getEmail());
-                Session::put('user_fullname', $user->getFullName());
-                Session::put('user_pic', $user->getPic());
-                Session::put('user_verified', true);
+                Session::flash('username', $user->getEmail());
+                Session::flash('user_fullname', $user->getFullName());
+                Session::flash('user_pic', $user->getPic());
+                Session::flash('user_verified', true);
             }
         }
-        Session::save();
     }
 }

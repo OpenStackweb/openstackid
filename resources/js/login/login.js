@@ -137,7 +137,7 @@ const PasswordInputForm = ({
             <input type="hidden" value={userNameValue} id="username" name="username"/>
             <input type="hidden" value={csrfToken} id="_token" name="_token"/>
             <input type="hidden" value="password" id="flow" name="flow"/>
-            {shouldShowCaptcha() &&
+            {shouldShowCaptcha() && captchaPublicKey &&
                 <ReCAPTCHA
                     className={styles.recaptcha}
                     sitekey={captchaPublicKey}

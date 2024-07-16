@@ -86,85 +86,85 @@ const ResetPasswordPage = ({
         </a>
       </div>
       <form
-        onSubmit={formik.handleSubmit}
-        ref={formEl}
-        method="post"
-        action={resetPasswordAction}
-        target="_self"
+          onSubmit={formik.handleSubmit}
+          ref={formEl}
+          method="post"
+          action={resetPasswordAction}
+          target="_self"
       >
         <Card className={styles.reset_password_container} variant="outlined">
           <CardHeader
-            title="Reset your Password"
-            subheader="You can reset your password here."
+              title="Reset your Password"
+              subheader="You can reset your password here."
           />
           <CardContent>
             <Grid
-              container
-              direction="column"
-              spacing={2}
-              justifyContent="center"
+                container
+                direction="column"
+                spacing={2}
+                justifyContent="center"
             >
               <Grid item>
                 <TextField
-                  id="email"
-                  name="email"
-                  autoComplete="email"
-                  variant="outlined"
-                  fullWidth
-                  size="small"
-                  label="Email Address"
-                  value={formik.values.email}
-                  disabled={true}
+                    id="email"
+                    name="email"
+                    autoComplete="email"
+                    variant="outlined"
+                    fullWidth
+                    size="small"
+                    label="Email Address"
+                    value={formik.values.email}
+                    disabled={true}
                 />
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  id="password"
-                  name="password"
-                  type="password"
-                  variant="outlined"
-                  fullWidth
-                  size="small"
-                  label="Password"
-                  inputProps={{ maxLength: passwordPolicy.max_length }}
-                  value={formik.values.password}
-                  onChange={formik.handleChange}
-                  error={
-                    formik.touched.password && Boolean(formik.errors.password)
-                  }
-                  helperText={formik.touched.password && formik.errors.password}
+                    id="password"
+                    name="password"
+                    type="password"
+                    variant="outlined"
+                    fullWidth
+                    size="small"
+                    label="Password"
+                    inputProps={{maxLength: passwordPolicy.max_length}}
+                    value={formik.values.password}
+                    onChange={formik.handleChange}
+                    error={
+                        formik.touched.password && Boolean(formik.errors.password)
+                    }
+                    helperText={formik.touched.password && formik.errors.password}
                 />
                 {formik.values.password && (
-                  <PasswordStrengthBar
-                    password={formik.values.password}
-                    minLength={passwordPolicy.min_length}
-                  />
+                    <PasswordStrengthBar
+                        password={formik.values.password}
+                        minLength={passwordPolicy.min_length}
+                    />
                 )}
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  id="password_confirmation"
-                  name="password_confirmation"
-                  type="password"
-                  variant="outlined"
-                  fullWidth
-                  size="small"
-                  label="Confirm Password"
-                  inputProps={{ maxLength: passwordPolicy.max_length }}
-                  value={formik.values.password_confirmation}
-                  onChange={formik.handleChange}
-                  error={
-                    formik.touched.password_confirmation &&
-                    Boolean(formik.errors.password_confirmation)
-                  }
-                  helperText={
-                    formik.touched.password_confirmation &&
-                    formik.errors.password_confirmation
-                  }
+                    id="password_confirmation"
+                    name="password_confirmation"
+                    type="password"
+                    variant="outlined"
+                    fullWidth
+                    size="small"
+                    label="Confirm Password"
+                    inputProps={{maxLength: passwordPolicy.max_length}}
+                    value={formik.values.password_confirmation}
+                    onChange={formik.handleChange}
+                    error={
+                        formik.touched.password_confirmation &&
+                        Boolean(formik.errors.password_confirmation)
+                    }
+                    helperText={
+                        formik.touched.password_confirmation &&
+                        formik.errors.password_confirmation
+                    }
                 />
               </Grid>
               <Grid item className={styles.password_hint}>
-                <InfoOutlinedIcon fontSize="small" />
+                <InfoOutlinedIcon fontSize="small"/>
                 &nbsp;
                 <Typography variant="body2">
                   {`The Password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and ${passwordPolicy.shape_warning}`}
@@ -173,25 +173,25 @@ const ResetPasswordPage = ({
               <Grid item container alignItems="center" justifyContent="center">
                 <Grid container item justify='center'>
                   <ReCAPTCHA
-                    ref={captcha}
-                    className={styles.recaptcha}
-                    sitekey={captchaPublicKey}
-                    onChange={onChangeRecaptcha}
+                      ref={captcha}
+                      className={styles.recaptcha}
+                      sitekey={captchaPublicKey}
+                      onChange={onChangeRecaptcha}
                   />
                   {captchaConfirmation && (
-                    <div className={styles.error_label}>
-                      {captchaConfirmation}
-                    </div>
+                      <div className={styles.error_label}>
+                        {captchaConfirmation}
+                      </div>
                   )}
                 </Grid>
                 <Grid container item justify='center'>
                   <Button
-                    variant="contained"
-                    size="large"
-                    className={styles.button}
-                    disableElevation
-                    fullWidth
-                    type="submit"
+                      variant="contained"
+                      size="large"
+                      className={styles.button}
+                      disableElevation
+                      fullWidth
+                      type="submit"
                   >
                     {submitButtonText}
                   </Button>
@@ -200,8 +200,9 @@ const ResetPasswordPage = ({
             </Grid>
           </CardContent>
         </Card>
-        <input type="hidden" value={csrfToken} id="_token" name="_token" />
-        <input type="hidden" name="token" value={token} />
+        <input type="hidden" value={csrfToken} id="_token" name="_token"/>
+        <input type="hidden" value={initialValues.email} id="email" name="email"/>
+        <input type="hidden" name="token" value={token}/>
       </form>
     </Container>
   );
