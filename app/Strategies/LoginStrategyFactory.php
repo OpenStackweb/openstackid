@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\OAuth2\Strategies\ILoginHintProcessStrategy;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Log;
 use OAuth2\Services\IMementoOAuth2SerializerService;
@@ -54,13 +56,18 @@ final class LoginStrategyFactory implements ILoginStrategyFactory
     private $security_context_service;
 
     /**
-     * LoginStrategyFactory constructor.
+     * @var ILoginHintProcessStrategy
+     */
+    private $login_hint_process_strategy;
+
+    /**
      * @param IMementoOpenIdSerializerService $openid_memento_service
      * @param IMementoOAuth2SerializerService $oauth2_memento_service
      * @param IAuthService $auth_service
      * @param IUserService $user_service
      * @param IUserActionService $user_action_service
      * @param ISecurityContextService $security_context_service
+     * @param ILoginHintProcessStrategy $login_hint_process_strategy
      */
     public function __construct
     (
@@ -69,7 +76,9 @@ final class LoginStrategyFactory implements ILoginStrategyFactory
         IAuthService $auth_service,
         IUserService $user_service,
         IUserActionService $user_action_service,
-        ISecurityContextService $security_context_service)
+        ISecurityContextService $security_context_service,
+        ILoginHintProcessStrategy $login_hint_process_strategy
+    )
     {
         $this->openid_memento_service = $openid_memento_service;
         $this->oauth2_memento_service = $oauth2_memento_service;
@@ -77,6 +86,7 @@ final class LoginStrategyFactory implements ILoginStrategyFactory
         $this->user_service = $user_service;
         $this->user_action_service = $user_action_service;
         $this->security_context_service = $security_context_service;
+        $this->login_hint_process_strategy = $login_hint_process_strategy;
     }
 
     public function build():ILoginStrategy{
@@ -90,7 +100,8 @@ final class LoginStrategyFactory implements ILoginStrategyFactory
             (
                 $this->openid_memento_service,
                 $this->user_action_service,
-                $this->auth_service
+                $this->auth_service,
+                $this->login_hint_process_strategy
             );
 
         }
@@ -102,11 +113,16 @@ final class LoginStrategyFactory implements ILoginStrategyFactory
                 $this->auth_service,
                 $this->oauth2_memento_service,
                 $this->user_action_service,
-                $this->security_context_service
+                $this->login_hint_process_strategy
             );
         }
         //default stuff
         Log::debug(sprintf("LoginStrategyFactory::build DEFAULT"));
-        return new DefaultLoginStrategy($this->user_action_service, $this->auth_service);
+        return new DefaultLoginStrategy
+        (
+            $this->user_action_service,
+            $this->auth_service,
+            $this->login_hint_process_strategy
+        );
     }
 }
