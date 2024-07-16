@@ -214,9 +214,8 @@ final class UserService extends OAuth2ProtectedService implements IUserService
         $claim_set->addClaim(new JWTClaim(StandardClaims::LinkedInProfile, new StringOrURI($user->getLinkedInProfile())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::Company, new StringOrURI($user->getCompany())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::JobTitle, new StringOrURI($user->getJobTitle())));
-        // profile sharing pesmissions
+        // profile sharing permissions
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowPicture, new JsonValue($user->isPublicProfileShowPhoto())));
-        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowEmail, new JsonValue($user->isPublicProfileShowEmail())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowBio, new JsonValue($user->isPublicProfileShowBio())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowSocialMediaInfo, new JsonValue($user->isPublicProfileShowSocialMediaInfo())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowFullName, new JsonValue($user->isPublicProfileShowFullname())));
