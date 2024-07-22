@@ -81,6 +81,7 @@ final class PrivateUserSerializer extends BaseUserSerializer
         'PublicProfileShowSocialMediaInfo' => 'public_profile_show_social_media_info:json_boolean',
         'PublicProfileShowBio' => 'public_profile_show_bio:json_boolean',
         'PublicProfileAllowChatWithMe' => 'public_profile_allow_chat_with_me:json_boolean',
+        'PublicProfileShowTelephoneNumber' => 'public_profile_show_telephone_number:json_boolean',
     ];
 
     /**

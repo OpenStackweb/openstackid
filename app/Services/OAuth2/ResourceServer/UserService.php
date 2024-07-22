@@ -160,6 +160,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
                 $data[StandardClaims::ShowBio] = $current_user->isPublicProfileShowBio();
                 $data[StandardClaims::ShowSocialMediaInfo] = $current_user->isPublicProfileShowSocialMediaInfo();
                 $data[StandardClaims::AllowChatWithMe] = $current_user->isPublicProfileAllowChatWithMe();
+                $data[StandardClaims::ShowTelephoneNumber] = $current_user->isPublicProfileShowTelephoneNumber();
 
                 $user_groups = [];
 
@@ -220,6 +221,7 @@ final class UserService extends OAuth2ProtectedService implements IUserService
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowSocialMediaInfo, new JsonValue($user->isPublicProfileShowSocialMediaInfo())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::ShowFullName, new JsonValue($user->isPublicProfileShowFullname())));
         $claim_set->addClaim(new JWTClaim(StandardClaims::AllowChatWithMe, new JsonValue($user->isPublicProfileAllowChatWithMe())));
+        $claim_set->addClaim(new JWTClaim(StandardClaims::ShowTelephoneNumber, new JsonValue($user->isPublicProfileShowTelephoneNumber())));
 
         $user_groups = [];
 

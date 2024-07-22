@@ -65,6 +65,7 @@ final class UserValidationRulesFactory
                 'public_profile_show_social_media_info' => 'sometimes|boolean',
                 'public_profile_show_bio' => 'sometimes|boolean',
                 'public_profile_allow_chat_with_me' => 'sometimes|boolean',
+                'public_profile_show_telephone_number' => 'sometimes|boolean',
             ];
 
             if(!is_null($currentUser) && !$currentUser->isAdmin() && $currentUser->hasPasswordSet()){
@@ -111,6 +112,7 @@ final class UserValidationRulesFactory
             'public_profile_show_social_media_info' => 'sometimes|boolean',
             'public_profile_show_bio' => 'sometimes|boolean',
             'public_profile_allow_chat_with_me' => 'sometimes|boolean',
+            'public_profile_show_telephone_number' => 'sometimes|boolean',
         ];
     }
 }

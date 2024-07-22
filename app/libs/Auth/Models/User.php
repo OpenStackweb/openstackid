@@ -119,6 +119,11 @@ class User extends BaseEntity
      */
     private $public_profile_show_bio;
 
+    /**
+     * @ORM\Column(name="public_profile_show_telephone_number", options={"default":0}, type="boolean")
+     * @var bool
+     */
+    private $public_profile_show_telephone_number;
 
     /**
      * @ORM\Column(name="last_login_date", type="datetime")
@@ -355,7 +360,6 @@ class User extends BaseEntity
 
     // relations
 
-
     /**
      * @ORM\ManyToOne(targetEntity="Models\OAuth2\OAuth2OTP", cascade={"persist"})
      * @ORM\JoinColumn(name="created_by_otp_id", referencedColumnName="id", nullable=true)
@@ -455,9 +459,10 @@ class User extends BaseEntity
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
         $this->public_profile_show_fullname = true;
-        $this->public_profile_allow_chat_with_me = false;
         $this->public_profile_show_social_media_info = false;
         $this->public_profile_show_bio = true;
+        $this->public_profile_show_telephone_number = false;
+        $this->public_profile_allow_chat_with_me = false;
 
         $this->password = "";
         $this->identifier = null;
@@ -1094,6 +1099,17 @@ class User extends BaseEntity
     {
         $this->public_profile_show_social_media_info = $public_profile_show_social_media_info;
     }
+
+    public function isPublicProfileShowTelephoneNumber(): bool
+    {
+        return $this->public_profile_show_telephone_number;
+    }
+
+    public function setPublicProfileShowTelephoneNumber(bool $public_profile_show_telephone_number): void
+    {
+        $this->public_profile_show_telephone_number = $public_profile_show_telephone_number;
+    }
+
 
     public function isPublicProfileShowBio(): bool
     {
@@ -2087,6 +2103,7 @@ SQL;
             'public_profile_allow_chat_with_me',
             'public_profile_show_social_media_info',
             'public_profile_show_bio',
+            'public_profile_show_telephone_number',
             'active',
             'first_name',
             'last_name',

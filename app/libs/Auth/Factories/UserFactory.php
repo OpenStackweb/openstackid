@@ -172,6 +172,9 @@ final class UserFactory
         if(isset($payload['public_profile_allow_chat_with_me']))
             $user->setPublicProfileAllowChatWithMe(boolval($payload['public_profile_allow_chat_with_me']));
 
+        if(isset($payload['public_profile_show_telephone_number']))
+            $user->setPublicProfileShowTelephoneNumber(boolval($payload['public_profile_show_telephone_number']));
+
         if(isset($payload['email_verified']) && boolval($payload['email_verified']) === true && !$user->isEmailVerified()) {
             // we have this variable to bypass email UserEmailVerified
             $send_email_verified_notice = isset($payload['send_email_verified_notice']) ? boolval($payload['send_email_verified_notice']):true;
