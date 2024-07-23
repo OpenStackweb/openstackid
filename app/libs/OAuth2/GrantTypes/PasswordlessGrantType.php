@@ -381,9 +381,9 @@ class PasswordlessGrantType extends InteractiveGrantType
 
             $id_token = $this->token_service->createIdToken
             (
-                $otp->getNonce(),
                 $this->client->getClientId(),
-                $access_token
+                $access_token,
+                $otp->getNonce()
             );
 
             $refresh_token = $access_token->getRefreshToken();

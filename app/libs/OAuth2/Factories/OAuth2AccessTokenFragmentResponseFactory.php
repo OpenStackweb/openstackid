@@ -63,9 +63,9 @@ final class OAuth2AccessTokenFragmentResponseFactory
 
                 $id_token = $token_service->createIdToken
                 (
-                    $request->getNonce(),
                     $request->getClientId(),
-                    $access_token
+                    $access_token,
+                    $request->getNonce()
                 );
             }
 

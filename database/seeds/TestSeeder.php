@@ -235,7 +235,7 @@ PPK;
                 'first_name' => 'Sebastian',
                 'last_name' => 'Marcet',
                 'email' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!',
                 'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
                 'gender' => 'male',
                 'address1' => 'Av. Siempre Viva 111',
@@ -256,7 +256,7 @@ PPK;
                 'first_name' => 'Sebastian',
                 'last_name' => 'Marcet IDN',
                 'email' => 'hei@やる.ca',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!',
                 'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
                 'gender' => 'male',
                 'address1' => 'Av. Siempre Viva 111',
@@ -277,7 +277,7 @@ PPK;
                 'first_name' => 'Márton',
                 'last_name' => 'Kiss',
                 'email' => 'mkiss@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!',
                 'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
                 'gender' => 'male',
                 'address1' => 'Av. Siempre Viva 111',
@@ -298,7 +298,7 @@ PPK;
                 'first_name' => '付',
                 'last_name' => '金刚',
                 'email' => 'fujg573@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!',
                 'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
                 'gender' => 'male',
                 'address1' => 'Av. Siempre Viva 111',
@@ -319,7 +319,7 @@ PPK;
                 'first_name' => 'Bharath',
                 'last_name' => 'Kumar M R',
                 'email' => 'mrbharathee@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!',
                 'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
                 'gender' => 'male',
                 'address1' => 'Av. Siempre Viva 111',
@@ -340,7 +340,7 @@ PPK;
                 'first_name' => '大塚',
                 'last_name' => '元央',
                 'email' => 'yuanying@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!',
                 'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
                 'gender' => 'male',
                 'address1' => 'Av. Siempre Viva 111',
@@ -361,7 +361,7 @@ PPK;
                 'first_name' => 'Ian Y.',
                 'last_name' => 'Choi',
                 'email' => 'ianyrchoi@gmail.com',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!',
                 'password_enc' => \Auth\AuthHelper::AlgSHA1_V2_4,
                 'gender' => 'male',
                 'address1' => 'Av. Siempre Viva 111',
@@ -385,7 +385,7 @@ PPK;
             EntityManager::persist($user);
             $raw_password = $payload['password'];
             if(!$user->checkPassword($raw_password))
-                throw new Exception("password verification failed !!!");
+                throw new \Exception("password verification failed !!!");
         }
         EntityManager::flush();
     }

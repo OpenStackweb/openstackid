@@ -72,9 +72,9 @@ final class OAuth2AccessTokenResponseFactory
 
                     $id_token = $token_service->createIdToken
                     (
-                        $auth_code->getNonce(),
                         $auth_code->getClientId(),
-                        $access_token
+                        $access_token,
+                        $auth_code->getNonce()
                     );
                 }
 
@@ -86,9 +86,9 @@ final class OAuth2AccessTokenResponseFactory
 
                 $id_token = $token_service->createIdToken
                 (
-                    $auth_code->getNonce(),
                     $auth_code->getClientId(),
-                    $access_token
+                    $access_token,
+                    $auth_code->getNonce()
                 );
             }
 

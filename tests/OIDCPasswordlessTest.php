@@ -621,6 +621,11 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
 
         $this->assertTrue(!empty($refresh_token));
 
+        $id_token = $response->id_token;
+
+        $this->assertTrue(!empty($id_token));
+
+
         $params = [
             'refresh_token' => $refresh_token,
             'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_RefreshToken,
@@ -643,9 +648,11 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
         //get new access token and new refresh token...
         $new_access_token = $response->access_token;
         $new_refresh_token = $response->refresh_token;
+        $new_id_token = $response->id_token;
 
         $this->assertTrue(!empty($new_access_token));
         $this->assertTrue(!empty($new_refresh_token));
+        $this->assertTrue(!empty($new_id_token));
 
     }
 

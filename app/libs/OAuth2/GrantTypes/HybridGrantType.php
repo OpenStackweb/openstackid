@@ -204,12 +204,11 @@ class HybridGrantType extends InteractiveGrantType
 
         if (in_array(OAuth2Protocol::OAuth2Protocol_ResponseType_IdToken, $request->getResponseType(false)))
         {
-
             $id_token = $this->token_service->createIdToken
             (
-                $request->getNonce(),
                 $request->getClientId(),
                 $access_token,
+                $request->getNonce(),
                 $auth_code
             );
         }

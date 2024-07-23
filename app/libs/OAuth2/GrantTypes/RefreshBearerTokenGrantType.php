@@ -19,12 +19,13 @@ use OAuth2\Exceptions\InvalidOAuth2Request;
 use OAuth2\Exceptions\UseRefreshTokenException;
 use OAuth2\Models\IClient;
 use OAuth2\Repositories\IClientRepository;
+use OAuth2\Responses\OAuth2AccessTokenResponse;
+use OAuth2\Responses\OAuth2IdTokenResponse;
 use OAuth2\Services\ITokenService;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Requests\OAuth2RefreshAccessTokenRequest;
 use OAuth2\Requests\OAuth2Request;
 use OAuth2\Requests\OAuth2TokenRequest;
-use OAuth2\Responses\OAuth2AccessTokenResponse;
 use OAuth2\Responses\OAuth2Response;
 use OAuth2\Services\IClientService;
 use Utils\Services\ILogService;
@@ -169,15 +170,43 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
             $new_refresh_token = $this->token_service->createRefreshToken($access_token, true);
         }
 
-        $response = new OAuth2AccessTokenResponse
+        // add id token on response ( new id token )
+        // see https://openid.net/specs/openid-connect-core-1_0.html#RefreshingAccessToken
+        // considerations
+        // 1. if the ID Token contains an auth_time Claim, its value MUST represent the time of the original
+        //    authentication - not the time that the new ID token is issued.
+        // 2. it SHOULD NOT have a nonce Claim, even when the ID Token issued at the time of the original authentication
+        //   contained nonce; however, if it is present, its value MUST be the same as in the ID Token issued at the
+        //  time of the original authentication
+        $id_token = null;
+
+        $access_token_scopes = explode(' ', $access_token->getScope());
+        if(in_array(OAuth2Protocol::OpenIdConnect_Scope,$access_token_scopes)) {
+
+            $id_token = $this->token_service->createIdToken
+            (
+                $this->current_client->getClientId(),
+                $access_token
+            );
+        }
+
+        if(!is_null($id_token))
+            return new OAuth2IdTokenResponse
+            (
+                $access_token->getValue(),
+                $access_token->getLifetime(),
+                $id_token->toCompactSerialization(),
+                !is_null($new_refresh_token) ? $new_refresh_token->getValue() : null,
+                $scope
+            );
+
+        return new OAuth2AccessTokenResponse
         (
             $access_token->getValue(),
             $access_token->getLifetime(),
             !is_null($new_refresh_token) ? $new_refresh_token->getValue() : null,
             $scope
         );
-
-        return $response;
     }
 
     /**

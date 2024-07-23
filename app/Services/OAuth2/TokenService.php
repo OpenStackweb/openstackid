@@ -1338,9 +1338,9 @@ final class TokenService extends AbstractService implements ITokenService
     }
 
     /**
-     * @param string $nonce
      * @param string $client_id
      * @param AccessToken|null $access_token
+     * @param string|null $nonce
      * @param AuthorizationCode|null $auth_code
      * @return IBasicJWT
      * @throws AbsentClientException
@@ -1351,14 +1351,16 @@ final class TokenService extends AbstractService implements ITokenService
      */
     public function createIdToken
     (
-        $nonce,
-        $client_id,
+        string $client_id,
         AccessToken $access_token = null,
-        AuthorizationCode $auth_code = null
-    )
+        ?string $nonce = null,
+        ?AuthorizationCode $auth_code = null
+    ):IBasicJWT
     {
+        Log::debug(sprintf("TokenService::createIdToken client id is %s", $client_id));
+
         $issuer = $this->configuration_service->getSiteUrl();
-        if (empty($issuer)) throw new ConfigurationException('missing idp url');
+        if (empty($issuer)) throw new ConfigurationException('Missing IDP URL.');
 
         $client = $this->client_repository->getClientById($client_id);
         $id_token_lifetime = $this->configuration_service->getConfigValue('OAuth2.IdToken.Lifetime');
@@ -1368,7 +1370,7 @@ final class TokenService extends AbstractService implements ITokenService
             (
                 sprintf
                 (
-                    "client id %d does not exists!",
+                    "Client id %d does not exists.",
                     $client_id
                 )
             );
@@ -1378,7 +1380,13 @@ final class TokenService extends AbstractService implements ITokenService
 
         if (is_null($user)) {
             $user_id = $this->principal_service->get()->getUserId();
-            Log::debug(sprintf("user id is %s", $user_id));
+            Log::debug(sprintf("TokenService::createIdToken user id is %s from principal service", $user_id));
+            $user = $this->auth_service->getUserById($user_id);
+        }
+
+        if(is_null($user) && !is_null($access_token)){
+            $user_id = $access_token->getUserId();
+            Log::debug(sprintf("TokenService::createIdToken user id is %s from access token", $user_id));
             $user = $this->auth_service->getUserById($user_id);
         }
 
@@ -1428,6 +1436,7 @@ final class TokenService extends AbstractService implements ITokenService
         if (!is_null($sig_alg) && !is_null($auth_code))
             $this->buildAuthCodeHashClaim($auth_code, $sig_alg, $claim_set);
 
+        // auth_time claim
         $this->buildAuthTimeClaim($claim_set);
 
         return $this->id_token_builder->buildJWT($claim_set, $id_token_response_info, $client);

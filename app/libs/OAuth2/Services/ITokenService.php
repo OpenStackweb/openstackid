@@ -179,21 +179,20 @@ interface ITokenService {
      */
     public function revokeRefreshToken(string $value, bool $is_hashed = false, ?User $current_user = null);
 
-
     /**
-     * @param string $nonce
      * @param string $client_id
      * @param AccessToken|null $access_token
-     * @param AuthorizationCode $auth_code
+     * @param AuthorizationCode|null $auth_code
+     * @param string|null $nonce
      * @return IBasicJWT
      */
     public function createIdToken
     (
-        $nonce,
-        $client_id,
-        AccessToken $access_token    = null,
-        AuthorizationCode $auth_code = null
-    );
+        string $client_id,
+        ?AccessToken $access_token = null,
+        ?string $nonce = null,
+        ?AuthorizationCode $auth_code = null
+    ):IBasicJWT;
 
     /**
      * @param OAuth2PasswordlessAuthenticationRequest $request
