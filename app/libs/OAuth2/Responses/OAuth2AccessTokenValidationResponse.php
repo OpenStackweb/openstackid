@@ -63,16 +63,47 @@ class OAuth2AccessTokenValidationResponse extends OAuth2DirectResponse
             $this[OAuth2Protocol::OAuth2Protocol_UserId] = $user->getId();
             $this['user_identifier'] = $user->getIdentifier();
             $this['user_email'] = $user->getEmail();
+            $this['user_second_email'] = $user->getSecondEmail();
+            $this['user_third_email'] = $user->getThirdEmail();
             $this['user_first_name'] = $user->getFirstName();
             $this['user_last_name'] = $user->getLastName();
             $this['user_language'] = $user->getLanguage();
             $this['user_country'] = $user->getCountry();
             $this['user_email_verified'] = $user->isEmailVerified();
             $this['user_pic'] = $user->getPic();
+
+            if($user->isPublicProfileShowBio()) {
+                $this['user_bio'] = $user->getBio();
+                $this['user_statement_of_interest'] = $user->getStatementOfInterest();
+                $this['user_birthday'] = $user->getDateOfBirthNice();
+                $this['user_language'] = $user->getLanguage();
+                $this['user_gender'] = $user->getGender();
+                $this['user_gender_specify'] = $user->getGenderSpecify();
+                $this['user_company'] = $user->getCompany();
+                $this['user_job_title'] = $user->getJobTitle();
+            }
+
+            if($user->isPublicProfileShowTelephoneNumber()){
+                $this['user_phone_number'] = $user->getPhoneNumber();
+            }
+
+            if($user->isPublicProfileShowSocialMediaInfo()){
+                $this['user_irc'] = $user->getIrc();
+                $this['user_linked_in_profile'] = $user->getLinkedInProfile();
+                $this['user_github_user'] = $user->getGithubUser();
+                $this['user_wechat_user'] = $user->getWechatUser();
+                $this['user_twitter_name'] = $user->getTwitterName();
+            }
+
+            // permissions
             $this["user_public_profile_show_fullname"] = $user->isPublicProfileShowFullname();
             $this['user_public_profile_show_email'] = $user->isPublicProfileShowEmail();
             $this['user_public_profile_show_photo'] = $user->isPublicProfileShowPhoto();
+            $this['user_public_profile_show_bio'] = $user->isPublicProfileShowBio();
+            $this['user_public_profile_show_social_media_info'] = $user->isPublicProfileShowSocialMediaInfo();
+            $this['user_public_profile_show_telephone_number'] = $user->isPublicProfileShowTelephoneNumber();
             $this['user_public_profile_allow_chat_with_me'] = $user->isPublicProfileAllowChatWithMe();
+
             // default empty value
             $user_groups = [];
             foreach ($user->getGroups() as $group) {
