@@ -158,7 +158,7 @@ final class AuthService extends AbstractService implements IAuthService
         Log::debug("AuthService::login: clearing principal");
         $this->principal_service->clear();
         $current_user = $this->getCurrentUser();
-        if(is_null($current_user))
+        if(is_null($current_user) || !$current_user->canLogin())
             throw new AuthenticationException
             (
                 "We are sorry, your username or password does not match an existing record."
@@ -248,10 +248,16 @@ final class AuthService extends AbstractService implements IAuthService
                         'email' => $otp->getUserName(),
                         'email_verified' => true,
                         // dont send email
-                        'send_email_verified_notice' => false
+                        'send_email_verified_notice' => false,
+                        'active' => true,
                     ],
                     $otp
                 );
+            }
+
+            if(!$user->canLogin()){
+                Log::warning(sprintf("AuthService::loginWithOTP user %s cannot login ( is not active ).", $user->getId()));
+                throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
             }
 
             $otp->setAuthTime(time());

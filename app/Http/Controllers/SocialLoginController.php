@@ -14,9 +14,9 @@
 
 use App\libs\Auth\SocialLoginProviders;
 use App\Services\Auth\IUserService;
+use Auth\Exceptions\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
 use models\exceptions\ValidationException;
 use OAuth2\Services\IMementoOAuth2SerializerService;
@@ -154,9 +154,16 @@ final class SocialLoginController extends Controller
             }
 
             // do login
+            if(!$user->canLogin()) {
+                throw new AuthenticationException
+                (
+                    "We are sorry, your username does not match an existing record."
+                );
+            }
+
             Auth::login($user, true);
             // and continue the usual flow
-            return $this->login_strategy->postLogin([ 'provider'=> $provider ]);
+            return $this->login_strategy->postLogin(['provider' => $provider]);
         }
         catch (\Exception $ex){
 

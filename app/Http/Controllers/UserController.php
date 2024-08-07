@@ -257,7 +257,7 @@ final class UserController extends OpenIdController
 
             $user = $this->auth_service->getUserByUsername($email);
 
-            if (is_null($user))
+            if (is_null($user) || !$user->canLogin())
                 throw new EntityNotFoundException();
 
             return $this->ok(
@@ -320,7 +320,7 @@ final class UserController extends OpenIdController
 
                     $client = $this->client_repository->getClientById($client_id);
                     if (is_null($client))
-                        throw new ValidationException("client does not exists");
+                        throw new ValidationException("Client does not exists.");
 
                     $this->oauth2_memento_service->serialize($oauth_auth_request->getMessage()->createMemento());
                 }
