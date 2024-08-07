@@ -724,6 +724,84 @@ const EditUserPage = ({
                                     disabled={true}
                                 />
                             </Grid>
+                            <Grid item spacing={2} container direction="row">
+                                <Grid item xs={6}>
+                                    <FormControlLabel
+                                        control={<Checkbox name="public_profile_show_photo"
+                                                           id="public_profile_show_photo"
+                                                           checked={formik.values.public_profile_show_photo}
+                                                           onChange={formik.handleChange}
+                                                           color="primary"/>}
+                                        label="Show Picture on Public Profile?"
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <FormControlLabel
+                                        control={<Checkbox name="public_profile_show_fullname"
+                                                           id="public_profile_show_fullname"
+                                                           checked={formik.values.public_profile_show_fullname}
+                                                           onChange={formik.handleChange}
+                                                           color="primary"/>}
+                                        label="Show Full name on Public Profile?"
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Grid item spacing={2} container direction="row">
+                                <Grid item xs={6}>
+                                    <FormControlLabel
+                                        control={<Checkbox name="public_profile_show_email"
+                                                           id="public_profile_show_email"
+                                                           checked={formik.values.public_profile_show_email}
+                                                           onChange={formik.handleChange}
+                                                           color="primary"/>}
+                                        label="Show Email on Public Profile?"
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <FormControlLabel
+                                        control={<Checkbox name="public_profile_show_bio"
+                                                           id="public_profile_show_bio"
+                                                           checked={formik.values.public_profile_show_bio}
+                                                           onChange={formik.handleChange}
+                                                           color="primary"/>}
+                                        label="Show Bio on Public Profile?"
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Grid item spacing={2} container direction="row">
+                                <Grid item xs={6}>
+                                    <FormControlLabel
+                                        control={<Checkbox name="public_profile_show_social_media_info"
+                                                           id="public_profile_show_social_media_info"
+                                                           checked={formik.values.public_profile_show_social_media_info}
+                                                           onChange={formik.handleChange}
+                                                           color="primary"/>}
+                                        label="Show Social Media Info on Public Profile?"
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <FormControlLabel
+                                        control={<Checkbox name="public_profile_show_telephone_number"
+                                                           id="public_profile_show_telephone_number"
+                                                           checked={formik.values.public_profile_show_telephone_number}
+                                                           onChange={formik.handleChange}
+                                                           color="primary"/>}
+                                        label="Show Telephone Number on Public Profile?"
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Grid item spacing={2} container direction="row">
+                                <Grid item xs={6}>
+                                    <FormControlLabel
+                                        control={<Checkbox name="public_profile_allow_chat_with_me"
+                                                           id="public_profile_allow_chat_with_me"
+                                                           checked={formik.values.public_profile_allow_chat_with_me}
+                                                           onChange={formik.handleChange}
+                                                           color="primary"/>}
+                                        label="Allow People Chat With Me?"
+                                    />
+                                </Grid>
+                            </Grid>
                             <Grid item container alignItems="center" justifyContent="center">
                                 <Button
                                     variant="contained"
