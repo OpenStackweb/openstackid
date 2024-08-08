@@ -76,5 +76,5 @@
         @endforeach
 
     </script>
-    {!! HTML::script('assets/js/oauth2/profile/admin/edit-api-scope-group.js') !!}
+    {!! script_to('assets/js/oauth2/profile/admin/edit-api-scope-group.js') !!}
 @append

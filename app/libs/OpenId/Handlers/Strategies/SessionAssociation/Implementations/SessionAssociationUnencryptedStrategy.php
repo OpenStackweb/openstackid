@@ -16,8 +16,8 @@ use OpenId\Handlers\Strategies\ISessionAssociationStrategy;
 use OpenId\Requests\OpenIdAssociationSessionRequest;
 use OpenId\Responses\OpenIdDirectGenericErrorResponse;
 use OpenId\Responses\OpenIdUnencryptedAssociationSessionResponse;
-use Zend\Crypt\Exception\InvalidArgumentException;
-use Zend\Crypt\Exception\RuntimeException;
+use Laminas\Crypt\Exception\InvalidArgumentException;
+use Laminas\Crypt\Exception\RuntimeException;
 //services
 use OpenId\Services\IAssociationService;
 use OpenId\Services\IServerConfigurationService;

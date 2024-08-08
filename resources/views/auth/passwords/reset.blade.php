@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/resetPassword.css') !!}
+    {!! style_to('assets/css/resetPassword.css') !!}
 @append
 @section('content')
 
@@ -48,7 +48,7 @@
             submitButtonText: '{{ __("Password Reset") }}',
         }
     </script>
-    {!! HTML::script('assets/resetPassword.js') !!}
+    {!! script_to('assets/resetPassword.js') !!}
 @append
 
 

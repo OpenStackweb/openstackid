@@ -14,7 +14,7 @@
 use OpenId\Exceptions\InvalidNonce;
 use OpenId\Helpers\OpenIdErrorMessages;
 use Utils\Model\AbstractIdentifier;
-use Zend\Math\Rand;
+use Laminas\Math\Rand;
 
 /**
  * Class OpenIdNonce

@@ -54,6 +54,7 @@ final class UserActionService implements IUserActionService
     {
         return $this->tx_service->transaction(function () use ($user_id, $ip, $user_action, $realm) {
 
+            Log::debug(sprintf("UserActionService::addUserAction user %s action %s ip %s", $user_id, $user_action, $ip));
             $action = new UserAction();
             $action->setFromIp($ip);
             $action->setUserAction($user_action);
