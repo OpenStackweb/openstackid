@@ -4,8 +4,9 @@ function ajaxError(jqXHR, textStatus, errorThrown){
         response = $.parseJSON(jqXHR.responseText);
         if(HTTP_status == 412 ){
             var msg = '';
-            for(var property in response.messages) {
-                msg +='* '+ response.messages[property]+'\n';
+
+            for(const error of response.errors) {
+                msg +='* '+ error+'\n';
             }
             displayErrorMessage('Validation error', msg);
             return;
