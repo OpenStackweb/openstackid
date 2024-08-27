@@ -1,6 +1,5 @@
 import React, {useState} from "react";
 import {Box, Button, Divider, FormControl, FormGroup, Grid} from "@material-ui/core";
-import {object, string} from "yup";
 import {useFormik} from "formik";
 import PublicKeysAdmin from "./public_keys_admin";
 import {CheckboxFormControl, SelectFormControl, SimpleTextFormControl} from "./form_controls";
@@ -14,6 +13,7 @@ import styles from "./common.module.scss";
 const SecuritySettingsPanel = (
     {
         entity,
+        appTypes,
         clientTypes,
         initialValues,
         onMainSettingsSavePromise,
@@ -25,7 +25,7 @@ const SecuritySettingsPanel = (
         supportedJSONWebKeyTypes,
         onUsePKCEChange,
     }) => {
-    const {id, client_type, is_allowed_to_use_token_endpoint_auth} = entity;
+    const {id, application_type, client_type, is_allowed_to_use_token_endpoint_auth} = entity;
 
     const [loading, setLoading] = useState(false);
 
@@ -102,6 +102,19 @@ const SecuritySettingsPanel = (
                                         onChange={formik.handleChange}
                                     />
                                 </>
+                            }
+                            {
+                                [appTypes.JSClient, appTypes.WebApp].includes(application_type) &&
+                                <SimpleTextFormControl
+                                    id="max_allowed_user_sessions"
+                                    title="Default Max. Allowed User Sessions (optional)"
+                                    tooltip="Default Maximum Allowed User Sessions. Specifies the maximum number of concurrent open sessions allowed. If omitted, no session limit will be applied."
+                                    type="number"
+                                    value={formik.values.max_allowed_user_sessions}
+                                    touched={formik.touched.max_allowed_user_sessions}
+                                    errors={formik.errors.max_allowed_user_sessions}
+                                    onChange={formik.handleChange}
+                                />
                             }
                             <SimpleTextFormControl
                                 id="default_max_age"

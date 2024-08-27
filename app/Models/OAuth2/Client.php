@@ -326,6 +326,12 @@ class Client extends BaseEntity implements IClient
     private $allowed_origins;
 
     /**
+     * @ORM\Column(name="max_allowed_user_sessions", type="integer")
+     * @var int
+     */
+    private $max_allowed_user_sessions;
+
+    /**
      * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="clients")
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
@@ -426,6 +432,7 @@ class Client extends BaseEntity implements IClient
         $this->max_access_token_issuance_qty = 0;
         $this->max_refresh_token_issuance_basis = 0;
         $this->max_refresh_token_issuance_qty = 0;
+        $this->max_allowed_user_sessions = 0;
         $this->pkce_enabled = false;
         $this->otp_enabled = false;
         $this->otp_lifetime = intval(Config::get("otp.lifetime"));
@@ -1748,5 +1755,21 @@ class Client extends BaseEntity implements IClient
      */
     public function hasOTP(string $value):bool{
         return !is_null($this->getOTPByValue($value));
+    }
+
+    /**
+     * @return int
+     */
+    public function getMaxAllowedUserSessions()
+    {
+        return $this->max_allowed_user_sessions;
+    }
+
+    /**
+     * @param int $max_allowed_user_sessions
+     */
+    public function setMaxAllowedUserSessions(int $max_allowed_user_sessions): void
+    {
+        $this->max_allowed_user_sessions = $max_allowed_user_sessions;
     }
 }

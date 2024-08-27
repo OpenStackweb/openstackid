@@ -155,6 +155,7 @@ const normalizeEntity = (entity, entitySection) => {
             normEntity.otp_enabled = entity.otp_enabled ? 1 : 0;
             normEntity.otp_length = entity.otp_length;
             normEntity.otp_lifetime = entity.otp_lifetime;
+            normEntity.max_allowed_user_sessions = entity.max_allowed_user_sessions;
             normEntity.default_max_age = entity.default_max_age;
             normEntity.token_endpoint_auth_signing_alg = entity.token_endpoint_auth_signing_alg;
             normEntity.token_endpoint_auth_method = entity.token_endpoint_auth_method;

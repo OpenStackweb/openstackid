@@ -37,6 +37,7 @@ final class ClientAdminSerializer extends ClientSerializer
         'SubjectType' => 'subject_type:json_string',
         'TermOfServiceUri' => 'tos_uri:json_string',
         'Website' => 'website:json_string',
+        'MaxAllowedUserSessions' => 'max_allowed_user_sessions:json_int',
     ];
 
     /**

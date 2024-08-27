@@ -679,6 +679,7 @@ final class ClientApiController extends APICRUDController
             'otp_enabled'                     => 'sometimes|boolean',
             'otp_length'                      => 'sometimes|integer|min:4|max:8',
             'otp_lifetime'                    => 'sometimes|integer|min:60|max:600',
+            'max_allowed_user_sessions'       => 'sometimes|integer|min:0',
         ];
     }
 
