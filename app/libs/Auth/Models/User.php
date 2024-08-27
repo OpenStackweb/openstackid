@@ -713,10 +713,12 @@ class User extends BaseEntity
 
     /**
      * @param Group $group
+     * @throws ValidationException
      */
     public function addToGroup(Group $group)
     {
-        if ($this->groups->contains($group)) return;
+        if ($this->groups->contains($group))
+            throw new ValidationException("User is already assigned to this group.");
         $this->groups->add($group);
     }
 
