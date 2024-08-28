@@ -13,6 +13,8 @@
  **/
 use Closure;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\URL;
@@ -37,10 +39,40 @@ class Authenticate
             Session::save();
             return Redirect::action('UserController@getLogin');
         }
+
+        // log debug info about the user and his request
+        $url = $request->getRequestUri();
+        $method = $request->getMethod();
+        $current_user = Auth::user();
+        Log::debug
+        (
+            sprintf
+            (
+                "Authenticate::handle method %s url %s current user %s (%s) groups %s",
+                $method,
+                $url,
+                $current_user->getEmail(),
+                $current_user->getId(),
+                $current_user->getGroupsNice()
+            )
+        );
         $redirect = Session::get('backurl');
         if (!empty($redirect)) {
             Session::forget('backurl');
             Session::save();
+            Log::debug
+            (
+                sprintf
+                (
+                    "Authenticate::handle method %s url %s current user %s (%s) groups %s redirecting to %s",
+                    $method,
+                    $url,
+                    $current_user->getEmail(),
+                    $current_user->getId(),
+                    $current_user->getGroupsNice(),
+                    $redirect
+                )
+            );
             return Redirect::to($redirect);
         }
 
