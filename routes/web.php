@@ -181,7 +181,7 @@ Route::group([
     Route::group(['prefix' => 'users'], function () {
 
         Route::delete('/me/tokens/{value}', "UserApiController@revokeMyToken");
-        Route::get('', "UserApiController@getAll");
+        Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@getAll"]);
         Route::post('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@create"]);
         Route::group(['prefix' => 'me'], function () {
             Route::put('', "UserApiController@updateMe");
@@ -236,7 +236,7 @@ Route::group([
         Route::post('', 'ClientApiController@create');
 
         Route::group(['prefix' => '{id}'], function () {
-            Route::get('', "ClientApiController@get");
+            Route::get('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => "ClientApiController@get"));
             Route::put('', array('middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'ClientApiController@update'));
             Route::delete('', array('middleware' => ['oauth2.currentuser.owns.client'], 'uses' => 'ClientApiController@delete'));
             // particular settings
