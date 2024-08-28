@@ -829,6 +829,16 @@ class User extends BaseEntity
         return $this->groups;
     }
 
+    public function getGroupsNice(): string
+    {
+        $groups = $this->getGroups();
+        $res = [];
+        foreach ($groups as $group) {
+            $res[] = $group->getName();
+        }
+        return implode(', ', $res);
+    }
+
     /**
      * @return ApiScope[]
      */
