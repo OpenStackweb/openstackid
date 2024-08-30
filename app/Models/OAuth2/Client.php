@@ -1760,16 +1760,20 @@ class Client extends BaseEntity implements IClient
     /**
      * @return int
      */
-    public function getMaxAllowedUserSessions()
+    public function getMaxAllowedUserSessions(): int
     {
         return $this->max_allowed_user_sessions;
     }
 
     /**
      * @param int $max_allowed_user_sessions
+     * @throws ValidationException
      */
     public function setMaxAllowedUserSessions(int $max_allowed_user_sessions): void
     {
+        if($max_allowed_user_sessions < 0){
+            throw new ValidationException("Allowed user sessions must be 0 or more.");
+        }
         $this->max_allowed_user_sessions = $max_allowed_user_sessions;
     }
 }

@@ -1,4 +1,4 @@
-import {getRawRequest, putFile, putRawRequest} from "../base_actions";
+import {deleteRawRequest, getRawRequest, putFile, putRawRequest} from "../base_actions";
 import moment from "moment";
 
 export const PAGE_SIZE = 10;
@@ -33,7 +33,9 @@ const parseFilter = (filters) => {
     return filter;
 }
 
-export const getUserActions = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId) => {
+export const fetchWithParams =
+    async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId, endpoint) => {
+
     const params = {
         page: page,
         per_page: PAGE_SIZE,
@@ -52,9 +54,15 @@ export const getUserActions = async (page = 1, order = 'created_at', orderDir = 
         params['order'] = `${orderDirSign}${order}`;
     }
 
-    const {response} = await getRawRequest(window.GET_USER_ACTIONS_ENDPOINT)(params);
+    const {response} = await getRawRequest(endpoint)(params);
     return response;
 }
+
+export const getUserActions = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId) =>
+    fetchWithParams(page, order, orderDir, filters, userId, window.GET_USER_ACTIONS_ENDPOINT);
+
+export const getUserAccessTokens = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId) =>
+    fetchWithParams(page, order, orderDir, filters, userId, window.GET_USER_ACCESS_TOKENS_ENDPOINT);
 
 export const save = async (entity, pic, token) => {
 
@@ -64,6 +72,13 @@ export const save = async (entity, pic, token) => {
         }
         return Promise.resolve();
     });
+}
+
+export const revokeToken = async (value, hint) => {
+    return deleteRawRequest(window.REVOKE_ACCESS_TOKENS_ENDPOINT
+        .replace('@value', value)
+        .replace('%40hint', hint)
+    )({'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
 const normalizeEntity = (entity) => {

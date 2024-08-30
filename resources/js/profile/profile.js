@@ -18,8 +18,9 @@ import {useFormik} from "formik";
 import {object, ref, string} from "yup";
 import RichTextEditor from "../components/rich_text_editor";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
+import UserAccessTokensGrid from "../components/user_access_tokens_grid";
 import UserActionsGrid from "../components/user_actions_grid";
-import {getUserActions, PAGE_SIZE, save} from "./actions";
+import {getUserActions, getUserAccessTokens, PAGE_SIZE, revokeToken, save} from "./actions";
 import ProfileImageUploader from "./components/profile_image_uploader/profile_image_uploader";
 import Navbar from "../components/navbar/navbar";
 import Divider from "@material-ui/core/Divider";
@@ -44,6 +45,7 @@ const ProfilePage = ({
                      }) => {
     const [pic, setPic] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [accessTokensListRefresh, setAccessTokensListRefresh] = useState(true);
 
     const buildValidationSchema = () =>
         object({
@@ -79,6 +81,26 @@ const ProfilePage = ({
             });
         },
     });
+
+    const confirmRevocation = (value) => {
+        Swal({
+            title: 'Are you sure to revoke this token?',
+            text: 'This is an non reversible process!',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, revoke it!'
+        }).then((result) => {
+            if (result.value) {
+                revokeToken(value, 'access-token').then(() => {
+                    Swal(`Access token revoked`, `The access token has been revoked successfully`, "success");
+                    setAccessTokensListRefresh(!accessTokensListRefresh);
+                }).catch((err) => {
+                    handleErrorResponse(err);
+                });
+            }
+        });
+    };
 
     return (
         <Container component="main" maxWidth="xs" className={styles.main_container}>
@@ -800,6 +822,23 @@ const ProfilePage = ({
                                 >
                                     Save
                                 </Button>
+                            </Grid>
+                            <Divider/>
+                            <Grid item container>
+                                <Typography component="h1" variant="h5">
+                                    User Access Tokens
+                                </Typography>
+                            </Grid>
+                            <Grid item container alignItems="center" justifyContent="center">
+                                <UserAccessTokensGrid
+                                    getUserAccessTokens={
+                                        (page, order, orderDir, filters) =>
+                                            getUserAccessTokens(page, order, orderDir, filters, initialValues.id)
+                                    }
+                                    pageSize={PAGE_SIZE}
+                                    tokensListChanged={accessTokensListRefresh}
+                                    onRevoke={confirmRevocation}
+                                />
                             </Grid>
                             <Divider/>
                             <Grid item container>
