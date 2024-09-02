@@ -1077,6 +1077,7 @@ final class TokenService extends AbstractService implements ITokenService
     public function revokeAccessToken($value, $is_hashed = false, ?User $current_user = null)
     {
 
+        Log::debug(sprintf("TokenService::revokeAccessToken value %s is_hashed %s", $value, $is_hashed));
         return $this->tx_service->transaction(function () use (
             $value,
             $is_hashed,
@@ -1091,7 +1092,7 @@ final class TokenService extends AbstractService implements ITokenService
             if (is_null($access_token_db)) return false;
 
             if (!is_null($current_user) && !$current_user->belongToGroup(IGroupSlugs::SuperAdminGroup) && $access_token_db->hasOwner() && $access_token_db->getOwnerId() != $current_user->getId()) {
-                throw new ValidationException(sprintf("access token %s does not belongs to user id %s!.", $value, $current_user->getId()));
+                throw new ValidationException(sprintf("Access Token %s does not belongs to user id %s.", $value, $current_user->getId()));
             }
 
             $client = $access_token_db->getClient();
@@ -1149,12 +1150,38 @@ final class TokenService extends AbstractService implements ITokenService
     }
 
     /**
+     * @param User $user
+     * @return void
+     * @throws Exception
+     */
+    public function revokeUsersToken(User $user):void{
+        Log::debug(sprintf("TokenService::revokeUsersToken user %s", $user->getId()));
+
+        $this->tx_service->transaction(function () use (
+            $user
+        ) {
+
+            foreach($user->getRefreshTokens() as $refreshToken){
+                Log::debug(sprintf("TokenService::revokeUsersToken revoking refresh token %s", $refreshToken->getValue()));
+
+                $this->revokeRefreshToken($refreshToken->getValue(), false, $user);
+            }
+
+            foreach($user->getAccessTokens() as $accessToken){
+                Log::debug(sprintf("TokenService::revokeUsersToken revoking access token %s", $accessToken->getValue()));
+
+                $this->revokeAccessToken($accessToken->getValue(), false, $user);
+            }
+        });
+    }
+    /**
      * Revokes all related tokens to a specific client id
      * @param $client_id
      */
     public function revokeClientRelatedTokens($client_id)
     {
 
+        Log::debug(sprintf("TokenService::revokeClientRelatedTokens client_id %s", $client_id));
 
         $this->tx_service->transaction(function () use (
             $client_id
@@ -1265,11 +1292,12 @@ final class TokenService extends AbstractService implements ITokenService
     public function invalidateRefreshToken(string $value, bool $is_hashed = false, ?User $current_user = null)
     {
         return $this->tx_service->transaction(function () use ($value, $is_hashed, $current_user) {
+            Log::debug(sprintf("TokenService::invalidateRefreshToken value %s is_hashed %s", $value, $is_hashed));
             $hashed_value = !$is_hashed ? Hash::compute('sha256', $value) : $value;
             $refresh_token = $this->refresh_token_repository->getByValue($hashed_value);
             if (is_null($refresh_token)) return false;
             if (!is_null($current_user) && !$current_user->belongToGroup(IGroupSlugs::SuperAdminGroup) && $refresh_token->hasOwner() && $refresh_token->getOwnerId() != $current_user->getId()) {
-                throw new ValidationException(sprintf("refresh token %s does not belongs to user id %s!.", $value, $current_user->getId()));
+                throw new ValidationException(sprintf("Refresh Token %s does not belongs to user id %s.", $value, $current_user->getId()));
             }
 
             $refresh_token->setVoid();
@@ -1290,6 +1318,7 @@ final class TokenService extends AbstractService implements ITokenService
     public function revokeRefreshToken(string $value, bool $is_hashed = false, ?User $current_user = null)
     {
         return $this->tx_service->transaction(function () use ($value, $is_hashed, $current_user) {
+            Log::debug(sprintf("TokenService::revokeRefreshToken value %s is_hashed %s", $value, $is_hashed));
             $res = $this->invalidateRefreshToken($value, $is_hashed, $current_user);
             return $res && $this->clearAccessTokensForRefreshToken($value, $is_hashed);
         });

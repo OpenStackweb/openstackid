@@ -81,7 +81,12 @@ class CreateSuperAdmin extends Command
             EntityManager::flush();
         }
 
-        $user->addToGroup($group);
+        try {
+            $user->addToGroup($group);
+        }
+        catch (\Exception $ex){
+            // already in group
+        }
         EntityManager::persist($user);
         EntityManager::flush();
     }

@@ -220,4 +220,10 @@ interface ITokenService {
        OAuth2OTP &$otp,
         ?Client $client
     ):AccessToken;
+
+    /**
+     * @param User $user
+     * @return void
+     */
+    public function revokeUsersToken(User $user):void;
 }

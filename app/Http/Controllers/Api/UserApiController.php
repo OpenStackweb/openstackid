@@ -163,11 +163,11 @@ final class UserApiController extends APICRUDController
             switch ($hint) {
                 case 'access-token':
                     {
-                        $this->token_service->revokeAccessToken($value, true);
+                        $this->token_service->revokeAccessToken($value, true, Auth::user());
                     }
                     break;
                 case 'refresh-token':
-                    $this->token_service->revokeRefreshToken($value, true);
+                    $this->token_service->revokeRefreshToken($value, true, Auth::user());
                     break;
                 default:
                     throw new Exception(sprintf("hint %s not allowed", $hint));
