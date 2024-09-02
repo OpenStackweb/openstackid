@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\DeviceInfoHelper;
 use Auth\User;
 use DateTime;
 use DateInterval;
@@ -85,10 +87,17 @@ class AccessToken extends BaseEntity {
 
     private $friendly_scopes;
 
+    /**
+     * @ORM\Column(name="device_info", type="string")
+     * @var string
+     */
+    private $device_info;
+
 
     public function __construct()
     {
         parent::__construct();
+        $this->device_info = DeviceInfoHelper::getDeviceInfo();
     }
 
     /**
@@ -344,4 +353,5 @@ class AccessToken extends BaseEntity {
     public function __get($name) {
         return $this->{$name};
     }
+
 } 
