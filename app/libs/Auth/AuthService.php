@@ -255,8 +255,10 @@ final class AuthService extends AbstractService implements IAuthService
                 );
             }
             else{
-                // verify email
-                $user->verifyEmail(false);
+                if($user->isActive()) {
+                    // verify email
+                    $user->verifyEmail(false);
+                }
             }
 
             if(!$user->canLogin()){
