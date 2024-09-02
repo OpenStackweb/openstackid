@@ -254,6 +254,10 @@ final class AuthService extends AbstractService implements IAuthService
                     $otp
                 );
             }
+            else{
+                // verify email
+                $user->verifyEmail(false);
+            }
 
             if(!$user->canLogin()){
                 Log::warning(sprintf("AuthService::loginWithOTP user %s cannot login ( is not active ).", $user->getId()));
