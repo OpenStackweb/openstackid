@@ -16,6 +16,7 @@
 use DeviceDetector\ClientHints;
 use DeviceDetector\DeviceDetector;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class DeviceInfoHelper
@@ -43,7 +44,19 @@ final class DeviceInfoHelper
             $device = $dd->getDeviceName();
             $brand  = $dd->getBrandName();
             $model  = $dd->getModel();
-            return sprintf("%s %s %s %s", $device, $brand, $model, $osInfo);
+            Log::debug
+            (
+                sprintf
+                (
+                    "Device Info: %s %s %s %s",
+                    json_encode($device),
+                    json_encode($brand),
+                    json_encode($model),
+                    json_encode($osInfo)
+                )
+            );
+            //return sprintf("%s %s %s %s", $device, $brand, $model, $osInfo);
+            return 'TBD';
         }
     }
 }
