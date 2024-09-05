@@ -1863,7 +1863,7 @@ final class TokenService extends AbstractService implements ITokenService
             $current_access_token_qty = $this->access_token_repository->getValidCountByUserIdAndClientIdentifier
             (
                 $user->getId(),
-                $client->getClientId()
+                $client->getId()
             );
 
             Log::debug(sprintf("TokenService::canCreateAccessToken current access token qty %d", $current_access_token_qty));

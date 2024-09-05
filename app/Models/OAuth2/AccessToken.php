@@ -100,7 +100,7 @@ class AccessToken extends BaseEntity {
         $this->device_info = DeviceInfoHelper::getDeviceInfo();
     }
 
-    public function getDeviceInfo():string{
+    public function getDeviceInfo():?string{
         return $this->device_info;
     }
 
