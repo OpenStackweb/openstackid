@@ -28,7 +28,7 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
         {field: 'remaining_lifetime', headerName: 'Remaining Lifetime', width: 160},
         {field: 'from_ip', headerName: 'From IP', width: 120},
         {
-            field: 'browser_info', headerName: 'Browser Info', width: 140 ,
+            field: 'device_info', headerName: 'Device Info', width: 140 ,
             renderCell: (params) =>  (
                 <Tooltip title={params.value} >
                     <span className="table-cell-trucate">{params.value}</span>
