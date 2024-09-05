@@ -11,9 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Jobs\RevokeUserGrants;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Log;
-use OAuth2\Services\ITokenService;
 
 /**
  * Class OnUserLogout
@@ -21,15 +22,6 @@ use OAuth2\Services\ITokenService;
  */
 class OnUserLogout
 {
-    private $token_service;
-
-    /**
-     * @param ITokenService $token_service
-     */
-    public function __construct(ITokenService $token_service)
-    {
-        $this->token_service = $token_service;
-    }
 
     /**
      * Handle the event.
@@ -41,8 +33,6 @@ class OnUserLogout
     {
         $user = $event->user;
         Log::debug(sprintf("OnUserLogout::handle user %s (%s)", $user->getEmail(), $user->getId()));
-
-        $this->token_service->revokeUsersToken($user);
-
+        RevokeUserGrants::dispatch($user);
     }
 }

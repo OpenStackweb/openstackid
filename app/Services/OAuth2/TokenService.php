@@ -29,6 +29,7 @@ use jwa\cryptographic_algorithms\HashFunctionAlgorithm;
 use jwt\IBasicJWT;
 use jwt\impl\JWTClaimSet;
 use jwt\JWTClaim;
+use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
@@ -1170,16 +1171,20 @@ final class TokenService extends AbstractService implements ITokenService
     }
 
     /**
-     * @param User $user
+     * @param int $user_id
      * @return void
      * @throws Exception
      */
-    public function revokeUsersToken(User $user):void{
-        Log::debug(sprintf("TokenService::revokeUsersToken user %s", $user->getId()));
+    public function revokeUsersToken(int $user_id):void{
+        Log::debug(sprintf("TokenService::revokeUsersToken user_id %s", $user_id));
 
         $this->tx_service->transaction(function () use (
-            $user
+            $user_id
         ) {
+
+            $user = $this->auth_service->getUserById($user_id);
+            if(is_null($user))
+                throw new EntityNotFoundException("User not found");
 
             foreach($user->getRefreshTokens() as $refreshToken){
                 Log::debug

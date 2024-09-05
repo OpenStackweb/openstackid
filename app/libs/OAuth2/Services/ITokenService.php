@@ -222,10 +222,10 @@ interface ITokenService {
     ):AccessToken;
 
     /**
-     * @param User $user
+     * @param int $user_id
      * @return void
      */
-    public function revokeUsersToken(User $user):void;
+    public function revokeUsersToken(int $user_id):void;
 
     /**
      * @param OAuth2OTP $otp
