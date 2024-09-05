@@ -127,7 +127,7 @@ abstract class AbstractDoctrineOAuth2TokenRepository
                 $filter->apply2Query($query, $this->getFilterMappings());
             }
 
-            return (int)$query->getQuery()->getScalarResult();
+            return (int)$query->getQuery()->getSingleScalarResult();
         }
         catch (\Exception $ex){
             Log::error($ex);
