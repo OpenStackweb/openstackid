@@ -40,23 +40,24 @@ final class DeviceInfoHelper
             $botInfo = $dd->getBot();
             return sprintf("Bot %s", json_encode($botInfo));
         } else {
-            $osInfo = $dd->getOs();
             $device = $dd->getDeviceName();
+            $osInfo = $dd->getOs();
             $brand  = $dd->getBrandName();
             $model  = $dd->getModel();
+            $client  = $dd->getClient();
             Log::debug
             (
                 sprintf
                 (
-                    "Device Info: %s %s %s %s",
+                    "Device Info: %s %s %s %s %s",
                     json_encode($device),
                     json_encode($brand),
                     json_encode($model),
-                    json_encode($osInfo)
+                    json_encode($osInfo),
+                    json_encode($client)
                 )
             );
-            //return sprintf("%s %s %s %s", $device, $brand, $model, $osInfo);
-            return 'TBD';
+            return sprintf("DEVICE %s OS NAME %s", $device, $osInfo['name'] ?? 'Unknown');
         }
     }
 }
