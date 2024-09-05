@@ -12,9 +12,7 @@
  * limitations under the License.
  **/
 
-use Doctrine\ORM\QueryBuilder;
 use Models\OAuth2\AccessToken;
-use Models\OAuth2\RefreshToken;
 use OAuth2\Repositories\IAccessTokenRepository;
 /**
  * Class DoctrineAccessTokenRepository

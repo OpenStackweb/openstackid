@@ -15,7 +15,6 @@
 use App\libs\Utils\URLUtils;
 use Exception;
 use Illuminate\Support\Facades\Log;
-use Models\OAuth2\Client;
 use OAuth2\Exceptions\ExpiredAuthorizationCodeException;
 use OAuth2\Exceptions\InvalidApplicationType;
 use OAuth2\Exceptions\InvalidAuthorizationCodeException;

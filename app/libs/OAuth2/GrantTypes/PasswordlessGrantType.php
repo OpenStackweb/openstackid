@@ -243,8 +243,9 @@ class PasswordlessGrantType extends InteractiveGrantType
                 (
                     sprintf
                     (
-                        'client id %s is locked',
-                        $client_id
+                        'Client %s (%s) is locked.',
+                        $this->client->getApplicationName(),
+                        $this->client->getId()
                     )
                 );
             }
@@ -374,6 +375,19 @@ class PasswordlessGrantType extends InteractiveGrantType
             $this->client = $this->client_auth_context->getClient();
             $this->checkClientTypeAccess($this->client);
             $otp = OAuth2OTP::fromRequest($request, $this->client->getOtpLength());
+
+            // check client max sessions
+            if(!$this->token_service->canCreateAccessTokenFromOTP($otp, $this->client)){
+                throw new InvalidRedeemOTPException
+                (
+                    sprintf
+                    (
+                        "Max. Allowed Sessions reached for client %s (%s)",
+                        $this->client->getApplicationName(),
+                        $this->client->getId()
+                    )
+                );
+            }
 
             $access_token = $this->token_service->createAccessTokenFromOTP
             (

@@ -1816,4 +1816,59 @@ final class TokenService extends AbstractService implements ITokenService
             throw new InvalidOTPException($ex->getMessage());
         }
     }
+
+    /**
+     * @param OAuth2OTP $otp
+     * @param Client $client
+     * @return bool
+     * @throws Exception
+     */
+    public function canCreateAccessTokenFromOTP(OAuth2OTP &$otp, Client $client):bool{
+        return $this->tx_service->transaction(function() use($otp, $client){
+            Log::debug
+            (
+                sprintf
+                (
+                    "TokenService::canCreateAccessTokenFromOTP otp %s user %s client %s",
+                    $otp->getValue(),
+                    $otp->getUserName(),
+                    !is_null($client) ? $client->getClientId() : 'null'
+                )
+            );
+
+            $user = $this->auth_service->getUserByUsername($otp->getUserName());
+            if(is_null($user))
+                throw new ValidationException("Invalid OTP.");
+
+            return $this->canCreateAccessToken($user, $client);
+        });
+    }
+
+    /**
+     * @param User $user
+     * @param Client $client
+     * @return bool
+     * @throws \Exception
+     */
+    public function canCreateAccessToken(User $user, Client $client):bool{
+        return $this->tx_service->transaction(function() use($user, $client){
+            Log::debug(sprintf("TokenService::canCreateAccessToken user %s client %s", $user->getId(), $client->getClientId()));
+            if(!$client->isLimitingAllowedSessionsPerUser()) return true;
+
+            $current_access_token_qty = $this->access_token_repository->getValidCountByUserIdAndClientIdentifier
+            (
+                $user->getId(),
+                $client->getClientId()
+            );
+
+            Log::debug(sprintf("TokenService::canCreateAccessToken current access token qty %d", $current_access_token_qty));
+
+            if($current_access_token_qty >= $client->getMaxAllowedUserSessions()) {
+                Log::debug(sprintf("TokenService::canCreateAccessToken max allowed user sessions reached %d", $client->getMaxAllowedUserSessions()));
+                return false;
+            }
+
+            return true;
+        });
+    }
 }

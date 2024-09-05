@@ -13,7 +13,6 @@
  **/
 
 use App\libs\Utils\EmailUtils;
-use App\libs\Utils\PunnyCodeHelper;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use jwe\IJWE;
@@ -63,7 +62,6 @@ use utils\factories\BasicJWTFactory;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
 use phpseclib\Crypt\Random;
-use function Psy\debug;
 
 /**
  * Class InteractiveGrantType
@@ -196,8 +194,9 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 (
                     sprintf
                     (
-                        'client id %s is locked',
-                        $client_id
+                        'Client %s (%s) is locked.',
+                        $client->getApplicationName(),
+                        $client->getId()
                     )
                 );
             }
@@ -255,12 +254,24 @@ abstract class InteractiveGrantType extends AbstractGrantType
             $requested_user_id = $this->security_context_service->get()->getRequestedUserId();
 
             if (is_null($user)) {
-                throw new OAuth2GenericException("Invalid Current User");
+                throw new OAuth2GenericException("Invalid Current User.");
             }
 
             if (!is_null($requested_user_id) && $requested_user_id !== $user->getId()) {
                 $this->auth_service->logout();
-                throw new InvalidLoginHint('invalid login hint');
+                throw new InvalidLoginHint('invalid login hint.');
+            }
+
+            if(!$this->token_service->canCreateAccessToken($user, $client)){
+                throw new OAuth2GenericException
+                (
+                    sprintf
+                    (
+                        "Max. Allowed Sessions reached for client %s (%s)",
+                        $client->getApplicationName(),
+                        $client->getId()
+                    )
+                );
             }
 
             $authorization_response = $this->auth_service->getUserAuthorizationResponse();
