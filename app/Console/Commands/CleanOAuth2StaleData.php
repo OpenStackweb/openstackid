@@ -64,7 +64,7 @@ final class CleanOAuth2StaleData extends Command
 
         if (Schema::hasTable('oauth2_refresh_token')) {
             $res = DB::table('oauth2_refresh_token')
-                ->whereRaw("NOT EXISTS ( SELECT id FROM oauth2_access_token WHERE oauth2_access_token.refresh_token_id = oauth2_refresh_token.id")
+                ->whereRaw("NOT EXISTS ( SELECT id FROM oauth2_access_token WHERE oauth2_access_token.refresh_token_id = oauth2_refresh_token.id)")
                 ->delete();
 
             Log::debug(sprintf("CleanOAuth2StaleData::handle %s rows where deleted from oauth2_refresh_token", $res));
