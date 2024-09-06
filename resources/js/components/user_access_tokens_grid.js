@@ -3,6 +3,7 @@ import {DataGrid, getGridDateOperators} from "@mui/x-data-grid";
 import moment from "moment";
 import Tooltip from '@material-ui/core/Tooltip'
 import {Button} from "@material-ui/core";
+import Grid from "@material-ui/core/Grid";
 
 const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged, onRevoke}) => {
     const [page, setPage] = useState(1);
@@ -12,12 +13,13 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
 
     const [sortModel, setSortModel] = useState({});
     const [filterModel, setFilterModel] = useState({});
+    const [refresh, setRefresh] = useState(false);
 
     const uaColumns = [
         {field: 'client_name', headerName: 'Client Name', width: 110},
         {
             field: 'created_at',
-            headerName: 'Created At (UTC)',
+            headerName: 'Created At',
             type: 'date',
             width: 180,
             filterOperators: getGridDateOperators().filter(
@@ -25,20 +27,23 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
             ),
             valueFormatter: params => moment.unix(params?.value).format("DD/MM/YYYY hh:mm:ss A")
         },
-        {field: 'remaining_lifetime', headerName: 'Remaining Lifetime', width: 160},
+        {
+            field: 'remaining_lifetime', headerName: 'Remaining Lifetime (Minutes)', width: 160,
+            renderCell: (params) => Math.ceil(parseInt(params?.value ?? 0) / 60),
+        },
         {field: 'from_ip', headerName: 'From IP', width: 120},
         {
-            field: 'device_info', headerName: 'Device Info', width: 140 ,
-            renderCell: (params) =>  (
-                <Tooltip title={params.value} >
+            field: 'device_info', headerName: 'Device Info', width: 140,
+            renderCell: (params) => (
+                <Tooltip title={params?.value ?? ''}>
                     <span className="table-cell-trucate">{params.value}</span>
                 </Tooltip>
             ),
         },
         {
-            field: 'scope', headerName: 'Scopes', width: 120 ,
-            renderCell: (params) =>  (
-                <Tooltip title={params.value} >
+            field: 'scope', headerName: 'Scopes', width: 120,
+            renderCell: (params) => (
+                <Tooltip title={params.value}>
                     <span className="table-cell-trucate">{params.value}</span>
                 </Tooltip>
             ),
@@ -74,7 +79,7 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
         return () => {
             active = false;
         };
-    }, [page, sortModel, filterModel, tokensListChanged]);
+    }, [page, sortModel, filterModel, tokensListChanged, refresh]);
 
     const handleSortModelChange = (model) => {
         const currentSortModel = model[0];
@@ -91,26 +96,37 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
     };
 
     return (
-        <div style={{height: 650, width: '100%'}}>
-            {uatRows &&
-                <DataGrid
-                    rows={uatRows}
-                    columns={uaColumns}
-                    disableColumnSelector={true}
-                    pagination
-                    pageSize={pageSize}
-                    rowsPerPageOptions={[pageSize]}
-                    rowCount={uatRowsCount}
-                    paginationMode="server"
-                    onPageChange={(newPage) => setPage(newPage + 1)}
-                    sortingMode="server"
-                    onSortModelChange={handleSortModelChange}
-                    filterMode="server"
-                    onFilterModelChange={handleFilterChange}
-                    loading={loading}
-                />
-            }
-        </div>
+        <Grid item spacing={1} container direction="column">
+            <Grid item container justifyContent="flex-end">
+                <Button variant="outlined" color="primary" onClick={() => {
+                    setRefresh(!refresh)
+                }}>
+                    Reload
+                </Button>
+            </Grid>
+            <Grid item xs={12}>
+                <div style={{height: 650, width: '100%'}}>
+                    {uatRows &&
+                        <DataGrid
+                            rows={uatRows}
+                            columns={uaColumns}
+                            disableColumnSelector={true}
+                            pagination
+                            pageSize={pageSize}
+                            rowsPerPageOptions={[pageSize]}
+                            rowCount={uatRowsCount}
+                            paginationMode="server"
+                            onPageChange={(newPage) => setPage(newPage + 1)}
+                            sortingMode="server"
+                            onSortModelChange={handleSortModelChange}
+                            filterMode="server"
+                            onFilterModelChange={handleFilterChange}
+                            loading={loading}
+                        />
+                    }
+                </div>
+            </Grid>
+        </Grid>
     );
 }
 
