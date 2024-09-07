@@ -14,6 +14,7 @@
 
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use models\exceptions\ValidationException;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Exceptions\InvalidApplicationType;
@@ -324,6 +325,13 @@ class PasswordlessGrantType extends InteractiveGrantType
             $this->auth_service->clearUserAuthorizationResponse();
             $this->memento_service->forget();
             return new OAuth2DirectErrorResponse($ex->getError(), $ex->getMessage());
+        }
+        catch(ValidationException $ex){
+            $this->log_service->warning($ex);
+            // clear save data ...
+            $this->auth_service->clearUserAuthorizationResponse();
+            $this->memento_service->forget();
+            return new OAuth2DirectErrorResponse($ex->getMessage());
         }
         catch (Exception $ex) {
             $this->log_service->error($ex);

@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Utils\IUserIPHelperProvider;
+use App\Jobs\AddUserAction;
 use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use App\Models\OAuth2\Factories\OTPFactory;
@@ -73,6 +74,7 @@ use utils\ByteUtil;
 use Utils\Db\ITransactionService;
 use Utils\Exceptions\ConfigurationException;
 use Utils\Exceptions\UnacquiredLockException;
+use Utils\IPHelper;
 use utils\json_types\JsonValue;
 use utils\json_types\NumericDate;
 use utils\json_types\StringOrURI;
@@ -1587,6 +1589,21 @@ final class TokenService extends AbstractService implements ITokenService
                 $this->otp_repository->add($otp);
             }
 
+            $user = $this->auth_service->getUserByUsername($otp->getUserName());
+            if(!is_null($user)){
+                Log::debug
+                (
+                    sprintf
+                    (
+                        "TokenService::createOTPFromRequest requested OTP for existent user %s (%s)",
+                        $user->getEmail(),
+                        $user->getId()
+                    )
+                );
+                AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), "Requested OTP");
+                if(!$user->isActive())
+                    throw new ValidationException("User is not active.");
+            }
             return $otp;
         });
 
@@ -1610,10 +1627,26 @@ final class TokenService extends AbstractService implements ITokenService
      * @throws Exception
      */
     public function createOTPFromPayload(array $payload, ?Client $client):OAuth2OTP{
+
         $otp = $this->tx_service->transaction(function() use($payload, $client){
 
             $otp = OTPFactory::buildFromPayload($payload, $this->identifier_generator, $client);
 
+            $user = $this->auth_service->getUserByUsername($otp->getUserName());
+            if(!is_null($user)){
+                Log::debug
+                (
+                    sprintf
+                    (
+                        "TokenService::createOTPFromPayload requested OTP for existent user %s (%s)",
+                        $user->getEmail(),
+                        $user->getId()
+                    )
+                );
+                AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), "Requested OTP");
+                if(!$user->isActive())
+                    throw new ValidationException("User is not active.");
+            }
             if(is_null($client)){
                 $this->otp_repository->add($otp);
             }

@@ -444,6 +444,12 @@ class LoginPage extends React.Component {
             });
         }, (error) => {
             let {response, status, message} = error;
+            if(status == 412){
+                const {message, errors} = response.body;
+                Swal(message, errors[0], 'error')
+                return;
+            }
+
             Swal('Oops...', 'Something went wrong!', 'error')
         });
         return false;
