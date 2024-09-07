@@ -255,8 +255,8 @@ final class UserService extends AbstractService implements IUserService
 
             $user = $this->repository->getById($id);
 
-            if (is_null($user) || !$user instanceof User)
-                throw new EntityNotFoundException("user not found");
+            if (!$user instanceof User)
+                throw new EntityNotFoundException("User not found.");
 
             $former_email = $user->getEmail();
             $former_password = $user->getPassword();
@@ -298,8 +298,7 @@ final class UserService extends AbstractService implements IUserService
                 foreach ($payload['groups'] as $group_id) {
                     $group = $this->group_repository->getById($group_id);
                     if (!$group instanceof Group)
-                        throw new EntityNotFoundException("group not found");
-
+                        throw new EntityNotFoundException("Group not found");
                     $user->addToGroup($group);
                 }
             }
