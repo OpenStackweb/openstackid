@@ -22,6 +22,7 @@ use App\libs\Utils\PunnyCodeHelper;
 use App\libs\Utils\TextUtils;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -717,8 +718,50 @@ class User extends BaseEntity
      */
     public function addToGroup(Group $group)
     {
+        Log::debug
+        (
+            sprintf
+            (
+                "User::addToGroup user %s user current groups  %s group 2 add %s",
+                $this->id,
+                $this->getGroupsNice(),
+                $group->getSlug()
+            )
+        );
+
+        $current_user = Auth::user();
+        if($current_user instanceof User){
+            Log::debug
+            (
+                sprintf
+                (
+                    "User::addToGroup current user %s current user groups  %s user %s  user current groups  %s group 2 add %s",
+                    $current_user->getId(),
+                    $current_user->getGroupsNice(),
+                    $this->id,
+                    $this->getGroupsNice(),
+                    $group->getSlug()
+                )
+            );
+
+            if(!$current_user->isActive())
+                throw new ValidationException("Current User is not active.");
+
+            if(!$current_user->isSuperAdmin() && $group->getSlug() != IGroupSlugs::RawUsersGroup) {
+                $current_user->deActivate();
+                throw new ValidationException
+                (
+                    sprintf(
+                        "Only Super Admins can add users to groups other than %s.",
+                        IGroupSlugs::RawUsersGroup
+                    )
+                );
+            }
+        }
+
         if ($this->groups->contains($group))
             throw new ValidationException("User is already assigned to this group.");
+
         $this->groups->add($group);
     }
 
@@ -727,6 +770,43 @@ class User extends BaseEntity
      */
     public function removeFromGroup(Group $group)
     {
+        Log::debug
+        (
+            sprintf
+            (
+                "User::removeFromGroup user %s  user current groups  %s group 2 remove %s",
+                $this->id,
+                $this->getGroupsNice(),
+                $group->getSlug()
+            )
+        );
+        $current_user = Auth::user();
+        if($current_user instanceof User){
+            Log::debug
+            (
+                sprintf
+                (
+                    "User::removeFromGroup current user %s current user groups  %s user %s  user current groups  %s group 2 remove %s",
+                    $current_user->getId(),
+                    $current_user->getGroupsNice(),
+                    $this->id,
+                    $this->getGroupsNice(),
+                    $group->getSlug()
+                )
+            );
+
+            if(!$current_user->isActive())
+                throw new ValidationException("Current User is not active.");
+
+            if(!$current_user->isSuperAdmin()) {
+                $current_user->deActivate();
+                throw new ValidationException
+                (
+                    "Only Super Admins can remove users from groups",
+                );
+            }
+        }
+
         if (!$this->groups->contains($group)) return;
         $this->groups->removeElement($group);
     }
