@@ -760,6 +760,8 @@ final class TokenService extends AbstractService implements ITokenService
     public function getAccessToken($value, $is_hashed = false)
     {
 
+        Log::debug(sprintf("TokenService::getAccessToken value %s is_hashed %b", $value, $is_hashed));
+
         return $this->tx_service->transaction(function () use (
             $value,
             $is_hashed
@@ -775,6 +777,7 @@ final class TokenService extends AbstractService implements ITokenService
                         // check on DB...
                         $access_token_db = $this->access_token_repository->getByValueCacheable($hashed_value);
                         if (is_null($access_token_db)) {
+                            Log::warning(sprintf("TokenService::getAccessToken access token %s not found on DB", $value));
                             if ($this->isAccessTokenRevoked($hashed_value)) {
                                 throw new RevokedAccessTokenException(sprintf('Access token %s is revoked!', $value));
                             } else if ($this->isAccessTokenVoid($hashed_value)) // check if its marked on cache as expired ...
