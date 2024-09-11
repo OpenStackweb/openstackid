@@ -294,7 +294,11 @@ final class AuthService extends AbstractService implements IAuthService
         });
     }
 
-    public function logout()
+    /**
+     * @param bool $clear_security_ctx
+     * @return void
+     */
+    public function logout(bool $clear_security_ctx = true):void
     {
         Log::debug("AuthService::logout");
         $current_user = $this->getCurrentUser();
@@ -313,7 +317,8 @@ final class AuthService extends AbstractService implements IAuthService
         // regular flow
         $this->invalidateSession();
         $this->principal_service->clear();
-        $this->security_context_service->clear();
+        if($clear_security_ctx)
+            $this->security_context_service->clear();
         Auth::logout();
         // put in past
         Cookie::queue

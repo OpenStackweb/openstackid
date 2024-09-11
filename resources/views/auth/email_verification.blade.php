@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/emailVerification.css') !!}
+    {!! style_to('assets/css/emailVerification.css') !!}
 @append
 @section('content')
 
@@ -37,6 +37,6 @@
             submitButtonText: '{{ __("Resend Verification Email") }}',
         }
     </script>
-    {!! HTML::script('assets/emailVerification.js') !!}
+    {!! script_to('assets/emailVerification.js') !!}
 @append
 

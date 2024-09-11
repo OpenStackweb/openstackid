@@ -14,7 +14,7 @@
 
 use Utils\IPHelper;
 use OAuth2\OAuth2Protocol;
-use Zend\Math\Rand;
+use Laminas\Math\Rand;
 
 /**
  * Class AuthorizationCode

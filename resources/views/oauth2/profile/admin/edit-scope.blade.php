@@ -73,5 +73,5 @@
             success: '@lang("messages.global_successfully_save_entity", array("entity" => "Scope"))'
         };
     </script>
-    {!! HTML::script('assets/js/oauth2/profile/admin/edit-scope.js') !!}
+    {!! script_to('assets/js/oauth2/profile/admin/edit-scope.js') !!}
 @append

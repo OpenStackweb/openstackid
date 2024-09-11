@@ -39,6 +39,11 @@ final class Principal implements IPrincipal
 
     /**
      * @return string
+
+    /**
+     * @param OAuth2AuthorizationRequest $request
+     * @param Client $client
+
      */
     public function getOPBrowserState()
     {

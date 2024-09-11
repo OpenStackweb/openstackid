@@ -37,7 +37,7 @@
                     <label for="http_method">HTTP Method&nbsp;<span aria-hidden="true"
                                                                     class="glyphicon glyphicon-info-sign pointable"
                                                                     title=''></span></label>
-                    {!! Form::select('http_method', array('GET' => 'GET', 'POST' => 'POST', 'PUT' => 'PUT', 'DELETE' => 'DELETE'), $endpoint->http_method, array('class' => 'form-control', 'id' => 'http_method')); !!}
+                    {!! select_to('http_method', array('GET' => 'GET', 'POST' => 'POST', 'PUT' => 'PUT', 'DELETE' => 'DELETE'), $endpoint->http_method, array('class' => 'form-control', 'id' => 'http_method')); !!}
                 </div>
                 <div class="checkbox">
                     <label>
@@ -104,5 +104,5 @@
             success: '@lang("messages.global_successfully_save_entity", array("entity" => "Endpoint"))'
         };
     </script>
-    {!! HTML::script('assets/js/oauth2/profile/admin/edit-endpoint.js') !!}
+    {!! script_to('assets/js/oauth2/profile/admin/edit-endpoint.js') !!}
 @append

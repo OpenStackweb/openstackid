@@ -30,7 +30,7 @@ class Kernel extends HttpKernel
     protected $middleware = [
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
         \App\Http\Middleware\SingleAccessPoint::class,
-        \Fruitcake\Cors\HandleCors::class,
+        \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\ParseMultipartFormDataInputForNonPostRequests::class,
     ];
 

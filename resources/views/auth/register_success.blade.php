@@ -3,7 +3,7 @@
     <title>Welcome to {{ Config::get("app.app_name") }} - Sign Complete !!!</title>
 @append
 @section('scripts')
-    {!! HTML::script('assets/js/auth/registration_success.js') !!}
+    {!! script_to('assets/js/auth/registration_success.js') !!}
     <script type="application/javascript">
     </script>
 @append
