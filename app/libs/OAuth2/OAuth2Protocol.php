@@ -1558,7 +1558,7 @@ final class OAuth2Protocol implements IOAuth2Protocol
             }
 
             if(!is_null($user)){
-                RevokeUserGrants::dispatch($user);
+                RevokeUserGrants::dispatch($user)->afterResponse();
             }
 
             if (!is_null($logged_user)) {
