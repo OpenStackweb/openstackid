@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Utils\UserIPHelperProvider;
+use App\Jobs\RevokeUserGrants;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
@@ -1554,11 +1555,15 @@ final class OAuth2Protocol implements IOAuth2Protocol
                         $user->getId()
                     )
                 );
-
             }
 
-            if (!is_null($logged_user))
+            if(!is_null($user)){
+                RevokeUserGrants::dispatch($user);
+            }
+
+            if (!is_null($logged_user)) {
                 $this->auth_service->logout();
+            }
 
             if (!empty($redirect_logout_uri)) {
                 return new OAuth2LogoutResponse($redirect_logout_uri, $state);
@@ -1568,7 +1573,6 @@ final class OAuth2Protocol implements IOAuth2Protocol
         } catch (UriNotAllowedException $ex1) {
             $this->log_service->warning($ex1);
             $this->checkpoint_service->trackException($ex1);
-
             return new OAuth2DirectErrorResponse(OAuth2Protocol::OAuth2Protocol_Error_UnauthorizedClient);
         } catch (OAuth2BaseException $ex2) {
             $this->log_service->warning($ex2);

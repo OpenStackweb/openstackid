@@ -53,7 +53,7 @@ final class EventServiceProvider extends ServiceProvider
         'Illuminate\Database\Events\QueryExecuted' => [
         ],
         'Illuminate\Auth\Events\Logout' => [
-            'App\Listeners\OnUserLogout',
+            //'App\Listeners\OnUserLogout',
         ],
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
             // ... other providers
