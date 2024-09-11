@@ -4,6 +4,7 @@ import moment from "moment";
 import Tooltip from '@material-ui/core/Tooltip'
 import {Button} from "@material-ui/core";
 import Grid from "@material-ui/core/Grid";
+import {formatTime} from "../utils";
 
 const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged, onRevoke}) => {
     const [page, setPage] = useState(1);
@@ -28,8 +29,14 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
             valueFormatter: params => moment.unix(params?.value).format("DD/MM/YYYY hh:mm:ss A")
         },
         {
-            field: 'remaining_lifetime', headerName: 'Remaining Lifetime (Minutes)', width: 160,
-            renderCell: (params) => Math.ceil(parseInt(params?.value ?? 0) / 60),
+            field: 'remaining_lifetime', headerName: 'Remaining Lifetime', width: 160,
+            renderCell: (params) => {
+                if (!params) return '';
+                const remainingLifetime = formatTime(parseInt(params.value));
+                return <Tooltip title={remainingLifetime}>
+                    <span className="table-cell-trucate">{remainingLifetime}</span>
+                </Tooltip>
+            },
         },
         {field: 'from_ip', headerName: 'From IP', width: 120},
         {
