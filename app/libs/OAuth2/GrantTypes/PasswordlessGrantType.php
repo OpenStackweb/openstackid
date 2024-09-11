@@ -384,7 +384,7 @@ class PasswordlessGrantType extends InteractiveGrantType
                     (
                         "Max. Allowed Sessions reached for client %s (%s)",
                         $this->client->getApplicationName(),
-                        $this->client->getId()
+                        $this->client->getMaxAllowedUserSessions()
                     )
                 );
             }

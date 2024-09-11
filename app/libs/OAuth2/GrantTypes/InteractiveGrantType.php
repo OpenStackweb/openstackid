@@ -269,7 +269,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
                     (
                         "Max. Allowed Sessions reached for client %s (%s)",
                         $client->getApplicationName(),
-                        $client->getId()
+                        $client->getMaxAllowedUserSessions()
                     )
                 );
             }
