@@ -1582,6 +1582,13 @@ class User extends BaseEntity
         return $this->refresh_tokens;
     }
 
+    public function getValidRefreshTokens()
+    {
+        $criteria = Criteria::create();
+        $criteria->where(Criteria::expr()->eq('void', false));
+        return $this->refresh_tokens->matching($criteria);
+    }
+
     /**
      * @param ArrayCollection $refresh_tokens
      */

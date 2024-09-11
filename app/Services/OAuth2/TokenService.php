@@ -1189,7 +1189,7 @@ final class TokenService extends AbstractService implements ITokenService
             if(is_null($user))
                 throw new EntityNotFoundException("User not found");
 
-            foreach($user->getRefreshTokens() as $refreshToken){
+            foreach($user->getValidRefreshTokens() as $refreshToken){
                 Log::debug
                 (
                     sprintf
