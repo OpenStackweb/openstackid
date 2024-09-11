@@ -29,7 +29,7 @@ class RevokeUserGrants implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 1;
+    public $tries = 5;
 
     public $timeout = 0;
 

@@ -28,7 +28,9 @@ final class DeviceInfoHelper
     {
         AbstractDeviceParser::setVersionTruncation(AbstractDeviceParser::VERSION_TRUNCATION_NONE);
 
-        $userAgent = $_SERVER['HTTP_USER_AGENT']; // change this to the useragent you want to parse
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null; // change this to the useragent you want to parse
+        if(is_null($userAgent)) return 'Unknown';
+
         $clientHints = ClientHints::factory($_SERVER); // client hints are optional
 
         $dd = new DeviceDetector($userAgent, $clientHints);
