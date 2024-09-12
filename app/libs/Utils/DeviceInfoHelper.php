@@ -59,7 +59,8 @@ final class DeviceInfoHelper
                     json_encode($client)
                 )
             );
-            return sprintf("DEVICE %s OS NAME %s", $device, $osInfo['name'] ?? 'Unknown');
+
+            return sprintf("DEVICE %s OS NAME %s CLIENT %s", $device, $osInfo['name'] ?? 'Unknown', $client['name'] ?? 'Unknown');
         }
     }
 }

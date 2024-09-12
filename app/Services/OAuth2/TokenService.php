@@ -567,9 +567,12 @@ final class TokenService extends AbstractService implements ITokenService
             $scope
         ) {
 
+            Log::debug(sprintf("TokenService::createAccessTokenFromRefreshToken refresh_token %s scope %s", $refresh_token->getValue(), $scope));
+
             $refresh_token_value = $refresh_token->getValue();
             $refresh_token_hashed_value = Hash::compute('sha256', $refresh_token_value);
-            //clear current access tokens as invalid
+
+            // clear current access tokens as invalid
             $this->clearAccessTokensForRefreshToken($refresh_token->getValue());
 
             //validate scope if present...
@@ -1381,6 +1384,8 @@ final class TokenService extends AbstractService implements ITokenService
     public function clearAccessTokensForRefreshToken($value, $is_hashed = false)
     {
 
+        Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken value %s is_hashed %b", $value, $is_hashed));
+
         $hashed_value = !$is_hashed ? Hash::compute('sha256', $value) : $value;
 
         return $this->tx_service->transaction(function () use (
@@ -1390,12 +1395,19 @@ final class TokenService extends AbstractService implements ITokenService
             $refresh_token_db = $this->refresh_token_repository->getByValue($hashed_value);
 
             if (!is_null($refresh_token_db)) {
+
+                Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken refresh token %s found", $refresh_token_db->getId()))
+                ;
                 $access_tokens_db = $this->access_token_repository->getByRefreshToken($refresh_token_db->getId());
 
-                if (count($access_tokens_db) == 0) return false;
+                if (count($access_tokens_db) == 0) {
+                    Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken no access tokens found for refresh token %s", $refresh_token_db->getId()));
+                    return false;
+                }
 
                 foreach ($access_tokens_db as $access_token_db) {
 
+                    Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken revoking access token %s", $access_token_db->getId()));
                     $this->cache_service->delete($access_token_db->getValue());
                     $client = $access_token_db->getClient();
                     $this->cache_service->deleteMemberSet
