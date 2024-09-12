@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use AWS\CRT\Log;
 use URL\Normalizer;
 /**
  * Class URLUtils

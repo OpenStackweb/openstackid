@@ -632,9 +632,12 @@ class Client extends BaseEntity implements IClient
      */
     public function isUriAllowed(string $uri):bool
     {
+        Log::debug(sprintf("Client::isUriAllowed client %s original uri %s", $this->client_id, $uri));
         $uri = URLUtils::canonicalUrl($uri);
-        if(empty($uri)) return false;
-
+        if(empty($uri)) {
+            Log::debug(sprintf("Client::isUriAllowed url %s is not valid", $uri));
+            return false;
+        }
         if
         (
             ($this->application_type !== IClient::ApplicationType_Native && !URLUtils::isHTTPS($uri))

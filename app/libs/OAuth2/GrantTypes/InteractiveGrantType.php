@@ -207,6 +207,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
             $redirect_uri = $request->getRedirectUri();
 
             if (!$client->isUriAllowed($redirect_uri)) {
+                Log::warning(sprintf("InteractiveGrant::handle client %s (%s) redirect_uri %s is not allowed", $client->getApplicationName(), $client_id, $redirect_uri));
                 throw new UriNotAllowedException
                 (
                     $redirect_uri
