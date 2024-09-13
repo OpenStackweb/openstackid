@@ -104,7 +104,7 @@ const SecuritySettingsPanel = (
                                 </>
                             }
                             {
-                                [appTypes.JSClient, appTypes.WebApp].includes(application_type) &&
+                                [appTypes.JSClient, appTypes.Native, appTypes.WebApp].includes(application_type) &&
                                 <SimpleTextFormControl
                                     id="max_allowed_user_sessions"
                                     title="Default Max. Allowed User Sessions (optional)"

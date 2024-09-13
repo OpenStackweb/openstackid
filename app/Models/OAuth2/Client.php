@@ -1765,7 +1765,7 @@ class Client extends BaseEntity implements IClient
      */
     public function getMaxAllowedUserSessions(): int
     {
-        return $this->max_allowed_user_sessions;
+        return $this->max_allowed_user_sessions ?? 0;
     }
 
     public function isLimitingAllowedSessionsPerUser():bool{
@@ -1781,6 +1781,12 @@ class Client extends BaseEntity implements IClient
         if($max_allowed_user_sessions < 0){
             throw new ValidationException("Allowed user sessions must be 0 or more.");
         }
+
+        if (!in_array(strtoupper($this->application_type),
+            [self::ApplicationType_JS_Client, self::ApplicationType_Native, self::ApplicationType_Web_App])){
+            throw new ValidationException("This type of application doesn't allow setting the maximum number of sessions per user..");
+        }
+
         $this->max_allowed_user_sessions = $max_allowed_user_sessions;
     }
 }
