@@ -50,6 +50,11 @@ abstract class AbstractDoctrineOAuth2TokenRepository
         ];
     }
 
+    protected function getOrderMappings()
+    {
+        return ['created_at'];
+    }
+
     /**
      * @param int $client_identifier
      * @param PagingInfo $paging_info

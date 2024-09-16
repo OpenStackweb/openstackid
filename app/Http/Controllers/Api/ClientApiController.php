@@ -12,6 +12,8 @@
  * limitations under the License.
  **/
 use App\Http\Controllers\APICRUDController;
+use App\Http\Controllers\ParametrizedGetAll;
+use App\Http\Exceptions\HTTP401UnauthorizedException;
 use App\Http\Utils\PagingConstants;
 use App\ModelSerializers\SerializerRegistry;
 use Exception;
@@ -19,6 +21,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Validator;
 use models\exceptions\EntityNotFoundException;
+use models\utils\IBaseRepository;
+use OAuth2\IResourceServerContext;
 use OAuth2\Repositories\IAccessTokenRepository;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Repositories\IRefreshTokenRepository;
@@ -38,6 +42,8 @@ use Illuminate\Support\Facades\Log;
  */
 final class ClientApiController extends APICRUDController
 {
+
+    use ParametrizedGetAll;
 
     /**
      * @var IApiScopeService
@@ -498,58 +504,77 @@ final class ClientApiController extends APICRUDController
      */
     public function getAccessTokensByCurrentUser()
     {
-        $values = Request::all();
-        $rules  = [
+        $user = $this->auth_service->getCurrentUser();
+        if(is_null($user))
+            throw new HTTP401UnauthorizedException();
 
-            'page'     => 'integer|min:1',
-            'per_page' => sprintf('required_with:page|integer|min:%s|max:%s', PagingConstants::MinPageSize, PagingConstants::MaxPageSize),
-        ];
-
-        try {
-            $validation = Validator::make($values, $rules);
-
-            if ($validation->fails()) {
-                $ex = new ValidationException();
-                throw $ex->setMessages($validation->messages()->toArray());
+        return $this->_getAll(
+            function () {
+                return [
+                    'owner_id'    => ['=='],
+                    'client_id' =>  ['=@', '==','@@'],
+                ];
+            },
+            function () {
+                return [
+                    'owner_id' => 'sometimes|integer',
+                    'client_id' => 'sometimes|string',
+                ];
+            },
+            function () {
+                return [
+                    'created_at'
+                ];
+            },
+            function ($filter) use($user) {
+                if($filter instanceof Filter){
+                    $filter->addFilterCondition(FilterElement::makeEqual('owner_id', $user->getId()));
+                    $filter->addFilterCondition(FilterElement::makeEqual('is_valid', true));
+                }
+                return $filter;
+            },
+            function () {
+                return SerializerRegistry::SerializerType_Public;
             }
+        );
 
-            // default values
-            $page     = 1;
-            $per_page = PagingConstants::DefaultPageSize;;
+    }
 
-            if (Request::has('page')) {
-                $page     = intval(Request::input('page'));
-                $per_page = intval(Request::input('per_page'));
+    /**
+     * @return mixed
+     */
+    public function getAllAccessTokens()
+    {
+
+        return $this->_getAll(
+            function () {
+                return [
+                    'owner_id'    => ['=='],
+                    'client_id' =>  ['=@', '==','@@'],
+                ];
+            },
+            function () {
+                return [
+                    'owner_id' => 'sometimes|integer',
+                    'client_id' => 'sometimes|string',
+                ];
+            },
+            function () {
+                return [
+                    'created_at'
+                ];
+            },
+            function ($filter) {
+                if($filter instanceof Filter){
+                    $filter->addFilterCondition(FilterElement::makeEqual('is_valid', true));
+                }
+                return $filter;
+            },
+            function () {
+                return SerializerRegistry::SerializerType_Public;
             }
+        );
 
-            $user      = $this->auth_service->getCurrentUser();
-
-            $data = $this->access_token_repository->getAllValidByUserId($user->getId(), new PagingInfo($page, $per_page));
-            return $this->ok
-            (
-                $data->toArray
-                (
-                    Request::input('expand', ''),
-                    [],
-                    [],
-                    []
-                )
-            );
-        }
-        catch (ValidationException $ex1)
-        {
-            Log::warning($ex1);
-            return $this->error412(array($ex1->getMessage()));
-        }
-        catch (EntityNotFoundException $ex2)
-        {
-            Log::warning($ex2);
-            return $this->error404(array('message' => $ex2->getMessage()));
-        }
-        catch (Exception $ex) {
-            Log::error($ex);
-            return $this->error500($ex);
-        }
     }
 
     /**
@@ -695,5 +720,15 @@ final class ClientApiController extends APICRUDController
             'website'          => 'nullable|url',
             'admin_users'      => 'nullable|int_array',
         ];
+    }
+
+    protected function getResourceServerContext(): IResourceServerContext
+    {
+        // TODO: Implement getResourceServerContext() method.
+    }
+
+    protected function getRepository(): IBaseRepository
+    {
+        return $this->access_token_repository;
     }
 }

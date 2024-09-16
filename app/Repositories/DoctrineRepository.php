@@ -121,7 +121,7 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      * @param PagingInfo $paging_info
      * @param Filter|null $filter
      * @param Order|null $order
-     * @return PagingResponsegetAllValidByUserIdAndClientIdentifier
+     * @return PagingResponse
      */
     public function getAllByPage(PagingInfo $paging_info, Filter $filter = null, Order $order = null){
 

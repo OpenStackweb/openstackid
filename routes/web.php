@@ -201,6 +201,10 @@ Route::group([
             Route::delete('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@delete"]);
             Route::put('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@update"]);
             Route::put('pic', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@updatePic"]);
+            Route::group(['prefix' => 'access-tokens'], function () {
+                Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);
+                Route::delete('{value}',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@revokeToken"]);
+            });
         });
     });
 
