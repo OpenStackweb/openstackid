@@ -1520,15 +1520,15 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $client = $this->client_repository->getClientById($client_id);
 
             if (is_null($client)) {
-                $this->log_service->debug_msg("OAuth2Protocol::endSession client not found!");
-                throw new InvalidClientException('Client not found!');
+                $this->log_service->debug_msg(sprintf("OAuth2Protocol::endSession client %s not found.", $client_id));
+                throw new InvalidClientException('Client not found.');
             }
 
             $redirect_logout_uri = $this->last_request->getPostLogoutRedirectUri();
             $state = $this->last_request->getState();
 
             if (!empty($redirect_logout_uri) && !$client->isPostLogoutUriAllowed($redirect_logout_uri)) {
-                $this->log_service->debug_msg("OAuth2Protocol::endSession post_logout_redirect_uri not allowed!");
+                $this->log_service->debug_msg(sprintf("OAuth2Protocol::endSession post_logout_redirect_uri %s not allowed.", $redirect_logout_uri));
                 throw new InvalidOAuth2Request('post_logout_redirect_uri not allowed!');
             }
 
