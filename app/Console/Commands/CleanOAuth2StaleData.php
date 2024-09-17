@@ -62,15 +62,6 @@ final class CleanOAuth2StaleData extends Command
             $this->info(sprintf("CleanOAuth2StaleData::handle %s rows where deleted from oauth2_access_token", $res));
         }
 
-        if (Schema::hasTable('oauth2_refresh_token')) {
-            $res = DB::table('oauth2_refresh_token')
-                ->whereRaw("NOT EXISTS ( SELECT id FROM oauth2_access_token WHERE oauth2_access_token.refresh_token_id = oauth2_refresh_token.id)")
-                ->delete();
-
-            Log::debug(sprintf("CleanOAuth2StaleData::handle %s rows where deleted from oauth2_refresh_token", $res));
-            $this->info(sprintf("CleanOAuth2StaleData::handle %s rows where deleted from oauth2_refresh_token", $res));
-        }
-
         if (Schema::hasTable('oauth2_otp')) {
             $res = DB::table('oauth2_otp')
                 ->whereRaw("lifetime > 0 and DATE_ADD(created_at, INTERVAL lifetime second) <= UTC_TIMESTAMP()")
