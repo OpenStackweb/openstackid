@@ -71,5 +71,16 @@ final class CleanOAuth2StaleData extends Command
             $this->info(sprintf("CleanOAuth2StaleData::handle %s rows where deleted from oauth2_otp", $res));
         }
 
+
+        if (Schema::hasTable('oauth2_refresh_token')) {
+            $res = DB::table('oauth2_refresh_token')
+                ->whereRaw("where void = 1")
+                ->delete();
+
+            Log::debug(sprintf("CleanOAuth2StaleData::handle %s rows where deleted from oauth2_refresh_token", $res));
+            $this->info(sprintf("CleanOAuth2StaleData::handle %s rows where deleted from oauth2_refresh_token", $res));
+        }
+
+
     }
 }
