@@ -160,9 +160,9 @@ const OauthPanel = ({
                         <FormControl variant="outlined" className={styles.form_control}>
                             <FormLabel htmlFor="client_secret">
                                 <Typography variant="subtitle2" display="inline">CLIENT SECRET</Typography>
-                                <Tooltip title="Regenerate">
-                                    {
-                                        is_own && <IconButton
+                                {
+                                    is_own && <Tooltip title="Regenerate">
+                                        <IconButton
                                             aria-label="regenerate"
                                             onClick={onClientSecretRegenerate}
                                             edge="end"
@@ -170,8 +170,8 @@ const OauthPanel = ({
                                         >
                                             <RefreshIcon/>
                                         </IconButton>
-                                    }
-                                </Tooltip>
+                                    </Tooltip>
+                                }
                             </FormLabel>
                             <OutlinedInput
                                 id="client_secret"
