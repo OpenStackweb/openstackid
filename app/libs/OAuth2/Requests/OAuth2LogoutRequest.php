@@ -36,14 +36,8 @@ final class OAuth2LogoutRequest extends OAuth2Request
     public function isValid()
     {
         $this->last_validation_error = '';
-
-        $token_id    = $this->getIdTokenHint();
         $client_id   = $this->getClientId();
-        if(empty($token_id)){
-            $this->last_validation_error = sprintf("%s is mandatory", OAuth2Protocol::OAuth2Protocol_IDTokenHint);
-            return false;
-        }
-
+        // see https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout
         if(empty($client_id)){
             $this->last_validation_error = sprintf("%s is mandatory", OAuth2Protocol::OAuth2Protocol_ClientId);
             return false;
