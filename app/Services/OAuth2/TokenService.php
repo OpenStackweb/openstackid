@@ -1201,6 +1201,33 @@ final class TokenService extends AbstractService implements ITokenService
             if(is_null($user))
                 throw new EntityNotFoundException("User not found");
 
+            foreach($user->getValidRefreshTokens() as $refreshToken){
+                Log::debug
+                (
+                    sprintf
+                    (
+                        "TokenService::revokeUsersToken revoking refresh token %s (%s)",
+                        $refreshToken->getId(),
+                        $refreshToken->getValue()
+                    )
+                );
+
+                if(!empty($client_id) && $refreshToken->hasClient() && $refreshToken->getClient()->getClientId() != $client_id){
+                    Log::debug
+                    (
+                        sprintf
+                        (
+                            "TokenService::revokeUsersToken access token %s does not belong to client %s",
+                            $accessToken->getId(),
+                            $client_id
+                        )
+                    );
+                    continue;
+                }
+
+                $this->revokeRefreshToken($refreshToken->getValue(), true, $user);
+            }
+
             foreach($user->getAccessTokens() as $accessToken){
                 Log::debug
                 (
@@ -1211,7 +1238,7 @@ final class TokenService extends AbstractService implements ITokenService
                         $accessToken->getValue()
                     )
                 );
-                if(!empty($client_id) && $accessToken->hasClient() && $accessToken->F()->getClientId() != $client_id){
+                if(!empty($client_id) && $accessToken->hasClient() && $accessToken->getClient()->getClientId() != $client_id){
                     Log::debug
                     (
                         sprintf
