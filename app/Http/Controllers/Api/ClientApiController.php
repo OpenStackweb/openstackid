@@ -511,13 +511,11 @@ final class ClientApiController extends APICRUDController
         return $this->_getAll(
             function () {
                 return [
-                    'owner_id'    => ['=='],
                     'client_id' =>  ['=@', '==','@@'],
                 ];
             },
             function () {
                 return [
-                    'owner_id' => 'sometimes|integer',
                     'client_id' => 'sometimes|string',
                 ];
             },
@@ -545,7 +543,6 @@ final class ClientApiController extends APICRUDController
      */
     public function getAllAccessTokens()
     {
-
         return $this->_getAll(
             function () {
                 return [
@@ -561,7 +558,9 @@ final class ClientApiController extends APICRUDController
             },
             function () {
                 return [
-                    'created_at'
+                    'client_name',
+                    'created_at',
+                    'from_ip'
                 ];
             },
             function ($filter) {
@@ -574,7 +573,6 @@ final class ClientApiController extends APICRUDController
                 return SerializerRegistry::SerializerType_Public;
             }
         );
-
     }
 
     /**
