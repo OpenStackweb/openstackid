@@ -1194,7 +1194,7 @@ final class TokenService extends AbstractService implements ITokenService
         );
 
         $this->tx_service->transaction(function () use (
-            $user_id
+            $user_id, $client_id
         ) {
 
             $user = $this->auth_service->getUserById($user_id);
@@ -1202,15 +1202,6 @@ final class TokenService extends AbstractService implements ITokenService
                 throw new EntityNotFoundException("User not found");
 
             foreach($user->getValidRefreshTokens() as $refreshToken){
-                Log::debug
-                (
-                    sprintf
-                    (
-                        "TokenService::revokeUsersToken revoking refresh token %s (%s)",
-                        $refreshToken->getId(),
-                        $refreshToken->getValue()
-                    )
-                );
 
                 if(!empty($client_id) && $refreshToken->hasClient() && $refreshToken->getClient()->getClientId() != $client_id){
                     Log::debug
@@ -1224,6 +1215,16 @@ final class TokenService extends AbstractService implements ITokenService
                     );
                     continue;
                 }
+
+                Log::debug
+                (
+                    sprintf
+                    (
+                        "TokenService::revokeUsersToken revoking refresh token %s (%s)",
+                        $refreshToken->getId(),
+                        $refreshToken->getValue()
+                    )
+                );
 
                 $this->revokeRefreshToken($refreshToken->getValue(), true, $user);
             }
