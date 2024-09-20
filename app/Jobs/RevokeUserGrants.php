@@ -39,19 +39,25 @@ class RevokeUserGrants implements ShouldQueue
     private $user_id;
 
     /**
-     * @param int $user_id
-     * @param string $ip
-     * @param string $action
+     * @var string
      */
-    public function __construct(User $user){
+    private $client_id;
+
+
+    /**
+     * @param User $user
+     * @param string|null $client_id
+     */
+    public function __construct(User $user, ?string $client_id = null){
         $this->user_id = $user->getId();
-        Log::debug(sprintf("RevokeUserGrants::constructor user %s", $this->user_id));
+        $this->client_id = $client_id;
+        Log::debug(sprintf("RevokeUserGrants::constructor user %s client id %s", $this->user_id, !empty($client_id)? $client_id :"N/A"));
     }
 
     public function handle(ITokenService $service){
         Log::debug(sprintf("RevokeUserGrants::handle"));
         try{
-            $service->revokeUsersToken($this->user_id);
+            $service->revokeUsersToken($this->user_id, $this->client_id);
         }
         catch (\Exception $ex) {
             Log::error($ex);

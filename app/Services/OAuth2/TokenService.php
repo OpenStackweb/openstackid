@@ -1178,11 +1178,20 @@ final class TokenService extends AbstractService implements ITokenService
 
     /**
      * @param int $user_id
+     * @param string|null $client_id
      * @return void
      * @throws Exception
      */
-    public function revokeUsersToken(int $user_id):void{
-        Log::debug(sprintf("TokenService::revokeUsersToken user_id %s", $user_id));
+    public function revokeUsersToken(int $user_id, ?string $client_id = null):void{
+        Log::debug
+        (
+            sprintf
+            (
+                "TokenService::revokeUsersToken user_id %S client_id %s",
+                $user_id,
+                !empty($client_id) ? $client_id : 'N/A'
+            )
+        );
 
         $this->tx_service->transaction(function () use (
             $user_id
@@ -1191,20 +1200,6 @@ final class TokenService extends AbstractService implements ITokenService
             $user = $this->auth_service->getUserById($user_id);
             if(is_null($user))
                 throw new EntityNotFoundException("User not found");
-
-            foreach($user->getValidRefreshTokens() as $refreshToken){
-                Log::debug
-                (
-                    sprintf
-                    (
-                        "TokenService::revokeUsersToken revoking refresh token %s (%s)",
-                        $refreshToken->getId(),
-                        $refreshToken->getValue()
-                    )
-                );
-
-                $this->revokeRefreshToken($refreshToken->getValue(), true, $user);
-            }
 
             foreach($user->getAccessTokens() as $accessToken){
                 Log::debug
@@ -1216,7 +1211,18 @@ final class TokenService extends AbstractService implements ITokenService
                         $accessToken->getValue()
                     )
                 );
-
+                if(!empty($client_id) && $accessToken->hasClient() && $accessToken->F()->getClientId() != $client_id){
+                    Log::debug
+                    (
+                        sprintf
+                        (
+                            "TokenService::revokeUsersToken access token %s does not belong to client %s",
+                            $accessToken->getId(),
+                            $client_id
+                        )
+                    );
+                    continue;
+                }
                 $this->revokeAccessToken($accessToken->getValue(), true, $user);
             }
         });
