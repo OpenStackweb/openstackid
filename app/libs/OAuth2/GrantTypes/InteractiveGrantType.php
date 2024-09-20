@@ -175,10 +175,14 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 throw new InvalidOAuth2Request;
             }
 
+            Log::debug(sprintf("InteractiveGrant::handle %s", $request->__toString()));
+
             $client_id = $request->getClientId();
+
             $client    = $this->client_repository->getClientById($client_id);
 
             if (is_null($client)) {
+                Log::warning(sprintf("InteractiveGrant::handle client_id %s does not exists!", $client_id));
                 throw new InvalidClientException
                 (
                     sprintf
@@ -190,6 +194,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
             }
 
             if (!$client->isActive() || $client->isLocked()) {
+                Log::warning(sprintf("InteractiveGrant::handle client %s (%s) is locked.", $client->getApplicationName(), $client->getId()));
                 throw new LockedClientException
                 (
                     sprintf
@@ -218,6 +223,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
             $scope = $request->getScope();
             $this->log_service->debug_msg(sprintf("scope %s", $scope));
             if (empty($scope) || !$client->isScopeAllowed($scope)) {
+                Log::warning(sprintf("InteractiveGrant::handle client %s (%s) scope %s is not allowed", $client->getApplicationName(), $client_id, $scope));
                 throw new ScopeNotAllowedException($scope);
             }
 
@@ -231,20 +237,22 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $this->auth_service->clearUserAuthorizationResponse();
 
                 if ($this->shouldPromptLogin($request)) {
+                    Log::warning(sprintf("InteractiveGrant::handle client %s (%s) user cancelled login action", $client->getApplicationName(), $client_id));
                     throw new LoginRequiredException;
                 }
-
+                Log::warning(sprintf("InteractiveGrant::handle client %s (%s) user cancelled login action", $client->getApplicationName(), $client_id));
                 throw new AccessDeniedException;
             }
 
             //check user logged
             if ($this->mustAuthenticateUser($request, $client)) {
                 if (!$this->canInteractWithEndUser($request)) {
+                    Log::warning(sprintf("InteractiveGrant::handle client %s (%s) user not logged", $client->getApplicationName(), $client_id));
                     throw new LoginRequiredException;
                 }
 
                 $this->memento_service->serialize($request->getMessage()->createMemento());
-
+                Log::debug(sprintf("InteractiveGrant::handle client %s (%s) user not logged", $client->getApplicationName(), $client_id));
                 return $this->auth_strategy->doLogin($request);
             }
 
@@ -255,15 +263,18 @@ abstract class InteractiveGrantType extends AbstractGrantType
             $requested_user_id = $this->security_context_service->get()->getRequestedUserId();
 
             if (is_null($user)) {
+                Log::warning(sprintf("InteractiveGrant::handle client %s (%s) invalid current user", $client->getApplicationName(), $client_id));
                 throw new OAuth2GenericException("Invalid Current User.");
             }
 
             if (!is_null($requested_user_id) && $requested_user_id !== $user->getId()) {
+                Log::warning(sprintf("InteractiveGrant::handle client %s (%s) invalid login hint", $client->getApplicationName(), $client_id));
                 $this->auth_service->logout();
                 throw new InvalidLoginHint('invalid login hint.');
             }
 
             if(!$this->token_service->canCreateAccessToken($user, $client)){
+                Log::warning(sprintf("InteractiveGrant::handle client %s (%s) max allowed sessions reached", $client->getApplicationName(), $client_id));
                 throw new OAuth2GenericException
                 (
                     sprintf
@@ -277,10 +288,11 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
             $authorization_response = $this->auth_service->getUserAuthorizationResponse();
 
-            $this->log_service->debug_msg(sprintf("authorization_response %s", $authorization_response));
+            Log::debug(sprintf("InteractiveGrant::handle client %s (%s) authorization_response %s", $client->getApplicationName(), $client_id, $authorization_response));
 
             if ($authorization_response == IAuthService::AuthorizationResponse_DenyOnce) {
                 if ($this->hadPromptConsent($request)) {
+                    Log::warning(sprintf("InteractiveGrant::handle client %s (%s) user denied access to your application", $client->getApplicationName(), $client_id));
                     throw new ConsentRequiredException('the user denied access to your application');
                 }
                 throw new AccessDeniedException;
