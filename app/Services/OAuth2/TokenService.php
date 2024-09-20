@@ -1217,8 +1217,8 @@ final class TokenService extends AbstractService implements ITokenService
                     (
                         sprintf
                         (
-                            "TokenService::revokeUsersToken access token %s does not belong to client %s",
-                            $accessToken->getId(),
+                            "TokenService::revokeUsersToken refresh token %s does not belong to client %s",
+                            $refreshToken->getId(),
                             $client_id
                         )
                     );
