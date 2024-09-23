@@ -849,7 +849,7 @@ const ProfilePage = ({
                             <Grid item container alignItems="center" justifyContent="center">
                                 <UserActionsGrid getUserActions={
                                     (page, order, orderDir, filters) =>
-                                        getUserActions(page, order, orderDir, filters, initialValues.id)
+                                        getUserActions(page, order, orderDir, filters)
                                 } pageSize={PAGE_SIZE}/>
                             </Grid>
                             {

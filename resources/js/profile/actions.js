@@ -42,8 +42,9 @@ export const fetchWithParams =
     };
 
     const filter = parseFilter(filters);
-    if(userId)
+    if(userId) {
         filter.push(`owner_id==${userId}`)
+    }
 
     if (filter.length > 0) {
         params['filter[]'] = filter;
@@ -59,7 +60,7 @@ export const fetchWithParams =
     return response;
 }
 
-export const getUserActions = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId) =>
+export const getUserActions = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId = null) =>
     fetchWithParams(page, order, orderDir, filters, userId, window.GET_USER_ACTIONS_ENDPOINT);
 
 export const getUserAccessTokens = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId) =>

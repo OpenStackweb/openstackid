@@ -186,6 +186,7 @@ Route::group([
         Route::group(['prefix' => 'me'], function () {
             Route::put('', "UserApiController@updateMe");
             Route::put('pic',  "UserApiController@updateMyPic");
+            Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
         });
 
         Route::get('actions', "UserActionApiController@getActions");

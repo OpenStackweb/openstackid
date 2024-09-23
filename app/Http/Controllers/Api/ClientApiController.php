@@ -333,7 +333,7 @@ final class ClientApiController extends APICRUDController
                     if ($token->getClientId() !== $client->getClientId()) {
                         throw new ValidationException(sprintf('access token %s does not belongs to client id !', $value, $id));
                     }
-                    //$this->token_service->revokeAccessToken($value, true);
+                    $this->token_service->revokeAccessToken($value, true);
                 }
                     break;
                 case 'refresh-token': {
