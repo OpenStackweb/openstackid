@@ -21,6 +21,7 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
         {
             field: 'created_at',
             headerName: 'Created At',
+            filterable: false,
             type: 'date',
             width: 180,
             filterOperators: getGridDateOperators().filter(
@@ -29,7 +30,12 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
             valueFormatter: params => moment.unix(params?.value).format("DD/MM/YYYY hh:mm:ss A")
         },
         {
-            field: 'remaining_lifetime', headerName: 'Remaining Lifetime', width: 160,
+            field: 'remaining_lifetime',
+            headerName: 'Remaining Lifetime',
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            width: 160,
             renderCell: (params) => {
                 if (!params) return '';
                 const remainingLifetime = formatTime(parseInt(params.value));

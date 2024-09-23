@@ -333,7 +333,7 @@ final class ClientApiController extends APICRUDController
                     if ($token->getClientId() !== $client->getClientId()) {
                         throw new ValidationException(sprintf('access token %s does not belongs to client id !', $value, $id));
                     }
-                    $this->token_service->revokeAccessToken($value, true);
+                    //$this->token_service->revokeAccessToken($value, true);
                 }
                     break;
                 case 'refresh-token': {
@@ -501,6 +501,7 @@ final class ClientApiController extends APICRUDController
 
     /**
      * @return mixed
+     * @throws HTTP401UnauthorizedException
      */
     public function getAccessTokensByCurrentUser()
     {
@@ -511,17 +512,27 @@ final class ClientApiController extends APICRUDController
         return $this->_getAll(
             function () {
                 return [
-                    'client_id' =>  ['=@', '==','@@'],
+                    'client_name' =>  ['=@', '==','@@'],
+                    'device_info' =>  ['=@', '==','@@'],
+                    'from_ip' =>  ['=@', '==','@@'],
+                    'scope' =>  ['=@', '==','@@'],
                 ];
             },
             function () {
                 return [
-                    'client_id' => 'sometimes|string',
+                    'client_name' => 'sometimes|string',
+                    'device_info' => 'sometimes|string',
+                    'from_ip' => 'sometimes|string',
+                    'scope' => 'sometimes|string',
                 ];
             },
             function () {
                 return [
-                    'created_at'
+                    'client_name',
+                    'created_at',
+                    'device_info',
+                    'from_ip',
+                    'scope'
                 ];
             },
             function ($filter) use($user) {
@@ -539,32 +550,40 @@ final class ClientApiController extends APICRUDController
     }
 
     /**
+     * @param $owner_id
      * @return mixed
      */
-    public function getAllAccessTokens()
+    public function getAllAccessTokens($owner_id)
     {
         return $this->_getAll(
             function () {
                 return [
-                    'owner_id'    => ['=='],
-                    'client_id' =>  ['=@', '==','@@'],
+                    'client_name' =>  ['=@', '==','@@'],
+                    'device_info' =>  ['=@', '==','@@'],
+                    'from_ip' =>  ['=@', '==','@@'],
+                    'scope' =>  ['=@', '==','@@'],
                 ];
             },
             function () {
                 return [
-                    'owner_id' => 'sometimes|integer',
-                    'client_id' => 'sometimes|string',
+                    'client_name' => 'sometimes|string',
+                    'device_info' => 'sometimes|string',
+                    'from_ip' => 'sometimes|string',
+                    'scope' => 'sometimes|string',
                 ];
             },
             function () {
                 return [
                     'client_name',
                     'created_at',
-                    'from_ip'
+                    'device_info',
+                    'from_ip',
+                    'scope'
                 ];
             },
-            function ($filter) {
+            function ($filter) use ($owner_id) {
                 if($filter instanceof Filter){
+                    $filter->addFilterCondition(FilterElement::makeEqual('owner_id', $owner_id));
                     $filter->addFilterCondition(FilterElement::makeEqual('is_valid', true));
                 }
                 return $filter;
