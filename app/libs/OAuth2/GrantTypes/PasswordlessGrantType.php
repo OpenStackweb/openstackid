@@ -383,7 +383,7 @@ class PasswordlessGrantType extends InteractiveGrantType
                     sprintf
                     (
                         "Only %s session(s) is allowed to use this app. Logout of any other active sessions to login on this device.",
-                        $client->getMaxAllowedUserSessions()
+                        $this->client->getMaxAllowedUserSessions()
                     )
                 );
             }
