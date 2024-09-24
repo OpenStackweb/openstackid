@@ -279,8 +279,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 (
                     sprintf
                     (
-                        "Max. Allowed Sessions reached for client %s (%s)",
-                        $client->getApplicationName(),
+                        "Only %s session(s) is allowed to use this app. Logout of any other active sessions to login on this device.",
                         $client->getMaxAllowedUserSessions()
                     )
                 );
