@@ -550,14 +550,14 @@ final class ClientApiController extends APICRUDController
     }
 
     /**
-     * @param $owner_id
      * @return mixed
      */
-    public function getAllAccessTokens($owner_id)
+    public function getAllAccessTokens()
     {
         return $this->_getAll(
             function () {
                 return [
+                    'owner_id' => ['=='],
                     'client_name' =>  ['=@', '==','@@'],
                     'device_info' =>  ['=@', '==','@@'],
                     'from_ip' =>  ['=@', '==','@@'],
@@ -566,6 +566,7 @@ final class ClientApiController extends APICRUDController
             },
             function () {
                 return [
+                    'owner_id' => 'required|int',
                     'client_name' => 'sometimes|string',
                     'device_info' => 'sometimes|string',
                     'from_ip' => 'sometimes|string',
@@ -581,9 +582,8 @@ final class ClientApiController extends APICRUDController
                     'scope'
                 ];
             },
-            function ($filter) use ($owner_id) {
+            function ($filter) {
                 if($filter instanceof Filter){
-                    $filter->addFilterCondition(FilterElement::makeEqual('owner_id', $owner_id));
                     $filter->addFilterCondition(FilterElement::makeEqual('is_valid', true));
                 }
                 return $filter;
