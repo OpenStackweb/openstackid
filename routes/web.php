@@ -180,15 +180,17 @@ Route::group([
 
     Route::group(['prefix' => 'users'], function () {
 
-        Route::delete('/me/tokens/{value}', "UserApiController@revokeMyToken");
-        Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@getAll"]);
+        Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' =>"UserApiController@getAll"]);
         Route::post('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@create"]);
+
         Route::group(['prefix' => 'me'], function () {
+            Route::delete('tokens/{value}', "UserApiController@revokeMyToken");
             Route::put('', "UserApiController@updateMe");
             Route::put('pic',  "UserApiController@updateMyPic");
             Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
         });
 
+        Route::get('access-tokens', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);
         Route::get('actions', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'UserActionApiController@getActions']);
 
         Route::group(['prefix' => '{id}'], function () {
@@ -207,7 +209,6 @@ Route::group([
             });
         });
 
-        Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);
     });
 
     Route::group(['prefix' => 'groups', 'middleware' => ['openstackid.currentuser.serveradmin.json']], function () {
