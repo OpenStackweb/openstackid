@@ -189,7 +189,7 @@ Route::group([
             Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
         });
 
-        Route::get('actions', "UserActionApiController@getActions");
+        Route::get('actions', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'UserActionApiController@getActions']);
 
         Route::group(['prefix' => '{id}'], function () {
 

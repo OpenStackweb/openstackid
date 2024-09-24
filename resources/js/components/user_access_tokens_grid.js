@@ -20,14 +20,14 @@ const UserAccessTokensGrid = ({getUserAccessTokens, pageSize, tokensListChanged,
         {field: 'client_name', headerName: 'Client Name', width: 110},
         {
             field: 'created_at',
-            headerName: 'Created At',
+            headerName: 'Created At (UTC)',
             filterable: false,
             type: 'date',
             width: 180,
             filterOperators: getGridDateOperators().filter(
                 operator => operator.value === 'after' || operator.value === 'before',
             ),
-            valueFormatter: params => moment.unix(params?.value).format("DD/MM/YYYY hh:mm:ss A")
+            valueFormatter: params => moment.utc(params?.value * 1000).format("DD/MM/YYYY hh:mm:ss A")
         },
         {
             field: 'remaining_lifetime',
