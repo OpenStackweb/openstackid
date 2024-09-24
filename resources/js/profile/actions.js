@@ -63,7 +63,7 @@ export const fetchWithParams =
 export const getUserActions = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId = null) =>
     fetchWithParams(page, order, orderDir, filters, userId, window.GET_USER_ACTIONS_ENDPOINT);
 
-export const getUserAccessTokens = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId) =>
+export const getUserAccessTokens = async (page = 1, order = 'created_at', orderDir = 'desc', filters = {}, userId = null) =>
     fetchWithParams(page, order, orderDir, filters, userId, window.GET_USER_ACCESS_TOKENS_ENDPOINT);
 
 export const save = async (entity, pic, token) => {

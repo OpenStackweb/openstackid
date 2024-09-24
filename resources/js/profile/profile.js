@@ -833,7 +833,7 @@ const ProfilePage = ({
                                 <UserAccessTokensGrid
                                     getUserAccessTokens={
                                         (page, order, orderDir, filters) =>
-                                            getUserAccessTokens(page, order, orderDir, filters, initialValues.id)
+                                            getUserAccessTokens(page, order, orderDir, filters)
                                     }
                                     pageSize={PAGE_SIZE}
                                     tokensListChanged={accessTokensListRefresh}
