@@ -28,6 +28,7 @@ final class AccessTokenSerializer extends BaseSerializer
         'ClientId'          => 'client_id:json_int',
         'OwnerId'           => 'user_id:json_int',
         'RefreshTokenId'    => 'refresh_token_id:json_int',
+        'DeviceInfo'        => 'device_info:json_string',
     ];
 
     /**

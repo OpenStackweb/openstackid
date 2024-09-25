@@ -216,6 +216,10 @@ final class ClientFactory
             $client->setOtpLifetime(intval($payload['otp_lifetime']));
         }
 
+        if(isset($payload['max_allowed_user_sessions'])){
+            $client->setMaxAllowedUserSessions(intval($payload['max_allowed_user_sessions']));
+        }
+
         $scope_repository = App::make(IApiScopeRepository::class);
         //add default scopes
         foreach ($scope_repository->getDefaults() as $default_scope) {

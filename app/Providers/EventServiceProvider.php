@@ -52,6 +52,9 @@ final class EventServiceProvider extends ServiceProvider
     protected $listen = [
         'Illuminate\Database\Events\QueryExecuted' => [
         ],
+        'Illuminate\Auth\Events\Logout' => [
+            //'App\Listeners\OnUserLogout',
+        ],
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
             // ... other providers
             'SocialiteProviders\\Facebook\\FacebookExtendSocialite@handle',

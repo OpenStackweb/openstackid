@@ -20,6 +20,7 @@ import {object, ref, string} from "yup";
 import RichTextEditor from "../../components/rich_text_editor";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import UserActionsGrid from "../../components/user_actions_grid";
+import UserAccessTokensGrid from "../../components/user_access_tokens_grid";
 import {getUserActions, PAGE_SIZE, save} from "./actions";
 import ProfileImageUploader from "./components/profile_image_uploader/profile_image_uploader";
 import Navbar from "../../components/navbar/navbar";
@@ -30,6 +31,7 @@ import LoadingIndicator from "../../components/loading_indicator";
 import TopLogo from "../../components/top_logo/top_logo";
 import {handleErrorResponse} from "../../utils";
 import {buildPasswordValidationSchema} from "../../validator";
+import {getUserAccessTokens, revokeToken} from "../../profile/actions";
 
 import styles from "./edit_user.module.scss";
 
@@ -50,6 +52,7 @@ const EditUserPage = ({
 
     const [selectedGroups, setSelectedGroups] = useState(initialValues?.groups?.length > 0 ? initialValues.groups.map(g =>g.id): [] )
     const [loading, setLoading] = useState(false);
+    const [accessTokensListRefresh, setAccessTokensListRefresh] = useState(true);
 
     const buildValidationSchema = () => {
         return object({
@@ -85,6 +88,26 @@ const EditUserPage = ({
             });
         },
     });
+
+    const confirmRevocation = (value) => {
+        Swal({
+            title: 'Are you sure to revoke this token?',
+            text: 'This is an non reversible process!',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, revoke it!'
+        }).then((result) => {
+            if (result.value) {
+                revokeToken(value, 'access-token').then(() => {
+                    Swal(`Access token revoked`, `The access token has been revoked successfully`, "success");
+                    setAccessTokensListRefresh(!accessTokensListRefresh);
+                }).catch((err) => {
+                    handleErrorResponse(err);
+                });
+            }
+        });
+    };
 
     return (
         <Container component="main" maxWidth="xs" className={styles.main_container}>
@@ -811,6 +834,23 @@ const EditUserPage = ({
                                 >
                                     Save
                                 </Button>
+                            </Grid>
+                            <Divider/>
+                            <Grid item container>
+                                <Typography component="h1" variant="h5">
+                                    User Access Tokens
+                                </Typography>
+                            </Grid>
+                            <Grid item container alignItems="center" justifyContent="center">
+                                <UserAccessTokensGrid
+                                    getUserAccessTokens={
+                                        (page, order, orderDir, filters) =>
+                                            getUserAccessTokens(page, order, orderDir, filters, initialValues.id)
+                                    }
+                                    pageSize={PAGE_SIZE}
+                                    tokensListChanged={accessTokensListRefresh}
+                                    onRevoke={confirmRevocation}
+                                />
                             </Grid>
                             <Divider/>
                             <Grid item container>

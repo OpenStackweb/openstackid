@@ -105,9 +105,12 @@
             passwordPolicy: passwordPolicy
         }
 
-        window.GET_USER_ACTIONS_ENDPOINT = '{{URL::action("Api\UserActionApiController@getActions")}}';
-        window.SAVE_PROFILE_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMe") !!}';
+        window.GET_USER_ACTIONS_ENDPOINT = '{{URL::action("Api\UserActionApiController@getActionsByCurrentUser")}}';
+        window.GET_USER_ACCESS_TOKENS_ENDPOINT = '{{URL::action("Api\ClientApiController@getAccessTokensByCurrentUser")}}';
+        window.REVOKE_ACCESS_TOKENS_ENDPOINT = '{!!URL::action("Api\UserApiController@revokeMyToken", ["value"=>"@value", "hint"=>"@hint"])!!}';
+        window.SAVE_PROFILE_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMe")!!}';
         window.SAVE_PIC_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMyPic")!!}';
+        window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;
     </script>
     {!! HTML::script('assets/profile.js') !!}
 @append

@@ -329,4 +329,8 @@ interface IClient extends IEntity
      * @return bool
      */
     public function isPasswordlessEnabled():bool;
+
+    public function getMaxAllowedUserSessions(): int;
+
+    public function isLimitingAllowedSessionsPerUser():bool;
 }

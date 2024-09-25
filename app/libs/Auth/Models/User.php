@@ -1561,7 +1561,7 @@ class User extends BaseEntity
     /**
      * @return ArrayCollection
      */
-    public function getAccessTokens(): ArrayCollection
+    public function getAccessTokens()
     {
         return $this->access_tokens;
     }
@@ -1577,9 +1577,16 @@ class User extends BaseEntity
     /**
      * @return ArrayCollection
      */
-    public function getRefreshTokens(): ArrayCollection
+    public function getRefreshTokens()
     {
         return $this->refresh_tokens;
+    }
+
+    public function getValidRefreshTokens()
+    {
+        $criteria = Criteria::create();
+        $criteria->where(Criteria::expr()->eq('void', false));
+        return $this->refresh_tokens->matching($criteria);
     }
 
     /**

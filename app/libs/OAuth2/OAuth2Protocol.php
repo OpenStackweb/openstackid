@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Utils\UserIPHelperProvider;
+use App\Jobs\RevokeUserGrants;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
@@ -1519,15 +1520,15 @@ final class OAuth2Protocol implements IOAuth2Protocol
             $client = $this->client_repository->getClientById($client_id);
 
             if (is_null($client)) {
-                $this->log_service->debug_msg("OAuth2Protocol::endSession client not found!");
-                throw new InvalidClientException('Client not found!');
+                $this->log_service->debug_msg(sprintf("OAuth2Protocol::endSession client %s not found.", $client_id));
+                throw new InvalidClientException('Client not found.');
             }
 
             $redirect_logout_uri = $this->last_request->getPostLogoutRedirectUri();
             $state = $this->last_request->getState();
 
             if (!empty($redirect_logout_uri) && !$client->isPostLogoutUriAllowed($redirect_logout_uri)) {
-                $this->log_service->debug_msg("OAuth2Protocol::endSession post_logout_redirect_uri not allowed!");
+                $this->log_service->debug_msg(sprintf("OAuth2Protocol::endSession post_logout_redirect_uri %s not allowed.", $redirect_logout_uri));
                 throw new InvalidOAuth2Request('post_logout_redirect_uri not allowed!');
             }
 
@@ -1554,11 +1555,15 @@ final class OAuth2Protocol implements IOAuth2Protocol
                         $user->getId()
                     )
                 );
-
             }
 
-            if (!is_null($logged_user))
+            if(!is_null($user)){
+                RevokeUserGrants::dispatch($user, $client_id)->afterResponse();
+            }
+
+            if (!is_null($logged_user)) {
                 $this->auth_service->logout();
+            }
 
             if (!empty($redirect_logout_uri)) {
                 return new OAuth2LogoutResponse($redirect_logout_uri, $state);
@@ -1568,7 +1573,6 @@ final class OAuth2Protocol implements IOAuth2Protocol
         } catch (UriNotAllowedException $ex1) {
             $this->log_service->warning($ex1);
             $this->checkpoint_service->trackException($ex1);
-
             return new OAuth2DirectErrorResponse(OAuth2Protocol::OAuth2Protocol_Error_UnauthorizedClient);
         } catch (OAuth2BaseException $ex2) {
             $this->log_service->warning($ex2);

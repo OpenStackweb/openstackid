@@ -29,6 +29,7 @@ use jwa\cryptographic_algorithms\HashFunctionAlgorithm;
 use jwt\IBasicJWT;
 use jwt\impl\JWTClaimSet;
 use jwt\JWTClaim;
+use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
@@ -566,9 +567,12 @@ final class TokenService extends AbstractService implements ITokenService
             $scope
         ) {
 
+            Log::debug(sprintf("TokenService::createAccessTokenFromRefreshToken refresh_token %s scope %s", $refresh_token->getValue(), $scope));
+
             $refresh_token_value = $refresh_token->getValue();
             $refresh_token_hashed_value = Hash::compute('sha256', $refresh_token_value);
-            //clear current access tokens as invalid
+
+            // clear current access tokens as invalid
             $this->clearAccessTokensForRefreshToken($refresh_token->getValue());
 
             //validate scope if present...
@@ -759,6 +763,8 @@ final class TokenService extends AbstractService implements ITokenService
     public function getAccessToken($value, $is_hashed = false)
     {
 
+        Log::debug(sprintf("TokenService::getAccessToken value %s is_hashed %b", $value, $is_hashed));
+
         return $this->tx_service->transaction(function () use (
             $value,
             $is_hashed
@@ -774,6 +780,7 @@ final class TokenService extends AbstractService implements ITokenService
                         // check on DB...
                         $access_token_db = $this->access_token_repository->getByValueCacheable($hashed_value);
                         if (is_null($access_token_db)) {
+                            Log::warning(sprintf("TokenService::getAccessToken access token %s not found on DB", $value));
                             if ($this->isAccessTokenRevoked($hashed_value)) {
                                 throw new RevokedAccessTokenException(sprintf('Access token %s is revoked!', $value));
                             } else if ($this->isAccessTokenVoid($hashed_value)) // check if its marked on cache as expired ...
@@ -1077,6 +1084,16 @@ final class TokenService extends AbstractService implements ITokenService
     public function revokeAccessToken($value, $is_hashed = false, ?User $current_user = null)
     {
 
+        Log::debug
+        (
+            sprintf
+            (
+                "TokenService::revokeAccessToken value %s is_hashed %b",
+                $value,
+                $is_hashed
+            )
+        );
+
         return $this->tx_service->transaction(function () use (
             $value,
             $is_hashed,
@@ -1088,10 +1105,21 @@ final class TokenService extends AbstractService implements ITokenService
 
             $access_token_db = $this->access_token_repository->getByValue($hashed_value);
 
-            if (is_null($access_token_db)) return false;
+            if (is_null($access_token_db)){
+                Log::debug(sprintf("TokenService::revokeAccessToken access token %s not found", $value));
+                return false;
+            }
 
             if (!is_null($current_user) && !$current_user->belongToGroup(IGroupSlugs::SuperAdminGroup) && $access_token_db->hasOwner() && $access_token_db->getOwnerId() != $current_user->getId()) {
-                throw new ValidationException(sprintf("access token %s does not belongs to user id %s!.", $value, $current_user->getId()));
+                throw new ValidationException
+                (
+                    sprintf
+                    (
+                        "Access Token %s does not belongs to user id %s.",
+                        $value,
+                        $current_user->getId()
+                    )
+                );
             }
 
             $client = $access_token_db->getClient();
@@ -1149,12 +1177,92 @@ final class TokenService extends AbstractService implements ITokenService
     }
 
     /**
+     * @param int $user_id
+     * @param string|null $client_id
+     * @return void
+     * @throws Exception
+     */
+    public function revokeUsersToken(int $user_id, ?string $client_id = null):void{
+        Log::debug
+        (
+            sprintf
+            (
+                "TokenService::revokeUsersToken user_id %S client_id %s",
+                $user_id,
+                !empty($client_id) ? $client_id : 'N/A'
+            )
+        );
+
+        $this->tx_service->transaction(function () use (
+            $user_id, $client_id
+        ) {
+
+            $user = $this->auth_service->getUserById($user_id);
+            if(is_null($user))
+                throw new EntityNotFoundException("User not found");
+
+            foreach($user->getValidRefreshTokens() as $refreshToken){
+
+                if(!empty($client_id) && $refreshToken->hasClient() && $refreshToken->getClient()->getClientId() != $client_id){
+                    Log::debug
+                    (
+                        sprintf
+                        (
+                            "TokenService::revokeUsersToken refresh token %s does not belong to client %s",
+                            $refreshToken->getId(),
+                            $client_id
+                        )
+                    );
+                    continue;
+                }
+
+                Log::debug
+                (
+                    sprintf
+                    (
+                        "TokenService::revokeUsersToken revoking refresh token %s (%s)",
+                        $refreshToken->getId(),
+                        $refreshToken->getValue()
+                    )
+                );
+
+                $this->revokeRefreshToken($refreshToken->getValue(), true, $user);
+            }
+
+            foreach($user->getAccessTokens() as $accessToken){
+                Log::debug
+                (
+                    sprintf
+                    (
+                        "TokenService::revokeUsersToken revoking access token %s (%s)",
+                        $accessToken->getId(),
+                        $accessToken->getValue()
+                    )
+                );
+                if(!empty($client_id) && $accessToken->hasClient() && $accessToken->getClient()->getClientId() != $client_id){
+                    Log::debug
+                    (
+                        sprintf
+                        (
+                            "TokenService::revokeUsersToken access token %s does not belong to client %s",
+                            $accessToken->getId(),
+                            $client_id
+                        )
+                    );
+                    continue;
+                }
+                $this->revokeAccessToken($accessToken->getValue(), true, $user);
+            }
+        });
+    }
+    /**
      * Revokes all related tokens to a specific client id
      * @param $client_id
      */
     public function revokeClientRelatedTokens($client_id)
     {
 
+        Log::debug(sprintf("TokenService::revokeClientRelatedTokens client_id %s", $client_id));
 
         $this->tx_service->transaction(function () use (
             $client_id
@@ -1265,11 +1373,15 @@ final class TokenService extends AbstractService implements ITokenService
     public function invalidateRefreshToken(string $value, bool $is_hashed = false, ?User $current_user = null)
     {
         return $this->tx_service->transaction(function () use ($value, $is_hashed, $current_user) {
+            Log::debug(sprintf("TokenService::invalidateRefreshToken value %s is_hashed %b", $value, $is_hashed));
             $hashed_value = !$is_hashed ? Hash::compute('sha256', $value) : $value;
             $refresh_token = $this->refresh_token_repository->getByValue($hashed_value);
-            if (is_null($refresh_token)) return false;
+            if (is_null($refresh_token)){
+                Log::debug(sprintf("TokenService::invalidateRefreshToken refresh token %s not found", $value));
+                return false;
+            }
             if (!is_null($current_user) && !$current_user->belongToGroup(IGroupSlugs::SuperAdminGroup) && $refresh_token->hasOwner() && $refresh_token->getOwnerId() != $current_user->getId()) {
-                throw new ValidationException(sprintf("refresh token %s does not belongs to user id %s!.", $value, $current_user->getId()));
+                throw new ValidationException(sprintf("Refresh Token %s does not belongs to user id %s.", $value, $current_user->getId()));
             }
 
             $refresh_token->setVoid();
@@ -1290,6 +1402,7 @@ final class TokenService extends AbstractService implements ITokenService
     public function revokeRefreshToken(string $value, bool $is_hashed = false, ?User $current_user = null)
     {
         return $this->tx_service->transaction(function () use ($value, $is_hashed, $current_user) {
+            Log::debug(sprintf("TokenService::revokeRefreshToken value %s is_hashed %b", $value, $is_hashed));
             $res = $this->invalidateRefreshToken($value, $is_hashed, $current_user);
             return $res && $this->clearAccessTokensForRefreshToken($value, $is_hashed);
         });
@@ -1305,6 +1418,8 @@ final class TokenService extends AbstractService implements ITokenService
     public function clearAccessTokensForRefreshToken($value, $is_hashed = false)
     {
 
+        Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken value %s is_hashed %b", $value, $is_hashed));
+
         $hashed_value = !$is_hashed ? Hash::compute('sha256', $value) : $value;
 
         return $this->tx_service->transaction(function () use (
@@ -1314,12 +1429,19 @@ final class TokenService extends AbstractService implements ITokenService
             $refresh_token_db = $this->refresh_token_repository->getByValue($hashed_value);
 
             if (!is_null($refresh_token_db)) {
+
+                Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken refresh token %s found", $refresh_token_db->getId()))
+                ;
                 $access_tokens_db = $this->access_token_repository->getByRefreshToken($refresh_token_db->getId());
 
-                if (count($access_tokens_db) == 0) return false;
+                if (count($access_tokens_db) == 0) {
+                    Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken no access tokens found for refresh token %s", $refresh_token_db->getId()));
+                    return false;
+                }
 
                 foreach ($access_tokens_db as $access_token_db) {
 
+                    Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken revoking access token %s", $access_token_db->getId()));
                     $this->cache_service->delete($access_token_db->getValue());
                     $client = $access_token_db->getClient();
                     $this->cache_service->deleteMemberSet
@@ -1747,5 +1869,60 @@ final class TokenService extends AbstractService implements ITokenService
         catch (AuthenticationException $ex){
             throw new InvalidOTPException($ex->getMessage());
         }
+    }
+
+    /**
+     * @param OAuth2OTP $otp
+     * @param Client $client
+     * @return bool
+     * @throws Exception
+     */
+    public function canCreateAccessTokenFromOTP(OAuth2OTP &$otp, Client $client):bool{
+        return $this->tx_service->transaction(function() use($otp, $client){
+            Log::debug
+            (
+                sprintf
+                (
+                    "TokenService::canCreateAccessTokenFromOTP otp %s user %s client %s",
+                    $otp->getValue(),
+                    $otp->getUserName(),
+                    !is_null($client) ? $client->getClientId() : 'null'
+                )
+            );
+
+            $user = $this->auth_service->getUserByUsername($otp->getUserName());
+            if(is_null($user))
+                throw new ValidationException("Invalid OTP.");
+
+            return $this->canCreateAccessToken($user, $client);
+        });
+    }
+
+    /**
+     * @param User $user
+     * @param Client $client
+     * @return bool
+     * @throws \Exception
+     */
+    public function canCreateAccessToken(User $user, Client $client):bool{
+        return $this->tx_service->transaction(function() use($user, $client){
+            Log::debug(sprintf("TokenService::canCreateAccessToken user %s client %s", $user->getId(), $client->getClientId()));
+            if(!$client->isLimitingAllowedSessionsPerUser()) return true;
+
+            $current_access_token_qty = $this->access_token_repository->getValidCountByUserIdAndClientIdentifier
+            (
+                $user->getId(),
+                $client->getId()
+            );
+
+            Log::debug(sprintf("TokenService::canCreateAccessToken current access token qty %d", $current_access_token_qty));
+
+            if($current_access_token_qty >= $client->getMaxAllowedUserSessions()) {
+                Log::debug(sprintf("TokenService::canCreateAccessToken max allowed user sessions reached %d", $client->getMaxAllowedUserSessions()));
+                return false;
+            }
+
+            return true;
+        });
     }
 }

@@ -11,12 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Utils\DeviceInfoHelper;
 use Auth\User;
-use DateTime;
-use DateInterval;
-use DateTimeZone;
 use App\Models\Utils\BaseEntity;
 use Doctrine\ORM\Mapping AS ORM;
+use Illuminate\Support\Facades\Log;
+
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineAccessTokenRepository")
  * @ORM\Table(name="oauth2_access_token")
@@ -85,10 +86,21 @@ class AccessToken extends BaseEntity {
 
     private $friendly_scopes;
 
+    /**
+     * @ORM\Column(name="device_info", type="string")
+     * @var string
+     */
+    private $device_info;
+
 
     public function __construct()
     {
         parent::__construct();
+        $this->device_info = DeviceInfoHelper::getDeviceInfo();
+    }
+
+    public function getDeviceInfo():?string{
+        return $this->device_info;
     }
 
     /**
@@ -129,27 +141,21 @@ class AccessToken extends BaseEntity {
     public function getRemainingLifetime():int
     {
         //check is refresh token is stills alive... (ZERO is infinite lifetime)
-        if (intval($this->lifetime) == 0) return 0;
+        if ($this->lifetime == 0) return 0;
         $created_at = clone $this->created_at;
-        $created_at->setTimezone(new DateTimeZone('UTC'));
-        $created_at->add(new DateInterval('PT' . intval($this->lifetime) . 'S'));
-        $now = new DateTime(gmdate("Y-m-d H:i:s", time()), new DateTimeZone("UTC"));
-        //check validity...
-        if ($now > $created_at)
-            return -1;
-        $seconds = abs($created_at->getTimestamp() - $now->getTimestamp());;
-        return $seconds;
+        $now = new \DateTime('now', new \DateTimeZone('UTC'));
+        $time_elapsed = abs($now->getTimestamp() - $created_at->getTimestamp());
+        Log::debug(sprintf("AccessToken::getRemainingLifetime id %s time_elapsed %s", $this->id, $time_elapsed));
+        return $this->lifetime > $time_elapsed ? $this->lifetime - $time_elapsed : -1;
     }
 
     /**
      * @return bool
      */
     public function isVoid():bool {
-        //check lifetime...
-        $created_at = $this->created_at;
-        $created_at->add(new DateInterval('PT' . intval($this->lifetime) . 'S'));
-        $now        = new DateTime(gmdate("Y-m-d H:i:s", time()), new DateTimeZone("UTC"));
-        return ($now > $created_at);
+        $remainingLifeTime =  $this->getRemainingLifetime() ;
+        Log::debug(sprintf("AccessToken::isVoid id %s remainingLifeTime %s", $this->id, $remainingLifeTime));
+        return $remainingLifeTime == -1;
     }
 
     /**
@@ -344,4 +350,5 @@ class AccessToken extends BaseEntity {
     public function __get($name) {
         return $this->{$name};
     }
+
 } 

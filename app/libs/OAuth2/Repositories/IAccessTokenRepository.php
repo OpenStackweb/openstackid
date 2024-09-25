@@ -74,4 +74,11 @@ interface IAccessTokenRepository extends IBaseRepository
      */
     function getByRefreshToken(int $refresh_token_id):array;
 
+    /**
+     * @param int $user_id
+     * @param int $client_identifier
+     * @return int
+     */
+    function getValidCountByUserIdAndClientIdentifier(int $user_id, int $client_identifier): int;
+
 }

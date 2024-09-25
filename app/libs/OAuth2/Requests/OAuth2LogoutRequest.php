@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
 use OAuth2\OAuth2Message;
 use OAuth2\OAuth2Protocol;
 /**
@@ -37,21 +36,11 @@ final class OAuth2LogoutRequest extends OAuth2Request
     public function isValid()
     {
         $this->last_validation_error = '';
-        $log_out_uri = $this->getPostLogoutRedirectUri();
-        $token_id    = $this->getIdTokenHint();
         $client_id   = $this->getClientId();
-        // mandatory
-        if(empty($log_out_uri))
-        {
-            $this->last_validation_error = 'log_out_uri not set.';
+        // see https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout
+        if(empty($client_id)){
+            $this->last_validation_error = sprintf("%s is mandatory", OAuth2Protocol::OAuth2Protocol_ClientId);
             return false;
-        }
-        if(empty($token_id)){
-            // if token id hint is not set client id is mandatory
-            if(empty($client_id)){
-                $this->last_validation_error = "client_id is not set.";
-                return false;
-            }
         }
 
         return true;

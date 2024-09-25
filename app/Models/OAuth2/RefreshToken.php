@@ -312,4 +312,24 @@ class RefreshToken extends BaseEntity {
         return $this->{$name};
     }
 
+    /**
+     * @return bool
+     */
+    public function hasClient():bool{
+        return $this->getClientId() > 0;
+    }
+
+
+    /**
+     * @return int
+     */
+    public function getClientId():int{
+        try {
+            return is_null($this->client) ? 0 : $this->client->getId();
+        }
+        catch(\Exception $ex){
+            return 0;
+        }
+    }
+
 }

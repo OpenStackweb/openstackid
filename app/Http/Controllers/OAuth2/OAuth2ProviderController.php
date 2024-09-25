@@ -269,7 +269,7 @@ final class OAuth2ProviderController extends Controller
         );
 
         if (!$request->isValid()) {
-            Log::error('invalid OAuth2LogoutRequest!');
+            Log::error(sprintf('invalid OAuth2LogoutRequest %s', $request->getLastValidationError()));
             return Response::view('errors.400', [
                 'error' => 'Invalid logout request.',
                 'error_description' => $request->getLastValidationError()
@@ -278,7 +278,7 @@ final class OAuth2ProviderController extends Controller
 
         $response = $this->oauth2_protocol->endSession($request);
 
-        if (!is_null($response) && $response instanceof OAuth2Response) {
+        if ($response instanceof OAuth2Response) {
             $strategy = OAuth2ResponseStrategyFactoryMethod::buildStrategy($request, $response);
             return $strategy->handle($response);
         }

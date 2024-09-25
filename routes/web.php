@@ -180,15 +180,18 @@ Route::group([
 
     Route::group(['prefix' => 'users'], function () {
 
-        Route::delete('/me/tokens/{value}', "UserApiController@revokeMyToken");
-        Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@getAll"]);
+        Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' =>"UserApiController@getAll"]);
         Route::post('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@create"]);
+
         Route::group(['prefix' => 'me'], function () {
+            Route::delete('tokens/{value}', "UserApiController@revokeMyToken");
             Route::put('', "UserApiController@updateMe");
             Route::put('pic',  "UserApiController@updateMyPic");
+            Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
         });
 
-        Route::get('actions', "UserActionApiController@getActions");
+        Route::get('access-tokens', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);
+        Route::get('actions', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'UserActionApiController@getActions']);
 
         Route::group(['prefix' => '{id}'], function () {
 
@@ -201,7 +204,11 @@ Route::group([
             Route::delete('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@delete"]);
             Route::put('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@update"]);
             Route::put('pic', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@updatePic"]);
+            Route::group(['prefix' => 'access-tokens'], function () {
+                Route::delete('{value}',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@revokeToken"]);
+            });
         });
+
     });
 
     Route::group(['prefix' => 'groups', 'middleware' => ['openstackid.currentuser.serveradmin.json']], function () {

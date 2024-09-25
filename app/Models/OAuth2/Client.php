@@ -326,6 +326,12 @@ class Client extends BaseEntity implements IClient
     private $allowed_origins;
 
     /**
+     * @ORM\Column(name="max_allowed_user_sessions", type="integer")
+     * @var int
+     */
+    private $max_allowed_user_sessions;
+
+    /**
      * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="clients")
      * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
@@ -426,6 +432,7 @@ class Client extends BaseEntity implements IClient
         $this->max_access_token_issuance_qty = 0;
         $this->max_refresh_token_issuance_basis = 0;
         $this->max_refresh_token_issuance_qty = 0;
+        $this->max_allowed_user_sessions = 0;
         $this->pkce_enabled = false;
         $this->otp_enabled = false;
         $this->otp_lifetime = intval(Config::get("otp.lifetime"));
@@ -625,9 +632,12 @@ class Client extends BaseEntity implements IClient
      */
     public function isUriAllowed(string $uri):bool
     {
+        Log::debug(sprintf("Client::isUriAllowed client %s original uri %s", $this->client_id, $uri));
         $uri = URLUtils::canonicalUrl($uri);
-        if(empty($uri)) return false;
-
+        if(empty($uri)) {
+            Log::debug(sprintf("Client::isUriAllowed url %s is not valid", $uri));
+            return false;
+        }
         if
         (
             ($this->application_type !== IClient::ApplicationType_Native && !URLUtils::isHTTPS($uri))
@@ -1748,5 +1758,35 @@ class Client extends BaseEntity implements IClient
      */
     public function hasOTP(string $value):bool{
         return !is_null($this->getOTPByValue($value));
+    }
+
+    /**
+     * @return int
+     */
+    public function getMaxAllowedUserSessions(): int
+    {
+        return $this->max_allowed_user_sessions;
+    }
+
+    public function isLimitingAllowedSessionsPerUser():bool{
+        return  $this->max_allowed_user_sessions > 0;
+    }
+
+    /**
+     * @param int $max_allowed_user_sessions
+     * @throws ValidationException
+     */
+    public function setMaxAllowedUserSessions(int $max_allowed_user_sessions): void
+    {
+        if($max_allowed_user_sessions < 0){
+            throw new ValidationException("Allowed user sessions must be 0 or more.");
+        }
+
+        if (!in_array(strtoupper($this->application_type),
+            [self::ApplicationType_JS_Client, self::ApplicationType_Native, self::ApplicationType_Web_App])){
+            throw new ValidationException("This type of application ({$this->application_type}) doesn't allow setting the maximum number of sessions per user.");
+        }
+
+        $this->max_allowed_user_sessions = $max_allowed_user_sessions;
     }
 }

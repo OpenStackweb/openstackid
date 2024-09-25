@@ -13,18 +13,17 @@
  **/
 
 use App\Http\Controllers\Api\OAuth2\OAuth2ProtectedController;
-use App\Http\Controllers\GetAllTrait;
+use App\Http\Controllers\ParametrizedGetAll;
 use App\Http\Controllers\Traits\ParseFilter;
-use App\Models\Exceptions\AuthzException;
+use App\Http\Exceptions\HTTP401UnauthorizedException;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserActionRepository;
-use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use models\exceptions\EntityNotFoundException;
-use models\exceptions\ValidationException;
+use models\utils\IBaseRepository;
 use OAuth2\IResourceServerContext;
+use utils\Filter;
+use utils\FilterElement;
+use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
 
 /**
@@ -33,77 +32,91 @@ use Utils\Services\ILogService;
  */
 final class UserActionApiController extends OAuth2ProtectedController
 {
-    use GetAllTrait;
+    use ParametrizedGetAll;
 
     use ParseFilter;
+
+    /**
+     * @var IAuthService
+     */
+    private $auth_service;
 
     /**
      * UserActionApiController constructor.
      * @param IUserActionRepository $repository
      * @param IResourceServerContext $resource_server_context
+     * @param IAuthService $auth_service
      * @param ILogService $log_service
      */
     public function __construct
     (
         IUserActionRepository  $repository,
         IResourceServerContext $resource_server_context,
+        IAuthService           $auth_service,
         ILogService            $log_service
     )
     {
         parent::__construct($resource_server_context, $log_service);
         $this->repository = $repository;
+        $this->auth_service = $auth_service;
+    }
+
+    protected function getResourceServerContext(): IResourceServerContext
+    {
+        return $this->resource_server_context;
+    }
+
+    protected function getRepository(): IBaseRepository
+    {
+        return $this->repository;
     }
 
     /**
-     * @return array
+     * @return JsonResponse
+     * @throws HTTP401UnauthorizedException
      */
-    protected function getFilterRules(): array
+    public function getActionsByCurrentUser(): JsonResponse
     {
-        return [
-            'owner_id' => ['=='],
-            'realm' => ['=@', '=='],
-            'user_action' => ['=@', '=='],
-            'from_ip' => ['=@', '=='],
-            'created_at' => ['<', '>'],
-        ];
-    }
+        $user = $this->auth_service->getCurrentUser();
+        if(is_null($user))
+            throw new HTTP401UnauthorizedException();
 
-    /**
-     * @return array
-     */
-    protected function getFilterValidatorRules(): array
-    {
-        return [
-            'owner_id' => 'required|int',
-            'realm' => 'nullable|string',
-            'user_action' => 'nullable|string',
-            'from_ip' => 'nullable|string',
-            'created_at' => 'nullable|string',
-        ];
-    }
-
-    /**
-     * @return array
-     */
-    protected function getOrderRules(): array
-    {
-        return [
-            'id',
-            'realm',
-            'user_action',
-            'from_ip',
-            'created_at'
-        ];
-    }
-
-    protected function getAllSerializerType(): string
-    {
-        return SerializerRegistry::SerializerType_Private;
-    }
-
-    protected function serializerType(): string
-    {
-        return SerializerRegistry::SerializerType_Private;
+        return $this->_getAll(
+            function () {
+                return [
+                    'realm' => ['=@', '=='],
+                    'user_action' => ['=@', '=='],
+                    'from_ip' => ['=@', '=='],
+                    'created_at' => ['<', '>'],
+                ];
+            },
+            function () {
+                return [
+                    'realm' => 'nullable|string',
+                    'user_action' => 'nullable|string',
+                    'from_ip' => 'nullable|string',
+                    'created_at' => 'nullable|string',
+                ];
+            },
+            function () {
+                return [
+                    'id',
+                    'realm',
+                    'user_action',
+                    'from_ip',
+                    'created_at'
+                ];
+            },
+            function ($filter) use($user) {
+                if($filter instanceof Filter){
+                     $filter->addFilterCondition(FilterElement::makeEqual('owner_id', $user->getId()));
+                }
+                return $filter;
+            },
+            function () {
+                return SerializerRegistry::SerializerType_Private;
+            }
+        );
     }
 
     /**
@@ -111,28 +124,40 @@ final class UserActionApiController extends OAuth2ProtectedController
      */
     public function getActions(): JsonResponse
     {
-        try {
-            $filter = $this->getFilter($this->getFilterRules(), $this->getFilterValidatorRules());
-            $current_user = Auth::user();
-            $owner_id = intval($filter->getUniqueFilter("owner_id")->getValue());
-            if ($current_user->getId() != $owner_id && !$current_user->isAdmin()) {
-                throw new AuthzException("Current user owner mismatch.");
+         return $this->_getAll(
+            function () {
+                return [
+                    'owner_id' => ['=='],
+                    'realm' => ['=@', '=='],
+                    'user_action' => ['=@', '=='],
+                    'from_ip' => ['=@', '=='],
+                    'created_at' => ['<', '>'],
+                ];
+            },
+            function () {
+                return [
+                    'owner_id' => 'required|int',
+                    'realm' => 'nullable|string',
+                    'user_action' => 'nullable|string',
+                    'from_ip' => 'nullable|string',
+                    'created_at' => 'nullable|string',
+                ];
+            },
+            function () {
+                return [
+                    'id',
+                    'realm',
+                    'user_action',
+                    'from_ip',
+                    'created_at'
+                ];
+            },
+            function ($filter) {
+                return $filter;
+            },
+            function () {
+                return SerializerRegistry::SerializerType_Private;
             }
-            return $this->getAll();
-        }
-        catch (AuthzException $ex){
-            Log::warning($ex);
-            return $this->error403();
-        }
-        catch (ValidationException $ex) {
-            Log::warning($ex);
-            return $this->error412($ex->getMessages());
-        } catch (EntityNotFoundException $ex) {
-            Log::warning($ex);
-            return $this->error404($ex->getMessage());
-        } catch (Exception $ex) {
-            Log::error($ex);
-            return $this->error500($ex);
-        }
+        );
     }
 }
