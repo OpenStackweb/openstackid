@@ -44,7 +44,7 @@ const TooltipLabel = ({id, title, tooltip}) => (
     </FormLabel>
 );
 
-export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched, errors, onChange}) => (
+export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched, errors, maxLength, onChange}) => (
     <FormControl variant="outlined" className={styles.form_control}>
         <TooltipLabel id={id} title={title} tooltip={tooltip}/>
         <TextField
@@ -53,7 +53,7 @@ export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched,
             variant="outlined"
             fullWidth
             size="small"
-            inputProps={{maxLength: 100}}
+            inputProps={{maxLength: maxLength ?? 100}}
             autoFocus={true}
             value={value}
             onChange={onChange}
