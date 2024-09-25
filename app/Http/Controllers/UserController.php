@@ -432,7 +432,8 @@ final class UserController extends OpenIdController
 
                     $user = $this->auth_service->getUserByUsername($username);
                     if (!is_null($user)) {
-                        $login_attempts = $user->getLoginFailedAttempt();
+                        Log::warning("UserController::postLogin user " . $user->getId() . " failed login attempt.");
+                         $login_attempts = $user->getLoginFailedAttempt();
                     }
 
                     return $this->login_strategy->errorLogin

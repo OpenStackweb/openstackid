@@ -162,6 +162,8 @@ final class SocialLoginController extends Controller
             }
 
             Auth::login($user, true);
+            $this->auth_service->activateUser($user->getId());
+
             // and continue the usual flow
             return $this->login_strategy->postLogin(['provider' => $provider]);
         }

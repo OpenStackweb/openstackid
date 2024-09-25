@@ -66,7 +66,6 @@ interface IAuthService
      */
     public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP;
 
-
     /**
      * @param string $username
      * @return User|null
@@ -152,4 +151,9 @@ interface IAuthService
 
     public function invalidateSession();
 
+    /**
+     * @param int $user_id
+     * @return User|null
+     */
+    public function activateUser(int $user_id): ?User;
 }

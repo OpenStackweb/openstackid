@@ -55,7 +55,9 @@ final class LockUserSecurityPolicy implements ISecurityPolicy
         try {
             if($ex instanceof AuthenticationInvalidPasswordAttemptException) {
                 $user_id = $ex->getUserId();
-                if (!is_null($user_id) && !empty($user_id))
+                Log::warning(sprintf("LockUserSecurityPolicy::apply user_id %s", $user_id));
+
+                if (!empty($user_id))
                     $this->counter_measure->trigger(['user_id' => $user_id]);
             }
         } catch (Exception $ex) {

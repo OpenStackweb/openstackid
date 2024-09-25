@@ -422,9 +422,9 @@ class PasswordlessGrantType extends InteractiveGrantType
 
             $user = $this->auth_service->getUserByUsername($otp->getUserName());
 
-            // emmit login
+            // emit login
             Auth::login($user, false);
-
+            $this->auth_service->activateUser($user->getId());
             $this->security_context_service->clear();
 
             return $response;

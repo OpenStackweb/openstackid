@@ -1755,6 +1755,7 @@ SQL;
     public function activate():void {
         if(!$this->active) {
             $this->active = true;
+            $this->resetFailedLoginAttempts();
             $this->spam_type = self::SpamTypeHam;
             Event::dispatch(new UserSpamStateUpdated(
                     $this->getId()
@@ -2250,4 +2251,7 @@ SQL;
         AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
     }
 
+    public function resetFailedLoginAttempts():void{
+        $this->login_failed_attempt = 0;
+    }
 }

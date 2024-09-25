@@ -68,17 +68,23 @@ class LockUserCounterMeasure implements ISecurityPolicyCounterMeasure
      */
     public function trigger(array $params = [])
     {
+        Log::debug(sprintf("LockUserCounterMeasure::trigger params %s", json_encode($params)));
         return $this->tx_service->transaction(function() use($params){
             try {
                 if (isset($params["user_id"])) {
                     $user_id = $params["user_id"];
                     $user    = $this->repository->getById($user_id);
-                    if (!is_null($user) && $user instanceof User) {
+                    if ( $user instanceof User) {
                         //apply lock policy
-                        if (intval($user->getLoginFailedAttempt()) < intval($this->server_configuration->getConfigValue("MaxFailed.Login.Attempts"))) {
+                        $max_attempts= intval($this->server_configuration->getConfigValue("MaxFailed.Login.Attempts"));
+                        $user_attempts = intval($user->getLoginFailedAttempt());
+                        Log::debug(sprintf("LockUserCounterMeasure::trigger user_id %s attempts %s max_attempts %s", $user_id, $user_attempts, $max_attempts));
+                        if ($user_attempts < $max_attempts) {
                             $this->user_service->updateFailedLoginAttempts($user->getId());
+                            Log::debug(sprintf("LockUserCounterMeasure::trigger user_id %s updated failed login attempts %s", $user_id, $user_attempts + 1));
                             return $this;
                         }
+                        Log::warning(sprintf("LockUserCounterMeasure::trigger locking user_id %s.", $user_id));
                         $this->user_service->lockUser($user->getId());
                     }
                 }
