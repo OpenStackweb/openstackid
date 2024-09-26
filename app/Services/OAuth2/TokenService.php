@@ -1892,7 +1892,7 @@ final class TokenService extends AbstractService implements ITokenService
 
             $user = $this->auth_service->getUserByUsername($otp->getUserName());
             if(is_null($user))
-                throw new ValidationException("Invalid OTP.");
+                return true;
 
             return $this->canCreateAccessToken($user, $client);
         });
