@@ -61,16 +61,34 @@ class OAuth2PasswordlessOTPMail extends Mailable
     public $reset_password_link_lifetime;
 
     /**
-     * @var Client|null
+     * @var string|null
      */
-    public $client;
+    public $client_app_name;
+
+    /**
+     * @var string|null
+     */
+    public $client_terms_of_services_uri;
+
+    /**
+     * @var string|null
+     */
+    public $client_policy_uri;
+
+    /**
+     * @var string|null
+     */
+    public $client_scope_descriptions;
 
     /**
      * @param string $to
      * @param string $otp
      * @param int $lifetime
      * @param string|null $reset_password_link
-     * @param Client|null $client
+     * @param string|null $client_app_name
+     * @param string|null $client_terms_of_services_uri
+     * @param string|null $client_policy_uri
+     * @param array|null $client_scope_descriptions
      */
     public function __construct
     (
@@ -78,7 +96,10 @@ class OAuth2PasswordlessOTPMail extends Mailable
         string $otp,
         int $lifetime,
         string $reset_password_link = null,
-        ?Client $client = null
+        string $client_app_name = null,
+        string $client_terms_of_services_uri = null,
+        string $client_policy_uri = null,
+        ?array $client_scope_descriptions = []
     )
     {
         $this->email = trim($to);
@@ -86,7 +107,10 @@ class OAuth2PasswordlessOTPMail extends Mailable
         $this->lifetime = $lifetime / 60;
         $this->reset_password_link = $reset_password_link;
         $this->reset_password_link_lifetime = Config::get("auth.password_reset_lifetime")/60;
-        $this->client = $client;
+        $this->client_app_name = $client_app_name;
+        $this->client_terms_of_services_uri = $client_terms_of_services_uri;
+        $this->client_policy_uri = $client_policy_uri;
+        $this->client_scope_descriptions = $client_scope_descriptions;
     }
     /**
      * Build the message.

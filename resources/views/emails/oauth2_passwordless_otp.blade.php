@@ -32,13 +32,12 @@
                 </td>
             </tr>
         @endif
-        @if(!is_null($client))
-
+        @if(!is_null($client_app_name))
             <tr>
                 <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                     <hr style="margin: 10px 0;">
                     <div style="font-family: Monaco, monospace,OpenSans, Helvetica;font-size:22px;font-weight:bold;line-height:1;text-align:center;color:#000000;">
-                        {!! $client->getApplicationName() !!}
+                        {!! $client_app_name !!}
                     </div>
                     <hr style="margin: 10px 0;">
                 </td>
@@ -53,9 +52,9 @@
             <tr>
                 <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                     <ul style="list-style-type: none;padding-left: 0;margin-left: 0;">
-                        @foreach($client->getClientScopes() as $scope)
+                        @foreach($client_scope_descriptions as $client_scope_description)
                             <li style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:justify;color:#000000;">
-                                {!! $scope->getShortDescription() !!}
+                                {!! $client_scope_description !!}
                             </li>
                         @endforeach
                     </ul>
@@ -64,7 +63,7 @@
             <tr>
                 <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                     <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:justify;color:#000000;">
-                        ** <b>{!! $client->getApplicationName() !!}</b> Application and <b>{!! Config::get("app.tenant_name") !!}</b> will use this information in accordance with their respective <a target="_blank" href="{!!$client->getTermOfServiceUri()!!}">terms of service</a> and <a target="_blank" href="{!!$client->getPolicyUri()!!}">privacy policies</a>.
+                        ** <b>{!! $client_app_name !!}</b> Application and <b>{!! Config::get("app.tenant_name") !!}</b> will use this information in accordance with their respective <a target="_blank" href="{!! $client_terms_of_services_uri !!}">terms of service</a> and <a target="_blank" href="{!! $client_policy_uri !!}">privacy policies</a>.
                     </div>
                     <hr style="margin: 20px 0;">
                 </td>
