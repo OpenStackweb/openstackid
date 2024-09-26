@@ -16,6 +16,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use Models\OAuth2\Client;
 
 /**
  * Class OAuth2PasswordlessOTPMail
@@ -60,17 +61,24 @@ class OAuth2PasswordlessOTPMail extends Mailable
     public $reset_password_link_lifetime;
 
     /**
+     * @var Client|null
+     */
+    public $client;
+
+    /**
      * @param string $to
      * @param string $otp
      * @param int $lifetime
      * @param string|null $reset_password_link
+     * @param Client|null $client
      */
     public function __construct
     (
         string $to,
         string $otp,
         int $lifetime,
-        string $reset_password_link = null
+        string $reset_password_link = null,
+        ?Client $client = null
     )
     {
         $this->email = trim($to);
@@ -78,6 +86,7 @@ class OAuth2PasswordlessOTPMail extends Mailable
         $this->lifetime = $lifetime / 60;
         $this->reset_password_link = $reset_password_link;
         $this->reset_password_link_lifetime = Config::get("auth.password_reset_lifetime")/60;
+        $this->client = $client;
     }
     /**
      * Build the message.

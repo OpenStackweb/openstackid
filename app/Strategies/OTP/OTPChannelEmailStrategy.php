@@ -82,7 +82,8 @@ implements IOTPChannelStrategy
                     $otp->getUserName(),
                     $value,
                     $otp->getLifetime(),
-                    $reset_password_link
+                    $reset_password_link,
+                    $otp->hasClient() ? $otp->getClient() : null
                 )
             );
         }
