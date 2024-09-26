@@ -21,11 +21,6 @@
                 <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">Code is valid for {{$lifetime}} minutes.</div>
             </td>
         </tr>
-        <tr>
-            <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">
-                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">If you didn't request this, you can ignore this email.</div>
-            </td>
-        </tr>
         @if(!empty($reset_password_link))
             <tr>
                 <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
@@ -69,12 +64,17 @@
             <tr>
                 <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                     <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:justify;color:#000000;">
-                        ** <b>{!! $client->getApplicationName() !!}</b> Application and <b>{!! Config::get("app.tenant_name") !!}</b>  will use this information in accordance with their respective terms of service and privacy policies.
+                        ** <b>{!! $client->getApplicationName() !!}</b> Application and <b>{!! Config::get("app.tenant_name") !!}</b> will use this information in accordance with their respective <a target="_blank" href="{!!$client->getTermOfServiceUri()!!}">terms of service</a> and <a target="_blank" href="{!!$client->getPolicyUri()!!}">privacy policies</a>.
                     </div>
                     <hr style="margin: 20px 0;">
                 </td>
             </tr>
         @endif
+        <tr>
+            <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">
+                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">If you didn't request this, you can ignore this email.</div>
+            </td>
+        </tr>
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;padding-right:25px;padding-left:25px;word-break:break-word;">
                 <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">Thanks! <br/><br/>{{Config::get('app.tenant_name')}} Support Team</div>
