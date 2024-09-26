@@ -148,12 +148,6 @@ class CustomAuthProvider implements UserProvider
                         sprintf("User %s is locked.", $email));
                 }
 
-                //update user fields
-                $user->setLastLoginDate(new \DateTime('now', new \DateTimeZone('UTC')));
-                $user->setLoginFailedAttempt(0);
-                $user->activate();
-                $user->clearResetPasswordRequests();
-
                 $auth_extensions = $this->auth_extension_service->getExtensions();
 
                 foreach ($auth_extensions as $auth_extension)

@@ -1246,6 +1246,10 @@ class User extends BaseEntity
         $this->login_failed_attempt = $login_failed_attempt;
     }
 
+    public function resetLoginFailedAttempts():void{
+        $this->login_failed_attempt = 0;
+    }
+
     /**
      * @return string
      */
