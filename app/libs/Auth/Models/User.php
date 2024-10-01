@@ -757,6 +757,17 @@ class User extends BaseEntity
                     )
                 );
             }
+
+            $action = sprintf
+            (
+                "ADD TO GROUP (%s) BY USER %s (%s)",
+
+                $group->getName(),
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+
+            AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
         }
 
         if ($this->groups->contains($group))
@@ -813,6 +824,27 @@ class User extends BaseEntity
 
     public function clearGroups(): void
     {
+        $current_user = Auth::user();
+
+        if($current_user instanceof User) {
+            if(!$current_user->isSuperAdmin()) {
+                $current_user->deActivate();
+                throw new ValidationException
+                (
+                    "Only Super Admins can clear users groups",
+                );
+            }
+            $current_groups = $this->getGroupsNice() ?? 'NONE';
+            $action = sprintf
+            (
+                "CLEARING USER GROUPS (%s) BY USER %s (%s)",
+                $current_groups,
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+
+            AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
+        }
         $this->groups->clear();
     }
 
@@ -2245,6 +2277,9 @@ SQL;
                 $new_fields_changed[] = sprintf("%s: %s", $field, self::formatFieldValue($field, $args->getNewValue($field)));
             }
         }
+
+        if(count($old_fields_changed) == 0) return;
+        if(count($new_fields_changed) == 0) return;
 
         $action = sprintf
         (
