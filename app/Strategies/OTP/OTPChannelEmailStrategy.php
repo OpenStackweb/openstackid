@@ -75,6 +75,19 @@ implements IOTPChannelStrategy
                 $reset_password_link = $request->getResetLink();
             }
 
+            $client_app_name = null;
+            $client_terms_of_services_uri = null;
+            $client_policy_uri = null;
+            $client_scope_descriptions = null;
+
+            if ($otp->hasClient()) {
+                $client = $otp->getClient();
+                $client_app_name = $client->getApplicationName();
+                $client_terms_of_services_uri = $client->getTermOfServiceUri();
+                $client_policy_uri = $client->getPolicyUri();
+                $client_scope_descriptions = array_map(function($scope) { return $scope->getShortDescription(); }, $client->getClientScopes());
+            }
+
             Mail::queue
             (
                 new OAuth2PasswordlessOTPMail
@@ -82,7 +95,11 @@ implements IOTPChannelStrategy
                     $otp->getUserName(),
                     $value,
                     $otp->getLifetime(),
-                    $reset_password_link
+                    $reset_password_link,
+                    $client_app_name,
+                    $client_terms_of_services_uri,
+                    $client_policy_uri,
+                    $client_scope_descriptions
                 )
             );
         }
