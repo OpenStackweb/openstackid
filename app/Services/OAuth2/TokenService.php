@@ -829,7 +829,7 @@ final class TokenService extends AbstractService implements ITokenService
                     $value,
                     $auth_code,
                     $payload['issued'],
-                    $payload['lifetime']
+                    $this->configuration_service->getConfigValue('OAuth2.AccessToken.Lifetime'),
                 );
 
                 $refresh_token_value = $payload['refresh_token'];
