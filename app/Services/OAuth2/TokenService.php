@@ -23,6 +23,7 @@ use App\Strategies\OTP\OTPChannelStrategyFactory;
 use App\Strategies\OTP\OTPTypeBuilderStrategyFactory;
 use Auth\Exceptions\AuthenticationException;
 use Auth\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use jwa\cryptographic_algorithms\HashFunctionAlgorithm;
@@ -870,28 +871,47 @@ final class TokenService extends AbstractService implements ITokenService
 
         $current_audience = explode(' ', $current_audience);
         if (!is_array($current_audience)) {
-            $current_audience = array($current_audience);
+            $current_audience = [$current_audience];
         }
 
-        $resource_server = $this->resource_server_repository->getByAudienceAndIpAndActive($current_audience, $current_ip);
+        $key = sprintf("%s.%s", md5(json_encode($current_audience)), md5($current_ip));
 
-        // check audience
-        if(is_null($resource_server)){
-            Log::warning(sprintf("TokenService::checkAccessTokenAudience not found resource server for ip %s", $current_ip));
-            return false;
-        }
-
-        Log::debug
-        (
-            sprintf
+        if(Cache::has($key)){
+            Log::debug
             (
-                "TokenService::checkAccessTokenAudience found resource server %s (%s)",
-                $resource_server->getId(),
-                $resource_server->getHost()
-            )
-        );
+                sprintf
+                (
+                    "TokenService::checkAccessTokenAudience found resource server for ip %s and audience %s in cache",
+                    json_encode($current_audience),
+                    $current_ip
+                )
+            );
 
-        $hosts = explode(',', $resource_server->getHost());
+            $resource_server_from_cache = Cache::get($key);
+            if(!empty($resource_server_from_cache)){
+                $resource_server_from_cache =  json_decode(gzinflate($resource_server_from_cache),true);
+            }
+        }
+        else {
+            Log::debug(sprintf("TokenService::checkAccessTokenAudience not found resource server for ip %s in cache, trying to get from DB", $current_ip));
+            $resource_server = $this->resource_server_repository->getByAudienceAndIpAndActive($current_audience, $current_ip);
+
+            // check audience
+            if (is_null($resource_server)) {
+                Log::warning(sprintf("TokenService::checkAccessTokenAudience not found resource server for ip %s", $current_ip));
+                return false;
+            }
+            $resource_server_from_cache = [
+                'id' => $resource_server->getId(),
+                'host' =>  $resource_server->getHost()
+            ];
+
+            Cache::add($key, gzdeflate(json_encode($resource_server_from_cache), 9));
+        }
+
+        Log::debug(sprintf("TokenService::checkAccessTokenAudience resource server %s", json_encode($resource_server_from_cache)));
+
+        $hosts = explode(',', $resource_server_from_cache['host']);
         $res = count(array_intersect($hosts, $current_audience));
 
         Log::debug
