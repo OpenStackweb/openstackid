@@ -573,9 +573,6 @@ final class TokenService extends AbstractService implements ITokenService
             $refresh_token_value = $refresh_token->getValue();
             $refresh_token_hashed_value = Hash::compute('sha256', $refresh_token_value);
 
-            // clear current access tokens as invalid
-            $this->clearAccessTokensForRefreshToken($refresh_token->getValue());
-
             //validate scope if present...
             if (!is_null($scope) && empty($scope)) {
                 $original_scope = $refresh_token->getScope();
@@ -1450,12 +1447,26 @@ final class TokenService extends AbstractService implements ITokenService
 
             if (!is_null($refresh_token_db)) {
 
-                Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken refresh token %s found", $refresh_token_db->getId()))
-                ;
+                Log::debug
+                (
+                    sprintf
+                    (
+                        "TokenService::clearAccessTokensForRefreshToken refresh token %s found",
+                        $refresh_token_db->getId()
+                    )
+                );
+
                 $access_tokens_db = $this->access_token_repository->getByRefreshToken($refresh_token_db->getId());
 
                 if (count($access_tokens_db) == 0) {
-                    Log::debug(sprintf("TokenService::clearAccessTokensForRefreshToken no access tokens found for refresh token %s", $refresh_token_db->getId()));
+                    Log::debug
+                    (
+                        sprintf
+                        (
+                            "TokenService::clearAccessTokensForRefreshToken no access tokens found for refresh token %s",
+                            $refresh_token_db->getId()
+                        )
+                    );
                     return false;
                 }
 

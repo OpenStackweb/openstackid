@@ -12,12 +12,6 @@
  * limitations under the License.
  **/
 
-
-use DeviceDetector\ClientHints;
-use DeviceDetector\DeviceDetector;
-use DeviceDetector\Parser\Device\AbstractDeviceParser;
-use Illuminate\Support\Facades\Log;
-
 /**
  * Class DeviceInfoHelper
  * @package App\libs\Utils
@@ -26,41 +20,8 @@ final class DeviceInfoHelper
 {
     public static function getDeviceInfo():string
     {
-        AbstractDeviceParser::setVersionTruncation(AbstractDeviceParser::VERSION_TRUNCATION_NONE);
-
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null; // change this to the useragent you want to parse
-        if(is_null($userAgent)) return 'Unknown';
-
-        $clientHints = ClientHints::factory($_SERVER); // client hints are optional
-
-        $dd = new DeviceDetector($userAgent, $clientHints);
-
-        $dd->parse();
-
-        if ($dd->isBot()) {
-            // handle bots,spiders,crawlers,...
-            $botInfo = $dd->getBot();
-            return sprintf("Bot %s", json_encode($botInfo));
-        } else {
-            $device = $dd->getDeviceName();
-            $osInfo = $dd->getOs();
-            $brand  = $dd->getBrandName();
-            $model  = $dd->getModel();
-            $client  = $dd->getClient();
-            Log::debug
-            (
-                sprintf
-                (
-                    "Device Info: %s %s %s %s %s",
-                    json_encode($device),
-                    json_encode($brand),
-                    json_encode($model),
-                    json_encode($osInfo),
-                    json_encode($client)
-                )
-            );
-
-            return sprintf("DEVICE %s OS NAME %s CLIENT %s", $device, $osInfo['name'] ?? 'Unknown', $client['name'] ?? 'Unknown');
-        }
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+        if(empty($userAgent)) return 'Unknown';
+        return sprintf("USER AGENT %s", $userAgent);
     }
 }
