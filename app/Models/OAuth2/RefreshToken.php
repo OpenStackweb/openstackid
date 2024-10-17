@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Jobs\AddUserAction;
 use Auth\User;
 use DateInterval;
 use DateTime;
@@ -18,6 +20,8 @@ use DateTimeZone;
 use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
+use Utils\IPHelper;
+
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineRefreshTokenRepository")
  * @ORM\Table(name="oauth2_refresh_token")
@@ -153,6 +157,10 @@ class RefreshToken extends BaseEntity {
     public function setVoid(){
         $this->void = true;
         $this->updated_at = new \DateTime('now', new \DateTimeZone(self::DefaultTimeZone));
+        if($this->hasOwner()) {
+            $action = sprintf("Revoked refresh token id %s client %s.", $this->id, $this->client->getClientId());
+            AddUserAction::dispatch($this->owner->getId(), IPHelper::getUserIp(), $action);
+        }
     }
 
     /**

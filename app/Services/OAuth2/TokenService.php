@@ -635,6 +635,8 @@ final class TokenService extends AbstractService implements ITokenService
             if (!is_null($user_id)) {
                 $user = $this->auth_service->getUserById($user_id);
                 $access_token_db->setOwner($user);
+                $action = sprintf("Access token renewed from Refresh Token %s Client %s", $refresh_token_db->getId(), $client_id);
+                AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), $action);
             }
 
             $this->access_token_repository->add($access_token_db);
