@@ -152,6 +152,7 @@ class RefreshToken extends BaseEntity {
 
     public function setVoid(){
         $this->void = true;
+        $this->updated_at = new \DateTime('now', new \DateTimeZone(self::DefaultTimeZone));
     }
 
     /**
