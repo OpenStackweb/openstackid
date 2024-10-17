@@ -1210,7 +1210,6 @@ final class TokenService extends AbstractService implements ITokenService
             )
         );
 
-
         $user = $this->auth_service->getUserById($user_id);
         if (is_null($user))
             throw new EntityNotFoundException("User not found");

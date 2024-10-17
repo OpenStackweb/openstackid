@@ -18,6 +18,7 @@ use App\Jobs\PublishUserDeleted;
 use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Repositories\IGroupRepository;
+use App\libs\Utils\FileSystem\FileNameSanitizer;
 use App\Services\AbstractService;
 use App\Services\Auth\IUserIdentifierGeneratorService;
 use Auth\Group;
@@ -38,7 +39,6 @@ use OpenId\Services\IUserService;
 use Utils\Db\ITransactionService;
 use Utils\Services\ILogService;
 use Utils\Services\IServerConfigurationService;
-use App\libs\Utils\FileSystem\FileNameSanitizer;
 
 /**
  * Class UserService
@@ -138,7 +138,7 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (!$user instanceof User) throw new EntityNotFoundException();
             $user->updateLoginFailedAttempt();
             return $user;
         });
@@ -153,7 +153,7 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (!$user instanceof User) throw new EntityNotFoundException();
             return $user->lock();
         });
     }
@@ -167,7 +167,7 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (!$user instanceof User) throw new EntityNotFoundException();
             return $user->unlock();
         });
     }

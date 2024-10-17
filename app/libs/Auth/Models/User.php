@@ -1138,6 +1138,17 @@ class User extends BaseEntity
     {
         $this->deActivate();
         Event::dispatch(new UserLocked($this->getId()));
+        $action = 'User Locked.';
+        $current_user = Auth::user();
+        if($current_user instanceof User) {
+            $action = sprintf
+            (
+                "User Locked by user  %s (%s)",
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+        }
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
         return $this;
     }
 
@@ -1147,6 +1158,18 @@ class User extends BaseEntity
     public function unlock()
     {
         $this->activate();
+
+        $action = 'User Unlocked.';
+        $current_user = Auth::user();
+        if($current_user instanceof User) {
+            $action = sprintf
+            (
+                "User Unlocked by user  %s (%s)",
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+        }
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
         return $this;
     }
 
@@ -1528,6 +1551,18 @@ class User extends BaseEntity
         }
         $this->password_salt = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);
         $this->password = AuthHelper::encrypt_password($password, $this->password_salt, $this->password_enc);
+
+        $action = 'User set new password.';
+        $current_user = Auth::user();
+        if($current_user instanceof User) {
+            $action = sprintf
+            (
+                "User set new password by user %s (%s)",
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+        }
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
     }
 
     /**
@@ -1739,6 +1774,13 @@ SQL;
     public function updateLoginFailedAttempt(): int
     {
         $this->login_failed_attempt = $this->login_failed_attempt + 1;
+        $action = sprintf
+        (
+            "Login failed attempt (%s).",
+            $this->login_failed_attempt
+        );
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
+
         return $this->login_failed_attempt;
     }
 

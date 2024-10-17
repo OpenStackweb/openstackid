@@ -20,12 +20,13 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use OAuth2\Services\ITokenService;
+use Utils\IPHelper;
 
 /**
  * Class RevokeUserGrants
  * @package App\Jobs
  */
-class RevokeUserGrants implements ShouldQueue
+class RevokeUserGrantsOnExplicitLogout implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -57,6 +58,14 @@ class RevokeUserGrants implements ShouldQueue
     public function handle(ITokenService $service){
         Log::debug(sprintf("RevokeUserGrants::handle"));
         try{
+            $action = sprintf
+            (
+              "Revoking all grants for user %s on %s due explicit Log out.",
+                $this->user_id,
+                is_null($this->client_id) ? 'All Clients' : sprintf("Client %s", $this->client_id)
+            );
+
+            AddUserAction::dispatch($this->user_id, IPHelper::getUserIp(), $action);
             $service->revokeUsersToken($this->user_id, $this->client_id);
         }
         catch (\Exception $ex) {
