@@ -639,7 +639,7 @@ final class TokenService extends AbstractService implements ITokenService
 
             $this->access_token_repository->add($access_token_db);
 
-            //stores brand new access token hash value on a set by client id...
+            //stores brand-new access token hash value on a set by client id...
             $this->cache_service->addMemberSet($client_id . TokenService::ClientAccessTokenPrefixList, $hashed_value);
             $this->cache_service->incCounter
             (

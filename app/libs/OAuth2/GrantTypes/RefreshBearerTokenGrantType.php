@@ -166,8 +166,8 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
          * token, which will inform the authorization server of the breach.
          */
         if ($this->current_client->useRotateRefreshTokenPolicy()) {
-            $this->token_service->invalidateRefreshToken($refresh_token_value);
             $new_refresh_token = $this->token_service->createRefreshToken($access_token, true);
+            $this->token_service->invalidateRefreshToken($refresh_token_value);
         }
 
         // add id token on response ( new id token )
