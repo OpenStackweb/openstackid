@@ -57,12 +57,15 @@ class RevokeUserGrantsOnExplicitLogout implements ShouldQueue
 
     public function handle(ITokenService $service){
         Log::debug(sprintf("RevokeUserGrants::handle"));
+
+        if(empty($this->client_id)) {
+            return;
+        }
         try{
             $action = sprintf
             (
               "Revoking all grants for user %s on %s due explicit Log out.",
-                $this->user_id,
-                is_null($this->client_id) ? 'All Clients' : sprintf("Client %s", $this->client_id)
+                $this->user_id,  sprintf("Client %s", $this->client_id)
             );
 
             AddUserAction::dispatch($this->user_id, IPHelper::getUserIp(), $action);
