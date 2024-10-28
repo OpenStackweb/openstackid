@@ -650,7 +650,9 @@ class Client extends BaseEntity implements IClient
 
         $redirect_uris = explode(',',strtolower($this->redirect_uris));
         $uri = URLUtils::normalizeUrl($uri);
+        if(empty($uri)) return false;
         foreach($redirect_uris as $redirect_uri){
+            if(empty($redirect_uri)) continue;
             Log::debug(sprintf("Client::isUriAllowed url %s client %s redirect_uri %s", $uri, $this->client_id, $redirect_uri));
             if(str_contains($uri, $redirect_uri))
                 return true;
