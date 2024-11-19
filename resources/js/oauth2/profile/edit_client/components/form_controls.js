@@ -45,6 +45,7 @@ const TooltipLabel = ({id, title, tooltip}) => (
 );
 
 export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched, errors, maxLength, onChange}) => {
+    const SIMPLE_INPUT_MAX_LENGTH = (maxLength ?? 100) + 1;
     const [text, setText] = useState('');
 
     const handleChange = (e) => {
@@ -62,7 +63,7 @@ export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched,
             variant="outlined"
             fullWidth
             size="small"
-            inputProps={{maxLength: (maxLength ?? 100) + 1}}
+            inputProps={{maxLength: SIMPLE_INPUT_MAX_LENGTH}}
             autoFocus={true}
             value={value}
             onChange={handleChange}
