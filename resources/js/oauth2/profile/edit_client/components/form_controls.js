@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import {makeStyles, withStyles} from '@material-ui/core/styles';
 import {
     Checkbox,
@@ -44,8 +44,18 @@ const TooltipLabel = ({id, title, tooltip}) => (
     </FormLabel>
 );
 
-export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched, errors, maxLength, onChange}) => (
-    <FormControl variant="outlined" className={styles.form_control}>
+export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched, errors, maxLength, onChange}) => {
+    const SIMPLE_INPUT_MAX_LENGTH = (maxLength ?? 100) + 1;
+    const [text, setText] = useState('');
+
+    const handleChange = (e) => {
+        setText(e.target.value);
+        if (onChange) onChange(e);
+    };
+
+    const isLimitExceeded = text.length > maxLength;
+
+    return <FormControl variant="outlined" className={styles.form_control}>
         <TooltipLabel id={id} title={title} tooltip={tooltip}/>
         <TextField
             id={id}
@@ -53,10 +63,10 @@ export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched,
             variant="outlined"
             fullWidth
             size="small"
-            inputProps={{maxLength: maxLength ?? 100}}
+            inputProps={{maxLength: SIMPLE_INPUT_MAX_LENGTH}}
             autoFocus={true}
             value={value}
-            onChange={onChange}
+            onChange={handleChange}
             type={type}
             error={
                 touched &&
@@ -64,8 +74,13 @@ export const SimpleTextFormControl = ({id, title, tooltip, type, value, touched,
             }
             helperText={touched && errors}
         />
+        {isLimitExceeded &&
+            <div className={styles.error_label}>
+                {`Cannot exceed max length (${maxLength} chars)`}
+            </div>
+        }
     </FormControl>
-);
+};
 
 export const SelectFormControl = ({id, title, tooltip, value, touched, errors, onChange, options}) => (
     <FormControl variant="outlined" className={styles.form_control}>
