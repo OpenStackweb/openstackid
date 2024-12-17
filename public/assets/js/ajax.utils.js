@@ -5,9 +5,11 @@ function ajaxError(jqXHR, textStatus, errorThrown){
         if(HTTP_status == 412 ){
             var msg = '';
 
-            for(const error of response.errors) {
-                msg +='* '+ error+'\n';
+            for (const [key, value] of Object.entries(response.errors)) {
+                msg += isNaN(key) ? `* ${key}: ` : "";
+                msg += `${value}\n`;
             }
+
             displayErrorMessage('Validation error', msg);
             return;
         }
