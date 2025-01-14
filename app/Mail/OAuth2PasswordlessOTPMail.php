@@ -16,7 +16,6 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
-use Models\OAuth2\Client;
 
 /**
  * Class OAuth2PasswordlessOTPMail
