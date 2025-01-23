@@ -22,6 +22,41 @@ use LaravelDoctrine\ORM\Facades\EntityManager;
 
 final class OAuth2UserUpdateApiTest extends OAuth2ProtectedApiTest
 {
+    public function testUserCreate()
+    {
+        $first_name = 'test_'. str_random(16);
+
+        $data = [
+            'first_name'    => $first_name,
+            'last_name'     => 'test_'. str_random(16),
+            'email'         => 'test_'. str_random(16) . '@test.com',
+            'company'       => 'test_'. str_random(16)
+        ];
+
+        $headers = [
+            "HTTP_Authorization" => " Bearer " . $this->access_token,
+            "CONTENT_TYPE"       => "application/json"
+        ];
+
+        $response = $this->action
+        (
+            "POST",
+            "Api\\OAuth2\\OAuth2UserApiController@create",
+            [],
+            [],
+            [],
+            [],
+            $headers,
+            json_encode($data)
+        );
+
+        $this->assertResponseStatus(201);
+
+        $content = $response->getContent();
+        $response = json_decode($content);
+        $this->assertTrue($response->first_name == $first_name);
+    }
+
     public function testUserUpdate()
     {
         $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);

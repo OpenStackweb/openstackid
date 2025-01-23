@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'users'], function () {
     Route::get('', 'OAuth2UserApiController@getAll');
+    Route::post('', 'OAuth2UserApiController@create');
     Route::group(['prefix' => '{id}'], function () {
         Route::get('', 'OAuth2UserApiController@get');
         Route::put('', 'OAuth2UserApiController@update');

@@ -160,6 +160,39 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         ]);
     }
 
+      private function _create(){
+        try {
+
+            if(!Request::isJson()) return $this->error400();
+
+            $payload = Request::json()->all();
+            // Creates a Validator instance and validates the data.
+            $validation = Validator::make($payload, UserValidationRulesFactory::build($payload));
+            if ($validation->fails()) {
+                $ex = new ValidationException();
+                throw $ex->setMessages($validation->messages()->toArray());
+            }
+
+            $user = $this->openid_user_service->create($payload);
+
+            return $this->created(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
+        }
+        catch (ValidationException $ex1)
+        {
+            Log::warning($ex1);
+            return $this->error412($ex1->getMessages());
+        }
+        catch (EntityNotFoundException $ex2)
+        {
+            Log::warning($ex2);
+            return $this->error404(['message' => $ex2->getMessage()]);
+        }
+        catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
+
     private function _update($id){
         try {
 
@@ -191,6 +224,10 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             Log::error($ex);
             return $this->error500($ex);
         }
+    }
+
+    public function create(){
+       return $this->_create();
     }
 
     public function updateMe(){

@@ -93,6 +93,15 @@ class ApiEndpointSeeder extends Seeder
                     ],
                 ],
                 [
+                    'name' => 'create-user',
+                    'active' => true,
+                    'route' => '/api/v1/users',
+                    'http_method' => 'POST',
+                    'scopes' => [
+                        \App\libs\OAuth2\IUserScopes::Write
+                    ],
+                ],
+                [
                     'name' => 'update-user',
                     'active' => true,
                     'route' => '/api/v1/users/{id}',
