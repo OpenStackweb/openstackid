@@ -6,10 +6,10 @@
             400. That’s an error.
         </p>
         <p>
-            <b>{!! $error !!}</b>
+            <b>{{ $error }}</b>
         </p>
         <p>
-            {!! $error_description !!}
+            {{ $error_description }}
         </p>
     </div>
 @stop
