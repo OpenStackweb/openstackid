@@ -22,7 +22,7 @@ jobs:
        - name: 'Run Unit Tests'
          run: cd / && ./tests.sh ${{ github.event.pull_request.head.sha }} 2>&1 | tee /output.log
        - name: 'Upload Unit Test Output'
-         uses: actions/upload-artifact@v3
+         uses: actions/upload-artifact@v4
          with:
            name: output
            path: /output.log
