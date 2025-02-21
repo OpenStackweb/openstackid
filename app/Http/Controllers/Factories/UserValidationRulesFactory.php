@@ -76,8 +76,8 @@ final class UserValidationRulesFactory
         }
 
         return [
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
+            'first_name' => 'sometimes|string',
+            'last_name' => 'sometimes|string',
             'email' => 'required|email',
             'identifier' => 'sometimes|string',
             'bio' => 'nullable|string',
