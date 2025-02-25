@@ -41,6 +41,18 @@ class ResourceServerContext implements IResourceServerContext {
 
 
     /**
+     * @return string
+     */
+    public function getApplicationType()
+    {
+        return $this->getAuthContextVar('application_type');
+    }
+
+    private function getAuthContextVar(string $varName)
+    {
+        return isset($this->auth_context[$varName]) ? $this->auth_context[$varName] : null;
+    }
+    /**
      * @return null|string
      */
     public function getCurrentAccessTokenLifetime()

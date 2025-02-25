@@ -41,4 +41,9 @@ interface IResourceServerContext {
      * @return $this
      */
     public function setAuthorizationContext(array $auth_context);
+
+    /**
+     * @return string
+     */
+    public function getApplicationType();
 } 
