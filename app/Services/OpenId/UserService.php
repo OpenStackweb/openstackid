@@ -128,19 +128,17 @@ final class UserService extends AbstractService implements IUserService
 
     private function addUserCRUDAction(User $user, $payload, string $action_type = "CREATE") {
         $payload_json = json_encode($payload);
-        $current_user = Auth::user();
+        $current_user_id = $this->server_ctx->getCurrentUserId();
 
-        if ($current_user instanceof User) {
-            $action = "{$action_type} USER BY USER {$current_user->getEmail()} ({$current_user->getId()}): {$payload_json}";
+        if (!is_null($current_user_id)) {
+            $action = "{$action_type} USER BY USER {$this->server_ctx->getCurrentUserEmail()} ({$current_user_id}): {$payload_json}";
             AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), $action);
             return;
         }
 
         //check if it's a service app
-        $current_client = $this->client_repository->getClientById($this->server_ctx->getCurrentClientId());
-        if ($current_client instanceof Client and
-            $current_client->getApplicationType() == IClient::ApplicationType_Service) {
-            $action = "{$action_type} USER BY SERVICE {$current_client->getApplicationName()} ({$current_client->getId()}): {$payload_json}";
+        if ($this->server_ctx->getApplicationType() == IClient::ApplicationType_Service) {
+            $action = "{$action_type} USER BY SERVICE {$this->server_ctx->getCurrentClientId()}: {$payload_json}";
             AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), $action);
             return;
         }
