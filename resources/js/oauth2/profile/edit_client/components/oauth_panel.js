@@ -88,9 +88,9 @@ const OauthPanel = ({
                 "The app description field is required."
             ),
             website: string().max(SIMPLE_INPUT_MAX_LENGTH, ''),
-            logo_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, ''),
-            tos_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, ''),
-            policy_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, ''),
+            logo_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
+            tos_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
+            policy_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
         });
     }
 
