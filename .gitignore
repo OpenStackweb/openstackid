@@ -50,3 +50,4 @@ model.sql
 /public/assets/*.txt
 /.env.local
 /.phpunit.cache/
+docker-compose/mysql/model/*.sql
