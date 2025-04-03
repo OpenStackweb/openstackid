@@ -101,6 +101,7 @@ const normalizePKCEDependencies = (entity) => {
 const normalizeEntity = (entity, entitySection) => {
     let normEntity = {};
     const clientTypes = window.CLIENT_TYPES;
+    const appTypes = window.APP_TYPES;
 
     normEntity.application_type = entity.application_type;
 
@@ -155,7 +156,10 @@ const normalizeEntity = (entity, entitySection) => {
             normEntity.otp_enabled = entity.otp_enabled ? 1 : 0;
             normEntity.otp_length = entity.otp_length;
             normEntity.otp_lifetime = entity.otp_lifetime;
-            normEntity.max_allowed_user_sessions = entity.max_allowed_user_sessions;
+
+            if ([appTypes.JSClient, appTypes.Native, appTypes.WebApp].includes(entity.application_type))
+                 normEntity.max_allowed_user_sessions = entity.max_allowed_user_sessions;
+
             normEntity.default_max_age = entity.default_max_age;
             normEntity.token_endpoint_auth_signing_alg = entity.token_endpoint_auth_signing_alg;
             normEntity.token_endpoint_auth_method = entity.token_endpoint_auth_method;
