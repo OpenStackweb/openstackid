@@ -14,8 +14,9 @@
 
 use Doctrine\ORM\QueryBuilder;
 use Models\OAuth2\AccessToken;
-use Models\OAuth2\RefreshToken;
 use OAuth2\Repositories\IAccessTokenRepository;
+use utils\DoctrineJoinFilterMapping;
+
 /**
  * Class DoctrineAccessTokenRepository
  * @package App\Repositories
@@ -26,11 +27,53 @@ class DoctrineAccessTokenRepository
 {
 
     /**
+     * @param QueryBuilder $query
+     * @return QueryBuilder
+     */
+    protected function applyExtraJoins(QueryBuilder $query): QueryBuilder
+    {
+        return $query->leftJoin("e.client", "c");
+    }
+
+    /**
      * @return string
      */
     protected function getBaseEntity()
     {
         return AccessToken::class;
+    }
+
+    /**
+     * @return array
+     */
+    protected function getFilterMappings(): array
+    {
+        $res = parent::getFilterMappings();
+        return array_merge($res, [
+            'client_name'  => new DoctrineJoinFilterMapping
+            (
+                'e.client',
+                'c',
+                "c.app_name :operator :value"
+            ),
+            'device_info' => 'e.device_info:json_string',
+            'from_ip' => 'e.from_ip:json_string',
+            'scope' => 'e.scope:json_string',
+        ]);
+    }
+
+    /**
+     * @return array
+     */
+    protected function getOrderMappings(): array
+    {
+        return [
+            'client_name' => 'c.app_name',
+            'created_at' => 'e.created_at',
+            'device_info' => 'e.device_info',
+            'from_ip' => 'e.from_ip',
+            'scope' => 'e.scope',
+        ];
     }
 
     /**

@@ -125,7 +125,7 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      */
     public function getAllByPage(PagingInfo $paging_info, Filter $filter = null, Order $order = null){
 
-        $query  = $this->getEntityManager()
+        $query = $this->getEntityManager()
             ->createQueryBuilder()
             ->select("e")
             ->from($this->getBaseEntity(), "e");
@@ -142,7 +142,7 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
             $order->apply2Query($query, $this->getOrderMappings());
         }
 
-        $query= $query
+        $query = $query
             ->setFirstResult($paging_info->getOffset())
             ->setMaxResults($paging_info->getPerPage());
 

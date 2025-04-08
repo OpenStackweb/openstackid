@@ -15,7 +15,6 @@
 use App\libs\Utils\URLUtils;
 use Exception;
 use Illuminate\Support\Facades\Log;
-use Models\OAuth2\Client;
 use OAuth2\Exceptions\ExpiredAuthorizationCodeException;
 use OAuth2\Exceptions\InvalidApplicationType;
 use OAuth2\Exceptions\InvalidAuthorizationCodeException;
@@ -188,6 +187,7 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
 
         try
         {
+            Log::debug(sprintf("AuthorizationCodeGrantType::completeFlow OAuth2Request %s", $request->__toString()));
             parent::completeFlow($request);
             $client = $this->client_auth_context->getClient();
             $this->checkClientTypeAccess($client);
@@ -203,6 +203,8 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
             }
 
             $code = $request->getCode();
+
+            Log::debug(sprintf("AuthorizationCodeGrantType::completeFlow code %s", $code));
             // verify that the authorization code is valid
             // The client MUST NOT use the authorization code
             // more than once.  If an authorization code is used more than
@@ -233,11 +235,12 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
             //code was issued to "client_id" in the request
             if ($client_id != $this->client_auth_context->getId())
             {
+                Log::warning("AuthorizationCodeGrantType::completeFlow auth code client id != client id");
                 throw new InvalidRedeemAuthCodeException
                 (
                     sprintf
                     (
-                        "auth code was issued for another client id!."
+                        "Auth code was issued for another client id."
                     )
                 );
             }
@@ -275,6 +278,7 @@ class AuthorizationCodeGrantType extends InteractiveGrantType
                 $strategy = OAuth2PKCEValidationMethodFactory::build($auth_code, $request);
 
                 if(!$strategy->isValid()){
+                    Log::warning(sprintf("AuthorizationCodeGrantType::completeFlow PKCE Validation Failed"));
                     throw new InvalidOAuth2Request("PKCE request can not be validated");
                 }
             }

@@ -41,6 +41,18 @@ class ResourceServerContext implements IResourceServerContext {
 
 
     /**
+     * @return string
+     */
+    public function getApplicationType():string
+    {
+        return $this->getAuthContextVar('application_type');
+    }
+
+    private function getAuthContextVar(string $varName)
+    {
+        return isset($this->auth_context[$varName]) ? $this->auth_context[$varName] : null;
+    }
+    /**
      * @return null|string
      */
     public function getCurrentAccessTokenLifetime()
@@ -72,5 +84,10 @@ class ResourceServerContext implements IResourceServerContext {
     {
         $this->auth_context = $auth_context;
         return $this;
+    }
+
+    public function getCurrentUserEmail(): ?string
+    {
+        return $this->getAuthContextVar(IResourceServerContext::UserEmail);
     }
 }

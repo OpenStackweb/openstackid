@@ -6,6 +6,14 @@
  */
 interface IResourceServerContext {
 
+    const UserId = 'user_id';
+    const UserFirstName = 'user_first_name';
+    const UserLastName = 'user_last_name';
+    const UserEmail = 'user_email';
+    const UserEmailVerified = 'user_email_verified';
+
+    const ApplicationType_Service = 'SERVICE';
+
     /**
      * returns given scopes for current request
      * @return array
@@ -41,4 +49,15 @@ interface IResourceServerContext {
      * @return $this
      */
     public function setAuthorizationContext(array $auth_context);
+
+    /**
+     * @return string
+     */
+    public function getApplicationType():string;
+
+
+    /**
+     * @return string|null
+     */
+    public function getCurrentUserEmail():?string;
 } 

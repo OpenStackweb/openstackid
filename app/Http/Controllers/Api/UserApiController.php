@@ -17,6 +17,7 @@ use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
+use Auth\User;
 use Exception;
 use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Support\Facades\Auth;
@@ -163,11 +164,11 @@ final class UserApiController extends APICRUDController
             switch ($hint) {
                 case 'access-token':
                     {
-                        $this->token_service->revokeAccessToken($value, true);
+                        $this->token_service->revokeAccessToken($value, true, Auth::user());
                     }
                     break;
                 case 'refresh-token':
-                    $this->token_service->revokeRefreshToken($value, true);
+                    $this->token_service->revokeRefreshToken($value, true, Auth::user());
                     break;
                 default:
                     throw new Exception(sprintf("hint %s not allowed", $hint));
@@ -184,6 +185,16 @@ final class UserApiController extends APICRUDController
             Log::error($ex);
             return $this->error500($ex);
         }
+    }
+
+    public function revokeToken($id, $value){
+        return $this->processRequest(function() use($id, $value){
+            $user = $this->repository->getById(intval($id));
+            if(!$user instanceof User)
+                throw new EntityNotFoundException();
+            $this->token_service->revokeAccessToken(trim($value), true, $user);
+            return $this->deleted();
+        });
     }
 
     /**

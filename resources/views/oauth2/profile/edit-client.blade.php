@@ -99,6 +99,7 @@
             userName: '{{ Session::has('username') ? Session::get('username') : ""}}',
         }
 
+        window.APP_TYPES = appTypes;
         window.CLIENT_TYPES = clientTypes;
         window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;
 

@@ -257,6 +257,7 @@ export const EditClientPage = (
                                 <AccordionDetails>
                                     <SecuritySettingsPanel
                                         entity={entity}
+                                        appTypes={appTypes}
                                         clientTypes={clientTypes}
                                         initialValues={refreshedValues}
                                         onMainSettingsSavePromise={handleSecuritySettingsSave}

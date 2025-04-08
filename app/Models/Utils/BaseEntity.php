@@ -97,8 +97,8 @@ class BaseEntity implements IEntity
 
     public function __construct()
     {
-        $now = new \DateTime('now', new \DateTimeZone(self::DefaultTimeZone));
         $this->id = 0;
+        $now = new \DateTime('now', new \DateTimeZone(self::DefaultTimeZone));
         $this->created_at = $now;
         $this->updated_at = $now;
     }

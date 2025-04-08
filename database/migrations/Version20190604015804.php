@@ -278,6 +278,7 @@ create table if not exists oauth2_client
 	client_type enum('PUBLIC', 'CONFIDENTIAL') default 'CONFIDENTIAL' null,
 	active tinyint(1) default '1' not null,
 	locked tinyint(1) default '0' not null,
+    max_allowed_user_sessions int default '0' not null,
 	user_id bigint unsigned null,
 	created_at timestamp default CURRENT_TIMESTAMP not null,
 	updated_at timestamp default CURRENT_TIMESTAMP not null,

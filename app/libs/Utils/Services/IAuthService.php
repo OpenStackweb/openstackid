@@ -153,4 +153,6 @@ interface IAuthService
 
     public function invalidateSession();
 
+    public function postLoginUserActions(int $user_id):void;
+
 }

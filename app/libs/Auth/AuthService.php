@@ -16,6 +16,7 @@ use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use App\Services\AbstractService;
 use Auth\Exceptions\AuthenticationException;
+use Auth\Exceptions\AuthenticationLockedUserLoginAttempt;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -595,4 +596,30 @@ final class AuthService extends AbstractService implements IAuthService
         $this->cache_service->addSingleValue($session_id . "invalid", $session_id);
     }
 
+    /**
+     * @param int $user_id
+     * @return void
+     * @throws Exception
+     */
+    public function postLoginUserActions(int $user_id): void
+    {
+        Log::debug(sprintf("AuthService::postLoginUserActions user %s", $user_id));
+        $this->tx_service->transaction(function () use($user_id){
+            $user = $this->user_repository->getById($user_id);
+            if(!$user instanceof User) return;
+
+            if (!$user->isActive()) {
+               Log::warning(sprintf("AuthService::postLoginUserActions user %s is not active.", $user_id));
+                throw new AuthenticationLockedUserLoginAttempt($user->getEmail(),
+                    sprintf("User %s is locked.", $user->getEmail()));
+            }
+
+            //update user fields
+            $user->setLastLoginDate(new \DateTime('now', new \DateTimeZone('UTC')));
+            $user->resetLoginFailedAttempts();
+            $user->activate();
+            $user->clearResetPasswordRequests();
+
+        });
+    }
 }

@@ -11,7 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\OAuth2\IUserScopes;
+use Auth\Group;
 use Auth\User;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 
@@ -22,6 +25,46 @@ use LaravelDoctrine\ORM\Facades\EntityManager;
 
 final class OAuth2UserUpdateApiTest extends OAuth2ProtectedApiTestCase
 {
+    public function testUserCreate()
+    {
+        $group_name = IGroupSlugs::RawUsersGroup;
+        $group = EntityManager::getRepository(Group::class)->findOneBy(['name' => $group_name]);
+        $first_name = 'test_'. str_random(16);
+
+        $data = [
+            'first_name'    => $first_name,
+            'last_name'     => 'test_'. str_random(16),
+            'email'         => 'test_'. str_random(16) . '@test.com',
+            'company'       => 'test_'. str_random(16),
+            'groups'        => [$group->getId()],
+        ];
+
+        $headers = [
+            "HTTP_Authorization" => " Bearer " . $this->access_token,
+            "CONTENT_TYPE"       => "application/json"
+        ];
+
+        $response = $this->action
+        (
+            "POST",
+            "Api\\OAuth2\\OAuth2UserApiController@create",
+            [],
+            [],
+            [],
+            [],
+            $headers,
+            json_encode($data)
+        );
+
+        $this->assertResponseStatus(201);
+
+        $content = $response->getContent();
+        $response = json_decode($content);
+        $this->assertTrue($response->first_name == $first_name);
+        $this->assertCount(1, $response->groups);
+        $this->assertEquals($group_name, $response->groups[0]);
+    }
+
     public function testUserUpdate()
     {
         $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);

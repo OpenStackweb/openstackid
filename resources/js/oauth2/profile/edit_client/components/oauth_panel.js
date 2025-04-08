@@ -38,6 +38,8 @@ const OauthPanel = ({
                         onRefreshTokenChange,
                         onSavePromise
                     }) => {
+    const SIMPLE_INPUT_MAX_LENGTH = 255;
+
     const {application_type, client_type, is_own} = entity;
     const {can_request_refresh_tokens} = initialValues;
 
@@ -85,6 +87,10 @@ const OauthPanel = ({
             app_description: string("The app description field is required.").required(
                 "The app description field is required."
             ),
+            website: string().max(SIMPLE_INPUT_MAX_LENGTH, ''),
+            logo_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
+            tos_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
+            policy_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
         });
     }
 
@@ -160,9 +166,9 @@ const OauthPanel = ({
                         <FormControl variant="outlined" className={styles.form_control}>
                             <FormLabel htmlFor="client_secret">
                                 <Typography variant="subtitle2" display="inline">CLIENT SECRET</Typography>
-                                <Tooltip title="Regenerate">
-                                    {
-                                        is_own && <IconButton
+                                {
+                                    is_own && <Tooltip title="Regenerate">
+                                        <IconButton
                                             aria-label="regenerate"
                                             onClick={onClientSecretRegenerate}
                                             edge="end"
@@ -170,8 +176,8 @@ const OauthPanel = ({
                                         >
                                             <RefreshIcon/>
                                         </IconButton>
-                                    }
-                                </Tooltip>
+                                    </Tooltip>
+                                }
                             </FormLabel>
                             <OutlinedInput
                                 id="client_secret"
@@ -282,6 +288,7 @@ const OauthPanel = ({
                         title="Application Web Site Url (optional)"
                         tooltip="Client home page URL."
                         type="url"
+                        maxLength={SIMPLE_INPUT_MAX_LENGTH}
                         value={formik.values.website ?? ''}
                         touched={formik.touched.website}
                         errors={formik.errors.website}
@@ -292,6 +299,7 @@ const OauthPanel = ({
                         title="Application Logo Url (optional)"
                         tooltip="URL that references a logo for the Client application."
                         type="url"
+                        maxLength={SIMPLE_INPUT_MAX_LENGTH}
                         value={formik.values.logo_uri ?? ''}
                         touched={formik.touched.logo_uri}
                         errors={formik.errors.logo_uri}
@@ -302,6 +310,7 @@ const OauthPanel = ({
                         title="Application Term of Service Url (optional)"
                         tooltip="URL that the Relying Party Client provides to the End-User to read about the Relying Party's terms of service."
                         type="url"
+                        maxLength={SIMPLE_INPUT_MAX_LENGTH}
                         value={formik.values.tos_uri ?? ''}
                         touched={formik.touched.tos_uri}
                         errors={formik.errors.tos_uri}
@@ -312,6 +321,7 @@ const OauthPanel = ({
                         title="Application Policy Url (optional)"
                         tooltip="URL that the Relying Party Client provides to the End-User to read about the how the profile data will be used."
                         type="url"
+                        maxLength={SIMPLE_INPUT_MAX_LENGTH}
                         value={formik.values.policy_uri ?? ''}
                         touched={formik.touched.policy_uri}
                         errors={formik.errors.policy_uri}

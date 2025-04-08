@@ -761,6 +761,17 @@ class User extends BaseEntity
                     )
                 );
             }
+
+            $action = sprintf
+            (
+                "ADD TO GROUP (%s) BY USER %s (%s)",
+
+                $group->getName(),
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+
+            AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
         }
 
         if ($this->groups->contains($group))
@@ -817,6 +828,27 @@ class User extends BaseEntity
 
     public function clearGroups(): void
     {
+        $current_user = Auth::user();
+
+        if($current_user instanceof User) {
+            if(!$current_user->isSuperAdmin()) {
+                $current_user->deActivate();
+                throw new ValidationException
+                (
+                    "Only Super Admins can clear users groups",
+                );
+            }
+            $current_groups = $this->getGroupsNice() ?? 'NONE';
+            $action = sprintf
+            (
+                "CLEARING USER GROUPS (%s) BY USER %s (%s)",
+                $current_groups,
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+
+            AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
+        }
         $this->groups->clear();
     }
 
@@ -1110,6 +1142,17 @@ class User extends BaseEntity
     {
         $this->deActivate();
         Event::dispatch(new UserLocked($this->getId()));
+        $action = 'User Locked.';
+        $current_user = Auth::user();
+        if($current_user instanceof User) {
+            $action = sprintf
+            (
+                "User Locked by user  %s (%s)",
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+        }
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
         return $this;
     }
 
@@ -1119,6 +1162,18 @@ class User extends BaseEntity
     public function unlock()
     {
         $this->activate();
+
+        $action = 'User Unlocked.';
+        $current_user = Auth::user();
+        if($current_user instanceof User) {
+            $action = sprintf
+            (
+                "User Unlocked by user  %s (%s)",
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+        }
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
         return $this;
     }
 
@@ -1248,6 +1303,10 @@ class User extends BaseEntity
     public function setLoginFailedAttempt(int $login_failed_attempt): void
     {
         $this->login_failed_attempt = $login_failed_attempt;
+    }
+
+    public function resetLoginFailedAttempts():void{
+        $this->login_failed_attempt = 0;
     }
 
     /**
@@ -1496,6 +1555,18 @@ class User extends BaseEntity
         }
         $this->password_salt = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);
         $this->password = AuthHelper::encrypt_password($password, $this->password_salt, $this->password_enc);
+
+        $action = 'User set new password.';
+        $current_user = Auth::user();
+        if($current_user instanceof User) {
+            $action = sprintf
+            (
+                "User set new password by user %s (%s)",
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+        }
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
     }
 
     /**
@@ -1565,7 +1636,7 @@ class User extends BaseEntity
     /**
      * @return ArrayCollection
      */
-    public function getAccessTokens(): ArrayCollection
+    public function getAccessTokens()
     {
         return $this->access_tokens;
     }
@@ -1581,9 +1652,16 @@ class User extends BaseEntity
     /**
      * @return ArrayCollection
      */
-    public function getRefreshTokens(): ArrayCollection
+    public function getRefreshTokens()
     {
         return $this->refresh_tokens;
+    }
+
+    public function getValidRefreshTokens()
+    {
+        $criteria = Criteria::create();
+        $criteria->where(Criteria::expr()->eq('void', false));
+        return $this->refresh_tokens->matching($criteria);
     }
 
     /**
@@ -1700,6 +1778,13 @@ SQL;
     public function updateLoginFailedAttempt(): int
     {
         $this->login_failed_attempt = $this->login_failed_attempt + 1;
+        $action = sprintf
+        (
+            "Login failed attempt (%s).",
+            $this->login_failed_attempt
+        );
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
+
         return $this->login_failed_attempt;
     }
 
@@ -2238,6 +2323,9 @@ SQL;
                 $new_fields_changed[] = sprintf("%s: %s", $field, self::formatFieldValue($field, $args->getNewValue($field)));
             }
         }
+
+        if(count($old_fields_changed) == 0) return;
+        if(count($new_fields_changed) == 0) return;
 
         $action = sprintf
         (

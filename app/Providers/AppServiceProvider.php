@@ -102,26 +102,28 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Validator::extend("password_policy", function($attribute, $value, $parameters, $validator){
-            $password = TextUtils::trim($value);
-
             $min_length = Config::get("auth.password_min_length");
-            if (strlen($password) < $min_length) {
-                return false;
-            }
-
             $max_length = Config::get("auth.password_max_length");
-            if (strlen($password) > $max_length) {
-                return false;
-            }
             $warning = Config::get("auth.password_shape_warning");
             $pattern = Config::get("auth.password_shape_pattern");
-            if (!preg_match("/$pattern/", $password)) {
-                return false;
-            }
 
             $validator->addReplacer('password_policy', function($message, $attribute, $rule, $parameters) use ($validator, $min_length, $max_length, $warning) {
                 return sprintf("The %s must be %s–%s characters, and %s", $attribute, $min_length, $max_length, $warning);
             });
+
+            $password = TextUtils::trim($value);
+
+            if (strlen($password) < $min_length) {
+                return false;
+            }
+
+            if (strlen($password) > $max_length) {
+                return false;
+            }
+
+            if (!preg_match("/$pattern/", $password)) {
+                return false;
+            }
 
             return true;
         });

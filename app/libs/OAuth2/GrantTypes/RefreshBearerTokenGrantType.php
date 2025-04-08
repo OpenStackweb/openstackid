@@ -109,7 +109,7 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
             (
                 sprintf
                 (
-                    'client id %s client type must be %s or %s or support PKCE',
+                    'Client id %s client type must be %s or %s or support PKCE.',
                     $this->client_auth_context->getId(),
                     IClient::ApplicationType_Web_App,
                     IClient::ApplicationType_Native
@@ -122,7 +122,7 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
             (
                 sprintf
                 (
-                    "current client id %s could not use refresh tokens",
+                    "Current client id %s could not use refresh tokens.",
                     $this->client_auth_context->getId()
                 )
             );
@@ -137,7 +137,7 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
             (
                 sprintf
                 (
-                    "refresh token %s does not exists!",
+                    "Refresh token %s does not exists.",
                     $refresh_token_value
                 )
             );
@@ -148,7 +148,7 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
             (
                 sprintf
                 (
-                    "refresh token %s does not belongs to client %s",
+                    "Refresh token %s does not belongs to client %s.",
                     $refresh_token_value, $this->current_client->getClientId()
                 )
             );
@@ -166,8 +166,8 @@ final class RefreshBearerTokenGrantType extends AbstractGrantType
          * token, which will inform the authorization server of the breach.
          */
         if ($this->current_client->useRotateRefreshTokenPolicy()) {
-            $this->token_service->invalidateRefreshToken($refresh_token_value);
             $new_refresh_token = $this->token_service->createRefreshToken($access_token, true);
+            $this->token_service->invalidateRefreshToken($refresh_token_value);
         }
 
         // add id token on response ( new id token )

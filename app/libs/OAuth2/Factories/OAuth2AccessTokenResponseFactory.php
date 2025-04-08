@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Illuminate\Support\Facades\Log;
 use OAuth2\Exceptions\InvalidOAuth2Request;
 use OAuth2\Models\AuthorizationCode;
 use OAuth2\OAuth2Protocol;
@@ -39,9 +41,19 @@ final class OAuth2AccessTokenResponseFactory
         OAuth2AccessTokenRequestAuthCode $request
     )
     {
+        Log::debug
+        (
+            sprintf
+            (
+                "OAuth2AccessTokenResponseFactory::build auth_code %s request %s",
+                $auth_code->getValue(),
+                $request->__toString()
+            )
+        );
 
         if (self::authCodeWasIssuedForOIDC($auth_code)) {
 
+            Log::debug(sprintf("OAuth2AccessTokenResponseFactory::build auth_code %s was issued for OIDC", $auth_code->getValue()));
             $access_token = null;
             $id_token = null;
             $refresh_token = null;
@@ -52,7 +64,6 @@ final class OAuth2AccessTokenResponseFactory
                 $auth_code->getResponseType()
             );
 
-
             $is_hybrid_flow = OAuth2Protocol::responseTypeBelongsToFlow
             (
                 $response_type,
@@ -61,6 +72,7 @@ final class OAuth2AccessTokenResponseFactory
 
             if ($is_hybrid_flow) {
 
+                Log::debug(sprintf("OAuth2AccessTokenResponseFactory::build auth_code %s is hybrid flow", $auth_code->getValue()));
                 if (in_array(OAuth2Protocol::OAuth2Protocol_ResponseType_Token, $response_type)) {
 
                     $access_token = $token_service->createAccessToken($auth_code, $request->getRedirectUri());
@@ -82,6 +94,7 @@ final class OAuth2AccessTokenResponseFactory
             }
             else
             {
+                Log::debug(sprintf("OAuth2AccessTokenResponseFactory::build auth_code %s is not hybrid flow", $auth_code->getValue()));
                 $access_token = $token_service->createAccessToken($auth_code, $request->getRedirectUri());
 
                 $id_token = $token_service->createIdToken
@@ -104,7 +117,7 @@ final class OAuth2AccessTokenResponseFactory
             );
         }
         // normal oauth2.0 code flow
-
+        Log::debug(sprintf("OAuth2AccessTokenResponseFactory::build auth_code %s was issued for OAuth2.0", $auth_code->getValue()));
         $access_token  = $token_service->createAccessToken($auth_code, $request->getRedirectUri());
         $refresh_token = $access_token->getRefreshToken();
 

@@ -44,3 +44,24 @@ export const handleThirdPartyProvidersVerbiage = (provider) => {
     }
     return text;
 }
+
+export const formatTime = (timeInSeconds) => {
+    let res = ''
+
+    const days = Math.floor(timeInSeconds / (24 * 3600));
+    timeInSeconds %= (24 * 3600);
+    const hours = Math.floor(timeInSeconds / 3600);
+    timeInSeconds %= 3600;
+    const minutes = Math.floor(timeInSeconds / 60);
+    timeInSeconds %= 60;
+
+    if (days > 0) res += `${days} day${(days > 1 ? 's' : '')}, `;
+    if (hours > 0) res += `${hours} hour${(hours > 1 ? 's' : '')}, `;
+    if (minutes > 0) res += `${minutes} minute${(minutes > 1 ? 's' : '')}, `;
+    if (timeInSeconds > 0 || res === '') {
+        res += `${timeInSeconds} second${(timeInSeconds !== 1 ? 's' : '')}`;
+    } else {
+        res = res.slice(0, -2);
+    }
+    return res;
+}

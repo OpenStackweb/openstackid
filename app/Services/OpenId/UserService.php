@@ -14,10 +14,12 @@
 
 use App\Events\UserEmailUpdated;
 use App\Events\UserPasswordResetSuccessful;
+use App\Jobs\AddUserAction;
 use App\Jobs\PublishUserDeleted;
 use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Repositories\IGroupRepository;
+use App\libs\Utils\FileSystem\FileNameSanitizer;
 use App\Services\AbstractService;
 use App\Services\Auth\IUserIdentifierGeneratorService;
 use Auth\Group;
@@ -32,13 +34,16 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
+use Models\OAuth2\Client;
 use models\utils\IEntity;
 use OAuth2\IResourceServerContext;
+use OAuth2\Models\IClient;
+use OAuth2\Repositories\IClientRepository;
 use OpenId\Services\IUserService;
 use Utils\Db\ITransactionService;
+use Utils\IPHelper;
 use Utils\Services\ILogService;
 use Utils\Services\IServerConfigurationService;
-use App\libs\Utils\FileSystem\FileNameSanitizer;
 
 /**
  * Class UserService
@@ -72,6 +77,11 @@ final class UserService extends AbstractService implements IUserService
     private $group_repository;
 
     /**
+     * @var IClientRepository
+     */
+    private $client_repository;
+
+    /**
      * @var IResourceServerContext
      */
     private $server_ctx;
@@ -101,7 +111,8 @@ final class UserService extends AbstractService implements IUserService
         IServerConfigurationService $configuration_service,
         ILogService $log_service,
         IResourceServerContext $server_ctx,
-        IUserIdentifierGeneratorService $identifier_service
+        IUserIdentifierGeneratorService $identifier_service,
+        IClientRepository $client_repository
     )
     {
         parent::__construct($tx_service);
@@ -112,6 +123,29 @@ final class UserService extends AbstractService implements IUserService
         $this->log_service = $log_service;
         $this->server_ctx = $server_ctx;
         $this->identifier_service = $identifier_service;
+        $this->client_repository = $client_repository;
+    }
+
+    private function addUserCRUDAction(User $user, $payload, string $action_type = "CREATE") {
+        $payload_json = json_encode($payload);
+        $current_user_id = $this->server_ctx->getCurrentUserId();
+
+        if (!is_null($current_user_id)) {
+            $action = "{$action_type} USER BY USER {$this->server_ctx->getCurrentUserEmail()} ({$current_user_id}): {$payload_json}";
+            AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), $action);
+            return;
+        }
+
+        //check if it's a service app
+        if ($this->server_ctx->getApplicationType() == IClient::ApplicationType_Service) {
+            $action = "{$action_type} USER BY SERVICE {$this->server_ctx->getCurrentClientId()}: {$payload_json}";
+            AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), $action);
+            return;
+        }
+
+        $action = "{$action_type} USER: {$payload_json}";
+        AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), $action);
+        return;
     }
 
     /**
@@ -138,7 +172,7 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (!$user instanceof User) throw new EntityNotFoundException();
             $user->updateLoginFailedAttempt();
             return $user;
         });
@@ -153,7 +187,7 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (!$user instanceof User) throw new EntityNotFoundException();
             return $user->lock();
         });
     }
@@ -167,7 +201,7 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->repository->getById($user_id);
-            if (is_null($user) || !$user instanceof User) throw new EntityNotFoundException();
+            if (!$user instanceof User) throw new EntityNotFoundException();
             return $user->unlock();
         });
     }
@@ -212,7 +246,7 @@ final class UserService extends AbstractService implements IUserService
      */
     public function create(array $payload): IEntity
     {
-        return $this->tx_service->transaction(function () use ($payload) {
+        $user = $this->tx_service->transaction(function () use ($payload) {
             if (isset($payload["email"])) {
                 $former_user = $this->repository->getByEmailOrName(trim($payload["email"]));
                 if (!is_null($former_user))
@@ -240,6 +274,10 @@ final class UserService extends AbstractService implements IUserService
 
             return $user;
         });
+
+        $this->addUserCRUDAction($user, $payload);
+
+        return $user;
     }
 
     /**
@@ -323,6 +361,8 @@ final class UserService extends AbstractService implements IUserService
         } catch (\Exception $ex) {
             Log::warning($ex);
         }
+
+        $this->addUserCRUDAction($user, $payload, "UPDATE");
 
         return $user;
     }

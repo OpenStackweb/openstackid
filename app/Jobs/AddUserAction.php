@@ -26,6 +26,7 @@ use Services\IUserActionService;
 final class AddUserAction implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     public $tries = 1;
 
     public $timeout = 0;

@@ -11,33 +11,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use App\Events\OAuth2ClientLocked;
+use App\Events\UserCreated;
 use App\Events\UserEmailUpdated;
+use App\Events\UserEmailVerified;
 use App\Events\UserLocked;
 use App\Events\UserPasswordResetRequestCreated;
 use App\Events\UserPasswordResetSuccessful;
 use App\Events\UserSpamStateUpdated;
-use App\Jobs\PublishUserCreated;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\Mail\UserLockedEmail;
 use App\Mail\UserPasswordResetMail;
+use App\Services\Auth\IUserService;
+use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Database\Events\MigrationsStarted;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use App\Mail\UserEmailVerificationSuccess;
-use App\Services\Auth\IUserService;
-use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\App;
-use App\Events\UserCreated;
-use App\Events\UserEmailVerified;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Config;
 use Models\OAuth2\Client;
 use OAuth2\Repositories\IClientRepository;
+
 /**
  * Class EventServiceProvider
  * @package App\Providers
@@ -51,6 +50,12 @@ final class EventServiceProvider extends ServiceProvider
      */
     protected $listen = [
         'Illuminate\Database\Events\QueryExecuted' => [
+        ],
+        'Illuminate\Auth\Events\Logout' => [
+            //'App\Listeners\OnUserLogout',
+        ],
+        'Illuminate\Auth\Events\Login' => [
+            'App\Listeners\OnUserLogin',
         ],
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
             // ... other providers

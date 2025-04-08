@@ -11,12 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\Jobs\AddUserAction;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use OpenId\Services\IUserService;
 use Utils\Db\ITransactionService;
+use Utils\IPHelper;
 use Utils\Services\ISecurityPolicyCounterMeasure;
 use Utils\Services\IServerConfigurationService;
 /**
@@ -73,12 +76,22 @@ class LockUserCounterMeasure implements ISecurityPolicyCounterMeasure
                 if (isset($params["user_id"])) {
                     $user_id = $params["user_id"];
                     $user    = $this->repository->getById($user_id);
+                    $max_login_failed_attempts = intval($this->server_configuration->getConfigValue("MaxFailed.Login.Attempts"));
                     if (!is_null($user) && $user instanceof User) {
                         //apply lock policy
-                        if (intval($user->getLoginFailedAttempt()) < intval($this->server_configuration->getConfigValue("MaxFailed.Login.Attempts"))) {
+                        if (intval($user->getLoginFailedAttempt()) < $max_login_failed_attempts) {
                             $this->user_service->updateFailedLoginAttempts($user->getId());
                             return $this;
                         }
+
+                        $action = sprintf
+                        (
+                            "Locked due to too many failed login attempts (%s)",
+                            $max_login_failed_attempts
+                        );
+
+                        AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), $action);
+
                         $this->user_service->lockUser($user->getId());
                     }
                 }

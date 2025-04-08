@@ -220,4 +220,28 @@ interface ITokenService {
        OAuth2OTP &$otp,
         ?Client $client
     ):AccessToken;
+
+    /**
+     * @param int $user_id
+     * @param string|null $client_id
+     * @return void
+     * @throws \Exception
+     */
+    public function revokeUsersToken(int $user_id, ?string $client_id = null):void;
+
+    /**
+     * @param OAuth2OTP $otp
+     * @param Client $client
+     * @return bool
+     * @throws \Exception
+     */
+    public function canCreateAccessTokenFromOTP(OAuth2OTP &$otp, Client $client):bool;
+
+    /**
+     * @param User $user
+     * @param Client $client
+     * @return bool
+     * @throws \Exception
+     */
+    public function canCreateAccessToken(User $user, Client $client):bool;
 }

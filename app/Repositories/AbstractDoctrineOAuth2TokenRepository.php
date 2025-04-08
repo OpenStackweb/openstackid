@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 use Doctrine\ORM\QueryBuilder;
+use Illuminate\Support\Facades\Log;
 use utils\DoctrineFilterMapping;
 use utils\DoctrineJoinFilterMapping;
 use utils\Filter;
@@ -47,6 +48,11 @@ abstract class AbstractDoctrineOAuth2TokenRepository
                 " DATEADD(e.created_at, e.lifetime, 'SECOND') >= UTC_TIMESTAMP()"
             )
         ];
+    }
+
+    protected function getOrderMappings()
+    {
+        return ['created_at'];
     }
 
     /**
@@ -97,6 +103,41 @@ abstract class AbstractDoctrineOAuth2TokenRepository
         $filter->addFilterCondition(FilterElement::makeEqual("owner_id", $user_id));
         $filter->addFilterCondition(FilterElement::makeEqual("is_valid", true));
         return $this->getAllByPage($paging_info, $filter);
+    }
+
+    /**
+     * @param int $user_id
+     * @param int $client_identifier
+     * @param PagingInfo $paging_info
+     * @return PagingResponse
+     */
+    function getValidCountByUserIdAndClientIdentifier(int $user_id, int $client_identifier): int
+    {
+        try {
+            $filter = new Filter();
+            $filter->addFilterCondition(FilterElement::makeEqual("owner_id", $user_id));
+            $filter->addFilterCondition(FilterElement::makeEqual("client_id", $client_identifier));
+            $filter->addFilterCondition(FilterElement::makeEqual("is_valid", true));
+
+            $query = $this->getEntityManager()
+                ->createQueryBuilder()
+                ->select("count(e.id)")
+                ->from($this->getBaseEntity(), "e");
+
+            $query = $this->applyExtraFilters($query);
+
+            $query = $this->applyExtraJoins($query);
+
+            if (!is_null($filter)) {
+                $filter->apply2Query($query, $this->getFilterMappings());
+            }
+
+            return (int)$query->getQuery()->getSingleScalarResult();
+        }
+        catch (\Exception $ex){
+            Log::error($ex);
+            return 0;
+        }
     }
 
 }
