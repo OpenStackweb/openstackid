@@ -43,7 +43,7 @@ class ResourceServerContext implements IResourceServerContext {
     /**
      * @return string
      */
-    public function getApplicationType():string
+    public function getApplicationType():?string
     {
         return $this->getAuthContextVar('application_type');
     }
