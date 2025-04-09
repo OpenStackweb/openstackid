@@ -1529,6 +1529,7 @@ class User extends BaseEntity
      */
     public function setPassword(string $password): void
     {
+        Log::debug(sprintf("User::setPassword %s (%s)", $this->email, $this->id));
         $password = TextUtils::trim($password);
 
         $min_length = Config::get("auth.password_min_length");
@@ -1562,7 +1563,7 @@ class User extends BaseEntity
                 $current_user->getId()
             );
         }
-        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action);
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action, $this->email);
     }
 
     /**

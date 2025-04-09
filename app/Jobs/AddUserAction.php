@@ -36,6 +36,8 @@ final class AddUserAction implements ShouldQueue
      */
     private $user_id;
 
+    private $user_email;
+
     /**
      * @var string
      */
@@ -50,18 +52,40 @@ final class AddUserAction implements ShouldQueue
      * @param int $user_id
      * @param string $ip
      * @param string $action
+     * @param string|null $user_email
      */
-    public function __construct(int $user_id, string $ip, string $action){
-        Log::debug(sprintf("AddUserAction::constructor user %s action %s ip %s", $user_id, $action, $ip));
+    public function __construct(int $user_id, string $ip, string $action, ?string $user_email = null){
+        Log::debug
+        (
+            sprintf
+            (
+                "AddUserAction::constructor user %s action %s ip %s email %s",
+                $user_id,
+                $action,
+                $ip,
+                $user_email
+            )
+        );
         $this->user_id = $user_id;
         $this->action = $action;
         $this->ip = $ip;
+        $this->user_email = $user_email;
     }
 
     public function handle(IUserActionService $service){
-        Log::debug(sprintf("AddUserAction::handle"));
+        Log::debug
+        (
+            sprintf
+            (
+                "AddUserAction::handle user %s action %s ip %s email %s",
+                $this->user_id,
+                $this->action,
+                $this->ip,
+                $this->user_email
+            )
+        );
         try{
-            $service->addUserAction($this->user_id, $this->ip, $this->action, "From Site");
+            $service->addUserAction($this->user_id, $this->ip, $this->action, "From Site", $this->user_email);
         }
         catch (\Exception $ex) {
             Log::error($ex);

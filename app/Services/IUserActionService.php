@@ -25,11 +25,12 @@ interface IUserActionService
     const ConsentAction     = 'CONSENT';
 
     /**
-     * @param int $user_id
-     * @param string $ip
-     * @param string $action
-     * @param null|string $realm
+     * @param $user_id
+     * @param $ip
+     * @param $action
+     * @param $realm
+     * @param $user_email
      * @return UserAction
      */
-    public function addUserAction($user_id, $ip, $action, $realm = null):UserAction;
+    public function addUserAction($user_id, $ip, $action, $realm = null, $user_email = null):UserAction;
 } 
