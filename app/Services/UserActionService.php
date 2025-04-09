@@ -44,22 +44,30 @@ final class UserActionService implements IUserActionService
     }
 
     /**
-     * @param int $user_id
-     * @param string $ip
-     * @param string $user_action
-     * @param null|string $realm
+     * @param $user_id
+     * @param $ip
+     * @param $user_action
+     * @param $realm
+     * @param $user_email
      * @return UserAction
+     * @throws Exception
      */
-    public function addUserAction($user_id, $ip, $user_action, $realm = null): UserAction
+    public function addUserAction($user_id, $ip, $user_action, $realm = null, $user_email = null): UserAction
     {
-        return $this->tx_service->transaction(function () use ($user_id, $ip, $user_action, $realm) {
+        return $this->tx_service->transaction(function () use ($user_id, $ip, $user_action, $realm, $user_email) {
 
             $action = new UserAction();
             $action->setFromIp($ip);
             $action->setUserAction($user_action);
+
             if(!empty($realm))
                 $action->setRealm($realm);
+            // try to get the user by if
             $user = $this->user_repository->getById($user_id);
+            // and if not , by email
+            if(is_null($user) && !empty($user_email))
+                $user = $this->user_repository->getByEmailOrName($user_email);
+
             if (is_null($user))
                 throw new EntityNotFoundException();
 
