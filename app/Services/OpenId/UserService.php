@@ -137,7 +137,8 @@ final class UserService extends AbstractService implements IUserService
         }
 
         //check if it's a service app
-        if ($this->server_ctx->getApplicationType() == IClient::ApplicationType_Service) {
+        $app_type = $this->server_ctx->getApplicationType();
+        if (!empty($app_type) && $app_type == IClient::ApplicationType_Service) {
             $action = "{$action_type} USER BY SERVICE {$this->server_ctx->getCurrentClientId()}: {$payload_json}";
             AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), $action);
             return;

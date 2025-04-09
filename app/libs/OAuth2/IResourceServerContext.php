@@ -53,7 +53,7 @@ interface IResourceServerContext {
     /**
      * @return string
      */
-    public function getApplicationType():string;
+    public function getApplicationType():?string;
 
 
     /**
