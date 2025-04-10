@@ -1563,7 +1563,7 @@ class User extends BaseEntity
                 $current_user->getId()
             );
         }
-        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action, $this->email);
+        AddUserAction::dispatch($this->getId(), IPHelper::getUserIp(), $action, $this->email)->afterResponse();
     }
 
     /**
