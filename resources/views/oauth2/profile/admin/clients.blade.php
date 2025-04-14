@@ -26,7 +26,7 @@
                       </div>
                   </td>
                   <td>
-                      {!! HTML::link(URL::action("Api\ClientApiController@unlock",array("id"=>$client->id)),'Unlock',array('class'=>'btn btn-primary unlock-client','data-client-id'=>$client->id,'title'=>'Unlocks given client', 'target'=>'_self')) !!}
+                      {!! link_to(URL::action("Api\ClientApiController@unlock",array("id"=>$client->id)),'Unlock',array('class'=>'btn btn-primary unlock-client','data-client-id'=>$client->id,'title'=>'Unlocks given client', 'target'=>'_self')) !!}
                   </td>
               </tr>
               @endforeach
@@ -39,5 +39,5 @@
 </div>
 @stop
 @section('scripts')
-{!! HTML::script('assets/js/oauth2/profile/admin/clients.js') !!}
+    {!! script_to('assets/js/oauth2/profile/admin/clients.js') !!}
 @stop

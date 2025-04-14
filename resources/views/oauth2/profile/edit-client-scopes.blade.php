@@ -40,5 +40,5 @@
 		delete:'{!!URL::action("Api\ClientApiController@removeAllowedScope",array("id"=>$client->id,"scope_id"=>"@scope_id"))!!}'
 	};
 </script>
-{!! HTML::script('assets/js/oauth2/profile/edit-client-scopes.js') !!}
+{!! script_to('assets/js/oauth2/profile/edit-client-scopes.js') !!}
 @append

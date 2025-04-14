@@ -22,7 +22,7 @@ use App\Models\SSO\StreamChat\StreamChatSSOProfile;
 /**
  * Class OAuthSSOApiControllerTest
  */
-final class OAuthSSOApiControllerTest extends OAuth2ProtectedApiTest
+final class OAuthSSOApiControllerTest extends OAuth2ProtectedApiTestCase
 {
     /**
      * @var EntityManager

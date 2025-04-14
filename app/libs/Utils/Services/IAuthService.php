@@ -95,9 +95,10 @@ interface IAuthService
     public function clearUserAuthenticationResponse();
 
     /**
+     * @param bool $clear_security_ctx
      * @return void
      */
-    public function logout();
+    public function logout(bool $clear_security_ctx = true):void;
 
     /**
      * @param string $openid

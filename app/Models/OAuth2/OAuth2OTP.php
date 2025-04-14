@@ -24,7 +24,7 @@ use OAuth2\OAuth2Protocol;
 use OAuth2\Requests\OAuth2AccessTokenRequestPasswordless;
 use Utils\IPHelper;
 use Utils\Model\Identifier;
-use Zend\Math\Rand;
+use Laminas\Math\Rand;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOAuth2OTPRepository")

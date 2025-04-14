@@ -26,12 +26,12 @@
         <label class="control-label" for="usage">Usage&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle"
                                                                   aria-hidden="true"
                                                                   title="The 'use' parameter identifies the intended use of the key."></span></label>
-        {!! Form::select('usage', Utils\ArrayUtils::convert2Assoc(\jwk\JSONWebKeyPublicKeyUseValues::$valid_uses) ,null , array('class' => 'form-control', 'id' => 'usage')) !!}
+        {!! select_to('usage', Utils\ArrayUtils::convert2Assoc(\jwk\JSONWebKeyPublicKeyUseValues::$valid_uses) ,null , array('class' => 'form-control', 'id' => 'usage')) !!}
     </div>
     <div class="form-group">
         <label class="control-label" for="alg">Algorithm&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title="identifies the algorithm intended for
    use with the key"></span></label>
-        {!! Form::select('alg', array() ,null , array('class' => 'form-control', 'id' => 'alg')) !!}
+        {!! select_to('alg', array() ,null , array('class' => 'form-control', 'id' => 'alg')) !!}
     </div>
     <div class="form-group">
         <label class="control-label" for="password">Key Password&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title=""></span></label>

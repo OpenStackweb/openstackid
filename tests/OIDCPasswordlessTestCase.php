@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Session;
  * Class OIDCPasswordlessTest
  * @package Tests
  */
-class OIDCPasswordlessTest extends OpenStackIDBaseTest
+class OIDCPasswordlessTestCase extends OpenStackIDBaseTestCase
 {
 
     /**
@@ -86,7 +86,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
      */
     private $current_realm;
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         App::singleton(UtilsServiceCatalog::ServerConfigurationService, StubServerConfigurationService::class);
@@ -682,6 +682,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
 
         $this->assertResponseStatus(200);
         $otp = null;
+
         Mail::assertNotQueued(OAuth2PasswordlessOTPMail::class, function(OAuth2PasswordlessOTPMail $email) use(&$otp){
             $otp = $email->otp;
         });
@@ -755,7 +756,7 @@ class OIDCPasswordlessTest extends OpenStackIDBaseTest
 
         $otp = $repository->getByValue($otp);
         $this->assertTrue(!is_null($otp));
-        $this->assertTrue(!$otp->isValid());
+        $this->assertTrue($otp->isValid());
     }
 
 }

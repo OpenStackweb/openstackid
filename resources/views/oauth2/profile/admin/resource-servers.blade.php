@@ -24,7 +24,7 @@
     </div>
     <div class="row">
         <div class="col-md-12">
-            {!! HTML::link(URL::action("Api\ApiResourceServerController@create"),'Add Resource Server',array('class'=>'btn active btn-primary add-resource-server','title'=>'Adds a New Resource Server', 'target'=>'_self')) !!}
+            {!! link_to(URL::action("Api\ApiResourceServerController@create"),'Add Resource Server',array('class'=>'btn active btn-primary add-resource-server','title'=>'Adds a New Resource Server', 'target'=>'_self')) !!}
         </div>
     </div>
     <table id='table-resource-servers' class="table table-hover table-condensed">
@@ -44,17 +44,18 @@
             <td width="25%">{!!$resource_server->host!!}</td>
             <td width="10%">{!!$resource_server->ips!!}</td>
             <td width="5%">
-                <input type="checkbox" class="resource-server-active-checkbox" id="resource-server-active_{!!$resource_server->id!!}"
+                <input type="checkbox" class="resource-server-active-checkbox"
+                       id="resource-server-active_{!!$resource_server->id!!}"
                        data-resource-server-id="{!!$resource_server->id!!}"
-                @if ( $resource_server->active)
-                checked
-                @endif
-                value="{!!$resource_server->id!!}"/>
+                       @if ( $resource_server->active)
+                       checked
+                       @endif
+                       value="{!!$resource_server->id!!}"/>
             </td>
             <td width="25%">
                 &nbsp;
-                {!! HTML::link(URL::action("AdminController@editResourceServer",array("id"=>$resource_server->id)),'Edit',array('class'=>'btn btn-default active edit-resource-server','title'=>'Edits a Registered Resource Server', 'target'=>'_self')) !!}
-                {!! HTML::link(URL::action("Api\ApiResourceServerController@delete",array("id"=>$resource_server->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-resource-server','title'=>'Deletes a Registered Resource Server', 'target'=>'_self')) !!}
+                {!! link_to(URL::action("AdminController@editResourceServer",array("id"=>$resource_server->id)),'Edit',array('class'=>'btn btn-default active edit-resource-server','title'=>'Edits a Registered Resource Server', 'target'=>'_self')) !!}
+                {!! link_to(URL::action("Api\ApiResourceServerController@delete",array("id"=>$resource_server->id)),'Delete',array('class'=>'btn btn-default btn-delete active delete-resource-server','title'=>'Deletes a Registered Resource Server', 'target'=>'_self')) !!}
             </td>
         </tr>
         @endforeach
@@ -78,5 +79,5 @@
 	};
 </script>
 
-{!! HTML::script('assets/js/oauth2/profile/admin/resource-servers.js') !!}
+{!! script_to('assets/js/oauth2/profile/admin/resource-servers.js') !!}
 @append
