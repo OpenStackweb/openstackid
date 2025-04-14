@@ -1206,7 +1206,7 @@ final class TokenService extends AbstractService implements ITokenService
         (
             sprintf
             (
-                "TokenService::revokeUsersToken user_id %S client_id %s",
+                "TokenService::revokeUsersToken user_id %s client_id %s",
                 $user_id,
                 !empty($client_id) ? $client_id : 'N/A'
             )
