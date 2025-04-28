@@ -626,7 +626,7 @@ final class UserController extends OpenIdController
     public function logout()
     {
         $user = $this->auth_service->getCurrentUser();
-        RevokeUserGrantsOnExplicitLogout::dispatch($user)->afterResponse();
+        //RevokeUserGrantsOnExplicitLogout::dispatch($user)->afterResponse();
         $this->auth_service->logout();
         Session::flush();
         Session::regenerate();

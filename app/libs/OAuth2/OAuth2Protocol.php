@@ -1557,9 +1557,11 @@ final class OAuth2Protocol implements IOAuth2Protocol
                 );
             }
 
+            /*
             if(!is_null($user)){
                 RevokeUserGrantsOnExplicitLogout::dispatch($user, $client_id)->afterResponse();
             }
+            */
 
             if (!is_null($logged_user)) {
                 $this->auth_service->logout();
