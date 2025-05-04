@@ -434,8 +434,12 @@ final class UserService extends AbstractService implements IUserService
             }
 
             Log::debug(sprintf("UserService::updateProfilePhoto user %s saving file to swift path %s fileName %s", $user_id, $path, $fileName));
-            Storage::disk(Config::get("filesystems.cloud"))->putFileAs($path, $file, $fileName, 'public');
 
+            $storage = Storage::disk(Config::get("filesystems.cloud"));
+            if (is_null($storage)) {
+                throw new \Exception("can't save profile picture in the remote storage.");
+            }
+            $storage->putFileAs($path, $file, $fileName, 'public');
             $user->setPic($fileName);
 
             return $user;
