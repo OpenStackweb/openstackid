@@ -8,7 +8,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @append
 @section('css')
-    {!! HTML::style('assets/css/clients.css') !!}
+    {!! style_to('assets/css/clients.css') !!}
 @append
 
 @section('header_right')
@@ -87,6 +87,6 @@
         window.DEACTIVATE_CLIENT_ENDPOINT = '{{URL::action("Api\\ClientApiController@deactivate",array("id"=>"@id"))}}';
 
     </script>
-    {!! HTML::script('assets/clients.js') !!}
+    {!! script_to('assets/clients.js') !!}
 @append
 

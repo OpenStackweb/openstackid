@@ -13,7 +13,7 @@
  **/
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\OAuth2Protocol;
-use Zend\Math\Rand;
+use Laminas\Math\Rand;
 /**
  * Class AccessToken
  * @see http://tools.ietf.org/html/rfc6749#section-1.4

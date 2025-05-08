@@ -26,7 +26,7 @@ class UserApiTest extends BrowserKitTestCase
 
     private $current_host;
 
-    protected function prepareForTests()
+    protected function prepareForTests():void
     {
         parent::prepareForTests();
         $this->withoutMiddleware();
@@ -47,8 +47,8 @@ class UserApiTest extends BrowserKitTestCase
             'last_name' => 'test',
             'email' => 'test+1@test.com',
             'country_iso_code' => 'US',
-            'password' => '1qaz2wsx!',
-            'password_confirmation' => '1qaz2wsx!',
+            'password' => '1Qaz2wsx!',
+            'password_confirmation' => '1Qaz2wsx!',
             'active' => true,
             'email_verified' => true,
         ];

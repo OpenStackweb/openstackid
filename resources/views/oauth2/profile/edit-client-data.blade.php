@@ -36,7 +36,7 @@
                 <div class="col-md-12">
                     <label for="client_secret" class="label-client-secret">Client Secret</label>
                     @if ($client->isOwner(Auth::user()))
-                        {!! HTML::link(URL::action("Api\\ClientApiController@regenerateClientSecret",array("id"=>$client->id)),'Regenerate',array('class'=>'btn btn-default btn-xs active regenerate-client-secret','title'=>'Regenerates Client Secret', 'target'=>'_self')) !!}
+                        {!! link_to(URL::action("Api\\ClientApiController@regenerateClientSecret",array("id"=>$client->id)),'Regenerate',array('class'=>'btn btn-default btn-xs active regenerate-client-secret','title'=>'Regenerates Client Secret', 'target'=>'_self')) !!}
                     @endif
                     <div id="client_secret" class="input-group">
                          <input type="text" class="form-control input-monospace input-sm"
@@ -169,8 +169,9 @@
                     </div>
                     @endif
                     <input type="hidden" id="id" name="id" value="{!!$client->id!!}"/>
-                    <input type="hidden" id="application_type" name="application_type" value="{!!$client->application_type!!}"/>
-                    <input type="hidden" id="user_id"   name="user_id" value="{!!$client->user_id!!}"/>
+                    <input type="hidden" id="application_type" name="application_type"
+                           value="{!!$client->application_type!!}"/>
+                    <input type="hidden" id="user_id" name="user_id" value="{!!$client->user_id!!}"/>
                     <button type="submit" class="btn btn-default btn-md active btn-save-client-data">Save</button>
                 </form>
             </div>
@@ -179,13 +180,13 @@
 </div>
 
 @section('scripts')
-    {!! HTML::script('assets/clipboard-copy-element/index.umd.js')!!}
-    {!! HTML::script('assets/js/oauth2/profile/edit-client-data.js') !!}'
+    {!! script_to('assets/clipboard-copy-element/index.umd.js')!!}
+    {!! script_to('assets/js/oauth2/profile/edit-client-data.js') !!}'
     <script>
-        document.addEventListener('clipboard-copy', function(event) {
+        document.addEventListener('clipboard-copy', function (event) {
             const notice = event.target.querySelector('.notice')
             notice.hidden = false
-            setTimeout(function() {
+            setTimeout(function () {
                 notice.hidden = true
             }, 1000)
         })

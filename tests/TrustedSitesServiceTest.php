@@ -17,18 +17,16 @@ use OpenId\Repositories\IOpenIdTrustedSiteRepository;
 use Auth\User;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Mockery;
+
 /**
  * Class TrustedSitesServiceTest
  */
 final class TrustedSitesServiceTest extends BrowserKitTestCase {
 
-	protected function prepareForTests()
-	{
-		parent::prepareForTests();
-	}
 
 	public function tearDown():void
     {
+        parent::tearDown();
         Mockery::close();
     }
 

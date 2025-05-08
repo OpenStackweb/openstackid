@@ -23,7 +23,7 @@ use LaravelDoctrine\ORM\Facades\EntityManager;
  * @package Tests
  */
 
-final class OAuth2UserUpdateApiTest extends OAuth2ProtectedApiTest
+final class OAuth2UserUpdateApiTest extends OAuth2ProtectedApiTestCase
 {
     public function testUserCreate()
     {

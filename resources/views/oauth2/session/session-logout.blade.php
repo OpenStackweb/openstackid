@@ -20,7 +20,7 @@
                 @else
                     <p> Would you like to log out? </p>
                 @endif
-                {!! Form::open(array('url' => URL::action('OAuth2\OAuth2ProviderController@endSession'), 'method' => 'post',  "autocomplete" => "off")) !!}
+                {!! basic_form_open(URL::action('OAuth2\OAuth2ProviderController@endSession'), 'post', array("autocomplete" => "off")) !!}
                     <fieldset>
                         <input  type="hidden" name="oidc_endsession_consent" id="oidc_endsession_consent" value="1"/>
                         <input  type="hidden" name="id_token_hint" id="id_token_hint" value="{!!$id_token_hint!!}"/>
@@ -28,16 +28,17 @@
                         <input  type="hidden" name="state" id="state" value="{!!$state!!}"/>
                         <input  type="hidden" name="client_id" id="client_id" value="{!!$client_id!!}"/>
                         <div class="form-group">
-                            {!! Form::submit('Yes ',array('id'=>'login','class'=>'btn active btn-primary')) !!}
-                            <a target="_self" class="btn btn-danger active" href="{!! URL::action('OAuth2\OAuth2ProviderController@cancelLogout') !!}">No</a>
+                            {!! submit_button('Yes ',array('id'=>'login','class'=>'btn active btn-primary')) !!}
+                            <a target="_self" class="btn btn-danger active"
+                               href="{!! URL::action('OAuth2\OAuth2ProviderController@cancelLogout') !!}">No</a>
                         </div>
                     </fieldset>
-                {!! Form::close() !!}
+                {!! form_close !!}
             </div>
         </div>
     </div>
 @stop
 @section('scripts')
-    {!! HTML::script('assets/crypto-js/crypto-js.js')!!}
-    {!! HTML::script('assets/jquery-cookie/jquery.cookie.js')!!}
+    {!! script_to('assets/crypto-js/crypto-js.js')!!}
+    {!! script_to('assets/jquery-cookie/jquery.cookie.js')!!}
 @append
