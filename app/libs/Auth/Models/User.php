@@ -1680,7 +1680,7 @@ class User extends BaseEntity
     /**
      * @return ArrayCollection
      */
-    public function getActions(): ArrayCollection
+    public function getActions()
     {
         return $this->actions;
     }
