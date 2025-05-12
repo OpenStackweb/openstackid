@@ -17,31 +17,30 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity
- * @ORM\Table(name="oauth2_user_consents")
- * Class UserConsent
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_user_consents')]
+#[ORM\Entity]
 class UserConsent extends BaseEntity implements IUserConsent {
 
     /**
-     * @ORM\Column(name="scopes", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'scopes', type: 'string')]
     private $scopes;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="consents", cascade={"persist"})
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, cascade: ['persist'], inversedBy: 'consents')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
     private $owner;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"})
-     * @ORM\JoinColumn(name="client_id", referencedColumnName="id")
      * @var Client
      */
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\Client::class, cascade: ['persist'])]
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id')]
     private $client;
 
     /**

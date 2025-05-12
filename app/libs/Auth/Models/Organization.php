@@ -12,21 +12,19 @@
  * limitations under the License.
  **/
 use Doctrine\ORM\Mapping AS ORM;
-use Doctrine\Common\Collections\ArrayCollection;
 use App\Models\Utils\BaseEntity;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOrganizationRepository")
- * @ORM\Table(name="organizations")
- * Class Organization
  * @package AuthrequestPasswordReset
  */
+#[ORM\Table(name: 'organizations')]
+#[ORM\Entity]
 class Organization extends BaseEntity
 {
     /**
-     * @ORM\Column(name="name", type="string")
      * @var string
      */
-    private $name;
+    #[ORM\Column(name: 'name', type: 'string')]
+    private string $name;
 
     /**
      * @return string

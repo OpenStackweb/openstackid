@@ -15,17 +15,16 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineWhiteListedIPRepository")
- * @ORM\Table(name="white_listed_ips")
- * Class WhiteListedIP
  * @package Models
  */
+#[ORM\Table(name: 'white_listed_ips')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineWhiteListedIPRepository::class)]
 class WhiteListedIP extends BaseEntity
 {
     /**
-     * @ORM\Column(name="ip", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'ip', type: 'string')]
     private $ip;
 
     /**

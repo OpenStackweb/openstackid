@@ -18,49 +18,46 @@ use Doctrine\ORM\Mapping AS ORM;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineApiScopeGroupRepository")
- * @ORM\Table(name="oauth2_api_scope_group")
- * Class ApiScope
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_api_scope_group')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineApiScopeGroupRepository::class)]
 class ApiScopeGroup extends BaseEntity
 {
     /**
-     * @ORM\Column(name="name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'name', type: 'string')]
     private $name;
 
     /**
-     * @ORM\Column(name="description", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'description', type: 'string')]
     private $description;
 
     /**
-     * @ORM\Column(name="active", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\ManyToMany(targetEntity="ApiScope", cascade={"persist"}, inversedBy="scope_groups")
-     * @ORM\JoinTable(name="oauth2_api_scope_group_scope",
-     *      joinColumns={@ORM\JoinColumn(name="group_id", referencedColumnName="id")},
-     *      inverseJoinColumns={@ORM\JoinColumn(name="scope_id", referencedColumnName="id")}
-     *     )
      * @var ApiScope[]
      */
+    #[ORM\JoinTable(name: 'oauth2_api_scope_group_scope')]
+    #[ORM\JoinColumn(name: 'group_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'scope_id', referencedColumnName: 'id')]
+    #[ORM\ManyToMany(targetEntity: \ApiScope::class, cascade: ['persist'], inversedBy: 'scope_groups')]
     private $scopes;
 
     /**
-     * @ORM\ManyToMany(targetEntity="Auth\User", cascade={"persist"}, inversedBy="scope_groups")
-     * @ORM\JoinTable(name="oauth2_api_scope_group_users",
-     *      joinColumns={@ORM\JoinColumn(name="group_id", referencedColumnName="id")},
-     *      inverseJoinColumns={@ORM\JoinColumn(name="user_id", referencedColumnName="id")}
-     *     )
      * @var User[]
      */
+    #[ORM\JoinTable(name: 'oauth2_api_scope_group_users')]
+    #[ORM\JoinColumn(name: 'group_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\ManyToMany(targetEntity: \Auth\User::class, cascade: ['persist'], inversedBy: 'scope_groups')]
     private $users;
 
     /**

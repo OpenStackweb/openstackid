@@ -15,41 +15,40 @@ use App\Models\Utils\BaseEntity;
 use Auth\User;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineSpamEstimatorFeedRepository")
- * @ORM\Table(name="users_spam_estimator_feed")
- * Class SpamEstimatorFeed
  * @package App\libs\Auth\Models
  */
+#[ORM\Table(name: 'users_spam_estimator_feed')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineSpamEstimatorFeedRepository::class)]
 class SpamEstimatorFeed extends BaseEntity
 {
     /**
-     * @ORM\Column(name="first_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'first_name', type: 'string')]
     private $first_name;
 
     /**
-     * @ORM\Column(name="last_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'last_name', type: 'string')]
     private $last_name;
 
     /**
-     * @ORM\Column(name="email", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'email', type: 'string')]
     private $email;
 
     /**
-     * @ORM\Column(name="bio", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'bio', nullable: true, type: 'string')]
     private $bio;
 
     /**
-     * @ORM\Column(name="spam_type", nullable=false, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'spam_type', nullable: false, type: 'string')]
     private $spam_type;
 
     /**

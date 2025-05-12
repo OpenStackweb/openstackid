@@ -16,36 +16,35 @@ use Auth\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineUserActionRepository")
- * @ORM\Table(name="user_actions")
- * Class UserAction
  * @package Models
  */
+#[ORM\Table(name: 'user_actions')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineUserActionRepository::class)]
 class UserAction extends BaseEntity
 {
     /**
-     * @ORM\Column(name="realm", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'realm', type: 'string')]
     private $realm;
 
     /**
-     * @ORM\Column(name="from_ip", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'from_ip', type: 'string')]
     private $from_ip;
 
     /**
-     * @ORM\Column(name="user_action", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'user_action', type: 'string')]
     private $user_action;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="actions", cascade={"persist"})
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, inversedBy: 'actions', cascade: ['persist'])]
     private $owner;
 
     /**

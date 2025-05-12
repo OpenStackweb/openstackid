@@ -19,67 +19,66 @@ use Auth\User;
 use Doctrine\ORM\Mapping AS ORM;
 use Models\OAuth2\Client;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineUserRegistrationRequestRepository")
- * @ORM\Table(name="user_registration_requests")
- * Class UserRegistrationRequest
  * @package App\libs\Auth\Models
  */
+#[ORM\Table(name: 'user_registration_requests')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineUserRegistrationRequestRepository::class)]
 class UserRegistrationRequest extends BaseEntity
 {
     /**
-     * @ORM\OneToOne(targetEntity="Auth\User", inversedBy="registration_request")
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id", nullable=true)
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\OneToOne(targetEntity: \Auth\User::class, inversedBy: 'registration_request')]
     private $owner;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"})
-     * @ORM\JoinColumn(name="client_id", referencedColumnName="id")
      * @var Client
      */
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\Client::class, cascade: ['persist'])]
     private $client;
 
     /**
-     * @ORM\Column(name="hash", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'hash', type: 'string')]
     private $hash;
 
     /**
-     * @ORM\Column(name="email", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'email', type: 'string')]
     private $email;
 
     /**
-     * @ORM\Column(name="first_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'first_name', type: 'string')]
     private $first_name;
 
     /**
-     * @ORM\Column(name="last_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'last_name', type: 'string')]
     private $last_name;
 
     /**
-     * @ORM\Column(name="company", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'company', type: 'string')]
     private $company;
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="redeem_at", nullable=true, type="datetime")
      */
+    #[ORM\Column(name: 'redeem_at', nullable: true, type: 'datetime')]
     private $redeem_at;
 
     /**
-     * @ORM\Column(name="country_iso_code", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'country_iso_code', type: 'string')]
     private $country_iso_code;
 
     public function __construct()

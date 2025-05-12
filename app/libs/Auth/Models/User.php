@@ -54,12 +54,11 @@ use Doctrine\ORM\Mapping\PreUpdate;
 use Utils\IPHelper;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineUserRepository")
- * @ORM\Table(name="users")
- * @ORM\HasLifecycleCallbacks
- * Class User
  * @package Auth
  */
+#[ORM\Table(name: 'users')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineUserRepository::class)]
+#[ORM\HasLifecycleCallbacks] // Class User
 class User extends BaseEntity
     implements AuthenticatableContract, IOpenIdUser, IOAuth2User, CanResetPassword
 {
@@ -78,380 +77,377 @@ class User extends BaseEntity
     ];
 
     /**
-     * @ORM\Column(name="identifier", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'identifier', type: 'string')]
     private $identifier;
 
     /**
-     * @ORM\Column(name="active", options={"default":0}, type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', options: ['default' => 0], type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\Column(name="public_profile_show_photo", options={"default":0}, type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'public_profile_show_photo', options: ['default' => 0], type: 'boolean')]
     private $public_profile_show_photo;
 
     /**
-     * @ORM\Column(name="public_profile_show_fullname", options={"default":0}, type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'public_profile_show_fullname', options: ['default' => 0], type: 'boolean')]
     private $public_profile_show_fullname;
 
     /**
-     * @ORM\Column(name="public_profile_show_email", options={"default":0}, type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'public_profile_show_email', options: ['default' => 0], type: 'boolean')]
     private $public_profile_show_email;
 
     /**
-     * @ORM\Column(name="public_profile_allow_chat_with_me", options={"default":0}, type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'public_profile_allow_chat_with_me', options: ['default' => 0], type: 'boolean')]
     private $public_profile_allow_chat_with_me;
 
     /**
-     * @ORM\Column(name="public_profile_show_social_media_info", options={"default":0}, type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'public_profile_show_social_media_info', options: ['default' => 0], type: 'boolean')]
     private $public_profile_show_social_media_info;
 
     /**
-     * @ORM\Column(name="public_profile_show_bio", options={"default":0}, type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'public_profile_show_bio', options: ['default' => 0], type: 'boolean')]
     private $public_profile_show_bio;
 
     /**
-     * @ORM\Column(name="public_profile_show_telephone_number", options={"default":0}, type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'public_profile_show_telephone_number', options: ['default' => 0], type: 'boolean')]
     private $public_profile_show_telephone_number;
 
     /**
-     * @ORM\Column(name="last_login_date", type="datetime")
      * @var \DateTime
      */
+    #[ORM\Column(name: 'last_login_date', type: 'datetime')]
     private $last_login_date;
 
     /**
-     * @ORM\Column(name="login_failed_attempt", options={"unsigned":true, "default":0}, type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'login_failed_attempt', options: ['unsigned' => true, 'default' => 0], type: 'integer')]
     private $login_failed_attempt;
 
     /**
-     * @ORM\Column(name="remember_token", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'remember_token', nullable: true, type: 'string')]
     private $remember_token;
 
     /**
-     * @ORM\Column(name="first_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'first_name', type: 'string')]
     private $first_name;
 
     /**
-     * @ORM\Column(name="last_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'last_name', type: 'string')]
     private $last_name;
 
     /**
-     * @ORM\Column(name="email", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'email', type: 'string')]
     private $email;
 
     /**
-     * @ORM\Column(name="address1", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'address1', type: 'string')]
     private $address1;
 
     /**
-     * @ORM\Column(name="address2", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'address2', nullable: true, type: 'string')]
     private $address2;
 
     /**
-     * @ORM\Column(name="state", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'state', type: 'string')]
     private $state;
 
     /**
-     * @ORM\Column(name="city", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'city', type: 'string')]
     private $city;
 
     /**
-     * @ORM\Column(name="post_code", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'post_code', type: 'string')]
     private $post_code;
 
     /**
-     * @ORM\Column(name="country_iso_code", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'country_iso_code', type: 'string')]
     private $country_iso_code;
 
     /**
-     * @ORM\Column(name="second_email", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'second_email', nullable: true, type: 'string')]
     private $second_email;
 
     /**
-     * @ORM\Column(name="third_email", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'third_email', nullable: true, type: 'string')]
     private $third_email;
 
     /**
-     * @ORM\Column(name="gender" , nullable=true,type="string")
      * @var string
      */
+    #[ORM\Column(name: 'gender', nullable: true, type: 'string')]
     private $gender;
 
     /**
-     * @ORM\Column(name="gender_specify" , nullable=true,type="string")
      * @var string
      */
+    #[ORM\Column(name: 'gender_specify', nullable: true, type: 'string')]
     private $gender_specify;
 
     /**
-     * @ORM\Column(name="statement_of_interest",  nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'statement_of_interest', nullable: true, type: 'string')]
     private $statement_of_interest;
 
     /**
-     * @ORM\Column(name="bio", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'bio', nullable: true, type: 'string')]
     private $bio;
 
     /**
-     * @ORM\Column(name="irc", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'irc', nullable: true, type: 'string')]
     private $irc;
 
     /**
-     * @ORM\Column(name="linked_in_profile", nullable=true,type="string")
      * @var string
      */
+    #[ORM\Column(name: 'linked_in_profile', nullable: true, type: 'string')]
     private $linked_in_profile;
 
     /**
-     * @ORM\Column(name="twitter_name", nullable=true,type="string")
      * @var string
      */
+    #[ORM\Column(name: 'twitter_name', nullable: true, type: 'string')]
     private $twitter_name;
 
     /**
-     * @ORM\Column(name="github_user", nullable=true,type="string")
      * @var string
      */
+    #[ORM\Column(name: 'github_user', nullable: true, type: 'string')]
     private $github_user;
 
     /**
-     * @ORM\Column(name="wechat_user", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'wechat_user', nullable: true, type: 'string')]
     private $wechat_user;
 
     /**
-     * @ORM\Column(name="password", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'password', type: 'string')]
     private $password;
 
     /**
-     * @ORM\Column(name="password_salt", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'password_salt', type: 'string')]
     private $password_salt;
 
     /**
-     * @ORM\Column(name="password_enc", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'password_enc', type: 'string')]
     private $password_enc;
 
     /**
-     * @ORM\Column(name="email_verified", type="boolean")
      * @var boolean
      */
+    #[ORM\Column(name: 'email_verified', type: 'boolean')]
     private $email_verified;
 
     /**
-     * @ORM\Column(name="email_verified_token_hash", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'email_verified_token_hash', nullable: true, type: 'string')]
     private $email_verified_token_hash;
 
     /**
-     * @ORM\Column(name="email_verified_date",  nullable=true, type="datetime")
      * @var \Datetime
      */
+    #[ORM\Column(name: 'email_verified_date', nullable: true, type: 'datetime')]
     private $email_verified_date;
     /**
-     * @ORM\Column(name="language", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'language', nullable: true, type: 'string')]
     private $language;
 
     /**
-     * @ORM\Column(name="birthday",  nullable=true, type="datetime")
      * @var \Datetime
      */
+    #[ORM\Column(name: 'birthday', nullable: true, type: 'datetime')]
     private $birthday;
 
     /**
-     * @ORM\Column(name="spam_type", nullable=false, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'spam_type', nullable: false, type: 'string')]
     private $spam_type;
 
     /**
-     * @ORM\Column(name="company", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'company', nullable: true, type: 'string')]
     private $company;
 
     /**
-     * @ORM\Column(name="job_title", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'job_title', nullable: true, type: 'string')]
     private $job_title;
 
     /**
-     * @ORM\Column(name="phone_number", nullable=true, type="string")
      * @var string
      */
+    #[ORM\Column(name: 'phone_number', nullable: true, type: 'string')]
     private $phone_number;
 
     /**
-     * @ORM\Column(name="pic", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'pic', type: 'string')]
     private $pic;
 
     /**
-     * @ORM\Column(name="external_id", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'external_id', type: 'string')]
     private $external_id;
 
     /**
-     * @ORM\Column(name="external_provider", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'external_provider', type: 'string')]
     private $external_provider;
 
     /**
-     * @ORM\Column(name="external_pic", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'external_pic', type: 'string')]
     private $external_pic;
 
     // relations
-
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\OAuth2OTP", cascade={"persist"})
-     * @ORM\JoinColumn(name="created_by_otp_id", referencedColumnName="id", nullable=true)
      * @var OAuth2OTP
      */
+    #[ORM\JoinColumn(name: 'created_by_otp_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\OAuth2OTP::class, cascade: ['persist'])]
     private $created_by_otp;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\libs\Auth\Models\UserRegistrationRequest", mappedBy="owner", cascade={"persist","remove"}, orphanRemoval=true)
      * @var UserRegistrationRequest
      */
+    #[ORM\OneToOne(targetEntity: \App\libs\Auth\Models\UserRegistrationRequest::class, mappedBy: 'owner', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private $registration_request;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"})
-     * @ORM\JoinColumn(name="created_by_id", referencedColumnName="id", nullable=true)
      * @var User
      */
+    #[ORM\JoinColumn(name: 'created_by_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, cascade: ['persist'])]
     private $created_by;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\AccessToken::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $access_tokens;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\RefreshToken", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\RefreshToken::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $refresh_tokens;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\Client", mappedBy="user", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\Client::class, mappedBy: 'user', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $clients;
 
     /**
-     * @ORM\ManyToMany(targetEntity="Models\OAuth2\Client", mappedBy="admin_users", fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\ManyToMany(targetEntity: \Models\OAuth2\Client::class, mappedBy: 'admin_users', fetch: 'EXTRA_LAZY')]
     private $managed_clients;
 
     /**
-     * @ORM\OneToMany(targetEntity="Auth\UserPasswordResetRequest", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Auth\UserPasswordResetRequest::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $reset_password_requests;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OpenId\OpenIdTrustedSite", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OpenId\OpenIdTrustedSite::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $trusted_sites;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\UserConsent", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\UserConsent::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $consents;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\UserAction", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\UserAction::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $actions;
 
     /**
-     * @ORM\OneToMany(targetEntity="Auth\Affiliation", mappedBy="owner", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Auth\Affiliation::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $affiliations;
 
     /**
      * Many Users have Many Groups.
-     * @ORM\ManyToMany(targetEntity="Auth\Group", inversedBy="users", cascade={"persist"}, fetch="EXTRA_LAZY")
-     * @ORM\JoinTable(name="user_groups",
-     *      joinColumns={@ORM\JoinColumn(name="user_id", referencedColumnName="id")},
-     *      inverseJoinColumns={@ORM\JoinColumn(name="group_id", referencedColumnName="id")})
      */
+    #[ORM\JoinTable(name: 'user_groups')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'group_id', referencedColumnName: 'id')]
+    #[ORM\ManyToMany(targetEntity: \Auth\Group::class, inversedBy: 'users', cascade: ['persist'], fetch: 'EXTRA_LAZY')]
     private $groups;
 
-    /**
-     * @ORM\ManyToMany(targetEntity="Models\OAuth2\ApiScopeGroup", mappedBy="users", fetch="EXTRA_LAZY")
-     */
+    #[ORM\ManyToMany(targetEntity: \Models\OAuth2\ApiScopeGroup::class, mappedBy: 'users', fetch: 'EXTRA_LAZY')]
     private $scope_groups;
 
     public const SaltLen = 50;
@@ -1935,25 +1931,21 @@ SQL;
         $this->identifier = strtolower(trim($identifier));
     }
 
-    /**
-     * @PostPersist
-     */
+    #[PostPersist]
     public function postPersist($args)
     {
         Event::dispatch(new UserCreated($this->getId()));
     }
 
-    /**
-     * @PreRemove
-     */
+    #[PreRemove]
     public function preRemove($args)
     {
     }
 
     /**
-     * @PreUpdate
      * @param PreUpdateEventArgs $args
      */
+    #[PreUpdate]
     public function preUpdate(PreUpdateEventArgs $args)
     {
         if($this->spam_type != self::SpamTypeNone ){
@@ -2262,9 +2254,7 @@ SQL;
         return !is_null($this->created_by_otp);
     }
 
-    /**
-     * @ORM\PostUpdate:
-     */
+    #[ORM\PostUpdate] // :
     public function updated($args)
     {
 
@@ -2277,9 +2267,7 @@ SQL;
         if(empty($value)) $value = "EMPTY";
         return $value;
     }
-    /**
-     * @ORM\PreUpdate:
-     */
+    #[ORM\PreUpdate] // :
     public function updating(PreUpdateEventArgs $args)
     {
         $fields_2_check = [
