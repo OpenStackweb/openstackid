@@ -20,31 +20,30 @@ use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
 use LaravelDoctrine\ORM\Facades\Registry;
 /***
- * @ORM\MappedSuperclass
- * @ORM\HasLifecycleCallbacks
  * Class BaseEntity
  * @package App\Models\Utils
  */
+#[ORM\MappedSuperclass]
+#[ORM\HasLifecycleCallbacks]
 class BaseEntity implements IEntity
 {
     const DefaultTimeZone = 'UTC';
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(name="id", type="integer", unique=true, nullable=false)
-     */
+
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(name: 'id', type: 'integer', unique: true, nullable: false)]
     protected $id;
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="created_at", type="datetime")
      */
+    #[ORM\Column(name: 'created_at', type: 'datetime')]
     protected $created_at;
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="updated_at", type="datetime")
      */
+    #[ORM\Column(name: 'updated_at', type: 'datetime')]
     protected $updated_at;
 
     /**
@@ -166,9 +165,7 @@ class BaseEntity implements IEntity
         return $this->{$name};
     }
 
-    /**
-     * @ORM\PreUpdate:
-     */
+    #[ORM\PreUpdate] // :
     public function updating(PreUpdateEventArgs $args)
     {
         $now = new \DateTime('now', new \DateTimeZone(self::DefaultTimeZone));

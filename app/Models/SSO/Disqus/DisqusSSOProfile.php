@@ -15,29 +15,28 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineDisqusSSOProfileRepository")
- * @ORM\Table(name="sso_disqus_profile")
- * Class DisqusSSOProfile
  * @package  App\Models\SSO
  */
+#[ORM\Table(name: 'sso_disqus_profile')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineDisqusSSOProfileRepository::class)]
 class DisqusSSOProfile extends BaseEntity
 {
     /**
-     * @ORM\Column(name="forum_slug", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'forum_slug', type: 'string')]
     private $forum_slug;
 
     /**
-     * @ORM\Column(name="public_key", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'public_key', type: 'string')]
     private $public_key;
 
     /**
-     * @ORM\Column(name="secret_key", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'secret_key', type: 'string')]
     private $secret_key;
 
     /**

@@ -17,38 +17,37 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineUserPasswordResetRequestRepository")
- * @ORM\Table(name="user_password_reset_request")
- * @ORM\HasLifecycleCallbacks
- * Class UserPasswordResetRequest
  * @package Auth
  */
+#[ORM\Table(name: 'user_password_reset_request')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineUserPasswordResetRequestRepository::class)]
+#[ORM\HasLifecycleCallbacks] // Class UserPasswordResetRequest
 class UserPasswordResetRequest extends BaseEntity
 {
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="reset_password_requests")
-     * @ORM\JoinColumn(name="owner_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\JoinColumn(name: 'owner_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, inversedBy: 'reset_password_requests')]
     private $owner;
 
     /**
-     * @ORM\Column(name="lifetime", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'lifetime', type: 'integer')]
     private $lifetime;
 
     /**
-     * @ORM\Column(name="hash", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'hash', type: 'string')]
     private $hash;
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="redeem_at", nullable=true, type="datetime")
      */
+    #[ORM\Column(name: 'redeem_at', nullable: true, type: 'datetime')]
     private $redeem_at;
 
     /**
@@ -170,9 +169,7 @@ class UserPasswordResetRequest extends BaseEntity
         return $void_date > $now;
     }
 
-    /**
-     * @ORM\PostPersist
-     */
+    #[ORM\PostPersist]
     public function inserted($args){
         Event::dispatch(new UserPasswordResetRequestCreated($this->getId()));
     }

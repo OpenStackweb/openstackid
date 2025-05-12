@@ -15,29 +15,28 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineRocketChatSSOProfileRepository")
- * @ORM\Table(name="sso_rocket_chat_profile")
- * Class RocketChatSSOProfile
  * @package  App\Models\SSO
  */
+#[ORM\Table(name: 'sso_rocket_chat_profile')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineRocketChatSSOProfileRepository::class)]
 class RocketChatSSOProfile extends BaseEntity
 {
     /**
-     * @ORM\Column(name="forum_slug", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'forum_slug', type: 'string')]
     private $forum_slug;
 
     /**
-     * @ORM\Column(name="base_url", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'base_url', type: 'string')]
     private $base_url;
 
     /**
-     * @ORM\Column(name="service_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'service_name', type: 'string')]
     private $service_name;
 
     /**

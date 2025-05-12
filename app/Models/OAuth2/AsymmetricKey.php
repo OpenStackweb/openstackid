@@ -21,69 +21,68 @@ use jwa\cryptographic_algorithms\DigitalSignatures_MACs_Registry;
 use DateTime;
 use Exception;
 /**
- * @ORM\Entity
- * @ORM\InheritanceType("SINGLE_TABLE")
- * @ORM\Table(name="oauth2_asymmetric_keys")
- * @ORM\DiscriminatorColumn(name="class_name", type="string")
- * @ORM\DiscriminatorMap({"ClientPublicKey" = "ClientPublicKey", "ServerPrivateKey" = "ServerPrivateKey"})
- * Class AsymmetricKey
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_asymmetric_keys')]
+#[ORM\Entity]
+#[ORM\InheritanceType('SINGLE_TABLE')]
+#[ORM\DiscriminatorColumn(name: 'class_name', type: 'string')]
+#[ORM\DiscriminatorMap(['ClientPublicKey' => 'ClientPublicKey', 'ServerPrivateKey' => 'ServerPrivateKey'])] // Class AsymmetricKey
 abstract class AsymmetricKey extends BaseEntity implements IAsymmetricKey
 {
 
     /**
-     * @ORM\Column(name="kid", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'kid', type: 'string')]
     protected $kid;
 
     /**
-     * @ORM\Column(name="pem_content", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'pem_content', type: 'string')]
     protected $pem_content;
 
     /**
-     * @ORM\Column(name="active", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', type: 'boolean')]
     protected $active;
 
     /**
-     * @ORM\Column(name="`usage`", type="string")
      * @var string
      */
+    #[ORM\Column(name: '`usage`', type: 'string')]
     protected $usage;
 
     /**
-     * @ORM\Column(name="`type`", type="string")
      * @var string
      */
+    #[ORM\Column(name: '`type`', type: 'string')]
     protected $type;
 
     /**
-     * @ORM\Column(name="`alg`", type="string")
      * @var string
      */
+    #[ORM\Column(name: '`alg`', type: 'string')]
     protected $alg;
 
     /**
-     * @ORM\Column(name="last_use", type="datetime")
      * @var DateTime
      */
+    #[ORM\Column(name: 'last_use', type: 'datetime')]
     protected $last_use;
 
     /**
-     * @ORM\Column(name="valid_from", type="datetime")
      * @var DateTime
      */
+    #[ORM\Column(name: 'valid_from', type: 'datetime')]
     protected $valid_from;
 
     /**
-     * @ORM\Column(name="valid_to", type="datetime")
      * @var DateTime
      */
+    #[ORM\Column(name: 'valid_to', type: 'datetime')]
     protected $valid_to;
 
     /**

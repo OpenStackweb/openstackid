@@ -15,55 +15,54 @@ use Doctrine\ORM\Mapping AS ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use App\Models\Utils\BaseEntity;
 /**
- * @ORM\Entity
- * @ORM\Table(name="affiliations")
- * Class Affiliation
  * @package Auth
  */
+#[ORM\Table(name: 'affiliations')]
+#[ORM\Entity]
 class Affiliation extends BaseEntity
 {
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", cascade={"persist"}, inversedBy="affiliations")
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, cascade: ['persist'], inversedBy: 'affiliations')]
     private $owner;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\Organization")
-     * @ORM\JoinColumn(name="organization_id", referencedColumnName="id")
      * @var Organization
      */
+    #[ORM\JoinColumn(name: 'organization_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\Organization::class)]
     private $organization;
 
     /**
-     * @ORM\Column(name="job_title", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'job_title', type: 'string')]
     private $job_title;
 
     /**
-     * @ORM\Column(name="role", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'role', type: 'string')]
     private $role;
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="start_date", type="datetime")
      */
+    #[ORM\Column(name: 'start_date', type: 'datetime')]
     protected $start_date;
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="end_date", type="datetime")
      */
+    #[ORM\Column(name: 'end_date', type: 'datetime')]
     protected $end_date;
 
     /**
-     * @ORM\Column(name="is_current", type="boolean")
      * @var boolean
      */
+    #[ORM\Column(name: 'is_current', type: 'boolean')]
     private $is_current;
 
     /**
