@@ -16,12 +16,8 @@
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Models\OAuth2\Client;
 use Models\OAuth2\ResourceServer;
-use Models\OpenId\OpenIdTrustedSite;
-use Models\UserAction;
 use Tests\BrowserKitTestCase;
-use models\oauth2\UserConsent;
 use Auth\User;
-use Utils\Services\IAuthService;
 
 /**
  * Class ClientMappingTest
@@ -39,6 +35,8 @@ class ClientMappingTest extends BrowserKitTestCase
 
         $user_repo = EntityManager::getRepository(User::class);
         $user = $user_repo->findAll()[0];
+        $admin_user1 = $user_repo->findAll()[1];
+        $admin_user2 = $user_repo->findAll()[2];
 
         $rs = new ResourceServer();
         $rs->setFriendlyName('OpenStackId server 2');
@@ -48,8 +46,16 @@ class ClientMappingTest extends BrowserKitTestCase
         EntityManager::persist($rs);
 
         $client->setAppDescription($app_description);
+
+        //Many-to-one mapping test
         $client->setEditedBy($user);
+
+        //One-to-one mapping test
         $client->setResourceServer($rs);
+
+        //Many-to-many mapping test
+        $client->addAdminUser($admin_user1);
+        $client->addAdminUser($admin_user2);
 
         EntityManager::persist($client);
         EntityManager::flush();
@@ -58,6 +64,8 @@ class ClientMappingTest extends BrowserKitTestCase
         $found_client = $client_repo->find($client->getId());
 
         $this->assertEquals($app_description, $found_client->getApplicationDescription());
+        $this->assertEquals($user->getEmail(), $found_client->getEditedByNice());
+        $this->assertCount(2, $client->getAdminUsers()->toArray());
         $this->assertEquals($host, $found_client->getResourceServer()->getHost());
     }
 }
