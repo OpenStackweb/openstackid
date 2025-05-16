@@ -16,11 +16,7 @@
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
-use OAuth2\OAuth2Protocol;
 use Tests\BrowserKitTestCase;
-use models\oauth2\UserConsent;
-use Auth\User;
-use Utils\Services\IdentifierGenerator;
 
 /**
  * Class OAuth2OTPMappingTest
@@ -37,11 +33,15 @@ class OAuth2OTPMappingTest extends BrowserKitTestCase
         $otp->setConnection($connection);
         $otp->setSend('1');
         $otp->setValue('test value');
-        $otp->setNonce('test nonce');;
+        $otp->setNonce('test nonce');
         $otp->setRedirectUrl('https://www.openstack.org/');
         $otp->setScope('openid email');
         $otp->setEmail($email);
         $otp->setPhoneNumber('1234567890');
+
+        //Many-to-one client mapping test
+        $client = EntityManager::getRepository(Client::class)->findAll()[0];
+        $otp->setClient($client);
 
         EntityManager::persist($otp);
         EntityManager::flush();
@@ -53,5 +53,6 @@ class OAuth2OTPMappingTest extends BrowserKitTestCase
         $this->assertInstanceOf(OAuth2OTP::class, $found_otp);
         $this->assertEquals($connection, $found_otp->getConnection());
         $this->assertEquals($email, $found_otp->getEmail());
+        $this->assertEquals($client->getApplicationName(), $found_otp->getClient()->getApplicationName());
     }
 }

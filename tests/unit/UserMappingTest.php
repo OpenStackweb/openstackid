@@ -13,6 +13,7 @@
  * limitations under the License.
  **/
 
+use Auth\Group;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Models\OAuth2\Client;
 use Models\OpenId\OpenIdTrustedSite;
@@ -37,6 +38,13 @@ class UserMappingTest extends BrowserKitTestCase
         $user->setEmail($email);
         $user->setPassword('P@sswordS3cret');
 
+        //Many-to-many groups mapping test
+        $group_repo = EntityManager::getRepository(Group::class);
+        $group = $group_repo->findAll()[0];
+
+        $user->addToGroup($group);
+
+        //One-to-many actions mapping test
         $user_action = new UserAction();
         $user_action->setFromIp("127.0.0.1");
         $user_action->setUserAction("test action");;
@@ -44,6 +52,7 @@ class UserMappingTest extends BrowserKitTestCase
 
         $user->addUserAction($user_action);
 
+        //One-to-many trusted sites mapping test
         $site = new OpenIdTrustedSite();
         $site->setRealm($realm);
         $site->setPolicy(IAuthService::AuthorizationResponse_AllowForever);
@@ -62,6 +71,21 @@ class UserMappingTest extends BrowserKitTestCase
         $this->assertInstanceOf(User::class, $found_user);
         $this->assertEquals($email, $found_user->getEmail());
         $this->assertCount(1, $user->getActions()->toArray());
-        $this->assertEquals($realm, $found_trusted_site->getRealm());;
+        $this->assertTrue($user->belongToGroup($group->getSlug()));
+        $this->assertEquals($realm, $found_trusted_site->getRealm());
+
+        //Children removal tests
+        $user = $repo->find($found_user->getId());
+        $group = $group_repo->find($group->getId());
+        $user->removeFromGroup($group);
+        $user->clearTrustedSites();
+
+        EntityManager::persist($user);
+        EntityManager::flush();
+        EntityManager::clear();
+
+        $user = $repo->find($user->getId());
+        $this->assertEmpty($user->getTrustedSites()->toArray());
+        $this->assertFalse($user->belongToGroup($group->getSlug()));
     }
 }

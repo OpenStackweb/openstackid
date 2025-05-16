@@ -38,7 +38,10 @@ class ResourceServerMappingTest extends BrowserKitTestCase
         $rs->setIps('127.0.0.1');
         $rs->setActive(true);
 
+        //One-to-one client mapping test
         $rs->setClient($client);
+
+        //One-to-many api mapping test
         $rs->addApi($api);
 
         EntityManager::persist($rs);
@@ -50,6 +53,21 @@ class ResourceServerMappingTest extends BrowserKitTestCase
 
         $this->assertCount(1, $found_rs->getApis()->toArray());
         $this->assertEquals($host, $found_rs->getHost());
-        $this->assertEquals($client->getApplicationName(), $found_rs->getClient()->getApplicationName());;
+        $this->assertEquals($client->getApplicationName(), $found_rs->getClient()->getApplicationName());
+
+        //Children removal tests
+        $rs = $rs_repo->find($rs->getId());
+        $apis = $rs->getApis();
+
+        foreach ($apis as $api) {
+            $rs->removeApi($api);
+        }
+
+        EntityManager::persist($rs);
+        EntityManager::flush();
+        EntityManager::clear();
+
+        $found_rs = $rs_repo->find($rs->getId());
+        $this->assertEmpty($found_rs->getApis()->toArray());
     }
 }

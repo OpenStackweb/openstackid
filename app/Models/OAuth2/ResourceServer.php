@@ -49,7 +49,7 @@ class ResourceServer extends BaseEntity
     /**
      * @var Api[]
      */
-    #[ORM\OneToMany(targetEntity: \Api::class, mappedBy: 'resource_server', cascade: ['persist'], fetch: 'EXTRA_LAZY')]
+    #[ORM\OneToMany(targetEntity: \Api::class, mappedBy: 'resource_server', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $apis;
 
     /**

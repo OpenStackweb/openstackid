@@ -40,6 +40,7 @@ class ApiScopeGroupMappingTest extends BrowserKitTestCase
         $scope->setActive(true);
         EntityManager::persist($scope);
 
+        //Many-to-Many relation with ApiScope
         $group->addScope($scope);
 
         EntityManager::persist($group);
