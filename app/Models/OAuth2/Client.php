@@ -36,365 +36,362 @@ use Doctrine\Common\Collections\ArrayCollection;
 use URL\Normalizer;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOAuth2ClientRepository")
- * @ORM\Table(name="oauth2_client")
- * @ORM\Cache("NONSTRICT_READ_WRITE")
- * Class Client
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_client')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineOAuth2ClientRepository::class)]
+#[ORM\Cache('NONSTRICT_READ_WRITE')] // Class Client
 class Client extends BaseEntity implements IClient
 {
     /**
-     * @ORM\Column(name="app_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'app_name', type: 'string')]
     private $app_name;
 
     /**
-     * @ORM\Column(name="app_description", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'app_description', type: 'string')]
     private $app_description;
 
     /**
-     * @ORM\Column(name="app_logo", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'app_logo', type: 'string')]
     private $app_logo;
 
     /**
-     * @ORM\Column(name="client_id", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'client_id', type: 'string')]
     private $client_id;
 
     /**
-     * @ORM\Column(name="client_secret", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'client_secret', type: 'string')]
     private $client_secret;
 
     /**
-     * @ORM\Column(name="client_type", type="string")
      * @var string
      * enum('PUBLIC', 'CONFIDENTIAL') default 'CONFIDENTIAL'
      */
+    #[ORM\Column(name: 'client_type', type: 'string')]
     private $client_type;
 
     /**
-     * @ORM\Column(name="active", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\Column(name="pkce_enabled", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'pkce_enabled', type: 'boolean')]
     private $pkce_enabled;
 
     /**
-     * @ORM\Column(name="otp_enabled", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'otp_enabled', type: 'boolean')]
     private $otp_enabled;
 
     /**
-     * @ORM\Column(name="otp_length", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'otp_length', type: 'integer')]
     private $otp_length;
 
     /**
-     * @ORM\Column(name="otp_lifetime", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'otp_lifetime', type: 'integer')]
     private $otp_lifetime;
 
     /**
-     * @ORM\Column(name="locked", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'locked', type: 'boolean')]
     private $locked;
 
     /**
-     * @ORM\Column(name="max_auth_codes_issuance_qty", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'max_auth_codes_issuance_qty', type: 'integer')]
     private $max_auth_codes_issuance_qty;
 
     /**
-     * @ORM\Column(name="max_access_token_issuance_qty", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'max_access_token_issuance_qty', type: 'integer')]
     private $max_access_token_issuance_qty;
 
     /**
-     * @ORM\Column(name="max_access_token_issuance_basis", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'max_access_token_issuance_basis', type: 'integer')]
     private $max_access_token_issuance_basis;
 
     /**
-     * @ORM\Column(name="max_auth_codes_issuance_basis", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'max_auth_codes_issuance_basis', type: 'integer')]
     private $max_auth_codes_issuance_basis;
 
     /**
-     * @ORM\Column(name="max_refresh_token_issuance_qty", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'max_refresh_token_issuance_qty', type: 'integer')]
     private $max_refresh_token_issuance_qty;
 
     /**
-     * @ORM\Column(name="max_refresh_token_issuance_basis", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'max_refresh_token_issuance_basis', type: 'integer')]
     private $max_refresh_token_issuance_basis;
 
     /**
-     * @ORM\Column(name="use_refresh_token", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'use_refresh_token', type: 'boolean')]
     private $use_refresh_token;
 
     /**
-     * @ORM\Column(name="rotate_refresh_token", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'rotate_refresh_token', type: 'boolean')]
     private $rotate_refresh_token;
 
     /**
-     * @ORM\Column(name="website", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'website', type: 'string')]
     private $website;
 
     /**
-     * @ORM\Column(name="application_type", type="string")
      * @var string
      * enum('WEB_APPLICATION', 'JS_CLIENT', 'SERVICE', 'NATIVE') default 'WEB_APPLICATION'
      */
+    #[ORM\Column(name: 'application_type', type: 'string')]
     private $application_type;
 
     /**
-     * @ORM\Column(name="client_secret_expires_at", type="datetime")
      * @var DateTime
      */
+    #[ORM\Column(name: 'client_secret_expires_at', type: 'datetime')]
     private $client_secret_expires_at;
 
     /**
-     * @ORM\Column(name="contacts", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'contacts', type: 'string')]
     private $contacts;
 
     /**
-     * @ORM\Column(name="logo_uri", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'logo_uri', type: 'string')]
     private $logo_uri;
 
     /**
-     * @ORM\Column(name="tos_uri", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'tos_uri', type: 'string')]
     private $tos_uri;
 
     /**
-     * @ORM\Column(name="post_logout_redirect_uris", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'post_logout_redirect_uris', type: 'string')]
     private $post_logout_redirect_uris;
 
     /**
-     * @ORM\Column(name="logout_uri", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'logout_uri', type: 'string')]
     private $logout_uri;
 
     /**
-     * @ORM\Column(name="logout_session_required", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'logout_session_required', type: 'boolean')]
     private $logout_session_required;
 
     /**
-     * @ORM\Column(name="logout_use_iframe", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'logout_use_iframe', type: 'boolean')]
     private $logout_use_iframe;
 
     /**
-     * @ORM\Column(name="policy_uri", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'policy_uri', type: 'string')]
     private $policy_uri;
 
     /**
-     * @ORM\Column(name="jwks_uri", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'jwks_uri', type: 'string')]
     private $jwks_uri;
 
     /**
-     * @ORM\Column(name="default_max_age", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'default_max_age', type: 'integer')]
     private $default_max_age;
 
     /**
-     * @ORM\Column(name="require_auth_time", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'require_auth_time', type: 'boolean')]
     private $require_auth_time;
 
     /**
-     * @ORM\Column(name="token_endpoint_auth_method", type="string")
      * @var string
      * enum('client_secret_basic', 'client_secret_post', 'client_secret_jwt', 'private_key_jwt', 'none') default 'none'
      */
+    #[ORM\Column(name: 'token_endpoint_auth_method', type: 'string')]
     private $token_endpoint_auth_method;
 
     /**
-     * @ORM\Column(name="token_endpoint_auth_signing_alg", type="string")
      * @var string
      * enum('HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'PS256', 'PS384', 'PS512', 'none') default 'none'
      */
+    #[ORM\Column(name: 'token_endpoint_auth_signing_alg', type: 'string')]
     private $token_endpoint_auth_signing_alg;
 
     /**
-     * @ORM\Column(name="subject_type", type="string")
      * @var string
      * enum('public', 'pairwise') default 'public'
      */
+    #[ORM\Column(name: 'subject_type', type: 'string')]
     private $subject_type;
 
     /**
-     * @ORM\Column(name="userinfo_signed_response_alg", type="string")
      * @var string
      * enum('HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'PS256', 'PS384', 'PS512', 'none') default 'none'
      */
+    #[ORM\Column(name: 'userinfo_signed_response_alg', type: 'string')]
     private $userinfo_signed_response_alg;
 
     /**
-     * @ORM\Column(name="userinfo_encrypted_response_alg", type="string")
      * @var string
      * enum('RSA1_5', 'RSA-OAEP', 'RSA-OAEP-256', 'dir', 'none') default 'none'
      */
+    #[ORM\Column(name: 'userinfo_encrypted_response_alg', type: 'string')]
     private $userinfo_encrypted_response_alg;
 
     /**
-     * @ORM\Column(name="userinfo_encrypted_response_enc", type="string")
      * @var string
      * enum('A128CBC-HS256', 'A192CBC-HS384', 'A256CBC-HS512', 'none') default 'none'
      */
+    #[ORM\Column(name: 'userinfo_encrypted_response_enc', type: 'string')]
     private $userinfo_encrypted_response_enc;
 
     /**
-     * @ORM\Column(name="id_token_signed_response_alg", type="string")
      * @var string
      * enum('HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'PS256', 'PS384', 'PS512', 'none') default 'none'
      */
+    #[ORM\Column(name: 'id_token_signed_response_alg', type: 'string')]
     private $id_token_signed_response_alg;
 
     /**
-     * @ORM\Column(name="id_token_encrypted_response_alg", type="string")
      * @var string
      * enum('RSA1_5', 'RSA-OAEP', 'RSA-OAEP-256', 'dir', 'none') default 'none'
      */
+    #[ORM\Column(name: 'id_token_encrypted_response_alg', type: 'string')]
     private $id_token_encrypted_response_alg;
 
     /**
-     * @ORM\Column(name="id_token_encrypted_response_enc", type="string")
      * @var string
      * enum('A128CBC-HS256', 'A192CBC-HS384', 'A256CBC-HS512', 'none') default 'none'
      */
+    #[ORM\Column(name: 'id_token_encrypted_response_enc', type: 'string')]
     private $id_token_encrypted_response_enc;
 
     /**
-     * @ORM\Column(name="redirect_uris", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'redirect_uris', type: 'string')]
     private $redirect_uris;
 
     /**
-     * @ORM\Column(name="allowed_origins", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'allowed_origins', type: 'string')]
     private $allowed_origins;
 
     /**
-     * @ORM\Column(name="max_allowed_user_sessions", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'max_allowed_user_sessions', type: 'integer')]
     private $max_allowed_user_sessions;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="clients")
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, inversedBy: 'clients')]
     private $user;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User")
-     * @ORM\JoinColumn(name="edited_by_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\JoinColumn(name: 'edited_by_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class)]
     private $edited_by;
 
     /**
-     * @ORM\OneToOne(targetEntity="Models\OAuth2\ResourceServer", inversedBy="client", cascade={"persist", "remove"})
-     * @ORM\JoinColumn(name="resource_server_id", referencedColumnName="id")
      * @var ResourceServer
      */
+    #[ORM\JoinColumn(name: 'resource_server_id', referencedColumnName: 'id')]
+    #[ORM\OneToOne(targetEntity: \Models\OAuth2\ResourceServer::class, inversedBy: 'client', cascade: ['persist', 'remove'])]
     private $resource_server;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\ClientPublicKey", mappedBy="owner", cascade={"persist"}, orphanRemoval=true)
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\ClientPublicKey::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: true)]
     private $public_keys;
 
     /**
-    /**
-     * @ORM\ManyToMany(targetEntity="Auth\User", cascade={"persist"}, inversedBy="managed_clients")
-     * @ORM\JoinTable(name="oauth2_client_admin_users",
-     *      joinColumns={@ORM\JoinColumn(name="oauth2_client_id", referencedColumnName="id")},
-     *      inverseJoinColumns={@ORM\JoinColumn(name="user_id", referencedColumnName="id")}
-     *     )
-     * @var ArrayCollection
-     */
+        /**
+    * @var ArrayCollection
+    */
+    #[ORM\JoinTable(name: 'oauth2_client_admin_users')]
+    #[ORM\JoinColumn(name: 'oauth2_client_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\ManyToMany(targetEntity: \Auth\User::class, cascade: ['persist'], inversedBy: 'managed_clients')]
     private $admin_users;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\RefreshToken", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\RefreshToken::class, mappedBy: 'client', cascade: ['persist', 'remove'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $refresh_tokens;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\AccessToken::class, mappedBy: 'client', cascade: ['persist', 'remove'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $access_tokens;
 
     /**
-     * @ORM\ManyToMany(targetEntity="Models\OAuth2\ApiScope", cascade={"persist"})
-     * @ORM\JoinTable(name="oauth2_client_api_scope",
-     *      joinColumns={@ORM\JoinColumn(name="client_id", referencedColumnName="id")},
-     *      inverseJoinColumns={@ORM\JoinColumn(name="scope_id", referencedColumnName="id")}
-     *     )
      * @var ArrayCollection
      */
+    #[ORM\JoinTable(name: 'oauth2_client_api_scope')]
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'scope_id', referencedColumnName: 'id')]
+    #[ORM\ManyToMany(targetEntity: \Models\OAuth2\ApiScope::class, cascade: ['persist'])]
     private $scopes;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\OAuth2OTP", mappedBy="client", cascade={"persist", "remove"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\OAuth2OTP::class, mappedBy: 'client', cascade: ['persist', 'remove'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $otp_grants;
 
     /**

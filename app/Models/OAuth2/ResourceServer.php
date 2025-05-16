@@ -15,48 +15,47 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineResourceServerRepository")
- * @ORM\Table(name="oauth2_resource_server")
- * Class ResourceServer
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_resource_server')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineResourceServerRepository::class)]
 class ResourceServer extends BaseEntity
 {
 
     /**
-     * @ORM\Column(name="friendly_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'friendly_name', type: 'string')]
     private $friendly_name;
 
     /**
-     * @ORM\Column(name="host", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'host', type: 'string')]
     private $host;
 
     /**
-     * @ORM\Column(name="ips", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'ips', type: 'string')]
     private $ips;
 
     /**
-     * @ORM\Column(name="active", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\OneToMany(targetEntity="Api", mappedBy="resource_server", cascade={"persist"}, fetch="EXTRA_LAZY")
      * @var Api[]
      */
+    #[ORM\OneToMany(targetEntity: \Api::class, mappedBy: 'resource_server', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $apis;
 
     /**
-     * @ORM\OneToOne(targetEntity="Models\OAuth2\Client", mappedBy="resource_server", cascade={"persist", "remove"})
      * @var Client
      */
+    #[ORM\OneToOne(targetEntity: \Models\OAuth2\Client::class, mappedBy: 'resource_server', cascade: ['persist', 'remove'])]
     private $client;
 
     /**

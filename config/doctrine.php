@@ -24,7 +24,7 @@ return [
     'managers'                  => [
         'model' => [
             'dev'        => env('APP_DEBUG', false),
-            'meta'       => env('DOCTRINE_METADATA', 'annotations'),
+            'meta'       => env('DOCTRINE_METADATA', 'attributes'),
             'quote_strategy' => EscapingQuoteStrategy::class,
             'connection' => 'openstackid',
             'namespaces' => [

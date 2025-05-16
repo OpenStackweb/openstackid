@@ -15,85 +15,83 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineApiEndpointRepository")
- * @ORM\Table(name="oauth2_api_endpoint")
- * Class ApiEndpoint
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_api_endpoint')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineApiEndpointRepository::class)]
 class ApiEndpoint extends BaseEntity {
 
     /**
      * attributes
      */
     /**
-     * @ORM\Column(name="name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'name', type: 'string')]
     private $name;
 
     /**
-     * @ORM\Column(name="description", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'description', type: 'string')]
     private $description;
 
     /**
-     * @ORM\Column(name="active", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\Column(name="allow_cors", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'allow_cors', type: 'boolean')]
     private $allow_cors;
 
     /**
-     * @ORM\Column(name="allow_credentials", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'allow_credentials', type: 'boolean')]
     private $allow_credentials;
 
     /**
-     * @ORM\Column(name="route", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'route', type: 'string')]
     private $route;
 
     /**
-     * @ORM\Column(name="http_method", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'http_method', type: 'string')]
     private $http_method;
 
     /**
-     * @ORM\Column(name="rate_limit", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'rate_limit', type: 'integer')]
     private $rate_limit;
 
     /**
-     * @ORM\Column(name="rate_limit_decay", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'rate_limit_decay', type: 'integer')]
     private $rate_limit_decay;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Api", inversedBy="endpoints", cascade={"persist"})
-     * @ORM\JoinColumn(name="api_id", referencedColumnName="id")
      * @var Api
      */
+    #[ORM\JoinColumn(name: 'api_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Api::class, inversedBy: 'endpoints', cascade: ['persist'])]
     private $api;
 
     /**
-     * @ORM\ManyToMany(targetEntity="ApiScope")
-     * @ORM\JoinTable(name="oauth2_api_endpoint_api_scope",
-     *      joinColumns={@ORM\JoinColumn(name="api_endpoint_id", referencedColumnName="id")},
-     *      inverseJoinColumns={@ORM\JoinColumn(name="scope_id", referencedColumnName="id")}
-     * )
      * @var ApiScope[]
      */
+    #[ORM\JoinTable(name: 'oauth2_api_endpoint_api_scope')]
+    #[ORM\JoinColumn(name: 'api_endpoint_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'scope_id', referencedColumnName: 'id')]
+    #[ORM\ManyToMany(targetEntity: \ApiScope::class)]
     private $scopes;
 
     /**

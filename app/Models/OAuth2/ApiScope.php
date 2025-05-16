@@ -15,66 +15,63 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineApiScopeRepository")
- * @ORM\Table(name="oauth2_api_scope")
- * Class ApiScope
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_api_scope')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineApiScopeRepository::class)]
 class ApiScope extends BaseEntity
 {
 
     /**
-     * @ORM\Column(name="name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'name', type: 'string')]
     private $name;
 
     /**
-     * @ORM\Column(name="description", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'description', type: 'string')]
     private $description;
 
     /**
-     * @ORM\Column(name="short_description", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'short_description', type: 'string')]
     private $short_description;
 
     /**
-     * @ORM\Column(name="`active`", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: '`active`', type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\Column(name="`is_default`", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: '`is_default`', type: 'boolean')]
     private $default;
 
     /**
-     * @ORM\Column(name="`is_system`", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: '`is_system`', type: 'boolean')]
     private $is_system;
 
     /**
-     * @ORM\Column(name="`assigned_by_groups`", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: '`assigned_by_groups`', type: 'boolean')]
     private $assigned_by_groups;
 
-    /**
-     * @ORM\ManyToMany(targetEntity="Models\OAuth2\ApiScopeGroup", mappedBy="scopes")
-     */
+    #[ORM\ManyToMany(targetEntity: \Models\OAuth2\ApiScopeGroup::class, mappedBy: 'scopes')]
     private $scope_groups;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Api", inversedBy="scopes", cascade={"persist"})
-     * @ORM\JoinColumn(name="api_id", referencedColumnName="id")
      * @var Api
      */
+    #[ORM\JoinColumn(name: 'api_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Api::class, inversedBy: 'scopes', cascade: ['persist'])]
     private $api;
 
 

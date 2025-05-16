@@ -14,30 +14,29 @@
 use App\Models\Utils\BaseEntity;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOAuth2TrailExceptionRepository")
- * @ORM\Table(name="oauth2_exception_trail")
- * Class OAuth2TrailException
  * @package Models
  */
+#[ORM\Table(name: 'oauth2_exception_trail')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineOAuth2TrailExceptionRepository::class)]
 class OAuth2TrailException extends BaseEntity
 {
     /**
-     * @ORM\Column(name="from_ip", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'from_ip', type: 'string')]
     private $from_ip;
 
     /**
-     * @ORM\Column(name="exception_type", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'exception_type', type: 'string')]
     private $exception_type;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", cascade={"persist"})
-     * @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=true)
      * @var Client
      */
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\Client::class, cascade: ['persist'])]
     private $client;
 
     /**

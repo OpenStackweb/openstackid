@@ -15,29 +15,28 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineStreamChatSSOProfileRepository")
- * @ORM\Table(name="sso_stream_chat_profile")
- * Class StreamChatSSOProfile
  * @package  App\Models\SSO
  */
+#[ORM\Table(name: 'sso_stream_chat_profile')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineStreamChatSSOProfileRepository::class)]
 class StreamChatSSOProfile extends BaseEntity
 {
     /**
-     * @ORM\Column(name="forum_slug", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'forum_slug', type: 'string')]
     private $forum_slug;
 
     /**
-     * @ORM\Column(name="api_key", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'api_key', type: 'string')]
     private $api_key;
 
     /**
-     * @ORM\Column(name="api_secret", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'api_secret', type: 'string')]
     private $api_secret;
 
     /**

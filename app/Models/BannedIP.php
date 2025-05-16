@@ -16,36 +16,35 @@ use Auth\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineBannedIPRepository")
- * @ORM\Table(name="banned_ips")
- * Class BannedIP
  * @package Models
  */
+#[ORM\Table(name: 'banned_ips')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineBannedIPRepository::class)]
 class BannedIP extends BaseEntity
 {
     /**
-     * @ORM\Column(name="exception_type", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'exception_type', type: 'string')]
     private $exception_type;
 
     /**
-     * @ORM\Column(name="ip", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'ip', type: 'string')]
     private $ip;
 
     /**
-     * @ORM\Column(name="hits", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'hits', type: 'integer')]
     private $hits;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User")
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class)]
     private $user;
 
     /**

@@ -22,49 +22,45 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 use Utils\IPHelper;
 
-/**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineRefreshTokenRepository")
- * @ORM\Table(name="oauth2_refresh_token")
- * @ORM\Cache("NONSTRICT_READ_WRITE")
- * Class RefreshToken
- * Refresh Token Entity
- */
+#[ORM\Table(name: 'oauth2_refresh_token')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineRefreshTokenRepository::class)]
+#[ORM\Cache('NONSTRICT_READ_WRITE')] // Class RefreshToken
 class RefreshToken extends BaseEntity {
 
     /**
-     * @ORM\Column(name="value", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'value', type: 'string')]
     private $value;
 
     /**
-     * @ORM\Column(name="from_ip", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'from_ip', type: 'string')]
     private $from_ip;
 
     /**
-     * @ORM\Column(name="lifetime", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'lifetime', type: 'integer')]
     private $lifetime;
 
     /**
-     * @ORM\Column(name="scope", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'scope', type: 'string')]
     private $scope;
 
     /**
-     * @ORM\Column(name="audience", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'audience', type: 'string')]
     private $audience;
 
     /**
-     * @ORM\Column(name="void", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'void', type: 'boolean')]
     private $void;
 
     /**
@@ -73,24 +69,24 @@ class RefreshToken extends BaseEntity {
     private $friendly_scopes;
 
     /**
-     * @ORM\OneToMany(targetEntity="Models\OAuth2\AccessToken", mappedBy="refresh_token", cascade={"persist"}, orphanRemoval=true, fetch="EXTRA_LAZY")
      * @var ArrayCollection
      *
      */
+    #[ORM\OneToMany(targetEntity: \Models\OAuth2\AccessToken::class, mappedBy: 'refresh_token', cascade: ['persist'], orphanRemoval: true, fetch: 'EXTRA_LAZY')]
     private $access_tokens;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", inversedBy="refresh_tokens", cascade={"persist"})
-     * @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=true)
      * @var Client
      */
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\Client::class, inversedBy: 'refresh_tokens', cascade: ['persist'])]
     private $client;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="refresh_tokens", cascade={"persist"})
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id", nullable=true)
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, inversedBy: 'refresh_tokens', cascade: ['persist'])]
     private $owner;
 
     public function __construct()

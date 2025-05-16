@@ -57,12 +57,13 @@
     "vladimir-yuldashev/laravel-queue-rabbitmq": "v14.1.0"
   },
   "require-dev": {
-    "filp/whoops": "^2.0",
     "fakerphp/faker": "^1.23",
+    "filp/whoops": "^2.0",
+    "laravel/browser-kit-testing": "7.2.0",
     "mockery/mockery": "^1.6",
     "nunomaduro/collision": "^8.0",
     "phpunit/phpunit": "^11.0.1",
-    "laravel/browser-kit-testing": "7.2.0"
+    "rector/rector": "^2.0"
   },
   "suggest":{
     "lib-openssl": "Required to use AES algorithms (except AES GCM)",

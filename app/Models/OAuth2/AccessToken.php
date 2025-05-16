@@ -19,77 +19,76 @@ use Doctrine\ORM\Mapping AS ORM;
 use Illuminate\Support\Facades\Log;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineAccessTokenRepository")
- * @ORM\Table(name="oauth2_access_token")
- * @ORM\Cache("NONSTRICT_READ_WRITE")
- * Class AccessToken
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_access_token')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineAccessTokenRepository::class)]
+#[ORM\Cache('NONSTRICT_READ_WRITE')] // Class AccessToken
 class AccessToken extends BaseEntity {
 
     /**
-     * @ORM\Column(name="from_ip", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'from_ip', type: 'string')]
     private $from_ip;
 
     /**
-     * @ORM\Column(name="value", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'value', type: 'string')]
     private $value;
 
     /**
-     * @ORM\Column(name="associated_authorization_code", type="string", nullable=true)
      * @var string
      */
+    #[ORM\Column(name: 'associated_authorization_code', type: 'string', nullable: true)]
     private $associated_authorization_code;
 
     /**
-     * @ORM\Column(name="lifetime", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'lifetime', type: 'integer')]
     private $lifetime;
 
     /**
-     * @ORM\Column(name="scope", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'scope', type: 'string')]
     private $scope;
 
     /**
-     * @ORM\Column(name="audience", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'audience', type: 'string')]
     private $audience;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\RefreshToken", inversedBy="access_tokens", cascade={"persist"})
-     * @ORM\JoinColumn(name="refresh_token_id", referencedColumnName="id", nullable=true)
      * @var RefreshToken
      */
+    #[ORM\JoinColumn(name: 'refresh_token_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\RefreshToken::class, inversedBy: 'access_tokens', cascade: ['persist'])]
     private $refresh_token;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", inversedBy="access_tokens", cascade={"persist"})
-     * @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=true)
      * @var Client
      */
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\Client::class, inversedBy: 'access_tokens', cascade: ['persist'])]
     private $client;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="access_tokens", cascade={"persist"})
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id", nullable=true)
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, inversedBy: 'access_tokens', cascade: ['persist'])]
     private $owner;
 
     private $friendly_scopes;
 
     /**
-     * @ORM\Column(name="device_info", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'device_info', type: 'string')]
     private $device_info;
 
 

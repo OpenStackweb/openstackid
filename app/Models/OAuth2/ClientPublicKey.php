@@ -18,18 +18,17 @@ use jwk\IJWK;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineClientPublicKeyRepository")
- * Class ClientPublicKey
  * @package Models\OAuth2
  */
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineClientPublicKeyRepository::class)] // Class ClientPublicKey
 class ClientPublicKey extends AsymmetricKey implements IClientPublicKey
 {
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", inversedBy="public_keys")
-     * @ORM\JoinColumn(name="oauth2_client_id", referencedColumnName="id")
      * @var Client
      */
+    #[ORM\JoinColumn(name: 'oauth2_client_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\Client::class, inversedBy: 'public_keys')]
     private $owner;
 
     /**
