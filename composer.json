@@ -63,7 +63,7 @@
     "mockery/mockery": "^1.6",
     "nunomaduro/collision": "^8.0",
     "phpunit/phpunit": "^11.0.1",
-    "rector/rector": "*"
+    "rector/rector": "^2.0"
   },
   "suggest":{
     "lib-openssl": "Required to use AES algorithms (except AES GCM)",

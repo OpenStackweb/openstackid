@@ -17,6 +17,7 @@ use LaravelDoctrine\ORM\Facades\EntityManager;
 use Models\OAuth2\Api;
 use Models\OAuth2\ApiEndpoint;
 use Models\OAuth2\ApiScope;
+use Models\OAuth2\ApiScopeGroup;
 use Tests\BrowserKitTestCase;
 
 /**
@@ -33,11 +34,22 @@ class ApiEndpointMappingTest extends BrowserKitTestCase
 
         $api = EntityManager::getRepository(Api::class)->findAll()[0];
 
+        $group = new ApiScopeGroup();
+        $group->setName($name);
+        $group->setActive(true);
+        $group->setDescription('test description');
+
+        EntityManager::persist($group);
+
         $scope = new ApiScope();
         $scope->setName($scope_name);
         $scope->setShortDescription('test short description');
         $scope->setDescription('test description');
         $scope->setActive(true);
+
+        //Many-to-Many relation with ApiScopeGroup
+        $scope->addToScopeGroup($group);
+
         EntityManager::persist($scope);
 
         $endpoint = new ApiEndpoint();
@@ -48,6 +60,8 @@ class ApiEndpointMappingTest extends BrowserKitTestCase
         $endpoint->setAllowCors(true);
         $endpoint->setAllowCredentials(true);
         $endpoint->setApi($api);
+
+        //Many-to-Many relation with ApiScope
         $endpoint->addScope($scope);
 
         EntityManager::persist($endpoint);
@@ -63,5 +77,18 @@ class ApiEndpointMappingTest extends BrowserKitTestCase
         $this->assertEquals($name, $found_endpoint->getName());
         $this->assertEquals($route, $found_endpoint->getRoute());
         $this->assertEquals($scope_name, $found_scope->getName());
+        $this->assertCount(1, $found_scope->getScopeGroups()->toArray());
+
+        //Children removal tests
+        $endpoint = $repo->find($found_endpoint->getId());
+        $former_scopes_count = count($endpoint->getScopes());
+        $endpoint->removeScope($found_scope);
+
+        EntityManager::persist($endpoint);
+        EntityManager::flush();
+        EntityManager::clear();
+
+        $found_endpoint = $repo->find($found_endpoint->getId());
+        $this->assertCount($former_scopes_count - 1, $found_endpoint->getScopes());
     }
 }
