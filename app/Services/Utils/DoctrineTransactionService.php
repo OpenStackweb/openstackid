@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
+use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Exception\ConnectionLost;
 use Doctrine\DBAL\TransactionIsolationLevel;
 use Illuminate\Support\Facades\Log;
@@ -19,8 +19,8 @@ use Closure;
 use LaravelDoctrine\ORM\Facades\Registry;
 use Doctrine\DBAL\Exception\RetryableException;
 use Exception;
+use ErrorException;
 use Utils\Db\ITransactionService;
-
 /**
  * Class DoctrineTransactionService
  * @package App\Services\Utils
@@ -32,7 +32,7 @@ final class DoctrineTransactionService implements ITransactionService
      */
     private $manager_name;
 
-    const MaxRetries = 3;
+    const MaxRetries = 10;
 
     /**
      * DoctrineTransactionService constructor.
@@ -49,18 +49,78 @@ final class DoctrineTransactionService implements ITransactionService
      */
     public function shouldReconnect(\Exception $e):bool
     {
-        if($e instanceof RetryableException) return true;
-        if($e instanceof ConnectionLost) return true;
+        Log::debug
+        (
+            sprintf
+            (
+                "DoctrineTransactionService::shouldReconnect %s code %s message %s",
+                get_class($e),
+                $e->getCode(),
+                $e->getMessage()
+            )
+        );
+        if($e instanceof ErrorException && str_contains($e->getMessage(), "Packets out of order")){
+            Log::debug
+            (
+                sprintf
+                (
+                    "DoctrineTransactionService::shouldReconnect %s Packets out of order true",
+                    get_class($e),
+                )
+            );
+            return true;
+        }
+        if($e instanceof RetryableException) {
+            Log::debug
+            (
+                sprintf
+                (
+                    "DoctrineTransactionService::shouldReconnect %s true",
+                    get_class($e),
+                )
+            );
+            return true;
+        }
+        if($e instanceof ConnectionLost) {
+            Log::debug
+            (
+                sprintf
+                (
+                    "DoctrineTransactionService::shouldReconnect %s true",
+                    get_class($e),
+                )
+            );
+            return true;
+        }
+        if($e instanceof ConnectionException) {
+            Log::debug
+            (
+                sprintf
+                (
+                    "DoctrineTransactionService::shouldReconnect %s true",
+                    get_class($e),
+                )
+            );
+            return true;
+        }
         if($e instanceof \PDOException){
             switch(intval($e->getCode())){
                 case 2006:
-                    Log::warning("DoctrineTransactionService::shouldReconnect: MySQL server has gone away!");
+                    Log::warning("DoctrineTransactionService::shouldReconnect: MySQL server has gone away true");
                     return true;
                 case 2002:
-                    Log::warning("DoctrineTransactionService::shouldReconnect:  php_network_getaddresses: getaddrinfo failed: nodename nor servname provided, or not known!");
+                    Log::warning("DoctrineTransactionService::shouldReconnect: php_network_getaddresses: getaddrinfo failed: nodename nor servname provided, or not known true");
                     return true;
             }
         }
+        Log::debug
+        (
+            sprintf
+            (
+                "DoctrineTransactionService::shouldReconnect %s false",
+                get_class($e),
+            )
+        );
         return false;
     }
 
@@ -117,7 +177,7 @@ final class DoctrineTransactionService implements ITransactionService
                     continue;
                 }
                 Log::warning("DoctrineTransactionService::transaction rolling back TX");
-                Log::error($ex);
+                Log::warning($ex);
                 throw $ex;
             }
         }
