@@ -118,7 +118,7 @@ class OAuth2PasswordlessOTPMail extends Mailable
      */
     public function build()
     {
-        $this->subject = sprintf("[%s] Your Single-use Code", Config::get('app.app_name'));
+        $this->subject = sprintf("[%s] Your Single-use Code - %s", Config::get('app.app_name'), $this->otp);
         Log::debug(sprintf("OAuth2PasswordlessOTPMail::build to %s", $this->email));
         return $this->from(Config::get("mail.from"))
             ->to($this->email)
