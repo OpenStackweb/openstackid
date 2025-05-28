@@ -78,7 +78,14 @@ return [
             */
             'mapping_types' => [
                 'enum' => 'string'
-            ]
+            ],
+            /**
+             * References:
+             * https://www.doctrine-project.org/projects/doctrine-dbal/en/current/reference/architecture.html#middlewares
+             */
+            'middlewares' => array_filter([
+                env('DOCTRINE_LOGGING', false) ? Doctrine\DBAL\Logging\Middleware::class : null,
+            ]),
         ]
     ],
     /*
@@ -201,19 +208,6 @@ return [
         'SHA2'             => DoctrineExtensions\Query\Mysql\Sha2::class,
         'SUBSTRING_INDEX'  => DoctrineExtensions\Query\Mysql\SubstringIndex::class
     ],
-    /*
-    |--------------------------------------------------------------------------
-    | Enable query logging with laravel file logging,
-    | debugbar, clockwork or an own implementation.
-    | Setting it to false, will disable logging
-    |
-    | Available:
-    | - LaravelDoctrine\ORM\Loggers\LaravelDebugbarLogger
-    | - LaravelDoctrine\ORM\Loggers\ClockworkLogger
-    | - LaravelDoctrine\ORM\Loggers\FileLogger
-    |--------------------------------------------------------------------------
-    */
-    'logger' => env('DOCTRINE_LOGGER', 'LaravelDoctrine\ORM\Loggers\FileLogger'),
     /*
     |--------------------------------------------------------------------------
     | Cache
