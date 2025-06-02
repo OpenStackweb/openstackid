@@ -20,17 +20,20 @@ use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\libs\Utils\FileSystem\FileNameSanitizer;
+use App\Mail\MonitoredSecurityGroupNotificationEmail;
 use App\Services\AbstractService;
 use App\Services\Auth\IUserIdentifierGeneratorService;
 use Auth\Group;
 use Auth\IUserNameGeneratorService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
+use Doctrine\Common\Collections\ArrayCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
@@ -333,12 +336,32 @@ final class UserService extends AbstractService implements IUserService
             $user = UserFactory::populate($user, $payload);
 
             if (isset($payload['groups'])) {
-                $user->clearGroups();
+                // update groups
+                // Get current groups
+                $current_groups = $user->getGroups();
+
+                $new_groups = new ArrayCollection();
+
                 foreach ($payload['groups'] as $group_id) {
                     $group = $this->group_repository->getById($group_id);
-                    if (!$group instanceof Group)
-                        throw new EntityNotFoundException("Group not found");
-                    $user->addToGroup($group);
+                    if (!$group instanceof Group) {
+                        throw new EntityNotFoundException("Group not found.");
+                    }
+                    $new_groups->add($group);
+                }
+
+                // Remove groups not in the new list
+                foreach ($current_groups as $group) {
+                    if (!$new_groups->contains($group)) {
+                        $user->removeFromGroup($group);
+                    }
+                }
+
+                // Add new groups not already in current
+                foreach ($new_groups as $group) {
+                    if (!$current_groups->contains($group)) {
+                        $user->addToGroup($group);
+                    }
                 }
             }
 
@@ -449,5 +472,48 @@ final class UserService extends AbstractService implements IUserService
         }
 
         return $user;
+    }
+
+    public function notifyMonitoredSecurityGroupActivity(string $action, int $user_id, string $user_email, string $user_name, int $group_id, string $group_name, string $group_slug): void
+    {
+       $watcher_groups = Config::get('audit.monitored_security_groups_set_activity_watchers', []);
+
+        if (!count($watcher_groups)) {
+            Log::warning("UserService::notifyMonitoredSecurityGroupActivity No monitored security groups set for activity watchers.");
+            return;
+        }
+
+        $notified_users = [];
+        foreach ($watcher_groups as $watcher_group_slug) {
+            Log::debug(sprintf("UserService::notifyMonitoredSecurityGroupActivity processing %s", $watcher_group_slug));
+            $group = $this->group_repository->getById($watcher_group_slug);
+            if(!$group instanceof Group) {
+                Log::warning(sprintf("UserService::notifyMonitoredSecurityGroupActivity group %s not found", $watcher_group_slug));
+                continue;
+            }
+
+            foreach($group->getUsers() as $user){
+                if(in_array($user->getId(), $notified_users)){
+                    continue;
+                }
+                $notified_users[] = $user->getId();
+                Log::debug(sprintf("UserService::notifyMonitoredSecurityGroupActivity processing user %s", $user->getId()));
+                Mail::queue
+                (
+                    new MonitoredSecurityGroupNotificationEmail
+                    (
+                        $user->getEmail(),
+                        $action,
+                        $user_id,
+                        $user_email,
+                        $user_name,
+                        $group_id,
+                        $group_name,
+                        $group_slug
+                    )
+                );
+            }
+        }
+
     }
 }

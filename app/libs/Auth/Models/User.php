@@ -16,6 +16,7 @@ use App\Events\UserCreated;
 use App\Events\UserLocked;
 use App\Events\UserSpamStateUpdated;
 use App\Jobs\AddUserAction;
+use App\Jobs\NotifyMonitoredSecurityGroupActivity;
 use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\Auth\Models\UserRegistrationRequest;
 use App\libs\Utils\PunnyCodeHelper;
@@ -778,6 +779,22 @@ class User extends BaseEntity
             throw new ValidationException("User is already assigned to this group.");
 
         $this->groups->add($group);
+
+        // slugs
+        $monitored_security_groups = Config::get("audit.monitored_security_groups_set");
+        if(in_array($group->getSlug(), $monitored_security_groups)) {
+            // trigger job
+            // trigger job
+            NotifyMonitoredSecurityGroupActivity::dispatch(
+                NotifyMonitoredSecurityGroupActivity::ACTION_ADD_2_GROUP,
+                $this->id,
+                $this->getEmail(),
+                $this->getFullName(),
+                $group->getId(),
+                $group->getName(),
+                $group->getSlug()
+            );
+        }
     }
 
     /**
@@ -824,32 +841,20 @@ class User extends BaseEntity
 
         if (!$this->groups->contains($group)) return;
         $this->groups->removeElement($group);
-    }
-
-    public function clearGroups(): void
-    {
-        $current_user = Auth::user();
-
-        if($current_user instanceof User) {
-            if(!$current_user->isSuperAdmin()) {
-                $current_user->deActivate();
-                throw new ValidationException
-                (
-                    "Only Super Admins can clear users groups",
-                );
-            }
-            $current_groups = $this->getGroupsNice() ?? 'NONE';
-            $action = sprintf
-            (
-                "CLEARING USER GROUPS (%s) BY USER %s (%s)",
-                $current_groups,
-                $current_user->getEmail(),
-                $current_user->getId()
+        // slugs
+        $monitored_security_groups = Config::get("audit.monitored_security_groups_set");
+        if(in_array($group->getSlug(), $monitored_security_groups)) {
+            // trigger job
+            NotifyMonitoredSecurityGroupActivity::dispatch(
+                NotifyMonitoredSecurityGroupActivity::REMOVE_FROM_GROUP,
+                $this->id,
+                $this->getEmail(),
+                $this->getFullName(),
+                $group->getId(),
+                $group->getName(),
+                $group->getSlug()
             );
-
-            AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
         }
-        $this->groups->clear();
     }
 
     public function getStreetAddress():?string

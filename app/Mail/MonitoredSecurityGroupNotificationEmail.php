@@ -1,0 +1,138 @@
+<?php namespace App\Mail;
+/*
+ * Copyright 2025 OpenStack Foundation
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
+
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Mailable;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Class MonitoredSecurityGroupNotificationEmail
+ * @package App\Mail
+ */
+final class MonitoredSecurityGroupNotificationEmail extends Mailable
+{
+    use Queueable, SerializesModels;
+
+    public $tries = 3;
+
+    /**
+     * @var string
+     */
+    public $action;
+
+    /**
+     * @var int
+     */
+    public $user_id;
+
+    /**
+     * @var string
+     */
+    public $user_email;
+
+    /*
+     * @var string
+     */
+    public $user_name;
+
+    /**
+     * @var int
+     */
+    public $group_id;
+
+    /**
+     * @var string
+     */
+    public $group_name;
+
+    /**
+     * @var string
+     */
+    public $group_slug;
+
+    /**
+     * @var string
+     */
+    public $email;
+
+    /**
+     * @param string $email
+     * @param string $action
+     * @param int $user_id
+     * @param string $user_email
+     * @param string $user_name
+     * @param int $group_id
+     * @param string $group_name
+     * @param string $group_slug
+     */
+    public function __construct
+    (
+        string $email,
+        string $action,
+        int $user_id,
+        string $user_email,
+        string $user_name,
+        int $group_id,
+        string $group_name,
+        string $group_slug
+    )
+    {
+        $this->email = $email;
+        $this->action = $action;
+        $this->user_id = $user_id;
+        $this->user_email = $user_email;
+        $this->user_name = $user_name;
+        $this->group_id = $group_id;
+        $this->group_name = $group_name;
+        $this->group_slug = $group_slug;
+
+        Log::debug
+        (
+            sprintf
+            (
+                "MonitoredSecurityGroupNotificationEmail::constructor email %s action %s user_id %s user_email %s user_name %s group_id %s group_name %s group_slug %s",
+                $email,
+                $action,
+                $user_id,
+                $user_email,
+                $user_name,
+                $group_id,
+                $group_name,
+                $group_slug
+            )
+        );
+    }
+
+    public function build()
+    {
+        $this->subject = sprintf
+        (
+            "[%s] User %s (%s) was %s from group %s (%s)"
+            ,Config::get('app.app_name')
+            ,$this->user_name
+            ,$this->user_email
+            ,$this->action
+            ,$this->group_name
+            ,$this->group_id
+        );
+        Log::debug(sprintf("MonitoredSecurityGroupNotificationEmail::build to %s", $this->email));
+        return $this->from(Config::get("mail.from"))
+            ->to($this->email)
+            ->subject($this->subject)
+            ->view('emails.audit.monitored_security_group_notification');
+    }
+}

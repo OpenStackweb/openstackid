@@ -72,4 +72,24 @@ interface IUserService extends IBaseService
      */
     public function updateProfilePhoto($user_id, UploadedFile $file, $max_file_size = 10485760):User;
 
+    /**
+     * @param string $action
+     * @param int $user_id
+     * @param string $user_email
+     * @param string $user_name
+     * @param int $group_id
+     * @param string $group_name
+     * @param string $group_slug
+     * @return void
+     */
+    public function notifyMonitoredSecurityGroupActivity(
+        string $action,
+        int $user_id,
+        string $user_email,
+        string $user_name,
+        int $group_id,
+        string $group_name,
+        string $group_slug
+    ): void;
+
 }

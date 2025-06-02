@@ -143,12 +143,25 @@ final class UserService extends AbstractService implements IUserService
                     )
                 );
 
-            $default_groups = $this->group_repository->getDefaultOnes();
-            if (count($default_groups) > 0) {
-                $payload['groups'] = $default_groups;
-            }
+
 
             $user = UserFactory::build($payload);
+            $default_groups = $this->group_repository->getDefaultOnes();
+            if (count($default_groups) > 0) {
+                foreach ($default_groups as $group) {
+                    Log::debug
+                    (
+                        sprintf
+                        (
+                            "UserService::registerUser assigning user %s to default groups %s",
+                            $user->getEmail(),
+                            $group->getSlug()
+                        )
+                    );
+                    $user->addToGroup($group);
+                }
+            }
+
             $this->identifier_service->generateIdentifier($user);
 
             if(!is_null($otp))

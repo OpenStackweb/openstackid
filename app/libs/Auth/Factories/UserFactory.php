@@ -139,13 +139,6 @@ final class UserFactory
         if(isset($payload['language']))
             $user->setLanguage(trim($payload['language']));
 
-        if(isset($payload['groups'])){
-            foreach($payload['groups'] as $group){
-                if(!$group instanceof Group) continue;
-                $user->addToGroup($group);
-            }
-        }
-
         if(isset($payload['active'])) {
             $active = boolval($payload['active']);
             if($active)
