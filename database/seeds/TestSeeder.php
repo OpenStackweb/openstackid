@@ -16,6 +16,7 @@ use App\Models\OAuth2\Factories\ApiFactory;
 use App\Models\OAuth2\Factories\ApiScopeFactory;
 use App\Models\OAuth2\Factories\ResourceServerFactory;
 use Illuminate\Support\Facades\Config;
+use models\exceptions\EntityNotFoundException;
 use Models\OAuth2\Api;
 use OAuth2\Models\IClient;
 use OAuth2\OAuth2Protocol;
@@ -382,6 +383,11 @@ PPK;
 
         foreach ($user_payloads as $payload){
             $user = UserFactory::build($payload);
+            if (isset($payload['groups'])) {
+                foreach ($payload['groups'] as $group) {
+                    $user->addToGroup($group);
+                }
+            }
             EntityManager::persist($user);
             $raw_password = $payload['password'];
             if(!$user->checkPassword($raw_password))
