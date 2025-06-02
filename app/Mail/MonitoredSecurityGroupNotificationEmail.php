@@ -70,6 +70,13 @@ final class MonitoredSecurityGroupNotificationEmail extends Mailable
     public $email;
 
     /**
+     * The subject of the message.
+     *
+     * @var string
+     */
+    public $subject;
+
+    /**
      * @param string $email
      * @param string $action
      * @param int $user_id
@@ -121,7 +128,7 @@ final class MonitoredSecurityGroupNotificationEmail extends Mailable
     {
         $this->subject = sprintf
         (
-            "[%s] User %s (%s) was %s from group %s (%s)"
+            "[%s] Monitored Security Groups - User %s (%s) has been %s - Group %s (%s)"
             ,Config::get('app.app_name')
             ,$this->user_name
             ,$this->user_email

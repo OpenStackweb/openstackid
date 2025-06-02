@@ -778,9 +778,10 @@ class User extends BaseEntity
 
         // slugs
         $monitored_security_groups = Config::get("audit.monitored_security_groups_set");
+        Log::debug(sprintf("User::addToGroup monitored security groups %s", implode(',', $monitored_security_groups)));
         if(in_array($group->getSlug(), $monitored_security_groups)) {
             // trigger job
-            // trigger job
+            Log::debug(sprintf("User::addToGroup dispatching NotifyMonitoredSecurityGroupActivity for user %s group %s", $this->id, $group->getSlug()));
             NotifyMonitoredSecurityGroupActivity::dispatch(
                 NotifyMonitoredSecurityGroupActivity::ACTION_ADD_2_GROUP,
                 $this->id,
@@ -833,14 +834,27 @@ class User extends BaseEntity
                     "Only Super Admins can remove users from groups",
                 );
             }
+
+            $action = sprintf
+            (
+                "REMOVE FROM GROUP (%s) BY USER %s (%s)",
+
+                $group->getName(),
+                $current_user->getEmail(),
+                $current_user->getId()
+            );
+
+            AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
         }
 
         if (!$this->groups->contains($group)) return;
         $this->groups->removeElement($group);
         // slugs
         $monitored_security_groups = Config::get("audit.monitored_security_groups_set");
+        Log::debug(sprintf("User::removeFromGroup monitored security groups %s", implode(',', $monitored_security_groups)));
         if(in_array($group->getSlug(), $monitored_security_groups)) {
             // trigger job
+            Log::debug(sprintf("User::removeFromGroup dispatching NotifyMonitoredSecurityGroupActivity for user %s group %s", $this->id, $group->getSlug()));
             NotifyMonitoredSecurityGroupActivity::dispatch(
                 NotifyMonitoredSecurityGroupActivity::REMOVE_FROM_GROUP,
                 $this->id,
