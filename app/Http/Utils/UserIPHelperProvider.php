@@ -22,6 +22,11 @@ final class UserIPHelperProvider implements IUserIPHelperProvider
 
     public function getCurrentUserIpAddress(): string
     {
+        Log::debug(sprintf("UserIPHelperProvider::getCurrentUserIpAddress HTTP_CLIENT_IP %s HTTP_X_FORWARDED_FOR %s REMOTE_ADDR %s",
+            $_SERVER['HTTP_CLIENT_IP'] ?? 'N/A',
+            $_SERVER['HTTP_X_FORWARDED_FOR'] ?? 'N/A',
+            $_SERVER['REMOTE_ADDR'] ?? 'N/A'
+        ));
         $ip = $_SERVER['HTTP_CLIENT_IP'] ?? ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? ''));
         Log::debug(sprintf("UserIPHelperProvider::getCurrentUserIpAddress ip %s", $ip));
         return $ip;
