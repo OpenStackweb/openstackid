@@ -14,6 +14,8 @@
 use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
+use Illuminate\Support\Facades\Log;
+
 /**
  * @package Models\OAuth2
  */
@@ -63,9 +65,22 @@ class ResourceServer extends BaseEntity
      * @return bool
      */
     public function isOwn($ip)
-    {
-        $ips = explode(',',  $this->ips);
-        return in_array($ip, $ips);
+    {   $provided_ips = array_map('trim', explode(',', $ip));
+        $own_ips = array_map('trim', explode(',', $this->ips));
+        Log::debug
+        (
+            sprintf
+            (
+                "ResourceServer::isOwn resource server %s checking if %s is in %s",
+                $this->id,
+                $ip,
+                $this->ips
+            )
+        );
+        foreach ($provided_ips as $provided_ip){
+            if(in_array($provided_ip, $own_ips)) return true;
+        }
+        return false;
     }
 
     /**

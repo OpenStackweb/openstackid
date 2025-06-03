@@ -59,15 +59,20 @@ class DoctrineResourceServerRepository
     public function getByIp(string $ip):?ResourceServer
     {
         Log::debug(sprintf("DoctrineResourceServerRepository::getByIp ip %s", $ip));
-        return $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select("r")
-            ->from($this->getBaseEntity(), "r")
-            ->where("r.ips like :ip")
-            ->setParameter("ip", '%'.trim($ip).'%')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        $provided_ips = array_map('trim', explode(',', $ip));
+        foreach ($provided_ips as $provided_ip) {
+            $res = $this->getEntityManager()
+                ->createQueryBuilder()
+                ->select("r")
+                ->from($this->getBaseEntity(), "r")
+                ->where("r.ips like :ip")
+                ->setParameter("ip", '%' . trim($provided_ip) . '%')
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
+            if ($res instanceof ResourceServer) return $res;
+        }
+        return null;
     }
 
     /**
@@ -104,13 +109,22 @@ class DoctrineResourceServerRepository
             )
         );
 
+
         $query = <<<SQL
-SELECT r.* FROM oauth2_resource_server r
-WHERE FIND_IN_SET('{$ip}', r.ips) AND r.active = 1
+SELECT r.* FROM oauth2_resource_server r WHERE r.active = 1
 SQL;
+        $ips_query = "";
+        $provided_ips = array_map('trim', explode(',', $ip));
+        foreach ($provided_ips as $index => $provided_ip) {
+            if ($index > 0) {
+                $ips_query .= " OR ";
+            }
+            $ips_query.= sprintf(" FIND_IN_SET('%s',r.ips) ", $provided_ip);
+        }
+
+        Log::debug(sprintf("DoctrineResourceServerRepository::getByAudienceAndIpAndActive ips_query %s", $ips_query));
 
         $hosts_query = "";
-
         foreach ($audience as $index => $audience_item) {
             if ($index > 0) {
                 $hosts_query .= " OR ";
@@ -118,12 +132,14 @@ SQL;
             $hosts_query.= sprintf(" FIND_IN_SET('%s',r.host) ", $audience_item);
         }
 
-        if(!empty($hosts_query))
-             $hosts_query = " AND (". $hosts_query .")";
 
         Log::debug(sprintf("DoctrineResourceServerRepository::getByAudienceAndIpAndActive hosts_query %s", $hosts_query));
+        if(!empty($ips_query))
+            $query = $query . " AND (" . $ips_query . ")";
+        if(!empty($hosts_query))
+            $query = $query . " AND (" . $hosts_query . ")";
 
-        $query = $query . $hosts_query. " LIMIT 1;";
+        $query = $query . " LIMIT 1;";
 
         Log::debug(sprintf("DoctrineResourceServerRepository::getByAudienceAndIpAndActive query %s", $query));
 
