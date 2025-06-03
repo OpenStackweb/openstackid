@@ -21,17 +21,16 @@ use Illuminate\Support\Facades\Crypt;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineServerPrivateKeyRepository")
- * Class ServerPrivateKey
  * @package Models\OAuth2
  */
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineServerPrivateKeyRepository::class)] // Class ServerPrivateKey
 class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
 {
 
     /**
-     * @ORM\Column(name="password", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'password', type: 'string')]
     protected $password;
 
     /**

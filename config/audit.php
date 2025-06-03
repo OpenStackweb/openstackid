@@ -12,6 +12,6 @@
  * limitations under the License.
  **/
 return [
-    'monitored_security_groups_set' => explode(',', env('MONITORED_SECURITY_GROUPS', 'administrators,summit-front-end-administrators,	super-admins')),
+    'monitored_security_groups_set' => explode(',', env('MONITORED_SECURITY_GROUPS', 'administrators,summit-front-end-administrators,super-admins')),
     'monitored_security_groups_set_activity_watchers' => explode(',', env('‘‘MONITORED_SECURITY_GROUPS_SET_ACTIVITY_WATCHERS', 'super-admins,administrators')),
 ];

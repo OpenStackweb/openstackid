@@ -7,7 +7,7 @@
             <td align="center"
                 style="font-size:0px;padding:10px 25px;padding-right:25px;padding-left:25px;word-break:break-word;">
                 <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">
-                    Monitored Security Group {!! $group_name !!} has been modified:
+                    Monitored Security Group <b>{!! $group_name !!}</b> has been modified:
                 </div>
             </td>
         </tr>
@@ -15,7 +15,7 @@
             <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                 <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">
                     <p>
-                        User {!! $user_name !!} (Email: {!! $user_email !!}) has been * {!! $action !!} *
+                        User {!! $user_name !!} (Email: {!! $user_email !!}) has been  <b>{!! $action !!}</b>
                     </p>
                 </div>
             </td>

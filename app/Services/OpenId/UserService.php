@@ -486,7 +486,7 @@ final class UserService extends AbstractService implements IUserService
         $notified_users = [];
         foreach ($watcher_groups as $watcher_group_slug) {
             Log::debug(sprintf("UserService::notifyMonitoredSecurityGroupActivity processing %s", $watcher_group_slug));
-            $group = $this->group_repository->getById($watcher_group_slug);
+            $group = $this->group_repository->getOneBySlug($watcher_group_slug);
             if(!$group instanceof Group) {
                 Log::warning(sprintf("UserService::notifyMonitoredSecurityGroupActivity group %s not found", $watcher_group_slug));
                 continue;

@@ -18,45 +18,44 @@ use Doctrine\Common\Collections\ArrayCollection;
 use App\Models\Utils\BaseEntity;
 use models\exceptions\ValidationException;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineGroupRepository")
- * @ORM\Table(name="`groups`")
- * @ORM\HasLifecycleCallbacks
- * Class Group
  * @package Auth
  */
+#[ORM\Table(name: '`groups`')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineGroupRepository::class)]
+#[ORM\HasLifecycleCallbacks] // Class Group
 class Group extends BaseEntity
 {
 
 
     /**
-     * @ORM\Column(name="name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'name', type: 'string')]
     private $name;
 
     /**
-     * @ORM\Column(name="slug", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'slug', type: 'string')]
     private $slug;
 
     /**
-     * @ORM\Column(name="active", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\Column(name="is_default", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'is_default', type: 'boolean')]
     private $default;
 
     /**
      * Many Groups have Many Users.
-     * @ORM\ManyToMany(targetEntity="User", mappedBy="groups", fetch="EXTRA_LAZY")
      * @var ArrayCollection
      */
+    #[ORM\ManyToMany(targetEntity: \User::class, mappedBy: 'groups', fetch: 'EXTRA_LAZY')]
     private $users;
 
 
@@ -84,10 +83,8 @@ class Group extends BaseEntity
         return $this->slug;
     }
 
-    /**
-     * @return ArrayCollection
-     */
-    public function getUsers(): ArrayCollection
+
+    public function getUsers()
     {
         return $this->users;
     }
@@ -164,9 +161,7 @@ class Group extends BaseEntity
         return $this->{$name};
     }
 
-    /**
-     * @ORM\PreRemove:
-     */
+    #[ORM\PreRemove] // :
     public function preRemoveHandler(LifecycleEventArgs $args){
         if(!self::canDelete($this->slug))
             throw new ValidationException(sprintf("can not delete group %s", $this->getSlug()));

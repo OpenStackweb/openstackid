@@ -17,37 +17,36 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOpenIdTrustedSiteRepository")
- * @ORM\Table(name="openid_trusted_sites")
- * Class OpenIdTrustedSite
  * @package Models\OpenId
  */
+#[ORM\Table(name: 'openid_trusted_sites')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineOpenIdTrustedSiteRepository::class)]
 class OpenIdTrustedSite extends BaseEntity implements ITrustedSite
 {
 
     /**
-     * @ORM\Column(name="realm", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'realm', type: 'string')]
     private $realm;
 
     /**
-     * @ORM\Column(name="data", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'data', type: 'string')]
     private $data;
 
     /**
-     * @ORM\Column(name="policy", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'policy', type: 'string')]
     private $policy;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User", inversedBy="trusted_sites", cascade={"persist"})
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class, inversedBy: 'trusted_sites', cascade: ['persist'])]
     private $owner;
 
     /**

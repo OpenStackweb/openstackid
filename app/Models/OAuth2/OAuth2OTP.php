@@ -27,96 +27,95 @@ use Utils\Model\Identifier;
 use Laminas\Math\Rand;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOAuth2OTPRepository")
- * @ORM\Table(name="oauth2_otp")
- * Class OTP
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_otp')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineOAuth2OTPRepository::class)]
 class OAuth2OTP extends BaseEntity implements Identifier
 {
     /**
-     * @ORM\Column(name="value", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'value', type: 'string')]
     private $value;
 
     /**
-     * @ORM\Column(name="length", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'length', type: 'integer')]
     private $length;
 
     /**
-     * @ORM\Column(name="`connection`", type="string")
      * @var string
      */
+    #[ORM\Column(name: '`connection`', type: 'string')]
     private $connection;
 
     /**
-     * @ORM\Column(name="send", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'send', type: 'string')]
     private $send;
 
     /**
-     * @ORM\Column(name="scope", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'scope', type: 'string')]
     private $scope;
 
     /**
-     * @ORM\Column(name="email", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'email', type: 'string')]
     private $email;
 
     /**
-     * @ORM\Column(name="phone_number", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'phone_number', type: 'string')]
     private $phone_number;
 
     /**
-     * @ORM\Column(name="nonce", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'nonce', type: 'string')]
     private $nonce;
 
     /**
-     * @ORM\Column(name="lifetime", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'lifetime', type: 'integer')]
     private $lifetime;
 
     /**
-     * @ORM\Column(name="redirect_url", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'redirect_url', type: 'string')]
     private $redirect_url;
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="redeemed_at", type="datetime")
      */
+    #[ORM\Column(name: 'redeemed_at', type: 'datetime')]
     private $redeemed_at;
 
     /**
      * @var string
-     * @ORM\Column(name="redeemed_from_ip", type="string")
      */
+    #[ORM\Column(name: 'redeemed_from_ip', type: 'string')]
     private $redeemed_from_ip;
 
     /**
-     * @ORM\Column(name="redeemed_attempts", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'redeemed_attempts', type: 'integer')]
     private $redeemed_attempts;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Models\OAuth2\Client", inversedBy="otp_grants", cascade={"persist"})
-     * @ORM\JoinColumn(name="oauth2_client_id", referencedColumnName="id", nullable=true)
      * @var Client
      */
+    #[ORM\JoinColumn(name: 'oauth2_client_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Models\OAuth2\Client::class, inversedBy: 'otp_grants', cascade: ['persist'])]
     private $client;
 
     /**

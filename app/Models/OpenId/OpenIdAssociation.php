@@ -19,54 +19,53 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineOpenIdAssociationRepository")
- * @ORM\Table(name="openid_associations")
- * Class OpenIdAssociation
  * @package Models\OpenId
  */
+#[ORM\Table(name: 'openid_associations')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineOpenIdAssociationRepository::class)]
 class OpenIdAssociation extends BaseEntity implements IAssociation
 {
 
     /**
-     * @ORM\Column(name="identifier", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'identifier', type: 'string')]
     private $identifier;
 
     /**
-     * @ORM\Column(name="mac_function", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'mac_function', type: 'string')]
     private $mac_function;
 
     /**
-     * @ORM\Column(name="secret", type="blob")
      * @var resource
      */
+    #[ORM\Column(name: 'secret', type: 'blob')]
     private $secret;
 
     /**
-     * @ORM\Column(name="realm", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'realm', type: 'string')]
     private $realm;
 
     /**
-     * @ORM\Column(name="type", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'type', type: 'integer')]
     private $type;
 
     /**
-     * @ORM\Column(name="lifetime", type="integer")
      * @var int
      */
+    #[ORM\Column(name: 'lifetime', type: 'integer')]
     private $lifetime;
 
     /**
-     * @ORM\Column(name="issued", type="datetime")
      * @var DateTime
      */
+    #[ORM\Column(name: 'issued', type: 'datetime')]
     private $issued;
 
     /**

@@ -15,50 +15,49 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineApiRepository")
- * @ORM\Table(name="oauth2_api")
- * Class Api
  * @package Models\OAuth2
  */
+#[ORM\Table(name: 'oauth2_api')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineApiRepository::class)]
 class Api extends BaseEntity
 {
 
     /**
-     * @ORM\Column(name="name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'name', type: 'string')]
     private $name;
 
     /**
-     * @ORM\Column(name="description", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'description', type: 'string')]
     private $description;
 
     /**
-     * @ORM\Column(name="active", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\OneToMany(targetEntity="ApiScope", mappedBy="api", cascade={"persist"}, orphanRemoval=true)
      * @var ArrayCollection
      */
+    #[ORM\OneToMany(targetEntity: \ApiScope::class, mappedBy: 'api', cascade: ['persist'], orphanRemoval: true)]
     private $scopes;
 
     /**
-     * @ORM\OneToMany(targetEntity="ApiEndpoint", mappedBy="api", cascade={"persist"},orphanRemoval=true)
      * @var ArrayCollection
      *
      */
+    #[ORM\OneToMany(targetEntity: \ApiEndpoint::class, mappedBy: 'api', cascade: ['persist'], orphanRemoval: true)]
     private $endpoints;
 
     /**
-     * @ORM\ManyToOne(targetEntity="ResourceServer", inversedBy="apis", cascade={"persist"})
-     * @ORM\JoinColumn(name="resource_server_id", referencedColumnName="id")
      * @var ResourceServer
      */
+    #[ORM\JoinColumn(name: 'resource_server_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \ResourceServer::class, inversedBy: 'apis', cascade: ['persist'])]
     private $resource_server;
 
     /**

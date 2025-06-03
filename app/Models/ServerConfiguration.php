@@ -14,23 +14,22 @@
 use App\Models\Utils\BaseEntity;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineServerConfigurationRepository")
- * @ORM\Table(name="server_configuration")
- * Class ServerConfiguration
  * @package Models
  */
+#[ORM\Table(name: 'server_configuration')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineServerConfigurationRepository::class)]
 class ServerConfiguration extends BaseEntity
 {
     /**
-     * @ORM\Column(name="`key`", type="string")
      * @var string
      */
+    #[ORM\Column(name: '`key`', type: 'string')]
     private $key;
 
     /**
-     * @ORM\Column(name="value", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'value', type: 'string')]
     private $value;
 
     /**

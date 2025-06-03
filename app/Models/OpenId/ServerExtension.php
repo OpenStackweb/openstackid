@@ -15,47 +15,46 @@ use App\Models\Utils\BaseEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineServerExtensionRepository")
- * @ORM\Table(name="server_extensions")
- * Class ServerExtension
  * @package Models\OpenId
  */
+#[ORM\Table(name: 'server_extensions')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineServerExtensionRepository::class)]
 class ServerExtension extends BaseEntity
 {
     /**
-     * @ORM\Column(name="name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'name', type: 'string')]
     private $name;
 
     /**
-     * @ORM\Column(name="namespace", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'namespace', type: 'string')]
     private $namespace;
 
     /**
-     * @ORM\Column(name="active", type="boolean")
      * @var bool
      */
+    #[ORM\Column(name: 'active', type: 'boolean')]
     private $active;
 
     /**
-     * @ORM\Column(name="extension_class", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'extension_class', type: 'string')]
     private $extension_class;
 
     /**
-     * @ORM\Column(name="description", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'description', type: 'string')]
     private $description;
 
     /**
-     * @ORM\Column(name="view_name", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'view_name', type: 'string')]
     private $view_name;
 
     /**

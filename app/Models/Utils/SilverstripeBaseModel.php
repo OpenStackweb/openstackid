@@ -17,25 +17,26 @@ use Doctrine\ORM\Mapping AS ORM;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
 use LaravelDoctrine\ORM\Facades\Registry;
-/***
- * @ORM\MappedSuperclass
+
+/**
  * Class SilverstripeBaseModel
  * @package models\utils
  */
+#[ORM\MappedSuperclass]
 class SilverstripeBaseModel extends BaseEntity
 {
     const DefaultTimeZone = 'America/Chicago';
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="Created", type="datetime")
      */
+    #[ORM\Column(name: 'Created', type: 'datetime')]
     protected $created;
 
     /**
      * @var \DateTime
-     * @ORM\Column(name="LastEdited", type="datetime")
      */
+    #[ORM\Column(name: 'LastEdited', type: 'datetime')]
     protected $last_edited;
 
     /**

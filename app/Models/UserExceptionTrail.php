@@ -16,34 +16,33 @@ use Auth\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 /**
- * @ORM\Entity(repositoryClass="App\Repositories\DoctrineUserExceptionTrailRepository")
- * @ORM\Table(name="user_exceptions_trail")
- * Class UserExceptionTrail
  * @package Models
  */
+#[ORM\Table(name: 'user_exceptions_trail')]
+#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineUserExceptionTrailRepository::class)]
 class UserExceptionTrail extends BaseEntity {
     /**
-     * @ORM\Column(name="exception_type", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'exception_type', type: 'string')]
     private $exception_type;
 
     /**
-     * @ORM\Column(name="from_ip", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'from_ip', type: 'string')]
     private $from_ip;
 
     /**
-     * @ORM\Column(name="stack_trace", type="string")
      * @var string
      */
+    #[ORM\Column(name: 'stack_trace', type: 'string')]
     private $stack_trace;
     /**
-     * @ORM\ManyToOne(targetEntity="Auth\User")
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
      * @var User
      */
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Auth\User::class)]
     private $user;
 
     /**

@@ -24,7 +24,7 @@ return [
     'managers'                  => [
         'model' => [
             'dev'        => env('APP_DEBUG', false),
-            'meta'       => env('DOCTRINE_METADATA', 'annotations'),
+            'meta'       => env('DOCTRINE_METADATA', 'attributes'),
             'quote_strategy' => EscapingQuoteStrategy::class,
             'connection' => 'openstackid',
             'namespaces' => [
@@ -84,7 +84,7 @@ return [
              * https://www.doctrine-project.org/projects/doctrine-dbal/en/current/reference/architecture.html#middlewares
              */
             'middlewares' => array_filter([
-                env('DOCTRINE_LOGGING', false) ? Doctrine\DBAL\Logging\Middleware::class : null,
+                boolval(env('DOCTRINE_LOGGING', false)) ? Doctrine\DBAL\Logging\Middleware::class : null,
             ]),
         ]
     ],
