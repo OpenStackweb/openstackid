@@ -11,6 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Query\Parameter;
 use Models\OAuth2\AsymmetricKey;
 use OAuth2\Repositories\IAsymmetricKeyRepository;
 /**
@@ -94,10 +97,10 @@ abstract class DoctrineAsymmetricKeyRepository
             ->where('e.valid_from <= :now1')
             ->andWhere('e.valid_to >= :now2')
             ->andWhere("e.active = 1")
-            ->setParameters([
-                'now1' => $now,
-                'now2' => $now,
-            ])
+            ->setParameters(new ArrayCollection([
+                new Parameter('now1', $now),
+                new Parameter('now2', $now),
+            ]))
             ->getQuery()
             ->getResult();
     }

@@ -12,6 +12,8 @@
  * limitations under the License.
  **/
 use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Query\Parameter;
 use Models\UserExceptionTrail;
 /**
  * Class DoctrineUserExceptionTrailRepository
@@ -37,7 +39,6 @@ class DoctrineUserExceptionTrailRepository
      */
     public function getCountByIPTypeOfLatestUserExceptions(string $ip, string $type, int $minutes_without_ex): int
     {
-
         return $this->getEntityManager()
             ->createQueryBuilder()
             ->select("count(e.id)")
@@ -45,13 +46,15 @@ class DoctrineUserExceptionTrailRepository
             ->where("e.from_ip = :ip")
             ->andWhere("e.exception_type = :exception_type")
             ->andWhere("DATESUB(UTC_TIMESTAMP(), :minutes, 'MINUTE') < e.created_at")
-            ->setParameters(
-                [
-                    'ip' => trim($ip),
-                    'exception_type' => trim($type),
-                    'minutes' => $minutes_without_ex,
-                ]
+            ->setParameters(new ArrayCollection(
+                    [
+                        new Parameter('ip', trim($ip)),
+                        new Parameter('exception_type', trim($type)),
+                        new Parameter('minutes', $minutes_without_ex)
+                    ]
+                )
             )
-            ->getQuery()->getSingleScalarResult();
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }
