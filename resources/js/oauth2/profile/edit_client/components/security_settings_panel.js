@@ -71,13 +71,16 @@ const SecuritySettingsPanel = (
                                     onChange={handleUsePKCEChange}
                                 />
                             }
-                            <CheckboxFormControl
-                                id="otp_enabled"
-                                title="Use Passwordless?"
-                                tooltip="Use Passwordless Authentication"
-                                value={formik.values.otp_enabled}
-                                onChange={formik.handleChange}
-                            />
+                            {
+                                [appTypes.JSClient, appTypes.Native, appTypes.WebApp].includes(application_type) &&
+                                <CheckboxFormControl
+                                    id="otp_enabled"
+                                    title="Use Passwordless?"
+                                    tooltip="Use Passwordless Authentication"
+                                    value={formik.values.otp_enabled}
+                                    onChange={formik.handleChange}
+                                />
+                            }
                             {
                                 formik.values.otp_enabled &&
                                 <>
