@@ -12,11 +12,12 @@
  * limitations under the License.
  **/
 
+use Doctrine\Common\Collections\AbstractLazyCollection;
 use Doctrine\Common\Collections\Criteria;
+use Doctrine\Common\Collections\Selectable;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\LazyCriteriaCollection;
-use Doctrine\ORM\NativeQuery;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
 use LaravelDoctrine\ORM\Facades\Registry;
@@ -41,7 +42,7 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
     /**
      * @return EntityManager
      */
-    protected function getEntityManager()
+    protected function getEntityManager(): \Doctrine\ORM\EntityManagerInterface
     {
         return Registry::getManager($this->manager_name);
     }
@@ -171,11 +172,11 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      *
      * @return QueryBuilder
      */
-    public function createQueryBuilder($alias, $indexBy = null)
+    public function createQueryBuilder($alias, $indexBy = null): QueryBuilder
     {
         return $this->getEntityManager()->createQueryBuilder()
             ->select($alias)
-            ->from($this->_entityName, $alias, $indexBy);
+            ->from($this->getEntityName(), $alias, $indexBy);
     }
 
     /**
@@ -187,40 +188,12 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      *
      * @return Query\ResultSetMappingBuilder
      */
-    public function createResultSetMappingBuilder($alias)
+    public function createResultSetMappingBuilder($alias): Query\ResultSetMappingBuilder
     {
         $rsm = new Query\ResultSetMappingBuilder($this->getEntityManager(), ResultSetMappingBuilder::COLUMN_RENAMING_INCREMENT);
-        $rsm->addRootEntityFromClassMetadata($this->_entityName, $alias);
+        $rsm->addRootEntityFromClassMetadata($this->getEntityName(), $alias);
 
         return $rsm;
-    }
-
-    /**
-     * Creates a new Query instance based on a predefined metadata named query.
-     *
-     * @param string $queryName
-     *
-     * @return Query
-     */
-    public function createNamedQuery($queryName)
-    {
-        return $this->getEntityManager()->createQuery($this->_class->getNamedQuery($queryName));
-    }
-
-    /**
-     * Creates a native SQL query.
-     *
-     * @param string $queryName
-     *
-     * @return NativeQuery
-     */
-    public function createNativeNamedQuery($queryName)
-    {
-        $queryMapping   = $this->_class->getNamedNativeQuery($queryName);
-        $rsm            = new Query\ResultSetMappingBuilder($this->getEntityManager());
-        $rsm->addNamedNativeQueryMapping($this->_class, $queryMapping);
-
-        return $this->getEntityManager()->createNativeQuery($queryMapping['query'], $rsm);
     }
 
     /**
@@ -228,9 +201,9 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      *
      * @return void
      */
-    public function clear()
+    public function clear(): void
     {
-        $this->getEntityManager()->clear($this->_class->rootEntityName);
+        $this->getEntityManager()->clear($this->getClassMetadata()->rootEntityName);
     }
 
     /**
@@ -244,9 +217,9 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      *
      * @return object|null The entity instance or NULL if the entity can not be found.
      */
-    public function find($id, $lockMode = null, $lockVersion = null)
+    public function find($id, $lockMode = null, $lockVersion = null): ?object
     {
-        return $this->getEntityManager()->find($this->_entityName, $id, $lockMode, $lockVersion);
+        return $this->getEntityManager()->find($this->getEntityName(), $id, $lockMode, $lockVersion);
     }
 
     /**
@@ -259,10 +232,9 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      *
      * @return array The objects.
      */
-    public function findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+    public function findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null): array
     {
-        $persister = $this->getEntityManager()->getUnitOfWork()->getEntityPersister($this->_entityName);
-
+        $persister = $this->getEntityManager()->getUnitOfWork()->getEntityPersister($this->getEntityName());
         return $persister->loadAll($criteria, $orderBy, $limit, $offset);
     }
 
@@ -274,9 +246,9 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      *
      * @return object|null The entity instance or NULL if the entity can not be found.
      */
-    public function findOneBy(array $criteria, array $orderBy = null)
+    public function findOneBy(array $criteria, array $orderBy = null): ?object
     {
-        $persister = $this->getEntityManager()->getUnitOfWork()->getEntityPersister($this->_entityName);
+        $persister = $this->getEntityManager()->getUnitOfWork()->getEntityPersister($this->getEntityName());
 
         return $persister->load($criteria, null, null, [], null, 1, $orderBy);
     }
@@ -290,23 +262,22 @@ abstract class DoctrineRepository extends EntityRepository implements IBaseRepos
      *
      * @return int The cardinality of the objects that match the given criteria.
      */
-    public function count(array $criteria)
+    public function count(array $criteria = []): int
     {
-        return $this->getEntityManager()->getUnitOfWork()->getEntityPersister($this->_entityName)->count($criteria);
+        return $this->getEntityManager()->getUnitOfWork()->getEntityPersister($this->getEntityName())->count($criteria);
     }
 
     /**
      * Select all elements from a selectable that match the expression and
      * return a new collection containing these elements.
      *
-     * @param \Doctrine\Common\Collections\Criteria $criteria
+     * @param Criteria $criteria
      *
-     * @return \Doctrine\Common\Collections\Collection
+     * @return AbstractLazyCollection&Selectable
      */
-    public function matching(Criteria $criteria)
+    public function matching(Criteria $criteria): AbstractLazyCollection&Selectable
     {
-        $persister = $this->getEntityManager()->getUnitOfWork()->getEntityPersister($this->_entityName);
-
+        $persister = $this->getEntityManager()->getUnitOfWork()->getEntityPersister($this->getEntityName());
         return new LazyCriteriaCollection($persister, $criteria);
     }
 }

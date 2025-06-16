@@ -12,6 +12,8 @@
  * limitations under the License.
  **/
 use App\libs\OAuth2\Repositories\IOAuth2TrailExceptionRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Query\Parameter;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2TrailException;
 /**
@@ -46,13 +48,15 @@ implements IOAuth2TrailExceptionRepository
             ->where("client.id = :client_id")
             ->andWhere("e.exception_type = :exception_type")
             ->andWhere("DATESUB(UTC_TIMESTAMP(), :minutes, 'MINUTE') < e.created_at")
-            ->setParameters(
-                [
-                    'client_id' => $client->getId(),
-                    'exception_type' => trim($type),
-                    'minutes' => $minutes_without_ex,
-                ]
+            ->setParameters(new ArrayCollection(
+                    [
+                        new Parameter('client_id', $client->getId()),
+                        new Parameter('exception_type', trim($type)),
+                        new Parameter('minutes', $minutes_without_ex)
+                    ]
+                )
             )
-            ->getQuery()->getSingleScalarResult();
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }
