@@ -43,6 +43,12 @@ use Doctrine\ORM\Mapping AS ORM;
 #[ORM\Cache('NONSTRICT_READ_WRITE')] // Class Client
 class Client extends BaseEntity implements IClient
 {
+    private static array $allowed_otp_client_types = [
+        IClient::ApplicationType_JS_Client,
+        IClient::ApplicationType_Native,
+        IClient::ApplicationType_Web_App
+    ];
+
     /**
      * @var string
      */
@@ -1667,9 +1673,11 @@ class Client extends BaseEntity implements IClient
 
     public function enablePasswordless(): void
     {
-        $this->otp_enabled = true;
-        $this->otp_length = intval(Config::get("otp.length"));
-        $this->otp_lifetime = intval(Config::get("otp.lifetime"));
+        if (in_array($this->getApplicationType(), self::$allowed_otp_client_types)) {
+            $this->otp_enabled = true;
+            $this->otp_length = intval(Config::get("otp.length"));
+            $this->otp_lifetime = intval(Config::get("otp.lifetime"));
+        }
     }
 
     public function disablePasswordless(): void
