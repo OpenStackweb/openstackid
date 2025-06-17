@@ -533,10 +533,10 @@ class LoginPage extends React.Component {
                 ...this.state,
                 user_pic: response.pic,
                 user_fullname: response.full_name,
-                user_verified: true,
+                user_verified: response.can_login,
                 authFlow: response.has_password_set ? password_flow : otp_flow,
                 errors: {
-                    email: '',
+                    email: response.can_login ? '' : 'User is inactive or email verification is pending.',
                     otp: '',
                     password: ''
                 },

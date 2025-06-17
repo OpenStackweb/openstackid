@@ -258,14 +258,15 @@ final class UserController extends OpenIdController
 
             $user = $this->auth_service->getUserByUsername($email);
 
-            if (is_null($user) || !$user->canLogin())
+            if (is_null($user))
                 throw new EntityNotFoundException();
 
             return $this->ok(
                 [
+                    'can_login' => $user->canLogin(),
                     'pic' => $user->getPic(),
                     'full_name' => $user->getFullName(),
-                    'has_password_set' => $user->hasPasswordSet()
+                    'has_password_set' => $user->hasPasswordSet(),
                 ]
             );
         } catch (ValidationException $ex) {
