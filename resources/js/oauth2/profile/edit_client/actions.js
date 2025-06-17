@@ -153,9 +153,12 @@ const normalizeEntity = (entity, entitySection) => {
                 normEntity.pkce_enabled = entity.pkce_enabled ? 1 : 0;
                 normEntity = normalizePKCEDependencies(normEntity);
             }
-            normEntity.otp_enabled = entity.otp_enabled ? 1 : 0;
-            normEntity.otp_length = entity.otp_length;
-            normEntity.otp_lifetime = entity.otp_lifetime;
+            normEntity.otp_enabled = 0;
+            if (entity.otp_enabled) {
+                normEntity.otp_enabled = 1;
+                normEntity.otp_length = entity.otp_length;
+                normEntity.otp_lifetime = entity.otp_lifetime;
+            }
 
             if ([appTypes.JSClient, appTypes.Native, appTypes.WebApp].includes(entity.application_type))
                  normEntity.max_allowed_user_sessions = entity.max_allowed_user_sessions;
