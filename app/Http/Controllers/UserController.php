@@ -303,6 +303,11 @@ final class UserController extends OpenIdController
                 throw new ValidationException("empty username.");
             }
 
+            $user = $this->auth_service->getUserByUsername($username);
+
+            if (!$user->isActive())
+                throw new ValidationException("user is not active.");
+
             $client = null;
 
             // check if we have a former oauth2 request
