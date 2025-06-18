@@ -19,3 +19,11 @@ export const emitOTP = (email, token, connection = 'email', send='code') => {
 
     return postRawRequest(window.EMIT_OTP_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 }
+
+export const resendVerificationEmail = (email, token) => {
+    const params = {
+      email: email
+    };
+
+    return postRawRequest(window.RESEND_VERIFICATION_EMAIL_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
+}
