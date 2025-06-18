@@ -33,6 +33,7 @@
             formAction: '{{ URL::action("UserController@postLogin") }}',
             accountVerifyAction : '{{URL::action("UserController@getAccount")}}',
             emitOtpAction : '{{URL::action("UserController@emitOTP")}}',
+            resendVerificationEmailAction: '{{ URL::action("UserController@resendVerificationEmail") }}',
             authError: authError,
             captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
             flow: 'password',
@@ -76,7 +77,8 @@
         @endif
 
             window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
-        window.EMIT_OTP_ENDPOINT = config.emitOtpAction;
+            window.EMIT_OTP_ENDPOINT = config.emitOtpAction;
+            window.RESEND_VERIFICATION_EMAIL_ENDPOINT = config.resendVerificationEmailAction;
     </script>
     {!! script_to('assets/login.js') !!}
 @append

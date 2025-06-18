@@ -21,7 +21,9 @@ use App\libs\OAuth2\Strategies\LoginHintProcessStrategy;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
+use App\Services\Auth\IUserService as AuthUserService;
 use Exception;
+use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -87,6 +89,10 @@ final class UserController extends OpenIdController
      */
     private $user_service;
     /**
+     * @var AuthUserService
+     */
+    private $auth_user_service;
+    /**
      * @var IUserActionService
      */
     private $user_action_service;
@@ -132,6 +138,7 @@ final class UserController extends OpenIdController
      * @param ITrustedSitesService $trusted_sites_service
      * @param DiscoveryController $discovery
      * @param IUserService $user_service
+     * @param AuthUserService $auth_user_service
      * @param IUserActionService $user_action_service
      * @param IClientRepository $client_repository
      * @param IApiScopeRepository $scope_repository
@@ -150,6 +157,7 @@ final class UserController extends OpenIdController
         ITrustedSitesService $trusted_sites_service,
         DiscoveryController $discovery,
         IUserService $user_service,
+        AuthUserService $auth_user_service,
         IUserActionService $user_action_service,
         IClientRepository $client_repository,
         IApiScopeRepository $scope_repository,
@@ -160,8 +168,6 @@ final class UserController extends OpenIdController
         LoginHintProcessStrategy $login_hint_process_strategy
     )
     {
-
-
         $this->openid_memento_service = $openid_memento_service;
         $this->oauth2_memento_service = $oauth2_memento_service;
         $this->auth_service = $auth_service;
@@ -169,6 +175,7 @@ final class UserController extends OpenIdController
         $this->trusted_sites_service = $trusted_sites_service;
         $this->discovery = $discovery;
         $this->user_service = $user_service;
+        $this->auth_user_service = $auth_user_service;
         $this->user_action_service = $user_action_service;
         $this->client_repository = $client_repository;
         $this->scope_repository = $scope_repository;
@@ -263,7 +270,8 @@ final class UserController extends OpenIdController
 
             return $this->ok(
                 [
-                    'can_login' => $user->canLogin(),
+                    'is_active' => $user->isActive(),
+                    'is_verified' => $user->isEmailVerified(),
                     'pic' => $user->getPic(),
                     'full_name' => $user->getFullName(),
                     'has_password_set' => $user->hasPasswordSet(),
@@ -346,6 +354,37 @@ final class UserController extends OpenIdController
             Log::warning($ex);
             return $this->error404();
         } catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
+
+    /**
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function resendVerificationEmail(LaravelRequest $request)
+    {
+        try {
+            $payload = $request->all();
+            $validator = Validator::make($payload, [
+                'email' => 'required|string|email|max:255'
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+            $this->auth_user_service->resendVerificationEmail($payload);
+            return $this->ok();
+        }
+        catch (ValidationException $ex) {
+            Log::warning($ex);
+            return $this->error412($ex->getMessages());
+        }
+        catch (EntityNotFoundException $ex) {
+            Log::warning($ex);
+            return $this->error404();
+        }
+        catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }

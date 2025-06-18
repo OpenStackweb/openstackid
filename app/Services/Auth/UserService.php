@@ -224,8 +224,10 @@ final class UserService extends AbstractService implements IUserService
     {
         return $this->tx_service->transaction(function () use ($token) {
             $user = $this->user_repository->getByVerificationEmailToken($token);
-            if (is_null($user))
+
+            if (is_null($user) || !$user->isActive())
                 throw new EntityNotFoundException();
+
             $user->verifyEmail();
 
             try {
