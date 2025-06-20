@@ -62,7 +62,7 @@ UsersCrud.prototype = Object.create(BasicCrud.prototype);
 UsersCrud.prototype.constructor = UsersCrud;
 
 UsersCrud.prototype._buildFilters = function () {
-    var term = encodeURIComponent(this.searchTerm);
+    var term = encodeURIComponent(this.searchTerm.trim());
     return 'filter=first_name=@'+term+',last_name=@'+term+',email=@'+term+',full_name=@'+term;
 };
 
