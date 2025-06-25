@@ -63,6 +63,10 @@ return [
             'connection' => env('CACHE_REDIS_CONN', 'cache'),
         ],
 
+        'doctrine_redis' => [
+            'driver' => 'redis',
+            'connection' => env('DOCTRINE_CACHE_REDIS_CONN', 'doctrine_cache'),
+        ],
     ],
 
     /*

@@ -227,22 +227,27 @@ return [
             'region_lifetime'        => 3600,
             'region_lock_lifetime'   => 60,
             'regions'                => [
-
             ],
             'log_enabled'  => true,
             'file_lock_region_directory' => '/tmp'
         ],
         'metadata'         => [
             'driver'       => env('DOCTRINE_METADATA_CACHE', env('DOCTRINE_CACHE', 'redis')),
-            'namespace'    => null,
+            'namespace'    => 'meta',
+            'store'        => env('DOCTRINE_QUERY_CACHE_STORE', 'doctrine_redis'),
+            'lifetime'     => 7200, // 1 hour
         ],
         'query'            => [
             'driver'       => env('DOCTRINE_QUERY_CACHE', env('DOCTRINE_CACHE', 'redis')),
-            'namespace'    => null,
+            'namespace'    => 'qry',
+            'store'        => env('DOCTRINE_QUERY_CACHE_STORE', 'doctrine_redis'),
+            'lifetime'     => 3600, // 1 hour
         ],
         'result'           => [
             'driver'       => env('DOCTRINE_RESULT_CACHE', env('DOCTRINE_CACHE', 'redis')),
-            'namespace'    => null,
+            'namespace'    => 'res',
+            'store'        => env('DOCTRINE_QUERY_CACHE_STORE', 'doctrine_redis'),
+            'lifetime'     => 3600, // 1 hour
         ],
     ],
 

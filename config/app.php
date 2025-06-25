@@ -172,6 +172,7 @@ return [
         // remove 'Laravel\Socialite\SocialiteServiceProvider',
         \SocialiteProviders\Manager\ServiceProvider::class, // add
         \App\libs\Utils\Html\HtmlServiceProvider::class,
+        App\libs\Utils\Doctrine\DoctrineCacheServiceProvider::class,
     ],
 
     /*

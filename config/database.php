@@ -138,6 +138,14 @@ return [
             'timeout' => env('REDIS_TIMEOUT', 30.0),
             'scheme' => env('REDIS_SCHEME', 'tcp'),
         ],
+        'doctrine_cache' => [
+            'host' => env('REDIS_HOST'),
+            'port' => env('REDIS_PORT'),
+            'database' => env('REDIS_DOCTRINE_CACHE_DB', 5),
+            'password' => env('REDIS_PASSWORD'),
+            'timeout' => env('REDIS_TIMEOUT', 30.0),
+            'scheme' => env('REDIS_SCHEME', 'tcp'),
+        ],
     ],
     'allow_disabled_pk' => env('ALLOW_DISABLED_PK', false),
 ];
