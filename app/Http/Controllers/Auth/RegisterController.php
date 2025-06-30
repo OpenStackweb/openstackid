@@ -17,6 +17,7 @@ use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request as LaravelRequest;
@@ -68,6 +69,27 @@ final class RegisterController extends Controller
     public function showRegistrationForm(LaravelRequest $request)
     {
         try {
+
+            // if we already logged in ... continue flow
+            if(Auth::check()){
+                Log::warning("RegisterController::showRegistrationForm user already logged in, checking if we have a client id");
+                if ($request->has("redirect_uri") && $request->has("client_id")) {
+                    $redirect_uri = $request->get("redirect_uri");
+                    $client_id = $request->get("client_id");
+                    Log::debug(sprintf("RegisterController::showRegistrationForm redirect_uri %s client_id %s", $redirect_uri, $client_id));
+                    $client = $this->client_repository->getClientById($client_id);
+                    if (is_null($client))
+                        throw new ValidationException("Client does not exists.");
+
+                    if (!$client->isUriAllowed($redirect_uri))
+                        throw new ValidationException(sprintf("redirect_uri %s is not allowed on associated client.", $redirect_uri));
+
+                    Log::debug(sprintf("RegisterController::showRegistrationForm redirect_uri %s client_id %s redirecting", $redirect_uri, $client_id));
+                    return Redirect::to($redirect_uri);
+                }
+                Log::debug("RegisterController::showRegistrationForm redirecting to home page");
+                return Redirect::to('/');
+            }
 
             $params = [
                 "redirect_uri" => '',
