@@ -19,18 +19,26 @@ use Sokil\IsoCodes\IsoCodesFactory;
 final class CountryList
 {
     private static function countrySort($a,$b) {
-        $al = strtolower($a->getName());
-        $bl = strtolower($b->getName());
+        $al = strtolower($a['name']);
+        $bl = strtolower($b['name']);
         if ($al == $bl) {
             return 0;
         }
         return ($al > $bl) ? +1 : -1;
     }
 
+    private static function countryMap2Dic($country) {
+        return [
+            'name' => $country->getAlpha2() == 'TW'? 'Taiwan' : $country->getName(),
+            'alpha2' => $country->getAlpha2(),
+        ];
+    }
+
     public static function getCountries(){
         // init database
         $isoCodes = new IsoCodesFactory();
         $countries  = $isoCodes->getCountries()->toArray();
+        $countries = array_map( array('App\Http\Utils\CountryList','countryMap2Dic'), $countries);
         usort($countries, array('App\Http\Utils\CountryList','countrySort'));
         return $countries;
     }

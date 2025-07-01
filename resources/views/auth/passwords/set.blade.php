@@ -43,7 +43,7 @@
 
         let countries = [];
         @foreach($countries as $country)
-            countries.push({ value: "{!! $country->getAlpha2() !!}", text: "{!! $country->getName() !!}" });
+        countries.push({value: "{!! $country['alpha2'] !!}", text: "{!! $country['name'] !!}"});
         @endforeach
 
         let config = {
