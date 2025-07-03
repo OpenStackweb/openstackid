@@ -16,7 +16,7 @@
         <select id="country_iso_code" class="form-control" name="country_iso_code" required autofocus data-lpignore="true">
             <option value="">--SELECT A COUNTRY --</option>
             @foreach($countries as $country)
-                <option value="{!! $country->getAlpha2() !!}">{!! $country->getName() !!}</option>
+                <option value="{!! $country['alpha2'] !!}">{!! $country['name'] !!}</option>
             @endforeach
         </select>
     </div>
