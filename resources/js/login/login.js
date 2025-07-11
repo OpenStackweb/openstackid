@@ -608,7 +608,7 @@ class LoginPage extends React.Component {
         resendVerificationEmail(user_name, this.props.token).then((payload) => {
             this.showAlert(
                 'We\'ve sent you a verification email. Please check your inbox and click the link to verify your account.',
-                'info');
+                'success');
         }, (error) => {
             let {response, status} = error;
             if(status === 412){
