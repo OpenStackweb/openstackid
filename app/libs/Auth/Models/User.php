@@ -1854,6 +1854,7 @@ SQL;
         if(!$this->active) {
             $this->active = true;
             $this->spam_type = self::SpamTypeHam;
+            $this->login_failed_attempt = 10;
             Event::dispatch(new UserSpamStateUpdated(
                     $this->getId()
                 )
@@ -1886,6 +1887,7 @@ SQL;
             $this->spam_type           = self::SpamTypeHam;
             $this->active              = true;
             $this->lock                = false;
+            $this->login_failed_attempt = 0;
             $this->email_verified_date = new \DateTime('now', new \DateTimeZone('UTC'));
 
             if($send_email_verified_notice)
