@@ -306,7 +306,7 @@ final class UserController extends OpenIdController
             $user = $this->auth_service->getUserByUsername($username);
 
             if (!$user->isActive())
-                throw new ValidationException("user is not active.");
+                throw new ValidationException("User is not active.");
 
             $client = null;
 
