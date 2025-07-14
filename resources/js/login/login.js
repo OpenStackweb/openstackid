@@ -82,7 +82,10 @@ const PasswordInputForm = ({
                                captchaPublicKey,
                                onChangeRecaptcha,
                                handleEmitOtpAction,
-                               forgotPasswordAction
+                               forgotPasswordAction,
+                               loginAttempts,
+                               maxLoginFailedAttempts,
+                               userIsActive
                            }) => {
     return (
         <form method="post" action={formAction} onSubmit={onAuthenticate} target="_self">
@@ -114,9 +117,46 @@ const PasswordInputForm = ({
                     )
                 }}
             />
-            {passwordError &&
-                <p className={styles.error_label} dangerouslySetInnerHTML={{__html: passwordError}}></p>
-            }
+            {(() => {
+                const attempts = parseInt(loginAttempts, 10);
+                const maxAttempts = parseInt(maxLoginFailedAttempts, 10);
+                const attemptsLeft = maxAttempts - attempts;
+
+                if (!passwordError) return null;
+
+                if (attempts > 0 && attempts < maxAttempts && userIsActive) {
+                    return (
+                        <>
+                            <p className={styles.error_label}>
+                                Incorrect password. You have {attemptsLeft} more attempt{attemptsLeft !== 1 ? 's' : ''} before your account is locked.
+                            </p>
+                        </>
+                    );
+                }
+
+                if (attempts > 0 && attempts === maxAttempts && userIsActive) {
+                    return (
+                        <>
+                            <p className={styles.error_label}>
+                                Incorrect password. You have reached the maximum ({maxAttempts}) login attempts. Your account will be locked after another failed login.
+                            </p>
+                        </>
+                    );
+                }
+
+                if (attempts > 0 && attempts === maxAttempts && !userIsActive) {
+                    return (
+                        <>
+                            <p className={styles.error_label}>
+                                Your account has been locked due to multiple failed login attempts. Please contact support to unlock it.
+                            </p>
+                        </>
+                    );
+                }
+
+                return <p className={styles.error_label} dangerouslySetInnerHTML={{__html: passwordError}}></p>;
+            })()}
+
             <Grid container spacing={1}>
                 <Grid item xs={12}>
                     <Button variant="contained"
@@ -434,7 +474,7 @@ class LoginPage extends React.Component {
         this.resendVerificationEmail = this.resendVerificationEmail.bind(this);
         this.handleSnackbarClose = this.handleSnackbarClose.bind(this);
         this.showAlert = this.showAlert.bind(this);
-    }
+   }
 
     showAlert(message, severity) {
         this.setState({
@@ -777,6 +817,9 @@ class LoginPage extends React.Component {
                                     onChangeRecaptcha={this.onChangeRecaptcha}
                                     handleEmitOtpAction={this.handleEmitOtpAction}
                                     forgotPasswordAction={this.props.forgotPasswordAction}
+                                    loginAttempts={this.props?.loginAttempts}
+                                    maxLoginFailedAttempts={this.props?.maxLoginFailedAttempts}
+                                    userIsActive={this.props?.user_is_active}
                                 />
                                 <HelpLinks
                                     userName={this.state.user_name}

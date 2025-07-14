@@ -393,6 +393,7 @@ final class UserController extends OpenIdController
     public function postLogin()
     {
         $max_login_attempts_2_show_captcha = $this->server_configuration_service->getConfigValue("MaxFailed.LoginAttempts.2ShowCaptcha");
+        $max_login_failed_attempts = intval($this->server_configuration_service->getConfigValue("MaxFailed.Login.Attempts"));
         $login_attempts                    = 0;
         $username                          = '';
         $user = null;
@@ -479,13 +480,15 @@ final class UserController extends OpenIdController
                     (
                         [
                             'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                            'max_login_failed_attempts' => $max_login_failed_attempts,
                             'login_attempts' => $login_attempts,
                             'error_message' => $ex->getMessage(),
                             'user_fullname' => !is_null($user) ? $user->getFullName() : "",
                             'user_pic' => !is_null($user) ? $user->getPic(): "",
                             'user_verified' => true,
                             'username' => $username,
-                            'flow' => $flow
+                            'flow' => $flow,
+                            'user_is_active' => !is_null($user) ? ($user->isActive() ? 1 : 0) : 0
                         ]
                     );
                 }
@@ -495,6 +498,7 @@ final class UserController extends OpenIdController
             // validator errors
             $response_data =    [
                 'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                'max_login_failed_attempts'         => $max_login_failed_attempts,
                 'login_attempts'                    => $login_attempts,
                 'validator'                         => $validator,
             ];
@@ -506,7 +510,8 @@ final class UserController extends OpenIdController
             if(!is_null($user)){
                 $response_data['user_fullname'] = $user->getFullName();
                 $response_data['user_pic'] = $user->getPic();
-                $response_data['user_verified'] = true;
+                $response_data['user_verified'] = 1;
+                $response_data['user_is_active'] = $user->isActive() ? 1 : 0;
             }
 
             return $this->login_strategy->errorLogin
@@ -521,9 +526,10 @@ final class UserController extends OpenIdController
 
             $response_data =    [
                 'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                'max_login_failed_attempts'         => $max_login_failed_attempts,
                 'login_attempts'                    => $login_attempts,
                 'username'                          => $username,
-                'error_message'                     => $ex1->getMessage()
+                'error_message'                     => $ex1->getMessage(),
             ];
 
             if (is_null($user) && isset($data['username'])) {
@@ -533,7 +539,8 @@ final class UserController extends OpenIdController
             if(!is_null($user)){
                 $response_data['user_fullname'] = $user->getFullName();
                 $response_data['user_pic'] = $user->getPic();
-                $response_data['user_verified'] = true;
+                $response_data['user_verified'] = 1;
+                $response_data['user_is_active'] = $user->isActive() ? 1 : 0;
             }
 
             return $this->login_strategy->errorLogin
