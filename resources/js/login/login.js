@@ -24,7 +24,7 @@ import Grid from '@material-ui/core/Grid';
 import CustomSnackbar from "../components/custom_snackbar";
 import Banner from '../components/banner/banner';
 import OtpInput from 'react-otp-input';
-import {handleThirdPartyProvidersVerbiage} from '../utils';
+import {handleErrorResponse, handleThirdPartyProvidersVerbiage} from '../utils';
 
 import styles from './login.module.scss'
 import "./third_party_identity_providers.scss";
@@ -605,21 +605,22 @@ class LoginPage extends React.Component {
         let {user_name} = this.state;
         user_name = user_name?.trim();
 
+        if (!user_name) {
+            this.showAlert(
+                'Something went wrong while trying to resend the verification email. Please try again later.',
+                'error');
+            return;
+        }
+
         resendVerificationEmail(user_name, this.props.token).then((payload) => {
             this.showAlert(
                 'We\'ve sent you a verification email. Please check your inbox and click the link to verify your account.',
                 'success');
         }, (error) => {
-            let {response, status} = error;
-            if(status === 412){
-                const {errors} = response.body;
-                const allErrors = Object.values(errors ?? {})
-                  ?.flat?.()
-                  ?.join(', ') || '';
-                this.showAlert(allErrors, 'error');
-                return;
-            }
-            this.showAlert('Oops... Something went wrong!', 'error');
+            handleErrorResponse(error, (title, messageLines, type) => {
+                const message = (messageLines ?? []).join(', ')
+                this.showAlert(`${title}: ${message}`, type);
+            });
         });
     }
 
