@@ -1,20 +1,36 @@
 import Swal from "sweetalert2";
 
-export const handleErrorResponse = (err) => {
-    if(err.status === 412){
-        // validation error
-        let msg= '';
-        for (let [key, value] of Object.entries(err.response.body.errors)) {
-            if (isNaN(key)) {
-                msg += key + ': ';
-            }
-
-            msg += value + '<br>';
+const createErrorHandler = (customHandler = null) => {
+    const showMessage = (title, message, type) => {
+        if (customHandler && typeof customHandler === 'function') {
+            return customHandler(title, message, type);
         }
-        return Swal("Validation error", msg, "warning");
-    }
-    return Swal("Something went wrong!", null, "error");
-}
+        const formattedMessage = Array.isArray(message) ? message.join('<br>') : message;
+        return Swal(title, formattedMessage, type);
+    };
+
+    return (err) => {
+        if (err.status === 412) {
+            // validation error
+            const messageLines = [];
+            for (let [key, value] of Object.entries(err.response.body.errors)) {
+                let line = '';
+                if (isNaN(key)) {
+                    line += key + ': ';
+                }
+                line += value;
+                messageLines.push(line);
+            }
+            return showMessage("Validation error", messageLines, "warning");
+        }
+        return showMessage("Something went wrong!", null, "error");
+    };
+};
+
+export const handleErrorResponse = (err, customHandler = null) => {
+    const errorHandler = createErrorHandler(customHandler);
+    return errorHandler(err);
+};
 
 /**
  * 

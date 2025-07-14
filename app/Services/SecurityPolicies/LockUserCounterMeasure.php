@@ -77,7 +77,7 @@ class LockUserCounterMeasure implements ISecurityPolicyCounterMeasure
                     $user_id = $params["user_id"];
                     $user    = $this->repository->getById($user_id);
                     $max_login_failed_attempts = intval($this->server_configuration->getConfigValue("MaxFailed.Login.Attempts"));
-                    if (!is_null($user) && $user instanceof User) {
+                    if ($user instanceof User) {
                         //apply lock policy
                         if (intval($user->getLoginFailedAttempt()) < $max_login_failed_attempts) {
                             $this->user_service->updateFailedLoginAttempts($user->getId());

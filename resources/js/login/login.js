@@ -12,7 +12,7 @@ import Container from '@material-ui/core/Container';
 import Chip from '@material-ui/core/Chip';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
-import {verifyAccount, emitOTP} from './actions';
+import {verifyAccount, emitOTP, resendVerificationEmail} from './actions';
 import {MuiThemeProvider, createTheme} from '@material-ui/core/styles';
 import DividerWithText from '../components/divider_with_text';
 import Visibility from '@material-ui/icons/Visibility';
@@ -21,15 +21,15 @@ import InputAdornment from '@material-ui/core/InputAdornment';
 import IconButton from '@material-ui/core/IconButton';
 import { emailValidator } from '../validator';
 import Grid from '@material-ui/core/Grid';
-import Swal from 'sweetalert2'
+import CustomSnackbar from "../components/custom_snackbar";
 import Banner from '../components/banner/banner';
 import OtpInput from 'react-otp-input';
-import {handleThirdPartyProvidersVerbiage} from '../utils';
+import {handleErrorResponse, handleThirdPartyProvidersVerbiage} from '../utils';
 
 import styles from './login.module.scss'
 import "./third_party_identity_providers.scss";
 
-const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput, emailError }) => {
+const EmailInputForm = ({ value, onValidateEmail, onHandleUserNameChange, disableInput, emailError }) => {
 
     return (
         <Paper elevation={0} component="form"
@@ -39,6 +39,7 @@ const EmailInputForm = ({ onValidateEmail, onHandleUserNameChange, disableInput,
             <TextField
                 id="email"
                 name="email"
+                value={value}
                 autoComplete="email"
                 variant="outlined"
                 margin="normal"
@@ -81,7 +82,10 @@ const PasswordInputForm = ({
                                captchaPublicKey,
                                onChangeRecaptcha,
                                handleEmitOtpAction,
-                               forgotPasswordAction
+                               forgotPasswordAction,
+                               loginAttempts,
+                               maxLoginFailedAttempts,
+                               userIsActive
                            }) => {
     return (
         <form method="post" action={formAction} onSubmit={onAuthenticate} target="_self">
@@ -113,9 +117,46 @@ const PasswordInputForm = ({
                     )
                 }}
             />
-            {passwordError &&
-                <p className={styles.error_label} dangerouslySetInnerHTML={{__html: passwordError}}></p>
-            }
+            {(() => {
+                const attempts = parseInt(loginAttempts, 10);
+                const maxAttempts = parseInt(maxLoginFailedAttempts, 10);
+                const attemptsLeft = maxAttempts - attempts;
+
+                if (!passwordError) return null;
+
+                if (attempts > 0 && attempts < maxAttempts && userIsActive) {
+                    return (
+                        <>
+                            <p className={styles.error_label}>
+                                Incorrect password. You have {attemptsLeft} more attempt{attemptsLeft !== 1 ? 's' : ''} before your account is locked.
+                            </p>
+                        </>
+                    );
+                }
+
+                if (attempts > 0 && attempts === maxAttempts && userIsActive) {
+                    return (
+                        <>
+                            <p className={styles.error_label}>
+                                Incorrect password. You have reached the maximum ({maxAttempts}) login attempts. Your account will be locked after another failed login.
+                            </p>
+                        </>
+                    );
+                }
+
+                if (attempts > 0 && attempts === maxAttempts && !userIsActive) {
+                    return (
+                        <>
+                            <p className={styles.error_label}>
+                                Your account has been locked due to multiple failed login attempts. Please contact support to unlock it.
+                            </p>
+                        </>
+                    );
+                }
+
+                return <p className={styles.error_label} dangerouslySetInnerHTML={{__html: passwordError}}></p>;
+            })()}
+
             <Grid container spacing={1}>
                 <Grid item xs={12}>
                     <Button variant="contained"
@@ -391,10 +432,16 @@ class LoginPage extends React.Component {
             user_pic: props.hasOwnProperty('user_pic') ? props.user_pic : null,
             user_fullname: props.hasOwnProperty('user_fullname') ? props.user_fullname : null,
             user_verified: props.hasOwnProperty('user_verified') ? props.user_verified : false,
+            user_active: props.hasOwnProperty('user_active') ? props.user_active : null,
+            email_verified: props.hasOwnProperty('email_verified') ? props.email_verified : null,
             errors: {
                 email: '',
                 otp: props.authError != '' ? props.authError : '',
                 password: props.authError != '' ? props.authError : '',
+            },
+            notification: {
+                message: null,
+                severity: 'info'
             },
             captcha_value: '',
             showPassword: false,
@@ -424,6 +471,19 @@ class LoginPage extends React.Component {
         this.handleClickShowPassword = this.handleClickShowPassword.bind(this);
         this.handleMouseDownPassword = this.handleMouseDownPassword.bind(this);
         this.handleEmitOtpAction = this.handleEmitOtpAction.bind(this);
+        this.resendVerificationEmail = this.resendVerificationEmail.bind(this);
+        this.handleSnackbarClose = this.handleSnackbarClose.bind(this);
+        this.showAlert = this.showAlert.bind(this);
+   }
+
+    showAlert(message, severity) {
+        this.setState({
+            ...this.state,
+            notification: {
+                message: message,
+                severity: severity
+            }
+        });
     }
 
     emitOtpAction() {
@@ -446,11 +506,10 @@ class LoginPage extends React.Component {
             let {response, status, message} = error;
             if(status == 412){
                 const {message, errors} = response.body;
-                Swal(message, errors[0], 'error')
+                this.showAlert(errors[0], 'error');
                 return;
             }
-
-            Swal('Oops...', 'Something went wrong!', 'error')
+            this.showAlert('Oops... Something went wrong!', 'error');
         });
         return false;
     }
@@ -515,28 +574,36 @@ class LoginPage extends React.Component {
 
         ev.preventDefault();
         let {user_name} = this.state;
-        user_name = user_name.trim();
+        user_name = user_name?.trim();
 
         if (user_name == '') {
             return false;
         }
-
         if (!emailValidator(user_name)) {
             return false;
         }
-
         this.setState({ ...this.state, disableInput: true });
+
         verifyAccount(user_name, this.props.token).then((payload) => {
             let { response } = payload;
+
+            let error = '';
+            if (response.is_active === false) {
+                error = 'Your user account is currently inactive. Please contact support for further assistance.';
+            } else if (response.is_active === true && response.is_verified === false) {
+                error = 'Your email has not been verified. Please check your inbox or resend the verification email.';
+            }
 
             this.setState({
                 ...this.state,
                 user_pic: response.pic,
                 user_fullname: response.full_name,
                 user_verified: true,
+                user_active: response.is_active,
+                email_verified: response.is_verified,
                 authFlow: response.has_password_set ? password_flow : otp_flow,
                 errors: {
-                    email: '',
+                    email: error,
                     otp: '',
                     password: ''
                 },
@@ -573,14 +640,46 @@ class LoginPage extends React.Component {
         return true;
     }
 
+    resendVerificationEmail(ev) {
+        ev.preventDefault();
+        let {user_name} = this.state;
+        user_name = user_name?.trim();
+
+        if (!user_name) {
+            this.showAlert(
+                'Something went wrong while trying to resend the verification email. Please try again later.',
+                'error');
+            return;
+        }
+
+        resendVerificationEmail(user_name, this.props.token).then((payload) => {
+            this.showAlert(
+                'We\'ve sent you a verification email. Please check your inbox and click the link to verify your account.',
+                'success');
+        }, (error) => {
+            handleErrorResponse(error, (title, messageLines, type) => {
+                const message = (messageLines ?? []).join(', ')
+                this.showAlert(`${title}: ${message}`, type);
+            });
+        });
+    }
+
     handleDelete(ev) {
         ev.preventDefault();
         this.setState({
-            ...this.state, user_name: null, user_pic: null, user_fullname: null, user_verified: false, authFlow: "password", errors: {
+            ...this.state,
+            user_name: null,
+            user_pic: null,
+            user_fullname: null,
+            user_verified: false,
+            user_active: null,
+            email_verified: null,
+            authFlow: "password",
+            errors: {
                 email: '',
                 otp: '',
                 password: ''
-            },
+            }
         });
         return false;
     }
@@ -593,6 +692,30 @@ class LoginPage extends React.Component {
     handleMouseDownPassword(ev) {
         ev.preventDefault();
     }
+
+    existingUserCanContinue() {
+        const { user_active, email_verified } = this.state;
+        return user_active !== false && email_verified !== false;
+    }
+
+    getSignUpSignInTitle() {
+      const { errors, user_active } = this.state;
+
+      if (errors.email && this.existingUserCanContinue()) {
+        return 'Create an account for:';
+      }
+      return 'Sign in';
+    }
+
+    handleSnackbarClose() {
+        this.setState({
+            ...this.state,
+            notification: {
+                message: null,
+                severity: 'info'
+            }
+        });
+    };
 
     render() {
         return (
@@ -607,7 +730,7 @@ class LoginPage extends React.Component {
                                                                                src={this.props.appLogo}/></a>
                         </Typography>
                         <Typography component="h1" variant="h5">
-                            {this.state.errors.email ? 'Create an account for:' : 'Sign in'}
+                            {this.getSignUpSignInTitle()}
                             {this.state.user_fullname &&
                                 <Chip
                                     avatar={<Avatar alt={this.state.user_name} src={this.state.user_pic}/>}
@@ -617,16 +740,17 @@ class LoginPage extends React.Component {
                                     onDelete={this.handleDelete}/>
                             }
                         </Typography>
-                        {!this.state.user_verified &&
+                        {(!this.state.user_verified || !this.existingUserCanContinue()) &&
                             <>
                                 {this.state.allowNativeAuth &&
                                     <EmailInputForm
+                                        value={this.state.user_name ?? ''}
                                         onValidateEmail={this.onValidateEmail}
                                         onHandleUserNameChange={this.onHandleUserNameChange}
                                         disableInput={this.state.disableInput}
                                         emailError={this.state.errors.email}/>
                                 }
-                                {this.state.errors.email == '' &&
+                                {this.state.errors.email === '' &&
                                     this.props.thirdPartyProviders.length > 0 &&
                                     <ThirdPartyIdentityProviders
                                         thirdPartyProviders={this.props.thirdPartyProviders}
@@ -637,14 +761,26 @@ class LoginPage extends React.Component {
                                 }
                                 {
                                     // we already had an interaction and got an user error...
-                                    this.state.errors.email != '' &&
+                                    this.state.errors.email !== '' &&
                                     <>
-                                        <EmailErrorActions
-                                            emitOtpAction={this.handleEmitOtpAction}
-                                            onValidateEmail={this.onValidateEmail}
-                                            disableInput={this.state.disableInput}
-                                            createAccountAction={(this.state.user_name) ? `${this.props.createAccountAction}?email=${encodeURIComponent(this.state.user_name)}` : this.props.createAccountAction}
-                                        />
+                                        {this.existingUserCanContinue() &&
+                                            <EmailErrorActions
+                                                emitOtpAction={this.handleEmitOtpAction}
+                                                onValidateEmail={this.onValidateEmail}
+                                                disableInput={this.state.disableInput}
+                                                createAccountAction={(this.state.user_name) ? `${this.props.createAccountAction}?email=${encodeURIComponent(this.state.user_name)}` : this.props.createAccountAction}
+                                            />
+                                        }
+                                        {
+                                            this.state.email_verified === false &&
+                                                <Button variant="contained"
+                                                    color="primary"
+                                                    title="Resend verification email"
+                                                    className={styles.apply_button}
+                                                    onClick={this.resendVerificationEmail}>
+                                                    Resend verification email
+                                                </Button>
+                                        }
                                         <HelpLinks
                                             userName={this.state.user_name}
                                             appName={this.props.appName}
@@ -661,7 +797,7 @@ class LoginPage extends React.Component {
                                 }
                             </>
                         }
-                        {this.state.user_verified && this.state.authFlow == password_flow &&
+                        {this.state.user_verified && this.existingUserCanContinue() && this.state.authFlow === password_flow &&
                             // proceed to ask for password ( 2nd step )
                             <>
                                 <PasswordInputForm
@@ -681,6 +817,9 @@ class LoginPage extends React.Component {
                                     onChangeRecaptcha={this.onChangeRecaptcha}
                                     handleEmitOtpAction={this.handleEmitOtpAction}
                                     forgotPasswordAction={this.props.forgotPasswordAction}
+                                    loginAttempts={this.props?.loginAttempts}
+                                    maxLoginFailedAttempts={this.props?.maxLoginFailedAttempts}
+                                    userIsActive={this.props?.user_is_active}
                                 />
                                 <HelpLinks
                                     userName={this.state.user_name}
@@ -696,7 +835,7 @@ class LoginPage extends React.Component {
                                 />
                             </>
                         }
-                        {this.state.user_verified && this.state.authFlow == otp_flow &&
+                        {this.state.user_verified && this.existingUserCanContinue() && this.state.authFlow === otp_flow &&
                             // proceed to ask for password ( 2nd step )
                             <>
                                 <OTPInputForm
@@ -717,6 +856,11 @@ class LoginPage extends React.Component {
                                 <OTPHelpLinks emitOtpAction={this.handleEmitOtpAction}/>
                             </>
                         }
+                        <CustomSnackbar
+                            message={this.state.notification.message}
+                            severity={this.state.notification.severity}
+                            onClose={this.handleSnackbarClose}
+                        />
                     </div>
                 </Container>
             </Container>

@@ -20,7 +20,9 @@ use App\libs\OAuth2\Strategies\LoginHintProcessStrategy;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
+use App\Services\Auth\IUserService as AuthUserService;
 use Exception;
+use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -86,6 +88,10 @@ final class UserController extends OpenIdController
      */
     private $user_service;
     /**
+     * @var AuthUserService
+     */
+    private $auth_user_service;
+    /**
      * @var IUserActionService
      */
     private $user_action_service;
@@ -131,6 +137,7 @@ final class UserController extends OpenIdController
      * @param ITrustedSitesService $trusted_sites_service
      * @param DiscoveryController $discovery
      * @param IUserService $user_service
+     * @param AuthUserService $auth_user_service
      * @param IUserActionService $user_action_service
      * @param IClientRepository $client_repository
      * @param IApiScopeRepository $scope_repository
@@ -149,6 +156,7 @@ final class UserController extends OpenIdController
         ITrustedSitesService $trusted_sites_service,
         DiscoveryController $discovery,
         IUserService $user_service,
+        AuthUserService $auth_user_service,
         IUserActionService $user_action_service,
         IClientRepository $client_repository,
         IApiScopeRepository $scope_repository,
@@ -159,8 +167,6 @@ final class UserController extends OpenIdController
         LoginHintProcessStrategy $login_hint_process_strategy
     )
     {
-
-
         $this->openid_memento_service = $openid_memento_service;
         $this->oauth2_memento_service = $oauth2_memento_service;
         $this->auth_service = $auth_service;
@@ -168,6 +174,7 @@ final class UserController extends OpenIdController
         $this->trusted_sites_service = $trusted_sites_service;
         $this->discovery = $discovery;
         $this->user_service = $user_service;
+        $this->auth_user_service = $auth_user_service;
         $this->user_action_service = $user_action_service;
         $this->client_repository = $client_repository;
         $this->scope_repository = $scope_repository;
@@ -257,14 +264,16 @@ final class UserController extends OpenIdController
 
             $user = $this->auth_service->getUserByUsername($email);
 
-            if (is_null($user) || !$user->canLogin())
+            if (is_null($user))
                 throw new EntityNotFoundException();
 
             return $this->ok(
                 [
+                    'is_active' => $user->isActive(),
+                    'is_verified' => $user->isEmailVerified(),
                     'pic' => $user->getPic(),
                     'full_name' => $user->getFullName(),
-                    'has_password_set' => $user->hasPasswordSet()
+                    'has_password_set' => $user->hasPasswordSet(),
                 ]
             );
         } catch (ValidationException $ex) {
@@ -354,9 +363,41 @@ final class UserController extends OpenIdController
         }
     }
 
+    /**
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function resendVerificationEmail(LaravelRequest $request)
+    {
+        try {
+            $payload = $request->all();
+            $validator = Validator::make($payload, [
+                'email' => 'required|string|email|max:255'
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+            $this->auth_user_service->resendVerificationEmail($payload);
+            return $this->ok();
+        }
+        catch (ValidationException $ex) {
+            Log::warning($ex);
+            return $this->error412($ex->getMessages());
+        }
+        catch (EntityNotFoundException $ex) {
+            Log::warning($ex);
+            return $this->error404();
+        }
+        catch (Exception $ex) {
+            Log::error($ex);
+            return $this->error500($ex);
+        }
+    }
+
     public function postLogin()
     {
         $max_login_attempts_2_show_captcha = $this->server_configuration_service->getConfigValue("MaxFailed.LoginAttempts.2ShowCaptcha");
+        $max_login_failed_attempts = intval($this->server_configuration_service->getConfigValue("MaxFailed.Login.Attempts"));
         $login_attempts                    = 0;
         $username                          = '';
         $user = null;
@@ -443,13 +484,15 @@ final class UserController extends OpenIdController
                     (
                         [
                             'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                            'max_login_failed_attempts' => $max_login_failed_attempts,
                             'login_attempts' => $login_attempts,
                             'error_message' => $ex->getMessage(),
                             'user_fullname' => !is_null($user) ? $user->getFullName() : "",
                             'user_pic' => !is_null($user) ? $user->getPic(): "",
                             'user_verified' => true,
                             'username' => $username,
-                            'flow' => $flow
+                            'flow' => $flow,
+                            'user_is_active' => !is_null($user) ? ($user->isActive() ? 1 : 0) : 0
                         ]
                     );
                 }
@@ -459,6 +502,7 @@ final class UserController extends OpenIdController
             // validator errors
             $response_data =    [
                 'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                'max_login_failed_attempts'         => $max_login_failed_attempts,
                 'login_attempts'                    => $login_attempts,
                 'validator'                         => $validator,
             ];
@@ -470,7 +514,8 @@ final class UserController extends OpenIdController
             if(!is_null($user)){
                 $response_data['user_fullname'] = $user->getFullName();
                 $response_data['user_pic'] = $user->getPic();
-                $response_data['user_verified'] = true;
+                $response_data['user_verified'] = 1;
+                $response_data['user_is_active'] = $user->isActive() ? 1 : 0;
             }
 
             return $this->login_strategy->errorLogin
@@ -485,9 +530,10 @@ final class UserController extends OpenIdController
 
             $response_data =    [
                 'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
+                'max_login_failed_attempts'         => $max_login_failed_attempts,
                 'login_attempts'                    => $login_attempts,
                 'username'                          => $username,
-                'error_message'                     => $ex1->getMessage()
+                'error_message'                     => $ex1->getMessage(),
             ];
 
             if (is_null($user) && isset($data['username'])) {
@@ -497,7 +543,8 @@ final class UserController extends OpenIdController
             if(!is_null($user)){
                 $response_data['user_fullname'] = $user->getFullName();
                 $response_data['user_pic'] = $user->getPic();
-                $response_data['user_verified'] = true;
+                $response_data['user_verified'] = 1;
+                $response_data['user_is_active'] = $user->isActive() ? 1 : 0;
             }
 
             return $this->login_strategy->errorLogin

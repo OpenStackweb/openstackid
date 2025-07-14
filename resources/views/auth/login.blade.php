@@ -33,6 +33,7 @@
             formAction: '{{ URL::action("UserController@postLogin") }}',
             accountVerifyAction : '{{URL::action("UserController@getAccount")}}',
             emitOtpAction : '{{URL::action("UserController@emitOTP")}}',
+            resendVerificationEmailAction: '{{ URL::action("UserController@resendVerificationEmail") }}',
             authError: authError,
             captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
             flow: 'password',
@@ -57,8 +58,16 @@
             config.maxLoginAttempts2ShowCaptcha = {{Session::get("max_login_attempts_2_show_captcha")}};
         @endif
 
+        @if(Session::has('max_login_failed_attempts'))
+            config.maxLoginFailedAttempts = {{Session::get("max_login_failed_attempts")}};
+        @endif
+
         @if(Session::has('login_attempts'))
             config.loginAttempts = {{Session::get("login_attempts")}};
+        @endif
+
+        @if(Session::has('user_is_active'))
+            config.user_is_active = {{Session::get("user_is_active")}};
         @endif
 
         @if(Session::has('user_fullname'))
@@ -68,15 +77,16 @@
         @if(Session::has('user_pic'))
             config.user_pic = '{{Session::get("user_pic")}}';
         @endif
-                @if(Session::has('user_verified'))
+        @if(Session::has('user_verified'))
             config.user_verified = {{Session::get('user_verified')}};
         @endif
-                @if(Session::has('flow'))
+        @if(Session::has('flow'))
             config.flow = '{{Session::get('flow')}}';
         @endif
 
-            window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
+        window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
         window.EMIT_OTP_ENDPOINT = config.emitOtpAction;
+        window.RESEND_VERIFICATION_EMAIL_ENDPOINT = config.resendVerificationEmailAction;
     </script>
     {!! script_to('assets/login.js') !!}
 @append
