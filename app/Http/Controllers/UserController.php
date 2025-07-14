@@ -300,21 +300,21 @@ final class UserController extends OpenIdController
             $send = Request::input("send", "");
 
             if (empty($username)) {
-                throw new ValidationException("empty username.");
+                throw new ValidationException("empty username param.");
             }
 
             if (empty($connection)) {
-                throw new ValidationException("empty username.");
+                throw new ValidationException("empty connectin param.");
             }
 
             if (empty($send)) {
-                throw new ValidationException("empty username.");
+                throw new ValidationException("empty send param.");
             }
 
             $user = $this->auth_service->getUserByUsername($username);
 
             if (!$user->isActive())
-                throw new ValidationException("User is not active.");
+                throw new ValidationException("Your user account is currently locked. Please contact support for further assistance.");
 
             $client = null;
 

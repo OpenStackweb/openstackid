@@ -1742,7 +1742,7 @@ final class TokenService extends AbstractService implements ITokenService
                 );
                 AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), "Requested OTP");
                 if (!$user->isActive())
-                    throw new ValidationException("User is not active.");
+                    throw new ValidationException("Your user account is currently locked. Please contact support for further assistance.");
             }
             return $otp;
         });
@@ -1786,7 +1786,7 @@ final class TokenService extends AbstractService implements ITokenService
                 );
                 AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), "Requested OTP");
                 if (!$user->isActive())
-                    throw new ValidationException("User is not active.");
+                    throw new ValidationException("Your user account is currently locked. Please contact support for further assistance.");
             }
             if (is_null($client)) {
                 $this->otp_repository->add($otp);
