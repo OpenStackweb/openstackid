@@ -1854,7 +1854,8 @@ SQL;
         if(!$this->active) {
             $this->active = true;
             $this->spam_type = self::SpamTypeHam;
-            $this->login_failed_attempt = 10;
+            // reset it
+            $this->login_failed_attempt = 0;
             Event::dispatch(new UserSpamStateUpdated(
                     $this->getId()
                 )
