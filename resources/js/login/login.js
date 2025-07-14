@@ -32,6 +32,7 @@ import "./third_party_identity_providers.scss";
 const EmailInputForm = ({ value, onValidateEmail, onHandleUserNameChange, disableInput, emailError }) => {
 
     return (
+        <>
         <Paper elevation={0} component="form"
             target="_self"
             className={styles.paper_root}
@@ -50,7 +51,6 @@ const EmailInputForm = ({ value, onValidateEmail, onHandleUserNameChange, disabl
                 autoFocus={true}
                 onChange={onHandleUserNameChange}
                 error={emailError != ""}
-                helperText={emailError}
             />
             {emailError == "" &&
                 <Button variant="contained"
@@ -63,6 +63,10 @@ const EmailInputForm = ({ value, onValidateEmail, onHandleUserNameChange, disabl
                 </Button>
             }
         </Paper>
+        { emailError != "" &&
+            <p className={styles.error_label} dangerouslySetInnerHTML={{__html: emailError}}></p>
+        }
+        </>
     );
 }
 
@@ -85,7 +89,8 @@ const PasswordInputForm = ({
                                forgotPasswordAction,
                                loginAttempts,
                                maxLoginFailedAttempts,
-                               userIsActive
+                               userIsActive,
+                               helpAction
                            }) => {
     return (
         <form method="post" action={formAction} onSubmit={onAuthenticate} target="_self">
@@ -148,7 +153,7 @@ const PasswordInputForm = ({
                     return (
                         <>
                             <p className={styles.error_label}>
-                                Your account has been locked due to multiple failed login attempts. Please contact support to unlock it.
+                                Your account has been locked due to multiple failed login attempts. Please <a href={helpAction}>contact support</a> to unlock it.
                             </p>
                         </>
                     );
@@ -589,7 +594,7 @@ class LoginPage extends React.Component {
 
             let error = '';
             if (response.is_active === false) {
-                error = 'Your user account is currently inactive. Please contact support for further assistance.';
+                error = `Your user account is currently locked. Please <a href="${this.props.helpAction}">contact support</a> for further assistance.`;
             } else if (response.is_active === true && response.is_verified === false) {
                 error = 'Your email has not been verified. Please check your inbox or resend the verification email.';
             }
@@ -772,7 +777,7 @@ class LoginPage extends React.Component {
                                             />
                                         }
                                         {
-                                            this.state.email_verified === false &&
+                                            this.state.user_active === true && this.state.email_verified === false &&
                                                 <Button variant="contained"
                                                     color="primary"
                                                     title="Resend verification email"
@@ -820,6 +825,7 @@ class LoginPage extends React.Component {
                                     loginAttempts={this.props?.loginAttempts}
                                     maxLoginFailedAttempts={this.props?.maxLoginFailedAttempts}
                                     userIsActive={this.props?.user_is_active}
+                                    helpAction={this.props.helpAction}
                                 />
                                 <HelpLinks
                                     userName={this.state.user_name}
