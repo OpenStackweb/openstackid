@@ -24,6 +24,7 @@ use App\Strategies\OTP\OTPTypeBuilderStrategyFactory;
 use Auth\Exceptions\AuthenticationException;
 use Auth\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use jwa\cryptographic_algorithms\HashFunctionAlgorithm;
@@ -1742,7 +1743,14 @@ final class TokenService extends AbstractService implements ITokenService
                 );
                 AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), "Requested OTP");
                 if (!$user->isActive())
-                    throw new ValidationException("Your user account is currently locked. Please contact support for further assistance.");
+                    throw new ValidationException
+                    (
+                        sprintf
+                        (
+                            "Your user account is currently locked. Please <a href='mailto:%s'>contact support</a> for further assistance.",
+                            Config::get("app.help_email")
+                        )
+                    );
             }
             return $otp;
         });
@@ -1786,7 +1794,14 @@ final class TokenService extends AbstractService implements ITokenService
                 );
                 AddUserAction::dispatch($user->getId(), IPHelper::getUserIp(), "Requested OTP");
                 if (!$user->isActive())
-                    throw new ValidationException("Your user account is currently locked. Please contact support for further assistance.");
+                    throw new ValidationException
+                    (
+                        sprintf
+                        (
+                            "Your user account is currently locked. Please <a href='mailto:%s'>contact support</a> for further assistance.",
+                            Config::get("app.help_email")
+                        )
+                    );
             }
             if (is_null($client)) {
                 $this->otp_repository->add($otp);

@@ -23,6 +23,7 @@ use Auth\Exceptions\UnverifiedEmailMemberException;
 use App\Services\Auth\IUserService as AuthUserService;
 use Exception;
 use Illuminate\Http\Request as LaravelRequest;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -314,7 +315,14 @@ final class UserController extends OpenIdController
             $user = $this->auth_service->getUserByUsername($username);
 
             if (!$user->isActive())
-                throw new ValidationException("Your user account is currently locked. Please contact support for further assistance.");
+                throw new ValidationException
+                (
+                    sprintf
+                    (
+                        "Your user account is currently locked. Please <a href='mailto:%s'>contact support</a> for further assistance.",
+                        Config::get("app.help_email")
+                    )
+                );
 
             $client = null;
 
