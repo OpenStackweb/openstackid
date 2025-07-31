@@ -1,5 +1,4 @@
 <?php namespace utils;
-
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +13,8 @@
  **/
 class FilterElement extends AbstractFilterElement
 {
+    static $symbols = ['%EMPTY%' => ''];
+
     /**
      * @var mixed
      */
@@ -24,15 +25,22 @@ class FilterElement extends AbstractFilterElement
     private $field;
 
     /**
+     * @var string
+     */
+    private $same_field_op;
+
+    /**
      * @param $field
      * @param $value
      * @param $operator
+     * @param $same_field_op
      */
-    protected function __construct($field, $value, $operator)
+    protected function __construct($field, $value, $operator, $same_field_op)
     {
         parent::__construct($operator);
         $this->field    = $field;
         $this->value    = $value;
+        $this->same_field_op = $same_field_op;
     }
 
     /**
@@ -53,54 +61,128 @@ class FilterElement extends AbstractFilterElement
         return $this->field;
     }
 
+    public function getRawValue(){
+        return $this->value;
+    }
+
+    public function getBooleanValue(){
+        if(is_array($this->value)){
+            $res = [];
+            foreach ($this->value as $val){
+                $res[]= empty($val) ? '' : to_boolean($val);
+            }
+            return $res;
+        }
+        return to_boolean($this->value);
+    }
+
+    public static function mapValueSymbols(string $val):string{
+        if(isset(self::$symbols[strtoupper($val)])) return self::$symbols[strtoupper($val)];
+        return $val;
+    }
+
     /**
-     * @return string
+     * @return mixed
      */
     public function getValue()
     {
+        $value = $this->value;
+        if(is_array($value)){
+            $res = [];
+            foreach ($value as $val){
+                $res[]= empty($val) ? '' : self::mapValueSymbols($val);
+            }
+            $value = $res;
+        }
+        else {
+            $value = self::mapValueSymbols($value);
+        }
+
         switch($this->operator)
         {
             case 'like':
-                return  empty($this->value) ? '' : "%".$this->value."%";
-                break;
+                if(is_array($value)){
+                    $res = [];
+                    foreach ($value as $val){
+                        $res[]= empty($val) ? '' : "%".$val."%";
+                    }
+                    return $res;
+                }
+                return empty($value) ? '' : "%".$value."%";
+            case 'start_like':
+                if(is_array($value)){
+                    $res = [];
+                    foreach ($value as $val){
+                        $res[]= empty($val) ? '' : $val."%";
+                    }
+                    return $res;
+                }
+                return  empty($value) ? '' : $value."%";
             default:
-                return $this->value;
-                break;
+                return $value;
         }
     }
 
-    public static function makeEqual($field, $value)
-    {
-        return new self($field, $value, '=');
+    public function getSameFieldOp():?string {
+        return $this->same_field_op;
     }
 
-    public static function makeGreather($field, $value)
+    public static function makeEqual($field, $value, $same_field_op = null)
     {
-        return new self($field, $value, '>');
+        return new self($field, $value, '=', $same_field_op);
     }
 
-    public static function makeGreatherOrEqual($field, $value)
+    public static function makeGreather($field, $value, $same_field_op = null)
     {
-        return new self($field, $value, '>=');
+        return new self($field, $value, '>', $same_field_op);
     }
 
-    public static function makeLower($field, $value)
+    public static function makeGreatherOrEqual($field, $value, $same_field_op = null)
     {
-        return new self($field, $value, '<');
+        return new self($field, $value, '>=', $same_field_op);
     }
 
-    public static function makeLowerOrEqual($field, $value)
+    public static function makeBetween($field, $value, $same_field_op = null)
     {
-        return new self($field, $value, '<=');
+        if(!is_array($value)) throw new \InvalidArgumentException("Value must be an array.");
+        if(count($value) !=2 ) throw new \InvalidArgumentException("Value must be an array of 2 elements.");
+        return new self($field, $value, ['>=','<='], $same_field_op);
     }
 
-    public static function makeNotEqual($field, $value)
+    public static function makeBetweenStrict($field, $value, $same_field_op = null)
     {
-        return new self($field, $value, '<>');
+        if(!is_array($value)) throw new \InvalidArgumentException("Value must be an array.");
+        if(count($value) !=2 ) throw new \InvalidArgumentException("Value must be an array of 2 elements.");
+        return new self($field, $value, ['>','<'], $same_field_op);
     }
 
-    public static function makeLike($field, $value)
+    public static function makeLower($field, $value, $same_field_op = null)
     {
-        return new self($field, $value, 'like');
+        return new self($field, $value, '<', $same_field_op);
+    }
+
+    public static function makeLowerOrEqual($field, $value, $same_field_op = null)
+    {
+        return new self($field, $value, '<=', $same_field_op);
+    }
+
+    public static function makeNotEqual($field, $value, $same_field_op = null)
+    {
+        return new self($field, $value, '<>', $same_field_op);
+    }
+
+    public static function makeLike($field, $value, $same_field_op = null)
+    {
+        return new self($field, $value, 'like', $same_field_op);
+    }
+
+    public static function makeLikeStart($field, $value, $same_field_op = null)
+    {
+        return new self($field, $value, 'start_like', $same_field_op);
+    }
+
+    public function __toString():string
+    {
+        return sprintf("%s%s%s", $this->field, is_array($this->operator) ? json_encode($this->operator): $this->operator, is_array($this->value)? json_encode($this->value):$this->value);
     }
 }

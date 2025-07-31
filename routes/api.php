@@ -53,6 +53,10 @@ Route::group(['prefix' => 'user-registration-requests'], function () {
     });
 });
 
+Route::group(['prefix' => 'groups'], function () {
+    Route::get('', 'OAuth2GroupApiController@getAll');
+});
+
 // 3rd Party SSO integrations
 
 Route::group(['prefix' => 'sso'], function () {

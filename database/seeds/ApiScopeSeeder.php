@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\OAuth2\IGroupScopes;
 use OAuth2\OAuth2Protocol;
 use Models\OAuth2\Api;
 use Models\OAuth2\ApiScope;
@@ -31,6 +33,7 @@ class ApiScopeSeeder extends Seeder {
         $this->seedUsersScopes();
         $this->seedRegistrationScopes();
         $this->seedSSOScopes();
+        $this->seedGroupScopes();
     }
 
     private function seedUsersScopes(){
@@ -137,5 +140,27 @@ class ApiScopeSeeder extends Seeder {
             ],
 
         ], 'sso');
+    }
+
+    private function seedGroupScopes(){
+        SeedUtils::seedScopes([
+             [
+                'name'               => IGroupScopes::ReadAll,
+                'short_description'  => 'Allows access to Groups info.',
+                'description'        => 'Allows access to Groups info.',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => false,
+            ],
+            [
+                'name'               => IGroupScopes::Write,
+                'short_description'  => 'Allows access to write Groups info.',
+                'description'        => 'Allows access to write Groups info.',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => false,
+            ],
+
+        ], 'groups');
     }
 }

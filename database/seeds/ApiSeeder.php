@@ -62,5 +62,15 @@ class ApiSeeder extends Seeder {
         EntityManager::persist($api);
 
         EntityManager::flush();
+
+        $api = new Api();
+        $api->setName('groups');
+        $api->setActive(true);
+        $api->setDescription('Groups Info API');
+        $api->setResourceServer($rs);
+
+        EntityManager::persist($api);
+
+        EntityManager::flush();
     }
 }

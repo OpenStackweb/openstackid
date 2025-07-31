@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use utils\Filter;
-use utils\FilterParser;
 use utils\OrderParser;
 use utils\PagingInfo;
 use Exception;
