@@ -212,6 +212,18 @@ PPK;
             [
                 'name' => IGroupSlugs::RawUsersGroup,
                 'slug' => IGroupSlugs::RawUsersGroup,
+            ],
+            [
+                'name' => IGroupSlugs::SponsorServicesGroup,
+                'slug' => IGroupSlugs::SponsorServicesGroup,
+            ],
+            [
+                'name' => IGroupSlugs::SponsorsGroup,
+                'slug' => IGroupSlugs::SponsorsGroup,
+            ],
+            [
+                'name' => IGroupSlugs::ExternalSponsorUsersGroup,
+                'slug' => IGroupSlugs::ExternalSponsorUsersGroup,
             ]
         ];
 

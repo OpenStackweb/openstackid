@@ -19,6 +19,10 @@ abstract class AbstractFilterElement
      */
     protected $operator;
 
+    const OperatorMappings = [
+        'start_like' => 'like'
+    ];
+
     /**
      * @param string $operator
      */
@@ -28,9 +32,10 @@ abstract class AbstractFilterElement
     }
 
     /**
-     * @return string
+     * @return string|array
      */
     public function getOperator(){
-        return $this->operator;
+        if(is_array($this->operator)) return $this->operator;
+        return isset(self::OperatorMappings[$this->operator]) ? self::OperatorMappings[$this->operator] : $this->operator;
     }
 }
