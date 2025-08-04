@@ -21,12 +21,12 @@ class ApiEndpointSeeder extends Seeder
 
     public function run()
     {
-
         DB::table('oauth2_api_endpoint_api_scope')->delete();
         DB::table('oauth2_api_endpoint')->delete();
         $this->seedUsersEndpoints();
         $this->seedRegistrationEndpoints();
         $this->seedSSOEndpoints();
+        $this->seedGroupEndpoints();
     }
 
     private function seedUsersEndpoints()
@@ -182,6 +182,20 @@ class ApiEndpointSeeder extends Seeder
                 'http_method' => 'GET',
                 'scopes'      => [
                     \App\libs\OAuth2\IUserScopes::SSO
+                ],
+            ],
+        ]);
+    }
+
+     private function seedGroupEndpoints(){
+        SeedUtils::seedApiEndpoints('groups', [
+            [
+                'name' => 'get-groups',
+                'active' => true,
+                'route' => '/api/v1/groups',
+                'http_method' => 'GET',
+                'scopes' => [
+                    \App\libs\OAuth2\IGroupScopes::ReadAll
                 ],
             ],
         ]);

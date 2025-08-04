@@ -1,6 +1,6 @@
-<?php namespace utils;
-/**
- * Copyright 2018 OpenStack Foundation
+<?php namespace App\Http\Utils\Filters;
+/*
+ * Copyright 2023 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,27 +12,30 @@
  * limitations under the License.
  **/
 
-use App\Http\Utils\Filters\IQueryApplyable;
 use Doctrine\ORM\QueryBuilder;
+use utils\Filter;
+use utils\FilterElement;
+use utils\FilterMapping;
 
 /**
- * Class DoctrineInstanceOfFilterMapping
- * @package utils
+ * Class DoctrineNotInFilterMapping
+ * @package App\Http\Utils\Filters
  */
-final class DoctrineInstanceOfFilterMapping extends FilterMapping implements IQueryApplyable
+class DoctrineInFilterMapping  extends FilterMapping implements IQueryApplyable
 {
-    /**
-     * @var string
-     */
+
     protected $main_operator;
 
-    private $class_names = [];
-
-    public function __construct($alias, $class_names = [])
+    const Operator = 'IN';
+    /**
+     * DoctrineFilterMapping constructor.
+     * @param string $condition
+     */
+    public function __construct($condition)
     {
         $this->main_operator = Filter::MainOperatorAnd;
-        $this->class_names = $class_names;
-        parent::__construct($alias, sprintf("%s %s :class_name", $alias, self::InstanceOfDoctrine));
+        $this->operator = 'IN';
+        parent::__construct("", $condition);
     }
 
     /**
@@ -45,26 +48,14 @@ final class DoctrineInstanceOfFilterMapping extends FilterMapping implements IQu
         throw new \Exception;
     }
 
-    const InstanceOfDoctrine = 'INSTANCE OF';
-
-    private function translateClassName($value)
-    {
-        if (isset($this->class_names[$value])) return $this->class_names[$value];
-        return $value;
-    }
-
     private function buildWhere(QueryBuilder $query, FilterElement $filter):string{
         $value = $filter->getValue();
-
-        if (is_array($value)) {
-            $where_components = [];
-            // see @https://github.com/doctrine/orm/issues/4462
-            foreach ($value as $val) {
-                $where_components[] =  str_replace(":class_name", $this->translateClassName($val), $this->where);
-            }
-            return implode(sprintf(" %s ", $filter->getSameFieldOp()), $where_components);
+        if (!is_array($value)) {
+            $value = [$value];
         }
-        return str_replace(":class_name", $this->translateClassName($filter->getValue()), $this->where);
+        $param_count = $query->getParameters()->count() + 1;
+        $query->setParameter(":value_" . $param_count, $value);
+        return sprintf("%s %s ( :value_%s )", $this->where, static::Operator, $param_count);
     }
 
     /**
@@ -94,5 +85,4 @@ final class DoctrineInstanceOfFilterMapping extends FilterMapping implements IQu
     {
         $this->main_operator = $op;
     }
-
 }
