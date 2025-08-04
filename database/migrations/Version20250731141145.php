@@ -14,7 +14,6 @@
 
 use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\OAuth2\IGroupScopes;
-use App\libs\OAuth2\IUserScopes;
 use Auth\Group;
 use Database\Seeders\SeedUtils;
 use Doctrine\Migrations\AbstractMigration;
@@ -31,10 +30,10 @@ class Version20250731141145 extends AbstractMigration
      */
     public function up(Schema $schema):void
     {
-        $group = EntityManager::getRepository(Group::class)->findOneBy(['name' => 'sponsor services']);
+        $group = EntityManager::getRepository(Group::class)->findOneBy(['slug' => IGroupSlugs::SponsorServicesGroup]);
         if(is_null($group)){
             $group = new Group();
-            $group->setName('sponsor services');
+            $group->setName('Sponsors Services');
             $group->setSlug(IGroupSlugs::SponsorServicesGroup);
             $group->setDefault(false);
             $group->setActive(true);
@@ -42,22 +41,22 @@ class Version20250731141145 extends AbstractMigration
             EntityManager::flush();
         }
 
-        $group = EntityManager::getRepository(Group::class)->findOneBy(['name' => 'sponsors']);
+        $group = EntityManager::getRepository(Group::class)->findOneBy(['slug' => IGroupSlugs::SponsorUsersGroup]);
         if(is_null($group)){
             $group = new Group();
-            $group->setName('sponsors');
-            $group->setSlug(IGroupSlugs::SponsorsGroup);
+            $group->setName('Sponsors Users');
+            $group->setSlug(IGroupSlugs::SponsorUsersGroup);
             $group->setDefault(false);
             $group->setActive(true);
             EntityManager::persist($group);
             EntityManager::flush();
         }
 
-        $group = EntityManager::getRepository(Group::class)->findOneBy(['name' => 'external sponsor users']);
+        $group = EntityManager::getRepository(Group::class)->findOneBy(['slug' => IGroupSlugs::SponsorExternalUsersGroup]);
         if(is_null($group)){
             $group = new Group();
-            $group->setName('external sponsor users');
-            $group->setSlug(IGroupSlugs::ExternalSponsorUsersGroup);
+            $group->setName('Sponsors External Users');
+            $group->setSlug(IGroupSlugs::SponsorExternalUsersGroup);
             $group->setDefault(false);
             $group->setActive(true);
             EntityManager::persist($group);

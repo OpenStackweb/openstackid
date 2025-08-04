@@ -26,7 +26,7 @@ interface IGroupSlugs
     public const RawUsersGroup                = 'raw-users';
     public const ChatQAGroup                  = 'chat-qa';
     public const ChatHelpGroup                = 'chat-help';
-    public const SponsorServicesGroup         = 'sponsor-services';
-    public const SponsorsGroup                = 'sponsors';
-    public const ExternalSponsorUsersGroup    = 'external-sponsor-users';
+    public const SponsorServicesGroup         = 'sponsors-services';
+    public const SponsorUsersGroup            = 'sponsors';
+    public const SponsorExternalUsersGroup    = 'sponsors-external-users';
 }

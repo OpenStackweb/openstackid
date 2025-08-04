@@ -23,7 +23,7 @@ final class OAuth2GroupApiTest extends OAuth2ProtectedApiTestCase
 {
     public function testGetAll(){
         $params = [
-            'filter' => 'slug==sponsor-services||sponsors||external-sponsor-users',
+            'filter' => 'slug==sponsors-services||sponsors||sponsors-external-users',
             'order' => '-slug'
         ];
 
