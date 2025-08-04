@@ -15,6 +15,7 @@
 
 use App\Http\Utils\Filters\IQueryApplyable;
 use App\libs\Utils\PunnyCodeHelper;
+use App\Utils\Helpers;
 use Doctrine\ORM\QueryBuilder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -504,7 +505,7 @@ final class Filter
                 return self::convertToDateTime($value, $strTimeZone);
                 break;
             case self::Boolean:
-                return to_boolean($value) ? 1 : 0;
+                return Helpers::to_boolean($value) ? 1 : 0;
                 break;
             case self::Int:
                 if (is_array($value)) {

@@ -1,4 +1,6 @@
 <?php namespace utils;
+use App\Utils\Helpers;
+
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,11 +71,11 @@ class FilterElement extends AbstractFilterElement
         if(is_array($this->value)){
             $res = [];
             foreach ($this->value as $val){
-                $res[]= empty($val) ? '' : to_boolean($val);
+                $res[]= empty($val) ? '' : Helpers::to_boolean($val);
             }
             return $res;
         }
-        return to_boolean($this->value);
+        return Helpers::to_boolean($this->value);
     }
 
     public static function mapValueSymbols(string $val):string{

@@ -1,6 +1,6 @@
-<?php
+<?php namespace App\Utils;
 /*
- * Copyright 2023 OpenStack Foundation
+ * Copyright 2025 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,15 +12,8 @@
  * limitations under the License.
  **/
 
-if (!function_exists('to_boolean')) {
-
-    /**
-     * Convert to boolean
-     *
-     * @param $booleable
-     * @return boolean
-     */
-    function to_boolean($booleable)
+final class Helpers {
+    static function to_boolean($booleable)
     {
         return filter_var($booleable, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
     }
