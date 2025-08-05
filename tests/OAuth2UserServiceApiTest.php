@@ -106,7 +106,7 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTestCase {
         $this->assertTrue($page->total > 0);
     }
 
-    public function testAddUserToGroup(){
+    public function testUpdateUserGroups(){
         $repo = EntityManager::getRepository(Group::class);
         $group = $repo->getOneBySlug('raw-users');
 
@@ -128,7 +128,7 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTestCase {
 
         $this->action(
             "PUT",
-            "Api\OAuth2\OAuth2UserApiController@addUserToGroup",
+            "Api\OAuth2\OAuth2UserApiController@updateUserGroups",
             $params,
             [],
             [],

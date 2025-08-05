@@ -336,7 +336,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
      * @param $user_id
      * @return JsonResponse|mixed
      */
-    public function addUserToGroup($user_id): mixed
+    public function updateUserGroups($user_id): mixed
     {
         return $this->processRequest(function() use($user_id) {
             if(!Request::isJson()) return $this->error400();
