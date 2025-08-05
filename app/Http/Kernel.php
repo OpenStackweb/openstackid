@@ -76,5 +76,6 @@ class Kernel extends HttpKernel
         'openstackid.currentuser.serveradmin.json' => \App\Http\Middleware\CurrentUserIsOpenIdServerAdminJson::class,
         'oauth2.currentuser.allow.client.edition'  => \App\Http\Middleware\CurrentUserCanEditOAuth2Client::class,
         'oauth2.currentuser.owns.client'           => \App\Http\Middleware\CurrentUserOwnsOAuth2Client::class,
+        'service.account'                          => \App\Http\Middleware\EnsureServiceAccount::class,
     ];
 }

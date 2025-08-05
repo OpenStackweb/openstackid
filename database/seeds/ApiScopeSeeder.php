@@ -91,6 +91,14 @@ class ApiScopeSeeder extends Seeder {
                 'system'             => false,
                 'default'            => false,
                 'groups'             => false,
+            ],
+            [
+                'name'               => IUserScopes::UserGroupWrite,
+                'short_description'  => 'Allows associate Users to Groups',
+                'description'        => 'Allows associate Users to Groups',
+                'system'             => false,
+                'default'            => false,
+                'groups'             => false,
             ]
         ], 'users');
 

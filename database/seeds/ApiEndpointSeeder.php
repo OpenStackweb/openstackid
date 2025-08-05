@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use App\libs\OAuth2\IUserScopes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 /**
@@ -117,6 +119,15 @@ class ApiEndpointSeeder extends Seeder
                     'http_method' => 'PUT',
                     'scopes' => [
                         \App\libs\OAuth2\IUserScopes::MeWrite
+                    ],
+                ],
+                [
+                    'name' => 'add-user-to-groups',
+                    'active' => true,
+                    'route' => '/api/v1/users/{id}/groups',
+                    'http_method' => 'PUT',
+                    'scopes' => [
+                        \App\libs\OAuth2\IUserScopes::UserGroupWrite
                     ],
                 ],
             ]

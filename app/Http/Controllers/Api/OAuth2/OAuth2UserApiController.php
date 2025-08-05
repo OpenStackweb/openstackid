@@ -13,11 +13,16 @@
  **/
 
 use App\Http\Controllers\GetAllTrait;
+use App\Http\Controllers\Traits\RequestProcessor;
+use App\Http\Controllers\UserGroupsValidationRulesFactory;
 use App\Http\Controllers\UserValidationRulesFactory;
+use App\Http\Exceptions\HTTP403ForbiddenException;
 use App\Http\Utils\HTMLCleaner;
 use App\ModelSerializers\SerializerRegistry;
 use Auth\Repositories\IUserRepository;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request as LaravelRequest;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +32,7 @@ use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\Builders\IdTokenBuilder;
 use OAuth2\IResourceServerContext;
+use OAuth2\Models\IClient;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\ResourceServer\IUserService;
 use Utils\Http\HttpContentType;
@@ -40,6 +46,8 @@ use OpenId\Services\IUserService as IOpenIdUserService;
 final class OAuth2UserApiController extends OAuth2ProtectedController
 {
     use GetAllTrait;
+
+    use RequestProcessor;
 
     protected function getAllSerializerType(): string
     {
@@ -322,6 +330,30 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             Log::error($ex);
             return $this->error500($ex);
         }
+    }
+
+    /**
+     * @param $user_id
+     * @return JsonResponse|mixed
+     */
+    public function addUserToGroup($user_id): mixed
+    {
+        return $this->processRequest(function() use($user_id) {
+            if(!Request::isJson()) return $this->error400();
+
+            $payload = Request::json()->all();
+            // Creates a Validator instance and validates the data.
+            $validation = Validator::make($payload, UserGroupsValidationRulesFactory::build($payload));
+            if ($validation->fails()) {
+                $ex = new ValidationException();
+                throw $ex->setMessages($validation->messages()->toArray());
+            }
+            $user_groups_payload = [
+                "groups" => $payload["groups"],
+            ];
+            $this->openid_user_service->update(intval($user_id), $user_groups_payload);
+            return $this->updated();
+        });
     }
 
 }

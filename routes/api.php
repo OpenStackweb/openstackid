@@ -31,6 +31,7 @@ Route::group(['prefix' => 'users'], function () {
     Route::group(['prefix' => '{id}'], function () {
         Route::get('', 'OAuth2UserApiController@get');
         Route::put('', 'OAuth2UserApiController@update');
+        Route::put('groups', ['middleware' => 'service.account', 'uses' => 'OAuth2UserApiController@addUserToGroup']);
     });
 
     Route::group(['prefix' => 'me'], function () {

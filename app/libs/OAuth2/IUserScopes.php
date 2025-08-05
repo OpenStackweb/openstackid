@@ -29,4 +29,5 @@ interface IUserScopes
     const MeRead = 'me/read';
     const MeWrite = 'me/write';
     const Write = 'users/write';
+    const UserGroupWrite = 'users/groups/write';
 }

@@ -12,6 +12,10 @@
  * limitations under the License.
  **/
 use App\libs\OAuth2\IUserScopes;
+use Auth\Group;
+use Auth\User;
+use Illuminate\Support\Facades\App;
+use LaravelDoctrine\ORM\Facades\EntityManager;
 use OAuth2\ResourceServer\IUserService;
 /**
  * Class OAuth2UserServiceApiTest
@@ -102,6 +106,44 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTestCase {
         $this->assertTrue($page->total > 0);
     }
 
+    public function testAddUserToGroup(){
+        $repo = EntityManager::getRepository(Group::class);
+        $group = $repo->getOneBySlug('raw-users');
+
+        $repo = EntityManager::getRepository(User::class);
+        $user = $repo->getAll()[0];
+
+        $params = [
+            'id' => $user->getId()
+        ];
+
+        $data = [
+            'groups' => [$group->getId()],
+        ];
+
+        $headers = [
+            "HTTP_Authorization" => " Bearer " . $this->access_token,
+            "CONTENT_TYPE"        => "application/json"
+        ];
+
+        $this->action(
+            "PUT",
+            "Api\OAuth2\OAuth2UserApiController@addUserToGroup",
+            $params,
+            [],
+            [],
+            [],
+            $headers,
+            json_encode($data)
+        );
+
+        $this->assertResponseStatus(201);
+
+        $user = $repo->getById($user->getId());
+        $this->assertNotNull($user);
+        $this->assertCount(1, $user->getGroups());
+    }
+
     protected function getScopes()
     {
         $scope = array(
@@ -109,7 +151,8 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTestCase {
             IUserService::UserProfileScope_Email,
             IUserService::UserProfileScope_Profile,
             IUserScopes::MeWrite,
-            IUserScopes::ReadAll
+            IUserScopes::ReadAll,
+            IUserScopes::UserGroupWrite
         );
 
         return $scope;
