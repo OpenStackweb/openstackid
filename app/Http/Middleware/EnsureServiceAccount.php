@@ -41,8 +41,6 @@ final class EnsureServiceAccount
      */
     public function handle($request, Closure $next)
     {
-        if (in_array(App::environment(), ['local','dev','testing'])) return $next($request);
-
         $application_type = $this->context->getApplicationType();
         if ($application_type != IResourceServerContext::ApplicationType_Service) {
             return Response::json(['error' => 'Only service accounts are allowed.'], 403);

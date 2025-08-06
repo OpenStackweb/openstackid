@@ -14,13 +14,14 @@
 use App\libs\OAuth2\IUserScopes;
 use Auth\Group;
 use Auth\User;
-use Illuminate\Support\Facades\App;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use OAuth2\ResourceServer\IUserService;
+use OAuth2ProtectedServiceAppApiTestCase;
+
 /**
  * Class OAuth2UserServiceApiTest
  */
-final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTestCase {
+final class OAuth2UserServiceApiTest extends OAuth2ProtectedServiceAppApiTestCase {
 
     public function testUpdateMe(){
 
@@ -122,7 +123,7 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedApiTestCase {
         ];
 
         $headers = [
-            "HTTP_Authorization" => " Bearer " . $this->access_token,
+            "HTTP_Authorization" => " Bearer " . $this->access_token_service_app_type,
             "CONTENT_TYPE"        => "application/json"
         ];
 

@@ -1,0 +1,86 @@
+<?php /**
+ * Copyright 2025 OpenStack Foundation
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
+
+use Auth\User;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Session;
+use LaravelDoctrine\ORM\Facades\EntityManager;
+use OAuth2\OAuth2Protocol;
+use Tests\OAuth2ProtectedApiTestCase;
+use Utils\Services\IAuthService;
+
+/**
+ * Class OAuth2ProtectedServiceAppApiTestCase
+ */
+abstract class OAuth2ProtectedServiceAppApiTestCase extends OAuth2ProtectedApiTestCase
+{
+    /**
+     * @var string
+     */
+    protected $access_token_service_app_type;
+
+    protected function prepareForTests():void
+    {
+        parent::prepareForTests();
+
+        Session::start();
+
+        $scope = $this->getScopes();
+
+        $client_id     = '11z87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_secret = '11c/6Y5N7kOtGKhg11c/6Y5N7kOtGKhg11c/6Y5N7kOtGKhg11c/6Y5N7kOtGKhg';
+
+        $params = [
+            'client_id'                               => $client_id,
+            'redirect_uri'                            => 'https://www.test.com/oauth2',
+            'response_type'                           => OAuth2Protocol::OAuth2Protocol_ResponseType_Code,
+            'scope'                                   => implode(' ', $scope),
+            OAuth2Protocol::OAuth2Protocol_AccessType => OAuth2Protocol::OAuth2Protocol_AccessType_Offline,
+        ];
+
+        Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth", $params,);
+
+        $url = $response->getTargetUrl();
+
+        $comps = @parse_url($url);
+        $query = $comps['query'];
+        $output = [];
+        parse_str($query, $output);
+
+        $params = [
+            'code'         => $output['code'],
+            'redirect_uri' => 'https://www.test.com/oauth2',
+            'grant_type'   => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
+        ];
+
+        $response = $this->action
+        (
+            "POST",
+            "OAuth2\OAuth2ProviderController@token",
+            $params,
+            [],
+            [],
+            [],
+            array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret))
+        );
+
+        $this->assertResponseStatus(200);
+
+        $content       = $response->getContent();
+        $response      = json_decode($content);
+
+        $this->access_token_service_app_type = $response->access_token;
+    }
+}
