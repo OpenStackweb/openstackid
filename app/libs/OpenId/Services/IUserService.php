@@ -16,6 +16,8 @@ use Auth\User;
 use Illuminate\Http\UploadedFile;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
+use models\utils\IEntity;
+
 /**
  * Interface IUserService
  * @package OpenId\Services
@@ -71,6 +73,15 @@ interface IUserService extends IBaseService
      * @return User
      */
     public function updateProfilePhoto($user_id, UploadedFile $file, $max_file_size = 10485760):User;
+
+    /**
+     * @param int $id
+     * @param array $payload
+     * @return IEntity
+     * @throws ValidationException
+     * @throws EntityNotFoundException
+     */
+    public function update(int $id, array $payload): IEntity;
 
     /**
      * @param string $action
