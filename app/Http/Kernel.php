@@ -53,6 +53,10 @@ class Kernel extends HttpKernel
             'ssl',
             'oauth2.endpoint',
         ],
+        'api_v2' => [
+            'ssl',
+            'oauth2.endpoint',
+        ],
     ];
 
     /**
