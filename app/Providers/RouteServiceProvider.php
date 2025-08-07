@@ -115,6 +115,11 @@ final class RouteServiceProvider extends ServiceProvider
             ->namespace('App\Http\Controllers\Api\OAuth2')
             ->prefix('api/v1')
             ->group(base_path('routes/api.php'));
+
+        Route::middleware('api_v2')
+            ->namespace('App\Http\Controllers\Api\OAuth2')
+            ->prefix('api/v2')
+            ->group(base_path('routes/api_v2.php'));
     }
 
 }

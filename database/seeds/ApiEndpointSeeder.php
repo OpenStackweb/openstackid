@@ -86,6 +86,15 @@ class ApiEndpointSeeder extends Seeder
                     ],
                 ],
                 [
+                    'name' => 'get-user-by-id-v2',
+                    'active' => true,
+                    'route' => '/api/v2/users/{id}',
+                    'http_method' => 'GET',
+                    'scopes' => [
+                        \App\libs\OAuth2\IUserScopes::ReadAll
+                    ],
+                ],
+                [
                     'name' => 'update-my-user',
                     'active' => true,
                     'route' => '/api/v1/users/me',

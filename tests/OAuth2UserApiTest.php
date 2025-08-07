@@ -21,7 +21,7 @@ use OAuth2ProtectedServiceAppApiTestCase;
 /**
  * Class OAuth2UserServiceApiTest
  */
-final class OAuth2UserServiceApiTest extends OAuth2ProtectedServiceAppApiTestCase {
+final class OAuth2UserApiTest extends OAuth2ProtectedServiceAppApiTestCase {
 
     public function testUpdateMe(){
 
@@ -70,6 +70,53 @@ final class OAuth2UserServiceApiTest extends OAuth2ProtectedServiceAppApiTestCas
         $this->assertResponseStatus(200);
         $content   = $response->getContent();
         $user_info = json_decode($content);
+    }
+
+    public function testGetUserByIdV1(){
+        $repo = EntityManager::getRepository(User::class);
+        $user = $repo->getAll()[0];
+
+        $params = [
+            'id'  => $user->getId()
+        ];
+
+        $response = $this->action(
+            "GET",
+            "Api\OAuth2\OAuth2UserApiController@get",
+            $params,
+            [],
+            [],
+            [],
+            array("HTTP_Authorization" => " Bearer " .$this->access_token));
+
+        $content   = $response->getContent();
+        $this->assertResponseStatus(200);
+        $user = json_decode($content);
+        $this->assertNotNull($user);
+    }
+
+     public function testGetUserByIdV2(){
+        $repo = EntityManager::getRepository(User::class);
+        $user = $repo->getAll()[0];
+
+        $params = [
+            'id'  => $user->getId(),
+            'expand' => 'groups'
+        ];
+
+        $response = $this->action(
+            "GET",
+            "Api\OAuth2\OAuth2UserApiController@getV2",
+            $params,
+            [],
+            [],
+            [],
+            array("HTTP_Authorization" => " Bearer " .$this->access_token_service_app_type));
+
+        $content = $response->getContent();
+        $this->assertResponseStatus(200);
+        $user = json_decode($content);
+        $this->assertNotNull($user);
     }
 
     public function testGetInfoCORS(){

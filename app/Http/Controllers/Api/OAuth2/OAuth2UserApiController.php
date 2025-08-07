@@ -333,6 +333,25 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
     }
 
     /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function getV2($id)
+    {
+        return $this->processRequest(function() use($id) {
+            $user = $this->repository->getById(intval($id));
+            if (is_null($user)) {
+                throw new EntityNotFoundException();
+            }
+            return $this->ok(SerializerRegistry::getInstance()
+                ->getSerializer($user, SerializerRegistry::SerializerType_Private)
+                ->serialize(
+                    Request::input("expand", '')
+                ));
+        });
+    }
+
+    /**
      * @param $user_id
      * @return JsonResponse|mixed
      */
