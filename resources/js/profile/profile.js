@@ -658,7 +658,7 @@ const ProfilePage = ({
                                         fullWidth
                                         size="small"
                                         label="Job Title"
-                                        inputProps={{maxLength: 10}}
+                                        inputProps={{maxLength: 200}}
                                         value={formik.values.job_title}
                                         data-lpignore="true"
                                         onChange={formik.handleChange}
