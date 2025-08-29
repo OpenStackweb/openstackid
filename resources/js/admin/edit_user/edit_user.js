@@ -643,7 +643,7 @@ const EditUserPage = ({
                                         fullWidth
                                         size="small"
                                         label="Job Title"
-                                        inputProps={{maxLength: 10}}
+                                        inputProps={{maxLength: 200}}
                                         value={formik.values.job_title}
                                         onChange={formik.handleChange}
                                         error={
