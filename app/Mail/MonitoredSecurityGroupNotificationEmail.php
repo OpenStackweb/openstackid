@@ -35,6 +35,11 @@ final class MonitoredSecurityGroupNotificationEmail extends Mailable
     public $action;
 
     /**
+     * @var string
+     */
+    public $action_by;
+
+    /**
      * @var int
      */
     public $user_id;
@@ -79,6 +84,7 @@ final class MonitoredSecurityGroupNotificationEmail extends Mailable
     /**
      * @param string $email
      * @param string $action
+     * @param string $action_by
      * @param int $user_id
      * @param string $user_email
      * @param string $user_name
@@ -90,6 +96,7 @@ final class MonitoredSecurityGroupNotificationEmail extends Mailable
     (
         string $email,
         string $action,
+        string $action_by,
         int $user_id,
         string $user_email,
         string $user_name,
@@ -100,6 +107,7 @@ final class MonitoredSecurityGroupNotificationEmail extends Mailable
     {
         $this->email = $email;
         $this->action = $action;
+        $this->action_by = $action_by;
         $this->user_id = $user_id;
         $this->user_email = $user_email;
         $this->user_name = $user_name;
@@ -111,9 +119,10 @@ final class MonitoredSecurityGroupNotificationEmail extends Mailable
         (
             sprintf
             (
-                "MonitoredSecurityGroupNotificationEmail::constructor email %s action %s user_id %s user_email %s user_name %s group_id %s group_name %s group_slug %s",
+                "MonitoredSecurityGroupNotificationEmail::constructor email %s action %s action_by %s user_id %s user_email %s user_name %s group_id %s group_name %s group_slug %s",
                 $email,
                 $action,
+                $action_by,
                 $user_id,
                 $user_email,
                 $user_name,
@@ -126,15 +135,19 @@ final class MonitoredSecurityGroupNotificationEmail extends Mailable
 
     public function build()
     {
+        $action_by_phrase = $this->action_by ? " by $this->action_by" : "";
+
         $this->subject = sprintf
         (
-            "[%s] Monitored Security Groups - User %s (%s) has been %s - Group %s (%s)"
+            "[%s] Monitored Security Groups - User %s (%s) has been %s%s - Group %s (%s) - Environment: %s"
             ,Config::get('app.app_name')
             ,$this->user_name
             ,$this->user_email
             ,$this->action
+            ,$action_by_phrase
             ,$this->group_name
             ,$this->group_id
+            ,Config::get('app.env')
         );
         Log::debug(sprintf("MonitoredSecurityGroupNotificationEmail::build to %s", $this->email));
         return $this->from(Config::get("mail.from"))

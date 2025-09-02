@@ -37,7 +37,6 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
-use Models\OAuth2\Client;
 use models\utils\IEntity;
 use OAuth2\IResourceServerContext;
 use OAuth2\Models\IClient;
@@ -483,6 +482,14 @@ final class UserService extends AbstractService implements IUserService
             return;
         }
 
+        $action_by = '';
+        $current_user = !empty($this->server_ctx->getCurrentUserId()) ?
+            $this->repository->getById($this->server_ctx->getCurrentUserId()) : null;
+
+        if (!is_null($current_user)) {
+            $action_by = sprintf("%s %s", $current_user->getFirstName(), $current_user->getLastName());
+        }
+
         $notified_users = [];
         foreach ($watcher_groups as $watcher_group_slug) {
             Log::debug(sprintf("UserService::notifyMonitoredSecurityGroupActivity processing %s", $watcher_group_slug));
@@ -504,6 +511,7 @@ final class UserService extends AbstractService implements IUserService
                     (
                         $user->getEmail(),
                         $action,
+                        $action_by,
                         $user_id,
                         $user_email,
                         $user_name,
@@ -514,6 +522,5 @@ final class UserService extends AbstractService implements IUserService
                 );
             }
         }
-
     }
 }
