@@ -77,6 +77,8 @@ final class NotifyMonitoredSecurityGroupActivity implements ShouldQueue
      */
     public $group_slug;
 
+    public $action_by;
+
     /**
      * @param string $action
      * @param int $user_id
@@ -85,6 +87,7 @@ final class NotifyMonitoredSecurityGroupActivity implements ShouldQueue
      * @param int $group_id
      * @param string $group_name
      * @param string $group_slug
+     * @param string $action_by
      * @throws ValidationException
      */
     public function __construct
@@ -95,7 +98,8 @@ final class NotifyMonitoredSecurityGroupActivity implements ShouldQueue
         string $user_name,
         int $group_id,
         string $group_name,
-        string $group_slug
+        string $group_slug,
+        string $action_by
     )
     {
         if(!in_array($action, self::ValidActions)){
@@ -108,19 +112,21 @@ final class NotifyMonitoredSecurityGroupActivity implements ShouldQueue
         $this->group_id = $group_id;
         $this->group_name = $group_name;
         $this->group_slug = $group_slug;
+        $this->action_by = $action_by;
 
         Log::debug
         (
             sprintf
             (
-                "NotifyMonitoredSecurityGroupActivity::constructor action %s user_id %s user_email %s user_name %s group_id %s group_name %s group_slug %s",
+                "NotifyMonitoredSecurityGroupActivity::constructor action %s user_id %s user_email %s user_name %s group_id %s group_name %s group_slug %s action_by %s",
                 $action,
                 $user_id,
                 $user_email,
                 $user_name,
                 $group_id,
                 $group_name,
-                $group_slug
+                $group_slug,
+                $action_by
             )
         );
     }
@@ -134,14 +140,15 @@ final class NotifyMonitoredSecurityGroupActivity implements ShouldQueue
         (
             sprintf
             (
-                "NotifyMonitoredSecurityGroupActivity::handle action %s user_id %s user_email %s user_name %s group_id %s group_name %s group_slug %s",
+                "NotifyMonitoredSecurityGroupActivity::handle action %s user_id %s user_email %s user_name %s group_id %s group_name %s group_slug %s action_by %s",
                 $this->action,
                 $this->user_id,
                 $this->user_email,
                 $this->user_name,
                 $this->group_id,
                 $this->group_name,
-                $this->group_slug
+                $this->group_slug,
+                $this->action_by
             )
         );
 
@@ -153,9 +160,9 @@ final class NotifyMonitoredSecurityGroupActivity implements ShouldQueue
             $this->user_name,
             $this->group_id,
             $this->group_name,
-            $this->group_slug
+            $this->group_slug,
+            $this->action_by
         );
-
     }
 
     public function failed(\Throwable $exception)
