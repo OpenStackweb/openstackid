@@ -37,7 +37,6 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
-use Models\OAuth2\Client;
 use models\utils\IEntity;
 use OAuth2\IResourceServerContext;
 use OAuth2\Models\IClient;
@@ -474,7 +473,17 @@ final class UserService extends AbstractService implements IUserService
         return $user;
     }
 
-    public function notifyMonitoredSecurityGroupActivity(string $action, int $user_id, string $user_email, string $user_name, int $group_id, string $group_name, string $group_slug): void
+    public function notifyMonitoredSecurityGroupActivity
+    (
+        string $action,
+        int $user_id,
+        string $user_email,
+        string $user_name,
+        int $group_id,
+        string $group_name,
+        string $group_slug,
+        string $action_by
+    ): void
     {
        $watcher_groups = Config::get('audit.monitored_security_groups_set_activity_watchers', []);
 
@@ -497,6 +506,7 @@ final class UserService extends AbstractService implements IUserService
                     continue;
                 }
                 $notified_users[] = $user->getId();
+
                 Log::debug(sprintf("UserService::notifyMonitoredSecurityGroupActivity processing user %s", $user->getId()));
                 Mail::queue
                 (
@@ -504,6 +514,7 @@ final class UserService extends AbstractService implements IUserService
                     (
                         $user->getEmail(),
                         $action,
+                        $action_by,
                         $user_id,
                         $user_email,
                         $user_name,
@@ -514,6 +525,5 @@ final class UserService extends AbstractService implements IUserService
                 );
             }
         }
-
     }
 }

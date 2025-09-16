@@ -731,6 +731,7 @@ class User extends BaseEntity
         );
 
         $current_user = Auth::user();
+        $action_by = '';
         if($current_user instanceof User){
             Log::debug
             (
@@ -769,6 +770,7 @@ class User extends BaseEntity
             );
 
             AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
+            $action_by = sprintf("%s (%s)", $current_user->getFullName(), $current_user->getEmail());
         }
 
         if ($this->groups->contains($group))
@@ -789,7 +791,8 @@ class User extends BaseEntity
                 $this->getFullName(),
                 $group->getId(),
                 $group->getName(),
-                $group->getSlug()
+                $group->getSlug(),
+                $action_by
             );
         }
     }
@@ -810,6 +813,7 @@ class User extends BaseEntity
             )
         );
         $current_user = Auth::user();
+        $action_by = '';
         if($current_user instanceof User){
             Log::debug
             (
@@ -845,6 +849,7 @@ class User extends BaseEntity
             );
 
             AddUserAction::dispatch($this->id, IPHelper::getUserIp(), $action);
+            $action_by = sprintf("%s (%s)", $current_user->getFullName(), $current_user->getEmail());
         }
 
         if (!$this->groups->contains($group)) return;
@@ -862,7 +867,8 @@ class User extends BaseEntity
                 $this->getFullName(),
                 $group->getId(),
                 $group->getName(),
-                $group->getSlug()
+                $group->getSlug(),
+                $action_by
             );
         }
     }

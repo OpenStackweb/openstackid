@@ -91,6 +91,7 @@ interface IUserService extends IBaseService
      * @param int $group_id
      * @param string $group_name
      * @param string $group_slug
+     * @params string $action_by
      * @return void
      */
     public function notifyMonitoredSecurityGroupActivity(
@@ -100,7 +101,8 @@ interface IUserService extends IBaseService
         string $user_name,
         int $group_id,
         string $group_name,
-        string $group_slug
+        string $group_slug,
+        string $action_by,
     ): void;
 
 }
