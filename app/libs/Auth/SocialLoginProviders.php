@@ -26,12 +26,15 @@ final class SocialLoginProviders
     const Google = "google";
     const OKTA = 'okta';
 
+    const AUTH0 = 'auth0';
+
     const ValidProviders = [
         self::Facebook,
         self::LinkedIn,
         self::Apple,
         //self::Google
         self::OKTA,
+        self::AUTH0,
     ];
 
     /**
