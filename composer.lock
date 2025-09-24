@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6efeae436ebd865b45a619f4c7974929",
+    "content-hash": "b2b433198a0876336045c66dd59a333d",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -6978,6 +6978,47 @@
             "time": "2024-11-07T21:57:40+00:00"
         },
         {
+            "name": "socialiteproviders/zoho",
+            "version": "4.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SocialiteProviders/Zoho.git",
+                "reference": "7edf769faf6ee851a3c698486dc1f42edba09ed9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SocialiteProviders/Zoho/zipball/7edf769faf6ee851a3c698486dc1f42edba09ed9",
+                "reference": "7edf769faf6ee851a3c698486dc1f42edba09ed9",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "php": "^7.2 || ^8.0",
+                "socialiteproviders/manager": "~4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "SocialiteProviders\\Zoho\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "glowlogix",
+                    "email": "support@glowlogix.com"
+                }
+            ],
+            "description": "Zoho OAuth2 Provider for Laravel Socialite",
+            "support": {
+                "source": "https://github.com/SocialiteProviders/Zoho/tree/4.1.0"
+            },
+            "time": "2020-12-01T23:10:59+00:00"
+        },
+        {
             "name": "sokil/php-isocodes",
             "version": "3.3.15",
             "source": {
@@ -12434,10 +12475,10 @@
     "prefer-lowest": false,
     "platform": {
         "php": "^8.3",
-        "ext-pdo": "*",
         "ext-json": "*",
-        "ext-openssl": "*"
+        "ext-openssl": "*",
+        "ext-pdo": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }

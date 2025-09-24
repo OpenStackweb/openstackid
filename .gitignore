@@ -51,5 +51,5 @@ model.sql
 /.env.local
 /.phpunit.cache/
 docker-compose/mysql/model/*.sql
-public/assets/css/*.css.map
-public/assets/*.js.map
+public/assets/*.map
+public/assets/css/*.map
