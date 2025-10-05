@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath sockets gettext
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath sockets gettext apcu
 # XDEBUG
 RUN yes | pecl install ${XDEBUG_VERSION}
 COPY docker-compose/php/docker-php-ext-xdebug.ini $PHP_DIR/conf.d/docker-php-ext-xdebug.ini
