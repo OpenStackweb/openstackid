@@ -106,18 +106,17 @@ final class DoctrineOAuth2ClientRepository
      */
     public function getClientByIdCacheable(string $client_id, bool $withResourceServer = true):?Client
     {
-        return $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select("c")
-            ->from($this->getBaseEntity(), "c")
-            ->where("c.client_id = (:client_id)")
-            ->setParameter("client_id", trim($client_id))
+        $qb = $this->getEntityManager()->createQueryBuilder()
+            ->select('c')
+            ->from($this->getBaseEntity(), 'c')
+            ->where('c.client_id = :client_id')
+            ->setParameter('client_id', trim($client_id))
             ->setMaxResults(1);
 
         if ($withResourceServer) {
-            // fetch join dirigido
+
             $qb->addSelect('rs')
-                ->leftJoin('c.resource_server', 'rs'); // JOIN FETCH implícito por el addSelect + asociación
+                ->leftJoin('c.resource_server', 'rs');
         }
 
         $q = $qb->getQuery();
