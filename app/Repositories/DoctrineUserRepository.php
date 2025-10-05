@@ -128,11 +128,16 @@ final class DoctrineUserRepository
         ]);
     }
 
-    public function getByIdWithGroups(int $id): ?User {
-        return $this->_em->createQuery(
-            'SELECT u, g FROM ' .User::class . ' u
-         LEFT JOIN FETCH u.groups g
-         WHERE u.id = :id'
-        )->setParameter('id', $id)->getOneOrNullResult();
+    public function getByIdWithGroups(int $id): ?User
+    {
+        $qb = $this->getEntityManager()->createQueryBuilder();
+
+        $qb->select('DISTINCT u', 'g')
+        ->from(User::class, 'u')
+            ->leftJoin('u.groups', 'g')
+            ->where('u.id = :id')
+            ->setParameter('id', $id);
+
+        return $qb->getQuery()->getOneOrNullResult();
     }
 }
