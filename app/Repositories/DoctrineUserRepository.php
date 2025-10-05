@@ -127,4 +127,12 @@ final class DoctrineUserRepository
             'email_verified_token_hash' => User::createConfirmationTokenHash($token)
         ]);
     }
+
+    public function getByIdWithGroups(int $id): ?User {
+        return $this->_em->createQuery(
+            'SELECT u, g FROM ' .User::class . ' u
+         LEFT JOIN FETCH u.groups g
+         WHERE u.id = :id'
+        )->setParameter('id', $id)->getOneOrNullResult();
+    }
 }

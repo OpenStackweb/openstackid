@@ -389,7 +389,7 @@ final class AuthService extends AbstractService implements IAuthService
      */
     public function getUserById(int $id): ?User
     {
-        return $this->user_repository->getById($id);
+        return $this->user_repository->getByIdWithGroups($id);
     }
 
     // Authentication
