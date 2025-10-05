@@ -33,10 +33,10 @@ interface IClientRepository extends IBaseRepository
 
     /**
      * @param string $client_id
+     * @param bool $withResourceServer
      * @return Client|null
-     * @throws \Doctrine\ORM\NonUniqueResultException
      */
-    public function getClientByIdCacheable(string $client_id):?Client;
+    public function getClientByIdCacheable(string $client_id, bool $withResourceServer = true):?Client;
 
     /**
      * @param int $id

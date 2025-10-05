@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
 use Models\OAuth2\Client;
 use OAuth2\Repositories\IClientRepository;
@@ -103,7 +104,7 @@ final class DoctrineOAuth2ClientRepository
      * @return Client|null
      * @throws \Doctrine\ORM\NonUniqueResultException
      */
-    public function getClientByIdCacheable(string $client_id):?Client
+    public function getClientByIdCacheable(string $client_id, bool $withResourceServer = true):?Client
     {
         return $this->getEntityManager()
             ->createQueryBuilder()
@@ -111,10 +112,21 @@ final class DoctrineOAuth2ClientRepository
             ->from($this->getBaseEntity(), "c")
             ->where("c.client_id = (:client_id)")
             ->setParameter("client_id", trim($client_id))
-            ->setMaxResults(1)
-            ->getQuery()
-            ->setCacheable(true)
-            ->getOneOrNullResult();
+            ->setMaxResults(1);
+
+        if ($withResourceServer) {
+            // fetch join dirigido
+            $qb->addSelect('rs')
+                ->leftJoin('c.resource_server', 'rs'); // JOIN FETCH implícito por el addSelect + asociación
+        }
+
+        $q = $qb->getQuery();
+
+        $q->useQueryCache(true);
+        $q->enableResultCache(600, 'client_by_id_'.$client_id); // TTL 10 min
+        $q->setHint(Query::HINT_READ_ONLY, true);
+
+        return $q->getOneOrNullResult();
     }
 
     /**
