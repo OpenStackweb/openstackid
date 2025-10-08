@@ -63,6 +63,7 @@
             min_length: {{ Config::get("auth.password_min_length") }},
             max_length: {{ Config::get("auth.password_max_length") }},
             shape_pattern: '{{ Config::get("auth.password_shape_pattern") }}',
+            allowed_special_characters: '{{ Config::get("auth.password_allowed_special_characters") }}',
             shape_warning: '{{ Config::get("auth.password_shape_warning") }}'
         }
 

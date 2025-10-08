@@ -270,7 +270,7 @@ const SignUpPage = ({
                 <InfoOutlinedIcon fontSize="small" />
                 &nbsp;
                 <Typography variant="body2">
-                  {`The Password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and ${passwordPolicy.shape_warning}`}
+                    <div dangerouslySetInnerHTML={{ __html: `The Password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and ${passwordPolicy.shape_warning}` }} />
                 </Typography>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
