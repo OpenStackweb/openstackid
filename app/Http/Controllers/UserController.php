@@ -312,18 +312,6 @@ final class UserController extends OpenIdController
                 throw new ValidationException("empty send param.");
             }
 
-            $user = $this->auth_service->getUserByUsername($username);
-
-            if (!$user->isActive())
-                throw new ValidationException
-                (
-                    sprintf
-                    (
-                        "Your user account is currently locked. Please <a href='mailto:%s'>contact support</a> for further assistance.",
-                        Config::get("app.help_email")
-                    )
-                );
-
             $client = null;
 
             // check if we have a former oauth2 request
