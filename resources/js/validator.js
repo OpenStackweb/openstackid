@@ -1,4 +1,5 @@
 import {ref, string} from "yup";
+import {decodeHtmlEntities} from "./utils.js"
 
 const validatePasswordPattern = (shapePattern, allowed_special_characters, warning) => {
     return function(value) {
@@ -25,7 +26,7 @@ const validatePasswordPattern = (shapePattern, allowed_special_characters, warni
 
         // Check remain requirements
         return this.createError({
-            message: warning,
+            message: decodeHtmlEntities(warning),
             path: this.path,
         });
     }
