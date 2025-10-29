@@ -50,6 +50,7 @@
     "s-ichikawa/laravel-sendgrid-driver": "^4.0",
     "smarcet/jose4php": "2.0.0",
     "socialiteproviders/apple": "^5.6.1",
+    "socialiteproviders/auth0": "^4.2",
     "socialiteproviders/facebook": "^4.1.0",
     "socialiteproviders/google": "^4.1.0",
     "socialiteproviders/linkedin": "^5.0.0",

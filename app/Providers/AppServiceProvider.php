@@ -15,6 +15,7 @@
 use App\libs\Utils\TextUtils;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Validator;
@@ -126,6 +127,11 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return true;
+        });
+
+        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
+            // custom tenants for AUTH0 providers
+            $event->extendSocialite('lfid', \SocialiteProviders\Auth0\Provider::class);
         });
     }
 
