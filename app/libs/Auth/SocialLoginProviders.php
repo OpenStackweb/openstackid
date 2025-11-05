@@ -48,12 +48,14 @@ final class SocialLoginProviders
     }
 
     /**
-     * @return string[]
+     * @param string $provided_tenant
+     * @return array
      */
-    public static function buildSupportedProviders(): array
+    public static function buildSupportedProviders(string $provided_tenant = ''): array
     {
+        Log::debug("SocialLoginProviders::buildSupportedProviders", ["provided_tenant" => $provided_tenant]);
         $res = [];
-        $tenant = trim(Request::get('tenant', ''));
+        $tenant = trim(Request::get('tenant', $provided_tenant));
         $allowed_3rd_party_providers = self::toList(
             Config::get("tenants.$tenant.allowed_3rd_party_providers", '')
         );

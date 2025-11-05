@@ -148,6 +148,11 @@ final class OAuth2Protocol implements IOAuth2Protocol
     );
 
     /**
+     * custom param
+     */
+    const Tenant = 'tenant';
+
+    /**
      * http://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#ResponseModes
      *
      * Each Response Type value also defines a default Response Mode mechanism to be used,

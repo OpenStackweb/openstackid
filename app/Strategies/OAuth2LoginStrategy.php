@@ -15,9 +15,11 @@
 use App\libs\OAuth2\Strategies\ILoginHintProcessStrategy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use OAuth2\Endpoints\AuthorizationEndpoint;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
 use OAuth2\Requests\OAuth2AuthenticationRequest;
+use OAuth2\Requests\OAuth2AuthorizationRequest;
 use OAuth2\Services\IMementoOAuth2SerializerService;
 use Services\IUserActionService;
 use Utils\IPHelper;
@@ -52,12 +54,12 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
     )
     {
         parent::__construct($user_action_service, $auth_service, $login_hint_process_strategy);
-        $this->memento_service          = $memento_service;
+        $this->memento_service = $memento_service;
     }
 
     public function getLogin()
     {
-        Log::debug(sprintf("OAuth2LoginStrategy::getLogin"));
+        Log::debug("OAuth2LoginStrategy::getLogin");
 
         if (!Auth::guest())
             return Redirect::action("UserController@getProfile");
@@ -70,10 +72,13 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
             )
         );
 
+        Log::debug("OAuth2LoginStrategy::getLogin", ['auth_request' => (string)$auth_request ]);
+
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
         return $response_strategy->getLoginResponse([
-            'provider' => $auth_request instanceof OAuth2AuthenticationRequest ? $auth_request->getProvider() : null
+            'provider' => $auth_request instanceof OAuth2AuthenticationRequest ? $auth_request->getProvider() : null,
+            'tenant' => $auth_request instanceof OAuth2AuthorizationRequest ? $auth_request->getTenant() : null
         ]);
     }
 
