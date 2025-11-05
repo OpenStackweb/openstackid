@@ -69,17 +69,16 @@ final class SocialLoginProviders
                 continue;
             }
 
-            // If no tenant param was provided, any enabled provider is allowed.
-            if ($tenant === '') {
-                $res[$provider] = ucfirst($provider);
-                continue;
-            }
-
             // check if the 3rd party provider has defined some exclusive tenants ...
             $tenants =  self::toList(
                 Config::get("services.$provider.tenants", '')
             );
 
+            // If no tenant param was provided, any enabled provider is allowed.
+            if ($tenant === '' && count($tenants)==0) {
+                $res[$provider] = ucfirst($provider);
+                continue;
+            }
             Log::debug(sprintf("SocialLoginProviders::buildSupportedProviders provider %s is enabled", $provider));
             // 1. check if we have exclusive tenants defined at provider level
             if (count($tenants) > 0 && !in_array($tenant, $tenants)) {
