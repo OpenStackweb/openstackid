@@ -42,7 +42,7 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
     {
         $provider = $data["provider"] ?? null;
         $provided_tenant = $data["tenant"] ?? '';
-        Log::debug("OAuth2LoginStrategy::getLogin", ['provider' => $provider , 'provided_tenant' => $provided_tenant]);
+        Log::debug("DisplayResponseUserAgentStrategy::getLoginResponse", ['provider' => $provider , 'provided_tenant' => $provided_tenant]);
         if(!empty($provider)) {
             return redirect()->route('social_login', ['provider' => $provider]);
         }
