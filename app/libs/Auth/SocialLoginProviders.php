@@ -75,7 +75,7 @@ final class SocialLoginProviders
             );
 
             // If no tenant param was provided, any enabled provider is allowed.
-            if ($tenant === '' && count($tenants)==0) {
+            if ($tenant === '' && count($tenants) == 0) {
                 $res[$provider] = ucfirst($provider);
                 continue;
             }
