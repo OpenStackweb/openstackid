@@ -1,6 +1,15 @@
 <?php
+$custom_auth0_tenants = [
+    'lfid' => [
+        'client_id' => env('LFID_CLIENT_ID'),
+        'client_secret' => env('LFID_CLIENT_SECRET'),
+        'redirect' => env('LFID_REDIRECT_URI'),
+        'base_url' => env('LFID_BASE_URL'),
+        'tenants' => env('LFID_TENANTS','lf'),
+    ]
+];
 
-return [
+return array_merge([
 
     /*
     |--------------------------------------------------------------------------
@@ -66,4 +75,4 @@ return [
         'base_url' => env("OKTA_BASE_URL"),
         'redirect' => env('OKTA_REDIRECT_URI')
     ],
-];
+], $custom_auth0_tenants);

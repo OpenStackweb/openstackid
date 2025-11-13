@@ -13,6 +13,7 @@
  **/
 
 use App\libs\Auth\SocialLoginProviders;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Redirect;
@@ -40,11 +41,12 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
     public function getLoginResponse(array $data = [])
     {
         $provider = $data["provider"] ?? null;
-
+        $provided_tenant = $data["tenant"] ?? '';
+        Log::debug("DisplayResponseUserAgentStrategy::getLoginResponse", ['provider' => $provider , 'provided_tenant' => $provided_tenant]);
         if(!empty($provider)) {
             return redirect()->route('social_login', ['provider' => $provider]);
         }
-        $data['supported_providers'] = SocialLoginProviders::buildSupportedProviders();
+        $data['supported_providers'] = SocialLoginProviders::buildSupportedProviders($provided_tenant);
         return Response::view("auth.login", $data, 200);
     }
 

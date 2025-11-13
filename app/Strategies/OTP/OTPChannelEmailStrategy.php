@@ -61,13 +61,13 @@ implements IOTPChannelStrategy
         try{
             $reset_password_link = null;
             $user = $this->user_repository->getByEmailOrName($otp->getUserName());
-            if($user instanceof User && !$user->hasPasswordSet()){
+            if($user instanceof User && !$user->hasPasswordSet() && $user->isEmailVerified()){
                 // create a password reset request
                 Log::debug
                 (
                     sprintf
                     (
-                        "OTPChannelEmailStrategy::send user %s has no password set",
+                        "OTPChannelEmailStrategy::send user %s has no password set, trying to generate a reset link ...",
                         $user->getId()
                     )
                 );
