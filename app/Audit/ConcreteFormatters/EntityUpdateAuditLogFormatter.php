@@ -1,4 +1,5 @@
-<?php namespace App\Audit\ConcreteFormatters;
+<?php
+namespace App\Audit\ConcreteFormatters;
 /**
  * Copyright 2022 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -86,11 +87,12 @@ class EntityUpdateAuditLogFormatter extends AbstractAuditLogFormatter
     public function format($subject, $change_set): ?string
     {
         $res = [];
-        $class_name = (new ReflectionClass($subject))->getShortName();
+        $class_name = class_basename(is_string($subject) ? $subject : get_class($subject));
         $ignored_fields = $this->getIgnoredFields();
 
         foreach (array_keys($change_set) as $prop_name) {
-            if (in_array($prop_name, $ignored_fields)) continue;
+            if (in_array($prop_name, $ignored_fields))
+                continue;
 
             $change_values = $change_set[$prop_name];
 
@@ -99,9 +101,11 @@ class EntityUpdateAuditLogFormatter extends AbstractAuditLogFormatter
 
             if ($this->child_entity_formatter != null) {
                 $res[] = $this->child_entity_formatter
-                    ->format($subject,
+                    ->format(
+                        $subject,
                         IChildEntityAuditLogFormatter::CHILD_ENTITY_UPDATE,
-                        "Property \"{$prop_name}\" has changed from \"{$old_value}\" to \"{$new_value}\"");
+                        "Property \"{$prop_name}\" has changed from \"{$old_value}\" to \"{$new_value}\""
+                    );
                 continue;
             }
 
@@ -155,7 +159,8 @@ class EntityUpdateAuditLogFormatter extends AbstractAuditLogFormatter
             }
         }
 
-        if (count($res) == 0) return null;
+        if (count($res) == 0)
+            return null;
 
         return join("|", $res);
     }

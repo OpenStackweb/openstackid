@@ -17,6 +17,7 @@ namespace App\Audit;
 
 use Illuminate\Support\Facades\Log;
 use ReflectionClass;
+use Throwable;
 
 /**
  * Class ChildEntityFormatterFactory
@@ -28,14 +29,10 @@ class AuditLoggerFactory
     public static function build($entity): ?ILogger
     {
         try {
-            $class_name = (new ReflectionClass($entity))->getShortName();
-            $class_name = "App\\Audit\\Loggers\\{$class_name}AuditLogger";
-            if (class_exists($class_name)) {
-                return new $class_name();
-            }
-            Log::warning(sprintf("AuditLoggerFactory::build %s not found", $class_name));
-            return null;
-        } catch (\ReflectionException $e) {
+            $short = class_basename(is_string($entity) ? $entity : get_class($entity));
+            $class_name = "App\\Audit\\Loggers\\{$short}AuditLogger";
+            return class_exists($class_name) ? new $class_name() : null;
+        } catch (Throwable $e) {
             Log::error($e);
             return null;
         }

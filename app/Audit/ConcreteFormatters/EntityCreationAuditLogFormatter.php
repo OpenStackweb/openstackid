@@ -25,7 +25,8 @@ use ReflectionClass;
  */
 class EntityCreationAuditLogFormatter extends AbstractAuditLogFormatter
 {
-    protected function getCreationIgnoredEntities(): array {
+    protected function getCreationIgnoredEntities(): array
+    {
         return [
             'PresentationAction',
             'PresentationExtraQuestionAnswer'
@@ -35,10 +36,12 @@ class EntityCreationAuditLogFormatter extends AbstractAuditLogFormatter
     /**
      * @inheritDoc
      */
-    public function format($subject, $change_set): ?string {
-        $class_name = (new ReflectionClass($subject))->getShortName();
+    public function format($subject, $change_set): ?string
+    {
+        $class_name = class_basename(is_string($subject) ? $subject : get_class($subject));
         $ignored_entities = $this->getCreationIgnoredEntities();
-        if (in_array($class_name, $ignored_entities)) return null;
+        if (in_array($class_name, $ignored_entities))
+            return null;
         return "{$class_name} created";
     }
 }
