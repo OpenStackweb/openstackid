@@ -88,7 +88,7 @@ class AuditLogOtlpStrategy implements IAuditStrategy
     {
 
         // any collection → log the owner
-        if ($subject instanceof \Doctrine\ORM\PersistentCollection) {
+        if ($subject instanceof PersistentCollection) {
             return $subject->getOwner();
         }
 

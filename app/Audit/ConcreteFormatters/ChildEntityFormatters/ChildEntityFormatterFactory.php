@@ -16,23 +16,23 @@ namespace App\Audit\ConcreteFormatters\ChildEntityFormatters;
  **/
 
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Class ChildEntityFormatterFactory
  * @package App\Audit\ConcreteFormatters\ChildEntityFormatter
  */
-class ChildEntityFormatterFactory {
+class ChildEntityFormatterFactory
+{
 
-    public static function build(object|string $entity): ?IChildEntityAuditLogFormatter {
+    public static function build(object|string $entity): ?IChildEntityAuditLogFormatter
+    {
         try {
-            $short = is_string($entity)
-                ? substr(ltrim($entity, '\\'), strrpos(ltrim($entity, '\\'), '\\') + 1)
-                : (new \ReflectionClass($entity))->getShortName();
-            Log::debug("ChildEntityFormatterFactory::build short {$short}");
+            $short = class_basename(is_string($entity) ? $entity : get_class($entity));
             $class = "App\\Audit\\ConcreteFormatters\\ChildEntityFormatters\\{$short}AuditLogFormatter";
             return class_exists($class) ? new $class() : null;
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error($e);
             return null;
         }

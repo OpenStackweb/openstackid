@@ -40,7 +40,8 @@ class EntityCollectionUpdateAuditLogFormatter extends AbstractAuditLogFormatter
     /**
      * @inheritDoc
      */
-    public function format($subject, $change_set): ?string {
+    public function format($subject, array $change_set): ?string
+    {
         try {
             if ($this->child_entity_formatter != null) {
                 $changes = [];
@@ -67,4 +68,3 @@ class EntityCollectionUpdateAuditLogFormatter extends AbstractAuditLogFormatter
         }
     }
 }
-

@@ -1,4 +1,5 @@
-<?php namespace App\ModelSerializers;
+<?php
+namespace App\ModelSerializers;
 /**
  * Copyright 2019 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,10 +42,12 @@ final class SerializerRegistry
      */
     private static $instance;
 
-    const SerializerType_Public  = 'PUBLIC';
+    const SerializerType_Public = 'PUBLIC';
     const SerializerType_Private = 'PRIVATE';
 
-    private function __clone(){}
+    private function __clone()
+    {
+    }
 
     /**
      * @var IResourceServerContext
@@ -112,17 +115,19 @@ final class SerializerRegistry
      * @param string $type
      * @return IModelSerializer
      */
-    public function getSerializer($object, $type = self::SerializerType_Public){
-        if(is_null($object)) return null;
-        $reflect = new ReflectionClass($object);
-        $class   = $reflect->getShortName();
-        if(!isset($this->registry[$class]))
-            throw new \InvalidArgumentException('Serializer not found for '.$class);
+    public function getSerializer($object, $type = self::SerializerType_Public)
+    {
+        if (is_null($object))
+            return null;
+
+        $class = class_basename(is_string($object) ? $object : get_class($object));
+        if (!isset($this->registry[$class]))
+            throw new \InvalidArgumentException('Serializer not found for ' . $class);
 
         $serializer_class = $this->registry[$class];
 
-        if(is_array($serializer_class)){
-            if(!isset($serializer_class[$type]))
+        if (is_array($serializer_class)) {
+            if (!isset($serializer_class[$type]))
                 throw new \InvalidArgumentException(sprintf('Serializer not found for %s , type %s', $class, $type));
             $serializer_class = $serializer_class[$type];
         }

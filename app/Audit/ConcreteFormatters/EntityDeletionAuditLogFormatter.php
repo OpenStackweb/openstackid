@@ -36,7 +36,8 @@ class EntityDeletionAuditLogFormatter extends AbstractAuditLogFormatter
         $this->child_entity_formatter = $child_entity_formatter;
     }
 
-    protected function getCreationIgnoredEntities(): array {
+    protected function getCreationIgnoredEntities(): array
+    {
         return [
             'PresentationAction',
             'PresentationExtraQuestionAnswer'
@@ -46,10 +47,12 @@ class EntityDeletionAuditLogFormatter extends AbstractAuditLogFormatter
     /**
      * @inheritDoc
      */
-    public function format($subject, $change_set): ?string {
-        $class_name = (new ReflectionClass($subject))->getShortName();
+    public function format($subject, $change_set): ?string
+    {
+        $class_name = class_basename(is_string($subject) ? $subject : get_class($subject));
         $ignored_entities = $this->getCreationIgnoredEntities();
-        if (in_array($class_name, $ignored_entities)) return null;
+        if (in_array($class_name, $ignored_entities))
+            return null;
 
         if ($this->child_entity_formatter != null) {
             return $this->child_entity_formatter
