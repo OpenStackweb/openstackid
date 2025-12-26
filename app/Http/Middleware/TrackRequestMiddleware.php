@@ -23,7 +23,7 @@ class TrackRequestMiddleware
     public function __construct(LogManager $logger)
     {
         $this->logger = $logger;
-        $this->shouldTrack =  env('OTEL_SERVICE_ENABLED', false);
+        $this->shouldTrack = config('opentelemetry.enabled', env('OTEL_SERVICE_ENABLED', false));
     }
 
     public function handle(Request $request, Closure $next)
@@ -49,7 +49,7 @@ class TrackRequestMiddleware
 
                 $span->addEvent(self::EVENT_REQUEST_STARTED, [
                     'method' => $request->method(),
-                    'url'    => $request->fullUrl(),
+                    'url' => $request->fullUrl(),
                 ]);
             }
         } catch (\Throwable $e) {
