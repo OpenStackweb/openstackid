@@ -25,31 +25,30 @@ use Models\UserAction;
  */
 class UserActionAuditLogFormatter implements IChildEntityAuditLogFormatter
 {
-  /**
-   * @param UserAction $subject
-   * @param string $child_entity_action_type
-   * @param string|null $additional_info
-   * @return string|null
-   */
-  public function format($subject, string $child_entity_action_type, ?string $additional_info = ""): ?string
-  {
+    /**
+     * @param UserAction $subject
+     * @param string $child_entity_action_type
+     * @param string|null $additional_info
+     * @return string|null
+     */
+    public function format($subject, string $child_entity_action_type, ?string $additional_info = ""): ?string
+    {
+        if (!$subject instanceof UserAction) {
+            return null;
+        }
 
-    if (!$subject instanceof UserAction) {
-      return null;
+        $owner = $subject->getOwner();
+        $realm = $subject->hasRealm() ? $subject->getRealm() : 'N/A';
+        $ip = $subject->getFromIp();
+
+        switch ($child_entity_action_type) {
+            case IChildEntityAuditLogFormatter::CHILD_ENTITY_CREATION:
+                return "A new UserAction which owner is \"{$owner->getFullName()} ({$owner->getID()})\", with realm \"{$realm}\" and IP \"{$ip}\" was created. {$additional_info}";
+            case IChildEntityAuditLogFormatter::CHILD_ENTITY_UPDATE:
+                return "An UserAction with ID {$subject->getID()} was changed. {$additional_info}";
+            case IChildEntityAuditLogFormatter::CHILD_ENTITY_DELETION:
+                return "An UserAction with ID {$subject->getID()} which owner is \"{$owner->getFullName()} ({$owner->getID()})\", with realm \"{$realm}\" and IP \"{$ip}\" was removed";
+        }
+        return "";
     }
-
-    $owner = $subject->getOwner();
-    $realm = $subject->hasRealm() ? $subject->getRealm() : 'N/A';
-    $ip = $subject->getFromIp();
-
-    switch ($child_entity_action_type) {
-      case IChildEntityAuditLogFormatter::CHILD_ENTITY_CREATION:
-        return "A new UserAction which owner is \"{$owner->getFullName()} ({$owner->getID()})\", with realm \"{$realm}\" and IP \"{$ip}\" was created. {$additional_info}";
-      case IChildEntityAuditLogFormatter::CHILD_ENTITY_UPDATE:
-        return "An UserAction with ID {$subject->getID()} was changed. {$additional_info}";
-      case IChildEntityAuditLogFormatter::CHILD_ENTITY_DELETION:
-        return "An UserAction with ID {$subject->getID()} which owner is \"{$owner->getFullName()} ({$owner->getID()})\", with realm \"{$realm}\" and IP \"{$ip}\" was removed";
-    }
-    return "";
-  }
 }
