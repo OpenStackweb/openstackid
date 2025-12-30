@@ -1,10 +1,13 @@
 <?php
 
+use App\Audit\ConcreteFormatters\UserActionAuditLogFormatter;
+use Models\UserAction;
+
 return [
   'entities' => [
-    \Models\UserAction::class => [
+    UserAction::class => [
       'enabled' => true,
-      'strategy' => App\Audit\ConcreteFormatters\UserActionAuditLogFormatter::class
+      'strategy' => UserActionAuditLogFormatter::class,
     ],
   ]
 ];
