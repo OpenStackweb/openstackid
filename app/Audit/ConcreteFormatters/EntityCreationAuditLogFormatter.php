@@ -28,8 +28,6 @@ class EntityCreationAuditLogFormatter extends AbstractAuditLogFormatter
     protected function getCreationIgnoredEntities(): array
     {
         return [
-            'PresentationAction',
-            'PresentationExtraQuestionAnswer'
         ];
     }
 
