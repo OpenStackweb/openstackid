@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Audit\ConcreteFormatters\ChildEntityFormatters;
+namespace App\Audit\ConcreteFormatters;
 
 use Models\UserAction;
 
