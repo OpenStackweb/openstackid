@@ -412,7 +412,7 @@ class OAuth2OTP extends BaseEntity implements Identifier
         return "otp";
     }
 
-    const VsChar = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const VsChar = "0123456789";
 
     public function generateValue(): string
     {

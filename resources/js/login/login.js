@@ -226,6 +226,7 @@ const OTPInputForm = ({
                         value={otpCode}
                         onChange={onCodeChange}
                         numInputs={otpLength}
+                        inputType="tel"
                         renderInput={(props) => <input {...props} />}
                         shouldAutoFocus={true}
                         hasErrored={!otpError}
