@@ -1,4 +1,5 @@
-<?php namespace App\Http;
+<?php
+namespace App\Http;
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +30,7 @@ class Kernel extends HttpKernel
      */
     protected $middleware = [
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
+        \App\Http\Middleware\TrackRequestMiddleware::class,
         \App\Http\Middleware\SingleAccessPoint::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\ParseMultipartFormDataInputForNonPostRequests::class,
@@ -67,19 +69,19 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        'auth'                                     => \App\Http\Middleware\Authenticate::class,
-        'auth.basic'                               => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'ssl'                                      => \App\Http\Middleware\SSLMiddleware::class,
-        'guest'                                    => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        'throttle'                                 => \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
-        'csrf'                                     => \App\Http\Middleware\VerifyCsrfToken::class,
-        'oauth2.endpoint'                          => \App\Http\Middleware\OAuth2BearerAccessTokenRequestValidator::class,
-        'oauth2.currentuser.serveradmin'           => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdmin::class,
-        'oauth2.currentuser.serveradmin.json'      => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdminJson::class,
-        'openstackid.currentuser.serveradmin'      => \App\Http\Middleware\CurrentUserIsOpenIdServerAdmin::class,
+        'auth' => \App\Http\Middleware\Authenticate::class,
+        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'ssl' => \App\Http\Middleware\SSLMiddleware::class,
+        'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
+        'csrf' => \App\Http\Middleware\VerifyCsrfToken::class,
+        'oauth2.endpoint' => \App\Http\Middleware\OAuth2BearerAccessTokenRequestValidator::class,
+        'oauth2.currentuser.serveradmin' => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdmin::class,
+        'oauth2.currentuser.serveradmin.json' => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdminJson::class,
+        'openstackid.currentuser.serveradmin' => \App\Http\Middleware\CurrentUserIsOpenIdServerAdmin::class,
         'openstackid.currentuser.serveradmin.json' => \App\Http\Middleware\CurrentUserIsOpenIdServerAdminJson::class,
-        'oauth2.currentuser.allow.client.edition'  => \App\Http\Middleware\CurrentUserCanEditOAuth2Client::class,
-        'oauth2.currentuser.owns.client'           => \App\Http\Middleware\CurrentUserOwnsOAuth2Client::class,
-        'service.account'                          => \App\Http\Middleware\EnsureServiceAccount::class,
+        'oauth2.currentuser.allow.client.edition' => \App\Http\Middleware\CurrentUserCanEditOAuth2Client::class,
+        'oauth2.currentuser.owns.client' => \App\Http\Middleware\CurrentUserOwnsOAuth2Client::class,
+        'service.account' => \App\Http\Middleware\EnsureServiceAccount::class,
     ];
 }
