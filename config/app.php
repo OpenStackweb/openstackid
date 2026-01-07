@@ -106,74 +106,78 @@ return [
     |
     */
 
-    'providers' => [
+    'providers' => array_merge([
 
-        /*
-         * Laravel Framework Service Providers...
-         */
-        Illuminate\Auth\AuthServiceProvider::class,
-        Illuminate\Broadcasting\BroadcastServiceProvider::class,
-        Illuminate\Bus\BusServiceProvider::class,
-        Illuminate\Cache\CacheServiceProvider::class,
-        Illuminate\Foundation\Providers\ConsoleSupportServiceProvider::class,
-        Illuminate\Cookie\CookieServiceProvider::class,
-        Illuminate\Database\DatabaseServiceProvider::class,
-        Illuminate\Encryption\EncryptionServiceProvider::class,
-        Illuminate\Filesystem\FilesystemServiceProvider::class,
-        Illuminate\Foundation\Providers\FoundationServiceProvider::class,
-        Illuminate\Hashing\HashServiceProvider::class,
-        Illuminate\Mail\MailServiceProvider::class,
-        Illuminate\Notifications\NotificationServiceProvider::class,
-        Illuminate\Pagination\PaginationServiceProvider::class,
-        Illuminate\Pipeline\PipelineServiceProvider::class,
-        Illuminate\Queue\QueueServiceProvider::class,
-        Illuminate\Redis\RedisServiceProvider::class,
-        Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
-        Illuminate\Session\SessionServiceProvider::class,
-        Illuminate\Translation\TranslationServiceProvider::class,
-        Illuminate\Validation\ValidationServiceProvider::class,
-        Illuminate\View\ViewServiceProvider::class,
+            /*
+            * Laravel Framework Service Providers...
+            */
+            Illuminate\Auth\AuthServiceProvider::class,
+            Illuminate\Broadcasting\BroadcastServiceProvider::class,
+            Illuminate\Bus\BusServiceProvider::class,
+            Illuminate\Cache\CacheServiceProvider::class,
+            Illuminate\Foundation\Providers\ConsoleSupportServiceProvider::class,
+            Illuminate\Cookie\CookieServiceProvider::class,
+            Illuminate\Database\DatabaseServiceProvider::class,
+            Illuminate\Encryption\EncryptionServiceProvider::class,
+            Illuminate\Filesystem\FilesystemServiceProvider::class,
+            Illuminate\Foundation\Providers\FoundationServiceProvider::class,
+            Illuminate\Hashing\HashServiceProvider::class,
+            Illuminate\Mail\MailServiceProvider::class,
+            Illuminate\Notifications\NotificationServiceProvider::class,
+            Illuminate\Pagination\PaginationServiceProvider::class,
+            Illuminate\Pipeline\PipelineServiceProvider::class,
+            Illuminate\Queue\QueueServiceProvider::class,
+            Illuminate\Redis\RedisServiceProvider::class,
+            Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
+            Illuminate\Session\SessionServiceProvider::class,
+            Illuminate\Translation\TranslationServiceProvider::class,
+            Illuminate\Validation\ValidationServiceProvider::class,
+            Illuminate\View\ViewServiceProvider::class,
 
-        /*
-         * Package Service Providers...
-         */
+            /*
+            * Package Service Providers...
+            */
 
-        /*
-         * Application Service Providers...
-         */
-        \App\Http\Utils\UtilsProvider::class,
-        Repositories\RepositoriesProvider::class,
-        App\Providers\AppServiceProvider::class,
-        App\Providers\AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class,
-        App\Providers\EventServiceProvider::class,
-        App\Providers\RouteServiceProvider::class,
-        Services\Utils\UtilsProvider::class,
-        Services\OAuth2\OAuth2ServiceProvider::class,
-        Services\OpenId\OpenIdProvider::class,
-        Auth\AuthenticationServiceProvider::class,
-        Services\ServicesProvider::class,
-        Strategies\StrategyProvider::class,
-        OAuth2\OAuth2ServiceProvider::class,
-        OpenId\OpenIdServiceProvider::class,
-        \Providers\OAuth2\ClientAuthContextValidatorFactoryProvider::class,
-        Greggilbert\Recaptcha\RecaptchaServiceProvider::class,
-        Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
-        // Doctrine ORM
-        LaravelDoctrine\ORM\DoctrineServiceProvider::class,
-        // Doctrine Extensions
-        LaravelDoctrine\Extensions\GedmoExtensionsServiceProvider::class,
-        // Doctrine Migrations
-        LaravelDoctrine\Migrations\MigrationsServiceProvider::class,
-        // Doctrine Beberlei (Query/Type) extensions install them:
-        LaravelDoctrine\Extensions\BeberleiExtensionsServiceProvider::class,
-        \App\Models\Utils\MySQLExtensionsServiceProvider::class,
-        \App\libs\Utils\FileSystem\SwiftServiceProvider::class,
-        // remove 'Laravel\Socialite\SocialiteServiceProvider',
-        \SocialiteProviders\Manager\ServiceProvider::class, // add
-        \App\libs\Utils\Html\HtmlServiceProvider::class,
-        App\libs\Utils\Doctrine\DoctrineCacheServiceProvider::class,
-    ],
+            /*
+            * Application Service Providers...
+            */
+            \App\Http\Utils\UtilsProvider::class,
+            Repositories\RepositoriesProvider::class,
+            App\Providers\AppServiceProvider::class,
+            App\Providers\AuthServiceProvider::class,
+            // App\Providers\BroadcastServiceProvider::class,
+            App\Providers\EventServiceProvider::class,
+            App\Providers\RouteServiceProvider::class,
+            Services\Utils\UtilsProvider::class,
+            Services\OAuth2\OAuth2ServiceProvider::class,
+            Services\OpenId\OpenIdProvider::class,
+            Auth\AuthenticationServiceProvider::class,
+            Services\ServicesProvider::class,
+            Strategies\StrategyProvider::class,
+            OAuth2\OAuth2ServiceProvider::class,
+            OpenId\OpenIdServiceProvider::class,
+            \Providers\OAuth2\ClientAuthContextValidatorFactoryProvider::class,
+            Greggilbert\Recaptcha\RecaptchaServiceProvider::class,
+            Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
+            // Doctrine ORM
+            LaravelDoctrine\ORM\DoctrineServiceProvider::class,
+            // Doctrine Extensions
+            LaravelDoctrine\Extensions\GedmoExtensionsServiceProvider::class,
+            // Doctrine Migrations
+            LaravelDoctrine\Migrations\MigrationsServiceProvider::class,
+            // Doctrine Beberlei (Query/Type) extensions install them:
+            LaravelDoctrine\Extensions\BeberleiExtensionsServiceProvider::class,
+            \App\Models\Utils\MySQLExtensionsServiceProvider::class,
+            \App\libs\Utils\FileSystem\SwiftServiceProvider::class,
+            // remove 'Laravel\Socialite\SocialiteServiceProvider',
+            \SocialiteProviders\Manager\ServiceProvider::class, // add
+            \App\libs\Utils\Html\HtmlServiceProvider::class,
+            App\libs\Utils\Doctrine\DoctrineCacheServiceProvider::class,
+            App\Audit\AuditProvider::class,
+            // Only if you want to toggle via env:
+        ],
+        env('OTEL_SERVICE_ENABLED', false) ? [\Keepsuit\LaravelOpenTelemetry\LaravelOpenTelemetryServiceProvider::class] : []
+    ),
 
     /*
     |--------------------------------------------------------------------------
