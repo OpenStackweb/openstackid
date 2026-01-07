@@ -14,11 +14,13 @@ namespace App\Audit;
  **/
 
 use App\Audit\Interfaces\IAuditStrategy;
+use Auth\Repositories\IUserRepository;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use OAuth2\IResourceServerContext;
 /**
  * Class AuditEventListener
  * @package App\Audit
@@ -91,12 +93,12 @@ class AuditEventListener
 
     private function buildAuditContext(): AuditContext
     {
-        $resourceCtx = app(\models\oauth2\IResourceServerContext::class);
+        $resourceCtx = app(IResourceServerContext::class);
         $userExternalId = $resourceCtx->getCurrentUserId();
         $member = null;
         if ($userExternalId) {
-            $memberRepo = app(\models\main\IMemberRepository::class);
-            $member = $memberRepo->findOneBy(["user_external_id" => $userExternalId]);
+            $memberRepo = app(IUserRepository::class);
+            $member = $memberRepo->findOneBy(["external_id" => $userExternalId]);
         }
 
         //$ui = app()->bound('ui.context') ? app('ui.context') : [];
