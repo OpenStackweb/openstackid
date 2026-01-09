@@ -117,7 +117,7 @@ class AuditEventListener
         }
 
         return new AuditContext(
-            userId: $userId,
+            userId: $user?->getId(),
             userEmail: $user?->getEmail(),
             userFirstName: $user?->getFirstName(),
             userLastName: $user?->getLastName(),
