@@ -106,8 +106,7 @@ return [
     |
     */
 
-    'providers' => [
-
+    'providers' => array_merge([
         /*
          * Laravel Framework Service Providers...
          */
@@ -173,7 +172,11 @@ return [
         \SocialiteProviders\Manager\ServiceProvider::class, // add
         \App\libs\Utils\Html\HtmlServiceProvider::class,
         App\libs\Utils\Doctrine\DoctrineCacheServiceProvider::class,
-    ],
+        App\Audit\AuditProvider::class,
+        ],
+        // Only if you want to toggle via env:
+        env('OTEL_SERVICE_ENABLED', false) ? [\Keepsuit\LaravelOpenTelemetry\LaravelOpenTelemetryServiceProvider::class] : []
+    ),
 
     /*
     |--------------------------------------------------------------------------
