@@ -94,11 +94,11 @@ class AuditEventListener
     private function buildAuditContext(): AuditContext
     {
         $resourceCtx = app(IResourceServerContext::class);
-        $userExternalId = $resourceCtx->getCurrentUserId();
-        $member = null;
-        if ($userExternalId) {
-            $memberRepo = app(IUserRepository::class);
-            $member = $memberRepo->findOneBy(["external_id" => $userExternalId]);
+        $userId = $resourceCtx->getCurrentUserId();
+        $user = null;
+        if ($userId) {
+            $userRepo = app(IUserRepository::class);
+            $user = $userRepo->getById($userId);
         }
 
         //$ui = app()->bound('ui.context') ? app('ui.context') : [];
@@ -117,10 +117,10 @@ class AuditEventListener
         }
 
         return new AuditContext(
-            userId: $member?->getId(),
-            userEmail: $member?->getEmail(),
-            userFirstName: $member?->getFirstName(),
-            userLastName: $member?->getLastName(),
+            userId: $userId,
+            userEmail: $user?->getEmail(),
+            userFirstName: $user?->getFirstName(),
+            userLastName: $user?->getLastName(),
             uiApp: $ui['app'] ?? null,
             uiFlow: $ui['flow'] ?? null,
             route: $req?->path(),
