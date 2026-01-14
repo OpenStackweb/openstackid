@@ -23,12 +23,18 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 class AuditLogFormatterFactory implements IAuditLogFormatterFactory
 {
 
-    private array $config;
+    private array $config = [];
 
     public function __construct()
     {
-        // cache the config so we don't hit config() repeatedly
-        $this->config = config('audit_log', []);
+        try
+        {
+            Log::debug("AuditLogFormatterFactory::construct loading audit_log config");
+            $this->config = config('audit_log', []);
+        }
+        catch(\Exception $ex){
+            Log::error('Failed to load audit_log configuration', ['exception' => $ex]);
+        }
     }
 
     public function make(AuditContext $ctx, $subject, $eventType): ?IAuditLogFormatter
