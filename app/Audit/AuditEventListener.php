@@ -101,7 +101,7 @@ class AuditEventListener
             $user = $userRepo->getById($userId);
         }
 
-        //$ui = app()->bound('ui.context') ? app('ui.context') : [];
+        $uiContext = []; // app()->bound('ui.context') ? app('ui.context') : [];
 
         $req = request();
         $rawRoute = null;
@@ -121,8 +121,8 @@ class AuditEventListener
             userEmail: $user?->getEmail(),
             userFirstName: $user?->getFirstName(),
             userLastName: $user?->getLastName(),
-            uiApp: $ui['app'] ?? null,
-            uiFlow: $ui['flow'] ?? null,
+            uiApp: $uiContext['app'] ?? null,
+            uiFlow: $uiContext['flow'] ?? null,
             route: $req?->path(),
             httpMethod: $req?->method(),
             clientIp: $req?->ip(),
