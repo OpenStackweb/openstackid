@@ -65,7 +65,10 @@ class ResourceServer extends BaseEntity
      * @return bool
      */
     public function isOwn($ip)
-    {   $provided_ips = array_map('trim', explode(',', $ip));
+    {
+        if (!config('oauth2.validate_resource_server_ip', true)) return true;
+
+        $provided_ips = array_map('trim', explode(',', $ip));
         $own_ips = array_map('trim', explode(',', $this->ips));
         Log::debug
         (
