@@ -4,6 +4,7 @@ namespace App\Audit\ConcreteFormatters;
 
 use App\Audit\ConcreteFormatters\ChildEntityFormatters\IChildEntityAuditLogFormatter;
 use App\Audit\AbstractAuditLogFormatter;
+use App\Audit\Interfaces\IAuditStrategy;
 use Illuminate\Support\Facades\Log;
 use ReflectionException;
 
@@ -34,13 +35,14 @@ class EntityCollectionUpdateAuditLogFormatter extends AbstractAuditLogFormatter
 
     public function __construct(?IChildEntityAuditLogFormatter $child_entity_formatter)
     {
+        parent::__construct(IAuditStrategy::EVENT_COLLECTION_UPDATE);
         $this->child_entity_formatter = $child_entity_formatter;
     }
 
     /**
      * @inheritDoc
      */
-    public function format($subject, array $change_set): ?string
+    public function format($subject, $change_set): ?string
     {
         try {
             if ($this->child_entity_formatter != null) {

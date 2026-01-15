@@ -1,4 +1,5 @@
-<?php namespace App\Audit;
+<?php
+namespace App\Audit;
 
 /**
  * Copyright 2022 OpenStack Foundation
@@ -31,5 +32,5 @@ interface IAuditLogFormatter
      * @param array $change_set
      * @return string|null
      */
-    public function format($subject, array $change_set):?string;
+    public function format($subject, array $change_set): ?string;
 }

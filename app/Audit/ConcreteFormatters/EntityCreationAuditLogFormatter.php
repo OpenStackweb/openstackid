@@ -3,6 +3,7 @@
 namespace App\Audit\ConcreteFormatters;
 
 use App\Audit\AbstractAuditLogFormatter;
+use App\Audit\Interfaces\IAuditStrategy;
 use ReflectionClass;
 
 /**
@@ -25,6 +26,11 @@ use ReflectionClass;
  */
 class EntityCreationAuditLogFormatter extends AbstractAuditLogFormatter
 {
+    public function __construct()
+    {
+        parent::__construct(IAuditStrategy::EVENT_ENTITY_CREATION);
+    }
+
     protected function getCreationIgnoredEntities(): array
     {
         return [
@@ -36,10 +42,14 @@ class EntityCreationAuditLogFormatter extends AbstractAuditLogFormatter
      */
     public function format($subject, $change_set): ?string
     {
-        $class_name = class_basename(is_string($subject) ? $subject : get_class($subject));
+        $class_name = (new ReflectionClass($subject))->getShortName();
         $ignored_entities = $this->getCreationIgnoredEntities();
         if (in_array($class_name, $ignored_entities))
             return null;
-        return "{$class_name} created";
+
+        $entity_id = method_exists($subject, 'getId') ? $subject->getId() : 'N/A';
+        $user_info = $this->getUserInfo();
+
+        return "{$class_name} (ID: {$entity_id}) created by {$user_info}";
     }
 }

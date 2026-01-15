@@ -15,10 +15,12 @@ namespace Tests\OpenTelemetry\Formatters;
  * limitations under the License.
  **/
 
+use App\Audit\AbstractAuditLogFormatter;
 use App\Audit\AuditLogFormatterFactory;
 use App\Audit\AuditContext;
 use App\Audit\Interfaces\IAuditStrategy;
 use App\Audit\IAuditLogFormatter;
+use PHPUnit\Framework\Attributes\Depends;
 use Tests\OpenTelemetry\Formatters\Support\FormatterTestHelper;
 use Tests\OpenTelemetry\Formatters\Support\AuditContextBuilder;
 use PHPUnit\Framework\TestCase;
@@ -26,9 +28,11 @@ use PHPUnit\Framework\TestCase;
 class AllFormattersIntegrationTest extends TestCase
 {
     private AuditContext $defaultContext;
+    private static array $formatters;
     private const BASE_FORMATTERS_NAMESPACE = 'App\\Audit\\ConcreteFormatters\\';
     private const BASE_FORMATTERS_DIR = __DIR__ . '/../../../app/Audit/ConcreteFormatters';
     private const CHILD_ENTITY_DIR_NAME = 'ChildEntityFormatters';
+    private const PHP_EXTENSION = 'php';
 
     protected function setUp(): void
     {
@@ -36,12 +40,18 @@ class AllFormattersIntegrationTest extends TestCase
         $this->defaultContext = AuditContextBuilder::default()->build();
     }
 
-    private function discoverFormatters(string $directory = null): array
+    public static function setUpBeforeClass(): void
     {
-        $directory = $directory ?? self::BASE_FORMATTERS_DIR;
+        parent::setUpBeforeClass();
+        self::$formatters = self::discoverFormatters();
+    }
+
+    private static function discoverFormatters(?string $directory = null): array
+    {
+        $directory = realpath($directory ?? self::BASE_FORMATTERS_DIR);
         $formatters = [];
 
-        if (!is_dir($directory)) {
+        if (!$directory or !is_dir($directory)) {
             return $formatters;
         }
 
@@ -50,13 +60,12 @@ class AllFormattersIntegrationTest extends TestCase
         );
 
         foreach ($iterator as $file) {
-            if ($file->getExtension() !== 'php' || strpos($file->getPathname(), self::CHILD_ENTITY_DIR_NAME) !== false) {
+            if ($file->getExtension() !== self::PHP_EXTENSION || $file->getBasename() === self::CHILD_ENTITY_DIR_NAME) {
                 continue;
             }
+            $className = self::buildClassName($file->getPathname(), $directory);
 
-            $className = $this->buildClassName($file->getPathname(), $directory);
-
-            if (class_exists($className) && $this->isMainFormatter($className)) {
+            if (class_exists($className) && self::isMainFormatter($className)) {
                 $formatters[] = $className;
             }
         }
@@ -65,14 +74,14 @@ class AllFormattersIntegrationTest extends TestCase
     }
 
 
-    private function buildClassName(string $filePath, string $basePath): string
+    private static function buildClassName(string $filePath, string $basePath): string
     {
         $relativePath = str_replace([$basePath . DIRECTORY_SEPARATOR, '.php'], '', $filePath);
         $classPath = str_replace(DIRECTORY_SEPARATOR, '\\', $relativePath);
         return self::BASE_FORMATTERS_NAMESPACE . $classPath;
     }
 
-    private function isMainFormatter(string $className): bool
+    private static function isMainFormatter(string $className): bool
     {
         try {
             $reflection = new \ReflectionClass($className);
@@ -89,13 +98,74 @@ class AllFormattersIntegrationTest extends TestCase
             ];
 
             return !in_array($reflection->getShortName(), $genericFormatters) &&
-                $reflection->isSubclassOf('App\Audit\AbstractAuditLogFormatter');
+                $reflection->isSubclassOf(AbstractAuditLogFormatter::class);
         } catch (\ReflectionException $e) {
             return false;
         }
     }
 
+    public function testThereAreFormatters(): void
+    {
+        $this->assertNotEmpty(self::$formatters, 'No formatters discovered for testing');
+
+    }
+
+    #[Depends('testThereAreFormatters')]
+    public function testAllFormatterConstructorParametersRequired(): void
+    {
+        $errors = [];
+        $count = 0;
+
+        foreach (self::$formatters as $formatterClass) {
+            try {
+                FormatterTestHelper::assertFormatterHasValidConstructor($formatterClass);
+                $count++;
+            } catch (\Exception $e) {
+                $errors[] = "{$formatterClass}: " . $e->getMessage();
+            }
+        }
+
+        $this->assertEmpty($errors, implode("\n", $errors));
+        $this->assertGreaterThan(0, $count, 'At least one formatter should be validated');
+    }
+
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testAllFormattersCanBeInstantiated(): void
+    {
+        foreach (self::$formatters as $formatterClass) {
+            try {
+                $formatter = FormatterTestHelper::assertFormatterCanBeInstantiated(
+                    $formatterClass,
+                    IAuditStrategy::EVENT_ENTITY_CREATION
+                );
+
+                $this->assertNotNull($formatter);
+            } catch (\Exception $e) {
+                $this->fail("Failed to validate {$formatterClass}: " . $e->getMessage());
+            }
+        }
+    }
+
+    #[Depends('testAllFormattersCanBeInstantiated')]
+    public function testAllFormattersContextCanBeSetAndRetrieved(): void
+    {
+        foreach (self::$formatters as $formatterClass) {
+            try {
+                $formatter = FormatterTestHelper::assertFormatterCanBeInstantiated(
+                    $formatterClass,
+                    IAuditStrategy::EVENT_ENTITY_CREATION
+                );
+
+                $this->assertNotNull($formatter);
+            } catch (\Exception $e) {
+                $this->fail("Failed to validate {$formatterClass}: " . $e->getMessage());
+            }
+        }
+    }
+
+    //// ANDY
+
+    private function _testAllFormattersCanBeInstantiated(): void
     {
         foreach ($this->discoverFormatters() as $formatterClass) {
             try {
@@ -113,24 +183,7 @@ class AllFormattersIntegrationTest extends TestCase
         }
     }
 
-    public function testAllFormatterConstructorParametersRequired(): void
-    {
-        $errors = [];
-        $count = 0;
-
-        foreach ($this->discoverFormatters() as $formatterClass) {
-            try {
-                FormatterTestHelper::assertFormatterHasValidConstructor($formatterClass);
-                $count++;
-            } catch (\Exception $e) {
-                $errors[] = "{$formatterClass}: " . $e->getMessage();
-            }
-        }
-
-        $this->assertEmpty($errors, implode("\n", $errors));
-        $this->assertGreaterThan(0, $count, 'At least one formatter should be validated');
-    }
-
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testAllFormattersHandleAllEventTypes(): void
     {
         $eventTypes = [
@@ -143,7 +196,7 @@ class AllFormattersIntegrationTest extends TestCase
         $errors = [];
         $unsupported = [];
 
-        foreach ($this->discoverFormatters() as $formatterClass) {
+        foreach (self::$formatters as $formatterClass) {
             foreach ($eventTypes as $eventType) {
                 try {
                     $formatter = FormatterTestHelper::assertFormatterCanBeInstantiated(
@@ -165,12 +218,13 @@ class AllFormattersIntegrationTest extends TestCase
         $this->assertEmpty($errors, "Event type handling failed:\n" . implode("\n", $errors));
     }
 
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testAllFormattersHandleInvalidSubjectGracefully(): void
     {
         $errors = [];
         $count = 0;
 
-        foreach ($this->discoverFormatters() as $formatterClass) {
+        foreach (self::$formatters as $formatterClass) {
             try {
                 $formatter = FormatterTestHelper::assertFormatterCanBeInstantiated(
                     $formatterClass,
@@ -189,12 +243,13 @@ class AllFormattersIntegrationTest extends TestCase
         $this->assertGreaterThan(0, $count, 'At least one formatter should be validated');
     }
 
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testAllFormattersHandleMissingContextGracefully(): void
     {
         $errors = [];
         $count = 0;
 
-        foreach ($this->discoverFormatters() as $formatterClass) {
+        foreach (self::$formatters as $formatterClass) {
             try {
                 $formatter = FormatterTestHelper::assertFormatterCanBeInstantiated(
                     $formatterClass,
@@ -218,12 +273,13 @@ class AllFormattersIntegrationTest extends TestCase
         $this->assertGreaterThan(0, $count, 'At least one formatter should be validated');
     }
 
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testFormattersHandleEmptyChangeSetGracefully(): void
     {
         $errors = [];
         $count = 0;
 
-        foreach ($this->discoverFormatters() as $formatterClass) {
+        foreach (self::$formatters as $formatterClass) {
             try {
                 $formatter = FormatterTestHelper::assertFormatterCanBeInstantiated(
                     $formatterClass,
@@ -242,12 +298,13 @@ class AllFormattersIntegrationTest extends TestCase
         $this->assertGreaterThan(0, $count, 'At least one formatter should be validated');
     }
 
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testAllFormattersImplementCorrectInterfaces(): void
     {
         $errors = [];
         $count = 0;
 
-        foreach ($this->discoverFormatters() as $formatterClass) {
+        foreach (self::$formatters as $formatterClass) {
             try {
                 FormatterTestHelper::assertFormatterExtendsAbstractFormatter($formatterClass);
                 FormatterTestHelper::assertFormatterHasValidFormatMethod($formatterClass);
@@ -261,12 +318,13 @@ class AllFormattersIntegrationTest extends TestCase
         $this->assertGreaterThan(0, $count, 'At least one formatter should be validated');
     }
 
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testAllFormattersHaveCorrectFormatMethodSignature(): void
     {
         $errors = [];
         $count = 0;
 
-        foreach ($this->discoverFormatters() as $formatterClass) {
+        foreach (self::$formatters as $formatterClass) {
             try {
                 FormatterTestHelper::assertFormatterHasValidFormatMethod($formatterClass);
                 $count++;
@@ -280,6 +338,7 @@ class AllFormattersIntegrationTest extends TestCase
     }
 
 
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testAuditContextHasRequiredFields(): void
     {
         $context = $this->defaultContext;
@@ -323,6 +382,7 @@ class AllFormattersIntegrationTest extends TestCase
         $this->assertNotEmpty($context->userAgent);
     }
 
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testAuditStrategyDefinesAllEventTypes(): void
     {
         $this->assertTrue(defined('App\Audit\Interfaces\IAuditStrategy::EVENT_ENTITY_CREATION'));
@@ -331,6 +391,7 @@ class AllFormattersIntegrationTest extends TestCase
         $this->assertTrue(defined('App\Audit\Interfaces\IAuditStrategy::EVENT_COLLECTION_UPDATE'));
     }
 
+    #[Depends('testAllFormatterConstructorParametersRequired')]
     public function testFactoryInstantiatesCorrectFormatterForSubject(): void
     {
         $factory = new AuditLogFormatterFactory();
@@ -344,6 +405,7 @@ class AllFormattersIntegrationTest extends TestCase
         );
 
         $validSubject = new class {
+            #[Depends('testAllFormatterConstructorParametersRequired')]
             public function __toString()
             {
                 return 'MockEntity';

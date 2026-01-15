@@ -1,4 +1,5 @@
-<?php namespace App\Audit;
+<?php
+namespace App\Audit;
 /**
  * Copyright 2025 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,13 +28,10 @@ class AuditLogFormatterFactory implements IAuditLogFormatterFactory
 
     public function __construct()
     {
-        try
-        {
-            Log::debug("AuditLogFormatterFactory::construct loading audit_log config");
+        try {
             $this->config = config('audit_log', []);
-        }
-        catch(\Exception $ex){
-            Log::error('Failed to load audit_log configuration', ['exception' => $ex]);
+        } catch (\Exception $ex) {
+            $this->config = [];
         }
     }
 
@@ -64,8 +62,7 @@ class AuditLogFormatterFactory implements IAuditLogFormatterFactory
                             $targetEntity = $type;
                         }
                         Log::debug("AuditLogFormatterFactory::make getTypeClass targetEntity {$targetEntity}");
-                    }
-                    elseif (method_exists($subject, 'getMapping')) {
+                    } elseif (method_exists($subject, 'getMapping')) {
                         $mapping = $subject->getMapping();
                         $targetEntity = $mapping['targetEntity'] ?? null;
                         Log::debug("AuditLogFormatterFactory::make getMapping targetEntity {$targetEntity}");
@@ -78,7 +75,8 @@ class AuditLogFormatterFactory implements IAuditLogFormatterFactory
                                 $prop->setAccessible(true);
                                 $mapping = $prop->getValue($subject);
                                 $targetEntity = $mapping['targetEntity'] ?? null;
-                                if ($targetEntity) break;
+                                if ($targetEntity)
+                                    break;
                             }
                         }
                     }
@@ -108,26 +106,27 @@ class AuditLogFormatterFactory implements IAuditLogFormatterFactory
                 break;
             case IAuditStrategy::EVENT_ENTITY_CREATION:
                 $formatter = $this->getFormatterByContext($subject, $eventType, $ctx);
-                if(is_null($formatter)) {
-                    $formatter = new EntityCreationAuditLogFormatter();
+                if (is_null($formatter)) {
+                    $formatter = new EntityCreationAuditLogFormatter($eventType);
                 }
                 break;
             case IAuditStrategy::EVENT_ENTITY_DELETION:
                 $formatter = $this->getFormatterByContext($subject, $eventType, $ctx);
-                if(is_null($formatter)) {
+                if (is_null($formatter)) {
                     $child_entity_formatter = ChildEntityFormatterFactory::build($subject);
                     $formatter = new EntityDeletionAuditLogFormatter($child_entity_formatter);
                 }
                 break;
             case IAuditStrategy::EVENT_ENTITY_UPDATE:
                 $formatter = $this->getFormatterByContext($subject, $eventType, $ctx);
-                if(is_null($formatter)) {
+                if (is_null($formatter)) {
                     $child_entity_formatter = ChildEntityFormatterFactory::build($subject);
                     $formatter = new EntityUpdateAuditLogFormatter($child_entity_formatter);
                 }
                 break;
         }
-        if ($formatter === null) return null;
+        if ($formatter === null)
+            return null;
         $formatter->setContext($ctx);
         return $formatter;
     }

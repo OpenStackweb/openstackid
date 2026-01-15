@@ -1,5 +1,7 @@
 <?php
 namespace App\Audit\ConcreteFormatters;
+
+use App\Audit\Interfaces\IAuditStrategy;
 /**
  * Copyright 2022 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,12 +40,13 @@ class EntityUpdateAuditLogFormatter extends AbstractAuditLogFormatter
      */
     private $child_entity_formatter;
 
-    public function __construct(?IChildEntityAuditLogFormatter $child_entity_formatter)
+    public function __construct(?IChildEntityAuditLogFormatter $child_entity_formatter = null)
     {
+        parent::__construct(IAuditStrategy::EVENT_ENTITY_UPDATE);
         $this->child_entity_formatter = $child_entity_formatter;
     }
 
-    protected function getIgnoredFields()
+    protected function getIgnoredFields(): array
     {
         return [
             'last_created',
@@ -87,7 +90,7 @@ class EntityUpdateAuditLogFormatter extends AbstractAuditLogFormatter
     public function format($subject, $change_set): ?string
     {
         $res = [];
-        $class_name = class_basename(is_string($subject) ? $subject : get_class($subject));
+        $class_name = (new ReflectionClass($subject))->getShortName();
         $ignored_fields = $this->getIgnoredFields();
 
         foreach (array_keys($change_set) as $prop_name) {
@@ -144,8 +147,8 @@ class EntityUpdateAuditLogFormatter extends AbstractAuditLogFormatter
             }
 
             if ($old_value instanceof DateTime || $new_value instanceof DateTime) {
-                $old_value = $old_value != null ? $old_value->format('Y-m-d H:i:s') : "";
-                $new_value = $new_value != null ? $new_value->format('Y-m-d H:i:s') : "";
+                $old_value = $old_value != null ? $this->formatAuditDate($old_value) : "";
+                $new_value = $new_value != null ? $this->formatAuditDate($new_value) : "";
             } else if (is_bool($old_value) || is_bool($new_value)) {
                 $old_value = $old_value ? 'true' : 'false';
                 $new_value = $new_value ? 'true' : 'false';
@@ -162,6 +165,10 @@ class EntityUpdateAuditLogFormatter extends AbstractAuditLogFormatter
         if (count($res) == 0)
             return null;
 
-        return join("|", $res);
+        $entity_id = method_exists($subject, 'getId') ? $subject->getId() : 'N/A';
+        $user_info = $this->getUserInfo();
+        $message = join("|", $res);
+
+        return "{$class_name} (ID: {$entity_id}) updated by {$user_info}: {$message}";
     }
 }
