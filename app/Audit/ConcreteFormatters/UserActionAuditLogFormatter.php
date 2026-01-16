@@ -18,16 +18,22 @@ class UserActionAuditLogFormatter extends AbstractAuditLogFormatter
         try {
             $id = $subject->getId() ?? 'unknown';
             $title = $subject->getUserAction() ?? 'Unknown UserAction';
+            $owner = $subject->getOwner();
+            $realm = $subject->hasRealm() ? $subject->getRealm() : 'N/A';
+            $ip = $subject->getFromIp();
 
             switch ($this->event_type) {
+
                 case IAuditStrategy::EVENT_ENTITY_CREATION:
-                    return sprintf("UserAction (%s) for '%s' created by user %s", $id, $title, $this->getUserInfo());
+                    return sprintf("UserAction (%s) for '%s' which owner is \"%s (%s)\", with realm \"%s\" and IP \"%s\" was created by user %s", $id, $title, $owner->getFullName(), $owner->getID(), $realm, $ip, $this->getUserInfo());
                 case IAuditStrategy::EVENT_ENTITY_UPDATE:
                     $details = $this->buildChangeDetails($change_set);
-                    return sprintf("UserAction (%s) for '%s' updated: %s by user %s", $id, $title, $details, $this->getUserInfo());
+                    return sprintf("UserAction (%s) for '%s' which owner is \"%s (%s)\", with realm \"%s\" and IP \"%s\" was updated: %s by user %s", $id, $title, $owner->getFullName(), $owner->getID(), $realm, $ip, $details, $this->getUserInfo());
                 case IAuditStrategy::EVENT_ENTITY_DELETION:
-                    return sprintf("UserAction (%s) for '%s' deleted by user %s", $id, $title, $this->getUserInfo());
+                    return sprintf("UserAction (%s) for '%s' which owner is \"%s (%s)\", with realm \"%s\" and IP \"%s\" was deleted by user %s", $id, $title, $owner->getFullName(), $owner->getID(), $realm, $ip, $this->getUserInfo());
             }
+            return "";
+
         } catch (\Exception $ex) {
             Log::warning("UserAction error: " . $ex->getMessage());
         }
