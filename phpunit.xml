@@ -11,6 +11,16 @@
   <testsuites>
     <testsuite name="Application Test Suite">
       <directory>./tests/</directory>
+      <exclude>./tests/OpenTelemetry/</exclude>
+      <exclude>./tests/TestCase.php</exclude>
+    </testsuite>
+    <testsuite name="OTEL Functionality Test Suite">
+      <directory>./tests/OpenTelemetry/</directory>
+      <exclude>./tests/OpenTelemetry/ExampleTest.php</exclude>
+      <exclude>./tests/OpenTelemetry/Formatters/</exclude>
+    </testsuite>
+    <testsuite name="OTEL Custom Formatters Test Suite">
+      <directory>./tests/OpenTelemetry/Formatters/</directory>
     </testsuite>
   </testsuites>
   <php>
