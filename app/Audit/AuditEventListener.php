@@ -26,6 +26,7 @@ use Illuminate\Http\Request;
 use OAuth2\IResourceServerContext;
 use OAuth2\Models\IClient;
 use Services\OAuth2\ResourceServerContext;
+use OpenTelemetry\API\Baggage\Baggage;
 
 /**
  * Class AuditEventListener
@@ -99,6 +100,17 @@ class AuditEventListener
 
     private function buildAuditContext(): AuditContext
     {
+    
+        if (app()->runningInConsole()) {
+            Log::debug('AuditEventListener::buildAuditContext - running in console, attempting to get baggage context');
+            $contextFromBaggage = $this->buildContextFromBaggage();
+            if ($contextFromBaggage) {
+                Log::debug('AuditEventListener::buildAuditContext - context successfully loaded from baggage');
+                return $contextFromBaggage;
+            }
+            Log::debug('AuditEventListener::buildAuditContext - failed to load context from baggage, will use current request context');
+        }
+
         /***
            * here we have 2 cases
            * 1. we are connecting to the IDP using an external APi ( under oauth2 ) so the
@@ -156,5 +168,78 @@ class AuditEventListener
             userAgent: $req?->userAgent(),
             rawRoute: $rawRoute
         );
+    }
+
+    /**
+     * Rebuild audit context from OpenTelemetry Baggage (propagated from request to job)
+     */
+    private function buildContextFromBaggage(): ?AuditContext
+    {
+        try {
+            $baggage = Baggage::getCurrent();
+            
+            Log::debug('AuditEventListener::buildContextFromBaggage - baggage obtained', [
+                'baggage_class' => get_class($baggage),
+            ]);
+            
+            $userIdEntry = $baggage->getEntry('audit.userId');
+            Log::debug('AuditEventListener::buildContextFromBaggage - userId entry', [
+                'entry_exists' => $userIdEntry !== null,
+                'entry_class' => $userIdEntry ? get_class($userIdEntry) : 'null',
+            ]);
+            
+            $userId = $userIdEntry ? $userIdEntry->getValue() : null;
+            
+            Log::debug('AuditEventListener::buildContextFromBaggage - userId value', [
+                'userId' => $userId,
+                'userId_type' => gettype($userId),
+                'isEmpty' => empty($userId),
+            ]);
+            
+            if (!$userId) {
+                Log::debug('AuditEventListener: no userId in baggage');
+                return null;
+            }
+
+            $userEmail = $baggage->getEntry('audit.userEmail')?->getValue();
+            $userFirstName = $baggage->getEntry('audit.userFirstName')?->getValue();
+            $userLastName = $baggage->getEntry('audit.userLastName')?->getValue();
+            $route = $baggage->getEntry('audit.route')?->getValue();
+            $httpMethod = $baggage->getEntry('audit.httpMethod')?->getValue();
+            $clientIp = $baggage->getEntry('audit.clientIp')?->getValue();
+            $userAgent = $baggage->getEntry('audit.userAgent')?->getValue();
+            
+            Log::debug('AuditEventListener::buildContextFromBaggage - extracted values', [
+                'userId' => $userId,
+                'userEmail' => $userEmail,
+                'userFirstName' => $userFirstName,
+                'userLastName' => $userLastName,
+                'route' => $route,
+                'httpMethod' => $httpMethod,
+                'clientIp' => $clientIp,
+                'userAgent' => $userAgent,
+            ]);
+            
+            $auditContext = new AuditContext(
+                userId: (int)$userId > 0 ? (int)$userId : null,
+                userEmail: $userEmail,
+                userFirstName: $userFirstName,
+                userLastName: $userLastName,
+                route: $route,
+                httpMethod: $httpMethod,
+                clientIp: $clientIp,
+                userAgent: $userAgent,
+            );
+            
+            Log::debug('AuditEventListener::buildContextFromBaggage - context created successfully');
+            
+            return $auditContext;
+        } catch (\Exception $e) {
+            Log::debug('AuditEventListener: could not build context from baggage', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
+        }
     }
 }

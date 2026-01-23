@@ -57,6 +57,9 @@ final class EventServiceProvider extends ServiceProvider
         'Illuminate\Auth\Events\Login' => [
             'App\Listeners\OnUserLogin',
         ],
+        \Illuminate\Queue\Events\JobQueued::class => [
+            'App\Listeners\CaptureJobAuditContextListener',
+        ],
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
             // ... other providers
             'SocialiteProviders\\Facebook\\FacebookExtendSocialite@handle',
