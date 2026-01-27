@@ -12,6 +12,11 @@ namespace App\Audit;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
+use Auth\Repositories\IUserRepository;
+use Illuminate\Support\Facades\Auth;
+use OAuth2\IResourceServerContext;
+
 class AuditContext
 {
     public function __construct(
@@ -27,5 +32,58 @@ class AuditContext
         public ?string $clientIp = null,
         public ?string $userAgent = null,
     ) {
+    }
+
+    /**
+     * Get the currently authenticated user from either OAuth2 or UI context
+     * 
+     * @return \Auth\User|null
+     */
+    public static function getCurrentUser()
+    {
+        $resourceContext = app(IResourceServerContext::class);
+        $clientId = $resourceContext->getCurrentClientId();
+        $userId = $resourceContext->getCurrentUserId();
+        
+        if (!empty($clientId) && $userId) {
+            // OAuth2 context: user authenticated via API
+            return app(IUserRepository::class)->getById($userId);
+        }
+        
+        // UI context: user logged in at IDP
+        return Auth::user();
+    }
+
+    /**
+     * Create an AuditContext from the current request
+     * Handles both OAuth2 and UI authentication contexts
+     */
+    public static function fromCurrentRequest(): ?self
+    {
+        try {
+            $user = self::getCurrentUser();
+            
+            if (!$user) {
+                return null;
+            }
+            
+            $req = request();
+            
+            return new self(
+                userId: $user->getId(),
+                userEmail: $user->getEmail(),
+                userFirstName: $user->getFirstName(),
+                userLastName: $user->getLastName(),
+                route: $req?->path(),
+                httpMethod: $req?->method(),
+                clientIp: $req?->ip(),
+                userAgent: $req?->userAgent(),
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to build audit context from request', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 }

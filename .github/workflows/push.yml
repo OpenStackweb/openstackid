@@ -31,6 +31,8 @@ jobs:
       SSL_ENABLED: false
       SESSION_DRIVER: redis
       PHP_VERSION: 8.3
+      OTEL_SDK_DISABLED: true
+      OTEL_SERVICE_ENABLED: false
     services:
       mysql:
         image: mysql:8.0
