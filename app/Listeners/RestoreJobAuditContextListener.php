@@ -20,7 +20,6 @@ use Illuminate\Support\Facades\Log;
 
 class RestoreJobAuditContextListener
 {
-    private const CONTAINER_BINDING_KEY = 'audit.context';
     private const PAYLOAD_DATA_KEY = 'data';
     private const PAYLOAD_CONTEXT_KEY = 'auditContext';
     private const LOG_CONTEXT_KEY = 'event_name';
@@ -36,7 +35,7 @@ class RestoreJobAuditContextListener
             $context = $this->extractContextFromPayload($event->job->payload());
             
             if ($context !== null) {
-                app()->instance(self::CONTAINER_BINDING_KEY, $context);
+                app()->instance(AuditContext::CONTAINER_KEY, $context);
             }
         } catch (\Exception $e) {
             Log::warning('Failed to restore audit context from queue job', [

@@ -27,7 +27,6 @@ class RestoreJobAuditContextListenerTest extends TestCase
 {
     use CreatesApplication;
 
-    private const CONTAINER_BINDING_KEY = 'audit.context';
     private const DEFAULT_QUEUE_NAME = 'default';
     
     private const TEST_USER_ID = 42;
@@ -124,8 +123,8 @@ class RestoreJobAuditContextListenerTest extends TestCase
         $this->listener->handle($event);
 
         // Assert: Context was bound to container
-        $this->assertTrue(App::bound(self::CONTAINER_BINDING_KEY));
-        $restoredContext = App::make(self::CONTAINER_BINDING_KEY);
+        $this->assertTrue(App::bound(AuditContext::CONTAINER_KEY));
+        $restoredContext = App::make(AuditContext::CONTAINER_KEY);
         
         $this->assertInstanceOf(AuditContext::class, $restoredContext);
         $this->assertEquals(self::TEST_USER_ID, $restoredContext->userId);
@@ -144,7 +143,7 @@ class RestoreJobAuditContextListenerTest extends TestCase
         $this->listener->handle($event);
 
         // Assert: No context binding occurs
-        $this->assertFalse(App::bound(self::CONTAINER_BINDING_KEY));
+        $this->assertFalse(App::bound(AuditContext::CONTAINER_KEY));
     }
 
     public function testListenerSkipsWhenOTLPDisabled(): void
@@ -160,7 +159,7 @@ class RestoreJobAuditContextListenerTest extends TestCase
         $this->listener->handle($event);
 
         // Assert: No context binding even though context exists
-        $this->assertFalse(App::bound(self::CONTAINER_BINDING_KEY));
+        $this->assertFalse(App::bound(AuditContext::CONTAINER_KEY));
     }
 
     public function testListenerHandlesInvalidSerializedData(): void
@@ -178,7 +177,7 @@ class RestoreJobAuditContextListenerTest extends TestCase
         $this->listener->handle($event);
 
         // Assert: Error is handled gracefully, no context bound
-        $this->assertFalse(App::bound(self::CONTAINER_BINDING_KEY));
+        $this->assertFalse(App::bound(AuditContext::CONTAINER_KEY));
     }
 
     public function testListenerHandlesPayloadRetrievalException(): void
@@ -193,6 +192,6 @@ class RestoreJobAuditContextListenerTest extends TestCase
         $event = new JobProcessing(self::DEFAULT_QUEUE_NAME, $mockJob);
         $this->listener->handle($event);
         
-        $this->assertFalse(App::bound(self::CONTAINER_BINDING_KEY));
+        $this->assertFalse(App::bound(AuditContext::CONTAINER_KEY));
     }
 }

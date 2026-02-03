@@ -19,6 +19,12 @@ use OAuth2\IResourceServerContext;
 
 class AuditContext
 {
+
+    public const CONTAINER_KEY = 'audit.context';
+
+
+    public const UI_CONTEXT_CONTAINER_KEY = 'ui.context';
+
     public function __construct(
         public ?int $userId = null,
         public ?string $userEmail = null,

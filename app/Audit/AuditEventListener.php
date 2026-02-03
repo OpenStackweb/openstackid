@@ -98,8 +98,8 @@ class AuditEventListener
     private function buildAuditContext(): AuditContext
     {
         if (app()->runningInConsole()) {
-            if (app()->bound('audit.context')) {
-                $context = app('audit.context');
+            if (app()->bound(AuditContext::CONTAINER_KEY)) {
+                $context = app(AuditContext::CONTAINER_KEY);
                 if ($context instanceof AuditContext) {
                     return $context;
                 }

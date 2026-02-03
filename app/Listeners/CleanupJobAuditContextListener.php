@@ -14,7 +14,10 @@ namespace App\Listeners;
  * limitations under the License.
  **/
 
+use App\Audit\AuditContext;
 use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -22,17 +25,32 @@ use Illuminate\Support\Facades\Log;
  */
 class CleanupJobAuditContextListener
 {
-    public function handle(JobProcessed $event): void
+    public function handleJobProcessed(JobProcessed $event): void
+    {
+        $this->cleanup(get_class($event->job));
+    }
+
+    public function handleJobFailed(JobFailed $event): void
+    {
+        $this->cleanup(get_class($event->job));
+    }
+
+    public function handleJobExceptionOccurred(JobExceptionOccurred $event): void
+    {
+        $this->cleanup(get_class($event->job));
+    }
+
+    private function cleanup(string $jobClass): void
     {
         if (!config('opentelemetry.enabled', false)) {
             return;
         }
 
         try {
-            if (app()->bound('audit.context')) {
-                app()->forgetInstance('audit.context');
+            if (app()->bound(AuditContext::CONTAINER_KEY)) {
+                app()->forgetInstance(AuditContext::CONTAINER_KEY);
                 Log::debug('CleanupJobAuditContextListener: audit context cleaned after job', [
-                    'job' => get_class($event->job),
+                    'job' => $jobClass,
                 ]);
             }
         } catch (\Exception $e) {
