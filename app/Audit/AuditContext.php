@@ -1,7 +1,6 @@
-<?php
-namespace App\Audit;
+<?php namespace App\Audit;
 /**
- * Copyright 2025 OpenStack Foundation
+ * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +15,7 @@ namespace App\Audit;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Support\Facades\Auth;
 use OAuth2\IResourceServerContext;
-
+use Illuminate\Support\Facades\Log;
 class AuditContext
 {
 
@@ -86,7 +85,7 @@ class AuditContext
                 userAgent: $req?->userAgent(),
             );
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('AuditContext::fromCurrentRequest Failed to build audit context from request', [
+            Log::warning('AuditContext::fromCurrentRequest Failed to build audit context from request', [
                 'error' => $e->getMessage()
             ]);
             return null;
