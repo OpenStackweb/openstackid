@@ -86,7 +86,7 @@ class AuditContext
                 userAgent: $req?->userAgent(),
             );
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to build audit context from request', [
+            \Illuminate\Support\Facades\Log::warning('AuditContext::fromCurrentRequest Failed to build audit context from request', [
                 'error' => $e->getMessage()
             ]);
             return null;

@@ -103,7 +103,7 @@ final class EventServiceProvider extends ServiceProvider
                         $payload['data']['auditContext'] = serialize($context);
                     }
                 } catch (\Exception $e) {
-                    Log::warning('Failed to attach audit context to job', ['error' => $e->getMessage()]);
+                    Log::warning('EventServiceProvider::boot Failed to attach audit context to job', ['error' => $e->getMessage()]);
                 }
                 return $payload;
             });

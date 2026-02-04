@@ -38,7 +38,7 @@ class RestoreJobAuditContextListener
                 app()->instance(AuditContext::CONTAINER_KEY, $context);
             }
         } catch (\Exception $e) {
-            Log::warning('Failed to restore audit context from queue job', [
+            Log::warning('RestoreJobAuditContextListener::handle Failed to restore audit context from queue job', [
                 self::LOG_CONTEXT_KEY => self::LOG_CONTEXT_VALUE,
                 'exception_message' => $e->getMessage(),
                 'exception_class' => get_class($e),
@@ -64,7 +64,7 @@ class RestoreJobAuditContextListener
             );
 
             if (!$context instanceof AuditContext) {
-                Log::warning('Invalid audit context type in job payload', [
+                Log::warning('RestoreJobAuditContextListener::extractContextFromPayload Invalid audit context type in job payload', [
                     self::LOG_CONTEXT_KEY => self::LOG_CONTEXT_VALUE,
                     'actual_type' => gettype($context),
                 ]);
@@ -73,7 +73,7 @@ class RestoreJobAuditContextListener
 
             return $context;
         } catch (\Exception $e) {
-            Log::warning('Failed to unserialize audit context from job payload', [
+            Log::warning('RestoreJobAuditContextListener::extractContextFromPayload Failed to unserialize audit context from job payload', [
                 self::LOG_CONTEXT_KEY => self::LOG_CONTEXT_VALUE,
                 'exception_message' => $e->getMessage(),
             ]);

@@ -49,12 +49,12 @@ class CleanupJobAuditContextListener
         try {
             if (app()->bound(AuditContext::CONTAINER_KEY)) {
                 app()->forgetInstance(AuditContext::CONTAINER_KEY);
-                Log::debug('CleanupJobAuditContextListener: audit context cleaned after job', [
+                Log::debug('CleanupJobAuditContextListener::cleanup audit context cleaned after job', [
                     'job' => $jobClass,
                 ]);
             }
         } catch (\Exception $e) {
-            Log::warning('CleanupJobAuditContextListener failed', [
+            Log::warning('CleanupJobAuditContextListener::cleanup failed', [
                 'error' => $e->getMessage(),
             ]);
         }
