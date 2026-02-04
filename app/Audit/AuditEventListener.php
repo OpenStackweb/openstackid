@@ -24,8 +24,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use OAuth2\IResourceServerContext;
-use OAuth2\Models\IClient;
-use Services\OAuth2\ResourceServerContext;
 
 /**
  * Class AuditEventListener
@@ -99,26 +97,23 @@ class AuditEventListener
 
     private function buildAuditContext(): AuditContext
     {
+        if (app()->runningInConsole()) {
+            if (app()->bound(AuditContext::CONTAINER_KEY)) {
+                $context = app(AuditContext::CONTAINER_KEY);
+                if ($context instanceof AuditContext) {
+                    return $context;
+                }
+            }
+        }
+
         /***
            * here we have 2 cases
-           * 1. we are connecting to the IDP using an external APi ( under oauth2 ) so the
+           * 1. we are connecting to the IDP using an external API ( under oauth2 ) so the
            * resource context have a client id and have a user id
            * 2. we are logged at idp and using the UI ( $user = Auth::user() )
        ***/
 
-        $resource_server_context =  app(IResourceServerContext::class);
-        $oauth2_current_client_id = $resource_server_context->getCurrentClientId();
-
-        if(!empty($oauth2_current_client_id)) {
-            $userId = $resource_server_context->getCurrentUserId();
-            // here $userId can be null bc
-            // $resource_server_context->getApplicationType() == IClient::ApplicationType_Service
-            $user = $userId ? app(IUserRepository::class)->getById($userId) : null;
-        }
-        else{
-            // 2. we are at IDP UI
-            $user = Auth::user();
-        }
+        $user = AuditContext::getCurrentUser();
 
         $defaultUiContext = [
             'app'  => null,
@@ -157,4 +152,6 @@ class AuditEventListener
             rawRoute: $rawRoute
         );
     }
+
+
 }

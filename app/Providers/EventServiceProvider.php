@@ -20,6 +20,7 @@ use App\Events\UserLocked;
 use App\Events\UserPasswordResetRequestCreated;
 use App\Events\UserPasswordResetSuccessful;
 use App\Events\UserSpamStateUpdated;
+use App\Audit\AuditContext;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
 use App\Mail\UserLockedEmail;
 use App\Mail\UserPasswordResetMail;
@@ -30,12 +31,16 @@ use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Database\Events\MigrationsStarted;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Models\OAuth2\Client;
 use OAuth2\Repositories\IClientRepository;
+use OAuth2\IResourceServerContext;
 
 /**
  * Class EventServiceProvider
@@ -57,6 +62,18 @@ final class EventServiceProvider extends ServiceProvider
         'Illuminate\Auth\Events\Login' => [
             'App\Listeners\OnUserLogin',
         ],
+        \Illuminate\Queue\Events\JobProcessing::class => [
+            'App\Listeners\RestoreJobAuditContextListener',
+        ],
+        \Illuminate\Queue\Events\JobProcessed::class => [
+            'App\Listeners\CleanupJobAuditContextListener@handleJobProcessed',
+        ],
+        \Illuminate\Queue\Events\JobFailed::class => [
+            'App\Listeners\CleanupJobAuditContextListener@handleJobFailed',
+        ],
+        \Illuminate\Queue\Events\JobExceptionOccurred::class => [
+            'App\Listeners\CleanupJobAuditContextListener@handleJobExceptionOccurred',
+        ],
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
             // ... other providers
             'SocialiteProviders\\Facebook\\FacebookExtendSocialite@handle',
@@ -76,6 +93,21 @@ final class EventServiceProvider extends ServiceProvider
     public function boot()
     {
         parent::boot();
+
+        if (config('opentelemetry.enabled', false)) {
+            Queue::createPayloadUsing(function ($connection, $queue, $payload) {
+                try {
+                    $context = AuditContext::fromCurrentRequest();
+                    
+                    if ($context) {
+                        $payload['data']['auditContext'] = serialize($context);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('EventServiceProvider::boot Failed to attach audit context to job', ['error' => $e->getMessage()]);
+                }
+                return $payload;
+            });
+        }
 
         Event::listen(UserEmailVerified::class, function($event)
         {
