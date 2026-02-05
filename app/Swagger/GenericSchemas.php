@@ -29,3 +29,17 @@ class BearerAuthSchema
 class PaginateDataSchemaResponseSchema
 {
 }
+
+#[OA\Schema(
+    schema: 'BaseSerializerSchema',
+    type: 'object',
+    properties: [
+        new OA\Property(property: 'id', type: 'integer', description: 'Unique identifier', example: 1),
+        new OA\Property(property: 'created_at', type: 'integer', description: 'Creation timestamp (epoch)', example: 1609459200),
+        new OA\Property(property: 'updated_at', type: 'integer', description: 'Last update timestamp (epoch)', example: 1609459200),
+    ],
+    description: 'Base serializer fields'
+)]
+class BaseSerializerSchema
+{
+}
