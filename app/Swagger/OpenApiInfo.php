@@ -13,12 +13,12 @@ use OpenApi\Attributes as OA;
         email: "support@openstack.org"
     ),
     license: new OA\License(
-        name: "MIT",
-        url: "https://opensource.org/licenses/MIT"
+        name: "Apache 2.0",
+        url: "http://www.apache.org/licenses/LICENSE-2.0"
     )
 )]
 #[OA\Server(
-    url: "/",
+    url: L5_SWAGGER_CONST_HOST,
     description: "IDP API Server"
 )]
 class OpenApiInfo
