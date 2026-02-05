@@ -31,7 +31,7 @@ class PaginateDataSchemaResponseSchema
 }
 
 #[OA\Schema(
-    schema: 'BaseSerializerSchema',
+    schema: 'Base',
     type: 'object',
     properties: [
         new OA\Property(property: 'id', type: 'integer', description: 'Unique identifier', example: 1),
@@ -40,6 +40,6 @@ class PaginateDataSchemaResponseSchema
     ],
     description: 'Base serializer fields'
 )]
-class BaseSerializerSchema
+class BaseSchema
 {
 }
