@@ -15,7 +15,7 @@ Homestead.yaml
 Homestead.json
 .env
 .env.*
-storage/proxies
+storage/*
 /public/assets/jquery-cookie/
 /public/assets/crypto-js/
 /public/assets/bootstrap-tagsinput/
