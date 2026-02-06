@@ -37,8 +37,11 @@ use OAuth2\Repositories\IClientRepository;
 use OAuth2\ResourceServer\IUserService;
 use Utils\Http\HttpContentType;
 use Utils\Services\ILogService;
+use App\libs\OAuth2\IUserScopes;
 use Exception;
+use OpenApi\Attributes as OA;
 use OpenId\Services\IUserService as IOpenIdUserService;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Class OAuth2UserApiController
  * @package App\Http\Controllers\Api\OAuth2
@@ -49,6 +52,72 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
 
     use RequestProcessor;
 
+    #[OA\Get(
+        path: '/api/v1/users',
+        summary: 'Get all users',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::ReadAll,
+            ]],
+        ],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                description: 'Page number',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer')
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                description: 'Items per page (5-100)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer')
+            ),
+            new OA\Parameter(
+                name: 'filter',
+                description: 'Filter (first_name, last_name, email, primary_email)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'order',
+                description: 'Order',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'expand',
+                description: 'Expand relations: groups',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK',
+                content: new OA\JsonContent(ref: '#/components/schemas/PaginatedUserResponseSchema')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     protected function getAllSerializerType(): string
     {
         return SerializerRegistry::SerializerType_Private;
@@ -139,6 +208,28 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
      * Gets User Basic Info
      * @return mixed
      */
+    #[OA\Get(
+        path: '/api/v1/users/me',
+        summary: 'Get current user basic info',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::Profile,
+                IUserScopes::Email,
+                IUserScopes::Address,
+            ]],
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function me()
     {
         try {
@@ -234,18 +325,159 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         }
     }
 
+    #[OA\Post(
+        path: '/api/v1/users',
+        summary: 'Create a new user',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::Write,
+            ]],
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_CREATED,
+                description: 'Created',
+                content: new OA\JsonContent(ref: '#/components/schemas/User')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_BAD_REQUEST,
+                description: 'Bad Request'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function create(){
        return $this->_create();
     }
 
+    #[OA\Put(
+        path: '/api/v1/users/me',
+        summary: 'Update current user',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::MeWrite,
+            ]],
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_CREATED,
+                description: 'Updated',
+                content: new OA\JsonContent(ref: '#/components/schemas/User')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_BAD_REQUEST,
+                description: 'Bad Request'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function updateMe(){
         return $this->_update($this->resource_server_context->getCurrentUserId());
     }
 
+    #[OA\Put(
+        path: '/api/v1/users/{id}',
+        summary: 'Update a user by ID',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::Write,
+            ]],
+        ],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'User ID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_CREATED,
+                description: 'Updated',
+                content: new OA\JsonContent(ref: '#/components/schemas/User')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_BAD_REQUEST,
+                description: 'Bad Request'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function update($id){
        return $this->_update($id);
     }
 
+    #[OA\Put(
+        path: '/api/v1/users/me/pic',
+        summary: 'Update current user profile picture',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::MeWrite,
+            ]],
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_CREATED,
+                description: 'Updated',
+                content: new OA\JsonContent(ref: '#/components/schemas/User')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_FORBIDDEN,
+                description: 'Forbidden'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function updateMyPic(LaravelRequest $request){
         try {
             if (!$this->resource_server_context->getCurrentUserId()) {
@@ -276,6 +508,50 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         }
     }
 
+    #[OA\Get(
+        path: '/api/v1/users/info',
+        summary: 'Get current user info (OpenID Connect UserInfo)',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::Profile,
+                IUserScopes::Email,
+                IUserScopes::Address,
+            ]],
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
+    #[OA\Post(
+        path: '/api/v1/users/info',
+        summary: 'Get current user info (OpenID Connect UserInfo)',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::Profile,
+                IUserScopes::Email,
+                IUserScopes::Address,
+            ]],
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function userInfo()
     {
         try {
@@ -312,6 +588,44 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
      * @param $id
      * @return \Illuminate\Http\JsonResponse|mixed
      */
+    #[OA\Get(
+        path: '/api/v1/users/{id}',
+        summary: 'Get a user by ID',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::ReadAll,
+            ]],
+        ],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'User ID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK',
+                content: new OA\JsonContent(ref: '#/components/schemas/User')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function get($id)
     {
         try {
@@ -355,6 +669,47 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
      * @param $user_id
      * @return JsonResponse|mixed
      */
+    #[OA\Put(
+        path: '/api/v1/users/{id}/groups',
+        summary: 'Update user group assignments',
+        tags: ['Users'],
+        security: [
+            ['user_oauth2' => [
+                IUserScopes::UserGroupWrite,
+            ]],
+        ],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'User ID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_CREATED,
+                description: 'Updated'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_BAD_REQUEST,
+                description: 'Bad Request'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function updateUserGroups($user_id): mixed
     {
         return $this->processRequest(function() use($user_id) {
