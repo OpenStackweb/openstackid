@@ -11,11 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\libs\OAuth2\IUserScopes;
 use App\Services\Auth\IStreamChatSSOService;
 use Illuminate\Support\Facades\Log;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\IResourceServerContext;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Utils\Services\ILogService;
 /**
  * Class OAuth2StreamChatSSOApiController
@@ -44,6 +47,41 @@ class OAuth2StreamChatSSOApiController extends OAuth2ProtectedController
      * @param string $forum_slug
      * @return \Illuminate\Http\JsonResponse|mixed
      */
+    #[OA\Get(
+        path: '/api/v1/sso/stream-chat/{forum_slug}/profile',
+        operationId: 'getStreamChatUserProfile',
+        summary: 'Get Stream Chat user profile for a forum',
+        security: [['OAuth2StreamChatSSOSecurity' => [IUserScopes::SSO]]],
+        tags: ['Stream Chat SSO'],
+        parameters: [
+            new OA\Parameter(
+                name: 'forum_slug',
+                description: 'Forum slug',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK',
+                content: new OA\JsonContent(ref: '#/components/schemas/StreamChatUserProfile')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Error'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function getUserProfile(string $forum_slug){
         try{
             $profile = $this->service->getUserProfile($forum_slug);
