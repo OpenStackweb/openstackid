@@ -68,15 +68,8 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
                 schema: new OA\Schema(type: 'integer')
             ),
             new OA\Parameter(
-                name: 'expand',
-                description: 'Expand relations',
-                in: 'query',
-                required: false,
-                schema: new OA\Schema(type: 'string')
-            ),
-            new OA\Parameter(
                 name: 'filter',
-                description: 'Filter criteria (first_name, last_name, email, is_redeemed)',
+                description: 'Filter criteria (first_name, last_name, email, is_redeemed) ("=@" starts with, "==" exact match)',
                 in: 'query',
                 required: false,
                 schema: new OA\Schema(type: 'string')
