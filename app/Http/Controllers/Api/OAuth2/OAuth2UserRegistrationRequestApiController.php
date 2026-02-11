@@ -14,6 +14,7 @@
 
 use App\Http\Controllers\GetAllTrait;
 use App\libs\Auth\Repositories\IUserRegistrationRequestRepository;
+use App\libs\OAuth2\IUserScopes;
 use App\ModelSerializers\SerializerRegistry;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\Validator;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\IResourceServerContext;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Utils\Services\ILogService;
 /**
  * Class OAuth2UserRegistrationRequestApiController
@@ -43,6 +46,65 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
      * @param IResourceServerContext $resource_server_context
      * @param ILogService $log_service
      */
+    #[OA\Get(
+        path: '/api/v1/user-registration-requests',
+        operationId: 'getUserRegistrationRequests',
+        summary: 'Get all user registration requests',
+        security: [['OAuth2UserRegistrationRequestApi' => [IUserScopes::Registration]]],
+        tags: ['User Registration Requests'],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                description: 'Page number',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer')
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                description: 'Items per page',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer')
+            ),
+            new OA\Parameter(
+                name: 'expand',
+                description: 'Expand relations',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'filter',
+                description: 'Filter criteria (first_name, last_name, email, is_redeemed)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'order',
+                description: 'Order criteria (id)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK',
+                content: new OA\JsonContent(ref: '#/components/schemas/PaginatedUserRegistrationRequestResponse')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Precondition Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function __construct
     (
         IUserRegistrationRequestRepository  $repository,
@@ -97,6 +159,41 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
     /**
      * @return \Illuminate\Http\JsonResponse|mixed
      */
+    #[OA\Post(
+        path: '/api/v1/user-registration-requests',
+        operationId: 'createUserRegistrationRequest',
+        summary: 'Create a user registration request',
+        security: [['OAuth2UserRegistrationRequestApi' => [IUserScopes::Registration]]],
+        tags: ['User Registration Requests'],
+        requestBody: new OA\RequestBody(
+            description: 'User registration request data',
+            required: true,
+            content: new OA\JsonContent(ref: '#/components/schemas/CreateUserRegistrationRequestRequest')
+        ),
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_CREATED,
+                description: 'Created',
+                content: new OA\JsonContent(ref: '#/components/schemas/UserRegistrationRequest')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_BAD_REQUEST,
+                description: 'Bad Request'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Precondition Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function register(){
         try {
 
@@ -148,6 +245,50 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
      * @param $id
      * @return \Illuminate\Http\JsonResponse|mixed
      */
+    #[OA\Put(
+        path: '/api/v1/user-registration-requests/{id}',
+        operationId: 'updateUserRegistrationRequest',
+        summary: 'Update a user registration request',
+        security: [['OAuth2UserRegistrationRequestApi' => [IUserScopes::Registration]]],
+        tags: ['User Registration Requests'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'Registration request ID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            description: 'User registration request data to update',
+            required: true,
+            content: new OA\JsonContent(ref: '#/components/schemas/UpdateUserRegistrationRequestRequest')
+        ),
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK',
+                content: new OA\JsonContent(ref: '#/components/schemas/UserRegistrationRequest')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_BAD_REQUEST,
+                description: 'Bad Request'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Precondition Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function update($id){
         try {
 
