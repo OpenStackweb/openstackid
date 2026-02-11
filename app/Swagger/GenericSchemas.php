@@ -5,16 +5,6 @@ namespace App\Swagger\schemas;
 use OpenApi\Attributes as OA;
 
 
-#[OA\SecurityScheme(
-    securityScheme: "bearerAuth",
-    type: "http",
-    scheme: "bearer",
-    bearerFormat: "JWT"
-)]
-class BearerAuthSchema
-{
-}
-
 #[OA\Schema(
     schema: 'PaginateDataSchemaResponse',
     type: 'object',
