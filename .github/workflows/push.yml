@@ -44,7 +44,7 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
        - name: Create Redis
-         uses: supercharge/redis-github-action@1.7.0
+         uses: supercharge/redis-github-action@1.8.1
          with:
            redis-port: ${{env.REDIS_PORT}}
            redis-password: ${{env.REDIS_PASSWORD}}
