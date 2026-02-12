@@ -6,7 +6,7 @@ return [
     'documentations' => [
         'default' => [
             'api' => [
-                'title' => 'Summit API Swagger UI',
+                'title' => 'OpenStackID API Swagger UI',
             ],
 
             'routes' => [
