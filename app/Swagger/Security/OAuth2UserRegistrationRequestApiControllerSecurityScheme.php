@@ -1,4 +1,5 @@
-<?php namespace App\Swagger\schemas;
+<?php
+namespace App\Swagger\schemas;
 /**
  * Copyright 2025 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +22,8 @@ use OpenApi\Attributes as OA;
     flows: [
         new OA\Flow(
             flow: 'authorizationCode',
-            authorizationUrl: '/oauth2/auth',
-            tokenUrl: '/oauth2/token',
+            authorizationUrl: L5_SWAGGER_CONST_AUTH_URL,
+            tokenUrl: L5_SWAGGER_CONST_TOKEN_URL,
             scopes: [
                 IUserScopes::Registration => "User registration",
             ]
