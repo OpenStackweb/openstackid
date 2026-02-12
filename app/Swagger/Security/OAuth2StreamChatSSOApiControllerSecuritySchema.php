@@ -12,8 +12,8 @@ use OpenApi\Attributes as OA;
     flows: [
         new OA\Flow(
             flow: 'authorizationCode',
-            authorizationUrl: '/oauth2/auth',
-            tokenUrl: '/oauth2/token',
+            authorizationUrl: L5_SWAGGER_CONST_AUTH_URL,
+            tokenUrl: L5_SWAGGER_CONST_TOKEN_URL,
             scopes: [IUserScopes::SSO => 'Single Sign-On access']
         ),
     ]
