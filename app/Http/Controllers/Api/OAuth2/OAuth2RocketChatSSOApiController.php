@@ -17,6 +17,9 @@ use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\IResourceServerContext;
 use Utils\Services\ILogService;
+use App\libs\OAuth2\IUserScopes;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Class OAuth2RocketChatSSOApiController
  * @package App\Http\Controllers\Api\OAuth2
@@ -39,6 +42,46 @@ class OAuth2RocketChatSSOApiController extends OAuth2ProtectedController
         $this->service = $service;
     }
 
+
+    #[OA\Get(
+        path: '/api/v1/sso/rocket-chat/{forum_slug}/profile',
+        operationId: 'getRocketChatUserProfile',
+        summary: 'Get Rocket Chat user profile for a forum.',
+        description: 'Returns Rocket Chat user profile data for the authenticated user in the context of the specified forum. The content of the response is defined by "data" portion of the Rocket Chat login endpoint response structure',
+        security: [['OAuth2RocketChatSSOSecurity' => [IUserScopes::SSO]]],
+        tags: ['Rocket Chat SSO'],
+        parameters: [
+            new OA\Parameter(
+                name: 'forum_slug',
+                description: 'Forum slug',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK, returns Rocket Chat user profile data on login success',
+                content: new OA\JsonContent(
+                    // The content of the response is defined by "data" portion of
+                    // the Rocket Chat login endpoint response structure
+                )
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Error'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     /**
      * @param string $forum_slug
      * @return \Illuminate\Http\JsonResponse|mixed
