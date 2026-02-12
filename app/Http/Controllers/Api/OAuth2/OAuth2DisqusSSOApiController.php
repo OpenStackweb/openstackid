@@ -17,6 +17,9 @@ use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\IResourceServerContext;
 use Utils\Services\ILogService;
+use App\libs\OAuth2\IUserScopes;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Class OAuth2DisqusSSOApiController
  * @package App\Http\Controllers\Api\OAuth2
@@ -40,6 +43,41 @@ final class OAuth2DisqusSSOApiController extends OAuth2ProtectedController
         $this->service = $service;
     }
 
+    #[OA\Get(
+        path: '/api/v1/sso/disqus/{forum_slug}/profile',
+        operationId: 'getDisqusUserProfile',
+        summary: 'Get Disqus user profile for a forum',
+        security: [['OAuth2DisqusSSOSecurity' => [IUserScopes::SSO]]],
+        tags: ['Disqus SSO'],
+        parameters: [
+            new OA\Parameter(
+                name: 'forum_slug',
+                description: 'Forum slug',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK',
+                content: new OA\JsonContent(ref: '#/components/schemas/DisqusUserProfileSerialized')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Error'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     /**
      * @param string $forum_slug
      * @return \Illuminate\Http\JsonResponse|mixed
