@@ -16,6 +16,8 @@ use App\Http\Controllers\GetAllTrait;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\ModelSerializers\SerializerRegistry;
 use OAuth2\IResourceServerContext;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response;
 use Utils\Services\ILogService;
 
 /**
@@ -25,6 +27,54 @@ use Utils\Services\ILogService;
 final class OAuth2GroupApiController extends OAuth2ProtectedController
 {
     use GetAllTrait;
+
+    #[OA\Get(
+        path: '/api/v1/groups',
+        operationId: 'getGroups',
+        summary: 'Get all groups',
+        description: 'Retrieves a paginated list of groups with optional filtering and ordering.',
+        tags: ['Groups'],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: 'Page number for pagination',
+                required: false,
+                schema: new OA\Schema(type: 'integer', minimum: 1, default: 1, example: 1)
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                description: 'Number of items per page',
+                required: false,
+                schema: new OA\Schema(type: 'integer', minimum: 5, maximum: 100, default: 5, example: 10)
+            ),
+            new OA\Parameter(
+                name: 'filter',
+                in: 'query',
+                description: 'Filter criteria. Supported filters: slug== (exact match). Example: filter=slug==administrators',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: 'slug==administrators')
+            ),
+            new OA\Parameter(
+                name: 'order',
+                in: 'query',
+                description: 'Ordering criteria. Supported fields: id, name, slug. Use + for ascending, - for descending. Example: +name or -id',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: '+name')
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: 'Successful response with paginated groups',
+                content: new OA\JsonContent(ref: '#/components/schemas/PaginatedGroupResponseSchema')
+            ),
+            new OA\Response(response: Response::HTTP_NOT_FOUND, description: 'Not Found'),
+            new OA\Response(response: Response::HTTP_PRECONDITION_FAILED, description: 'Validation failed'),
+            new OA\Response(response: Response::HTTP_INTERNAL_SERVER_ERROR, description: 'Server error')
+        ]
+    )]
 
     /**
      * OAuth2UserApiController constructor.
