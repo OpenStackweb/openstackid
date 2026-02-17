@@ -34,9 +34,6 @@ abstract class AbstractAuditLogFormatter implements IAuditLogFormatter
 
     protected function getUserInfo(): string
     {
-        if (app()->runningInConsole()) {
-            return 'Worker Job';
-        }
         if (!$this->ctx) {
             return 'Unknown (unknown)';
         }
