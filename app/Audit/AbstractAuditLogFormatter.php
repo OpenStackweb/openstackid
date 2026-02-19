@@ -35,6 +35,9 @@ abstract class AbstractAuditLogFormatter implements IAuditLogFormatter
     protected function getUserInfo(): string
     {
         if (!$this->ctx) {
+            if (config('opentelemetry.enabled', false) && app()->runningInConsole()) {
+                return 'Worker Job';
+            }
             return 'Unknown (unknown)';
         }
 
