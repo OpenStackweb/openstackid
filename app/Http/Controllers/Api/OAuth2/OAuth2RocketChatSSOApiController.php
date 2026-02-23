@@ -1,4 +1,5 @@
-<?php namespace App\Http\Controllers\Api\OAuth2;
+<?php
+namespace App\Http\Controllers\Api\OAuth2;
 /**
  * Copyright 2020 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,8 +37,7 @@ class OAuth2RocketChatSSOApiController extends OAuth2ProtectedController
         IRocketChatSSOService $service,
         IResourceServerContext $resource_server_context,
         ILogService $log_service
-    )
-    {
+    ) {
         parent::__construct($resource_server_context, $log_service);
         $this->service = $service;
     }
@@ -66,6 +66,7 @@ class OAuth2RocketChatSSOApiController extends OAuth2ProtectedController
                 content: new OA\JsonContent(
                     // The content of the response is defined by "data" portion of
                     // the Rocket Chat login endpoint response structure
+                    red: '#/components/schemas/RocketChatUserProfile',
                 )
             ),
             new OA\Response(
@@ -86,21 +87,18 @@ class OAuth2RocketChatSSOApiController extends OAuth2ProtectedController
      * @param string $forum_slug
      * @return \Illuminate\Http\JsonResponse|mixed
      */
-    public function getUserProfile(string $forum_slug){
-        try{
+    public function getUserProfile(string $forum_slug)
+    {
+        try {
             $profile = $this->service->getUserProfile($forum_slug);
             return $this->ok($profile->serialize());
-        }
-        catch (ValidationException $ex) {
+        } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412([$ex->getMessage()]);
-        }
-        catch(EntityNotFoundException $ex)
-        {
+        } catch (EntityNotFoundException $ex) {
             Log::warning($ex);
-            return $this->error404(['message'=> $ex->getMessage()]);
-        }
-        catch (\Exception $ex) {
+            return $this->error404(['message' => $ex->getMessage()]);
+        } catch (\Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }
