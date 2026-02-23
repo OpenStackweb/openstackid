@@ -1,4 +1,5 @@
-<?php namespace App\Http\Controllers\Api\OAuth2;
+<?php
+namespace App\Http\Controllers\Api\OAuth2;
 /**
  * Copyright 2025 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,56 +26,6 @@ use Utils\Services\ILogService;
  * Class OAuth2GroupApiController
  * @package App\Http\Controllers\Api\OAuth2
  */
-#[OA\Get(
-    path: '/api/v1/groups',
-    operationId: 'getGroups',
-    summary: 'Get all groups',
-    description: 'Retrieves a paginated list of groups with optional filtering and ordering.',
-    security: [['OAuth2GroupsSecurity' => [IGroupScopes::ReadAll]]],
-    tags: ['Groups'],
-    parameters: [
-        new OA\Parameter(
-            name: 'page',
-            in: 'query',
-            description: 'Page number for pagination',
-            required: false,
-            schema: new OA\Schema(type: 'integer', minimum: 1, default: 1, example: 1)
-        ),
-        new OA\Parameter(
-            name: 'per_page',
-            in: 'query',
-            description: 'Number of items per page',
-            required: false,
-            schema: new OA\Schema(type: 'integer', minimum: 5, maximum: 100, default: 5, example: 10)
-        ),
-        new OA\Parameter(
-            name: 'filter',
-            in: 'query',
-            description: 'Filter criteria. Supported filters: slug== (exact match). Example: filter=slug==administrators',
-            required: false,
-            schema: new OA\Schema(type: 'string', example: 'slug==administrators')
-        ),
-        new OA\Parameter(
-            name: 'order',
-            in: 'query',
-            description: 'Ordering criteria. Supported fields: id, name, slug. Use + for ascending, - for descending. Example: +name or -id',
-            required: false,
-            schema: new OA\Schema(type: 'string', example: '+name')
-        )
-    ],
-    responses: [
-        new OA\Response(
-            response: Response::HTTP_OK,
-            description: 'Successful response with paginated groups',
-            content: new OA\JsonContent(ref: '#/components/schemas/PaginatedGroupResponse')
-        ),
-        new OA\Response(response: Response::HTTP_UNAUTHORIZED, description: 'Unauthorized'),
-        new OA\Response(response: Response::HTTP_FORBIDDEN, description: 'Forbidden - insufficient scope'),
-        new OA\Response(response: Response::HTTP_NOT_FOUND, description: 'Not Found'),
-        new OA\Response(response: Response::HTTP_PRECONDITION_FAILED, description: 'Validation failed, invalid filter or order parameter'),
-        new OA\Response(response: Response::HTTP_INTERNAL_SERVER_ERROR, description: 'Server error')
-    ]
-)]
 final class OAuth2GroupApiController extends OAuth2ProtectedController
 {
     use GetAllTrait;
@@ -90,12 +41,61 @@ final class OAuth2GroupApiController extends OAuth2ProtectedController
         IGroupRepository $repository,
         IResourceServerContext $resource_server_context,
         ILogService $log_service,
-    )
-    {
+    ) {
         parent::__construct($resource_server_context, $log_service);
         $this->repository = $repository;
     }
 
+    #[OA\Get(
+        path: '/api/v1/groups',
+        operationId: 'getGroups',
+        summary: 'Get all groups',
+        description: 'Retrieves a paginated list of groups with optional filtering and ordering. No route-level middleware enforcement; requires valid OAuth2 bearer token only.',
+        security: [['OAuth2GroupsSecurity' => [IGroupScopes::ReadAll]]],
+        tags: ['Groups'],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: 'Page number for pagination',
+                required: false,
+                schema: new OA\Schema(type: 'integer', minimum: 1, default: 1, example: 1)
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                description: 'Number of items per page',
+                required: false,
+                schema: new OA\Schema(type: 'integer', minimum: 5, maximum: 100, default: 5, example: 10)
+            ),
+            new OA\Parameter(
+                name: 'filter',
+                in: 'query',
+                description: 'Filter criteria. Supported filters: slug== (exact match). Example: filter=slug==administrators',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: 'slug==administrators')
+            ),
+            new OA\Parameter(
+                name: 'order',
+                in: 'query',
+                description: 'Ordering criteria. Supported fields: id, name, slug. Use + for ascending, - for descending. Example: +name or -id',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: '+name')
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: 'Successful response with paginated groups',
+                content: new OA\JsonContent(ref: '#/components/schemas/PaginatedGroupResponse')
+            ),
+            new OA\Response(response: Response::HTTP_UNAUTHORIZED, description: 'Unauthorized'),
+            new OA\Response(response: Response::HTTP_FORBIDDEN, description: 'Forbidden - insufficient scope'),
+            new OA\Response(response: Response::HTTP_NOT_FOUND, description: 'Not Found'),
+            new OA\Response(response: Response::HTTP_PRECONDITION_FAILED, description: 'Validation failed, invalid filter or order parameter'),
+            new OA\Response(response: Response::HTTP_INTERNAL_SERVER_ERROR, description: 'Server error')
+        ]
+    )]
     protected function getAllSerializerType(): string
     {
         return SerializerRegistry::SerializerType_Public;
