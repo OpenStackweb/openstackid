@@ -66,7 +66,7 @@ class OAuth2RocketChatSSOApiController extends OAuth2ProtectedController
                 content: new OA\JsonContent(
                     // The content of the response is defined by "data" portion of
                     // the Rocket Chat login endpoint response structure
-                    red: '#/components/schemas/RocketChatUserProfile',
+                    ref: '#/components/schemas/RocketChatUserProfile',
                 )
             ),
             new OA\Response(
