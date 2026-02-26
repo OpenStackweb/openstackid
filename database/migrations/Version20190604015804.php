@@ -136,6 +136,7 @@ create table if not exists oauth2_api_endpoint_api_scope
 	updated_at timestamp default CURRENT_TIMESTAMP not null,
 	api_endpoint_id bigint unsigned not null,
 	scope_id bigint unsigned not null,
+	primary key (api_endpoint_id, scope_id),
 	constraint oauth2_api_endpoint_api_scope_api_endpoint_id_foreign
 		foreign key (api_endpoint_id) references oauth2_api_endpoint (id)
 			on delete cascade,
@@ -164,6 +165,7 @@ create table if not exists oauth2_api_scope_group_scope
 	updated_at timestamp default CURRENT_TIMESTAMP not null,
 	group_id bigint unsigned not null,
 	scope_id bigint unsigned not null,
+	primary key (group_id, scope_id),
 	constraint oauth2_api_scope_group_scope_group_id_foreign
 		foreign key (group_id) references oauth2_api_scope_group (id)
 			on delete cascade,
@@ -248,6 +250,7 @@ create table if not exists oauth2_api_scope_group_users
 	updated_at timestamp default CURRENT_TIMESTAMP not null,
 	group_id bigint unsigned not null,
 	user_id bigint unsigned not null,
+	primary key (group_id, user_id),
 	constraint oauth2_api_scope_group_users_group_id_foreign
 		foreign key (group_id) references oauth2_api_scope_group (id)
 			on delete cascade,
@@ -380,6 +383,7 @@ create table if not exists oauth2_client_admin_users
 	updated_at timestamp default CURRENT_TIMESTAMP not null,
 	oauth2_client_id bigint unsigned not null,
 	user_id bigint unsigned not null,
+	primary key (oauth2_client_id, user_id),
 	constraint oauth2_client_admin_users_oauth2_client_id_foreign
 		foreign key (oauth2_client_id) references oauth2_client (id)
 			on delete cascade,
@@ -423,6 +427,7 @@ create table if not exists oauth2_client_api_scope
 	updated_at timestamp default CURRENT_TIMESTAMP not null,
 	client_id bigint unsigned not null,
 	scope_id bigint unsigned not null,
+	primary key (client_id, scope_id),
 	constraint oauth2_client_api_scope_client_id_foreign
 		foreign key (client_id) references oauth2_client (id)
 			on delete cascade,
