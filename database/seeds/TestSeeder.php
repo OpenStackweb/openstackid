@@ -455,6 +455,7 @@ PPK;
         $this->seedApiScopes();
         $this->seedApiEndpointScopes();
         $this->seedApiScopeScopes();
+        $this->seedGroupScopes();
         $this->seedTestApiEndpoints();
         // clients
         $this->seedTestUsersAndClients();
@@ -738,6 +739,13 @@ PPK;
                 'name'            => 'api-scope',
                 'active'          =>  true,
                 'description'     => 'Api Scopes CRUD operations',
+                'resource_server' => $resource_server,
+                'logo'               => asset('/assets/img/apis/server.png')
+            ),
+            array(
+                'name'            => 'groups',
+                'active'          =>  true,
+                'description'     => 'Groups Info API',
                 'resource_server' => $resource_server,
                 'logo'               => asset('/assets/img/apis/server.png')
             ),
@@ -1162,7 +1170,37 @@ PPK;
         EntityManager::flush();
     }
 
-    private function seedTestApiEndpoints(){
+    private function seedGroupScopes(){
+        $api_repository = EntityManager::getRepository(Api::class);
+        $api = $api_repository->findOneBy(['name' => 'groups']);
+        if(is_null($api)) return;
+
+        $scope_payloads = [
+            array(
+                'name'               => \App\libs\OAuth2\IGroupScopes::ReadAll,
+                'short_description'  => 'Allows access to Groups info.',
+                'description'        => 'Allows access to Groups info.',
+                'api'                => $api,
+                'system'             => false,
+                'active'             => true,
+            ),
+            array(
+                'name'               => \App\libs\OAuth2\IGroupScopes::Write,
+                'short_description'  => 'Allows access to write Groups info.',
+                'description'        => 'Allows access to write Groups info.',
+                'api'                => $api,
+                'system'             => false,
+                'active'             => true,
+            ),
+        ];
+
+        foreach($scope_payloads as $payload) {
+            EntityManager::persist(ApiScopeFactory::build($payload));
+        }
+        EntityManager::flush();
+    }
+
+        private function seedTestApiEndpoints(){
 
         $current_realm  = Config::get('app.url');
 

@@ -15,6 +15,7 @@ Homestead.yaml
 Homestead.json
 .env
 .env.*
+!.env.testing.example
 storage/*
 /public/assets/jquery-cookie/
 /public/assets/crypto-js/

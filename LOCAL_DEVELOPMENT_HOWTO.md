@@ -44,3 +44,30 @@ check containers health status
 ````bash
 docker inspect --format "{{json .State.Health }}" www-openstack-model-db-local | jq '.
 ````
+Running the Test Suite
+======================
+
+The test suite uses `APP_ENV=testing`, which causes Laravel to load `.env.testing`
+instead of `.env`. **You must create a `.env.testing` file before running tests** —
+this is a Laravel convention and is not obvious from the error output if it's missing.
+
+Copy the example file and adjust if needed:
+
+```bash
+cp .env.testing.example .env.testing
+```
+
+The example file is pre-configured for the standard Docker Compose setup (same
+credentials as `.env`). If you changed any DB or Redis credentials, update `.env.testing`
+to match.
+
+Then run the tests:
+
+```bash
+./run_tests.sh
+```
+
+**Note:** The test suite clears and re-seeds the relevant DB tables on every run, so
+you do not need to run `idp:fresh` before running tests. Also, `phpunit.xml` is
+configured with `stopOnFailure=true` — if you see fewer tests than expected, it means
+an earlier test failed and halted the suite.
