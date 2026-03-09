@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Controllers\OpenId\DiscoveryController;
+use App\Jobs\RevokeUserGrants;
 use App\Http\Controllers\OpenId\OpenIdController;
 use App\Http\Controllers\Traits\JsonResponses;
 use App\Http\Utils\CountryList;
@@ -673,7 +674,7 @@ final class UserController extends OpenIdController
     public function logout()
     {
         $user = $this->auth_service->getCurrentUser();
-        //RevokeUserGrantsOnExplicitLogout::dispatch($user)->afterResponse();
+        RevokeUserGrants::dispatch($user, null, 'explicit logout')->afterResponse();
         $this->auth_service->logout();
         Session::flush();
         Session::regenerate();

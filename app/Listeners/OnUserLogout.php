@@ -12,7 +12,7 @@
  * limitations under the License.
  **/
 
-use App\Jobs\RevokeUserGrantsOnExplicitLogout;
+use App\Jobs\RevokeUserGrants;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Log;
 
@@ -33,6 +33,6 @@ class OnUserLogout
     {
         $user = $event->user;
         Log::debug(sprintf("OnUserLogout::handle user %s (%s)", $user->getEmail(), $user->getId()));
-        RevokeUserGrantsOnExplicitLogout::dispatch($user);
+        RevokeUserGrants::dispatch($user, null, 'explicit logout');
     }
 }

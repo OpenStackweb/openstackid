@@ -13,7 +13,7 @@
  **/
 
 use App\Http\Utils\UserIPHelperProvider;
-use App\Jobs\RevokeUserGrantsOnExplicitLogout;
+use App\Jobs\RevokeUserGrants;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
@@ -1562,11 +1562,9 @@ final class OAuth2Protocol implements IOAuth2Protocol
                 );
             }
 
-            /*
             if(!is_null($user)){
-                RevokeUserGrantsOnExplicitLogout::dispatch($user, $client_id)->afterResponse();
+                RevokeUserGrants::dispatch($user, $client_id, 'explicit logout')->afterResponse();
             }
-            */
 
             if (!is_null($logged_user)) {
                 $this->auth_service->logout();

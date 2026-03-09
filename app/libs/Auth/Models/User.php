@@ -1578,6 +1578,8 @@ class User extends BaseEntity
         $this->password_salt = AuthHelper::generateSalt(self::SaltLen, $this->password_enc);
         $this->password = AuthHelper::encrypt_password($password, $this->password_salt, $this->password_enc);
 
+        $this->setRememberToken(\Illuminate\Support\Str::random(60));
+
         $action = 'User set new password.';
         $current_user = Auth::user();
         if($current_user instanceof User) {

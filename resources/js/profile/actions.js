@@ -83,6 +83,10 @@ export const revokeToken = async (value, hint) => {
     )({'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
+export const revokeAllTokens = async () => {
+    return deleteRawRequest(window.REVOKE_ALL_TOKENS_ENDPOINT)({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+}
+
 const normalizeEntity = (entity) => {
     entity.public_profile_show_photo = entity.public_profile_show_photo ? 1 : 0;
     entity.public_profile_show_fullname = entity.public_profile_show_fullname ? 1 : 0;

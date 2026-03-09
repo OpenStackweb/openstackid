@@ -187,6 +187,7 @@ Route::group([
         Route::post('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@create"]);
 
         Route::group(['prefix' => 'me'], function () {
+            Route::delete('tokens', "UserApiController@revokeAllMyTokens");
             Route::delete('tokens/{value}', "UserApiController@revokeMyToken");
             Route::put('', "UserApiController@updateMe");
             Route::put('pic',  "UserApiController@updateMyPic");

@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Controllers\APICRUDController;
+use App\Jobs\RevokeUserGrants;
 use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
 use App\ModelSerializers\SerializerRegistry;
@@ -244,7 +245,23 @@ final class UserApiController extends APICRUDController
         if (!Auth::check())
             return $this->error403();
 
-        return $this->update(Auth::user()->getId());
+        $password_changed = request()->filled('password');
+        $response = $this->update(Auth::user()->getId());
+        if ($password_changed) {
+            request()->session()->regenerate();
+        }
+        return $response;
+    }
+
+    public function revokeAllMyTokens()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        $user = Auth::user();
+        RevokeUserGrants::dispatch($user, null, 'user-initiated session revocation')->afterResponse();
+        $user->setRememberToken(\Illuminate\Support\Str::random(60));
+        return $this->deleted();
     }
 
     public function updateMyPic(){
