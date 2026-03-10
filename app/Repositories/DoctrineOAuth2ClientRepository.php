@@ -122,7 +122,7 @@ final class DoctrineOAuth2ClientRepository
         $q = $qb->getQuery();
 
         $q->useQueryCache(true);
-        $q->enableResultCache(600, 'client_by_id_'.$client_id); // TTL 10 min
+        $q->enableResultCache(600, 'client_by_id_'.md5($client_id)); // TTL 10 min
         $q->setHint(Query::HINT_READ_ONLY, true);
 
         return $q->getOneOrNullResult();
