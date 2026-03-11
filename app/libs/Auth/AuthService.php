@@ -334,6 +334,11 @@ final class AuthService extends AbstractService implements IAuthService
             $raw = false,
             $sameSite = 'none'
         );
+
+        // Flush all session data and regenerate the session ID to ensure no stale
+        // data survives (OAuth2 memento, OpenID auth context, authorization responses, etc.)
+        Session::flush();
+        Session::regenerate();
     }
 
     /**
