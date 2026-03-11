@@ -1,5 +1,5 @@
-<?php namespace App\Listeners;
-/**
+<?php namespace App\Jobs;
+/*
  * Copyright 2024 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,27 +12,17 @@
  * limitations under the License.
  **/
 
-use App\Jobs\RevokeUserGrantsOnExplicitLogout;
-use Illuminate\Auth\Events\Logout;
-use Illuminate\Support\Facades\Log;
+use Auth\User;
 
 /**
- * Class OnUserLogout
- * @package App\Listeners
+ * Class RevokeUserGrantsOnPasswordChange
+ * Revokes all OAuth2 grants for a user across all clients after a password change.
+ * @package App\Jobs
  */
-class OnUserLogout
+class RevokeUserGrantsOnPasswordChange extends RevokeUserGrants
 {
-
-    /**
-     * Handle the event.
-     *
-     * @param  object  $event
-     * @return void
-     */
-    public function handle(Logout $event)
+    public function __construct(User $user)
     {
-        $user = $event->user;
-        Log::debug(sprintf("OnUserLogout::handle user %s (%s)", $user->getEmail(), $user->getId()));
-        RevokeUserGrantsOnExplicitLogout::dispatch($user);
+        parent::__construct($user, null, 'password change');
     }
 }

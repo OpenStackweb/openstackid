@@ -19,7 +19,7 @@ use App\Events\UserEmailVerified;
 use App\Events\UserLocked;
 use App\Events\UserPasswordResetRequestCreated;
 use App\Events\UserPasswordResetSuccessful;
-use App\Jobs\RevokeUserGrants;
+use App\Jobs\RevokeUserGrantsOnPasswordChange;
 use App\Events\UserSpamStateUpdated;
 use App\Audit\AuditContext;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
@@ -171,7 +171,7 @@ final class EventServiceProvider extends ServiceProvider
             if(!$user instanceof User) return;
             Mail::queue(new UserPasswordResetMail($user));
             // Revoke all OAuth2 tokens for this user across all clients
-            RevokeUserGrants::dispatch($user, null, 'password change')->afterResponse();
+            RevokeUserGrantsOnPasswordChange::dispatch($user)->afterResponse();
         });
 
         Event::listen(OAuth2ClientLocked::class, function($event){

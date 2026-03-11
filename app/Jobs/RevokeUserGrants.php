@@ -26,7 +26,7 @@ use Utils\IPHelper;
  * Class RevokeUserGrants
  * @package App\Jobs
  */
-class RevokeUserGrants implements ShouldQueue
+abstract class RevokeUserGrants implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -54,7 +54,7 @@ class RevokeUserGrants implements ShouldQueue
      * @param string|null $client_id  null = revoke across all clients
      * @param string $reason          audit message suffix
      */
-    public function __construct(User $user, ?string $client_id = null, string $reason = 'explicit logout')
+    public function __construct(User $user, ?string $client_id, string $reason)
     {
         $this->user_id   = $user->getId();
         $this->client_id = $client_id;

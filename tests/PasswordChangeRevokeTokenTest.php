@@ -14,7 +14,9 @@
 
 use App\Events\UserPasswordResetSuccessful;
 use App\Jobs\EmitAuditLogJob;
-use App\Jobs\RevokeUserGrants;
+use App\Jobs\RevokeUserGrantsOnExplicitLogout;
+use App\Jobs\RevokeUserGrantsOnPasswordChange;
+use App\Jobs\RevokeUserGrantsOnSessionRevocation;
 use Auth\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -51,12 +53,12 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
     }
 
     // -------------------------------------------------------------------------
-    // Test 1: Dispatching UserPasswordResetSuccessful fires RevokeUserGrants
+    // Test 1: Dispatching UserPasswordResetSuccessful fires RevokeUserGrantsOnPasswordChange
     // -------------------------------------------------------------------------
 
     /**
      * When a UserPasswordResetSuccessful event is fired the EventServiceProvider
-     * listener must schedule a RevokeUserGrants job (all clients, reason = 'password change').
+     * listener must schedule a RevokeUserGrantsOnPasswordChange job for all clients.
      */
     public function testPasswordResetEventDispatchesRevokeUserGrantsJob(): void
     {
@@ -65,28 +67,25 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
         // afterResponse() registers a terminating callback; fire it now.
         app()->terminate();
 
-        Queue::assertPushed(RevokeUserGrants::class, function (RevokeUserGrants $job) {
-            $ref       = new \ReflectionObject($job);
-            $userId    = $ref->getProperty('user_id');
-            $clientId  = $ref->getProperty('client_id');
-            $reason    = $ref->getProperty('reason');
+        Queue::assertPushed(RevokeUserGrantsOnPasswordChange::class, function (RevokeUserGrantsOnPasswordChange $job) {
+            $ref      = new \ReflectionClass(\App\Jobs\RevokeUserGrants::class);
+            $userId   = $ref->getProperty('user_id');
+            $clientId = $ref->getProperty('client_id');
             $userId->setAccessible(true);
             $clientId->setAccessible(true);
-            $reason->setAccessible(true);
 
             return $userId->getValue($job)   === $this->test_user->getId()
-                && $clientId->getValue($job) === null
-                && $reason->getValue($job)   === 'password change';
+                && $clientId->getValue($job) === null;
         });
     }
 
     // -------------------------------------------------------------------------
-    // Test 2: PUT /admin/api/v1/users/me with password schedules RevokeUserGrants
+    // Test 2: PUT /admin/api/v1/users/me with password schedules RevokeUserGrantsOnPasswordChange
     // -------------------------------------------------------------------------
 
     /**
-     * Posting a new password via the profile API must schedule a RevokeUserGrants
-     * job so tokens from other sessions are revoked.
+     * Posting a new password via the profile API must schedule a
+     * RevokeUserGrantsOnPasswordChange job so tokens from other sessions are revoked.
      */
     public function testProfilePasswordChangePutsRevokeUserGrantsJobOnQueue(): void
     {
@@ -105,15 +104,12 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
         // The listener for UserPasswordResetSuccessful uses afterResponse().
         app()->terminate();
 
-        Queue::assertPushed(RevokeUserGrants::class, function (RevokeUserGrants $job) {
-            $ref      = new \ReflectionObject($job);
+        Queue::assertPushed(RevokeUserGrantsOnPasswordChange::class, function (RevokeUserGrantsOnPasswordChange $job) {
+            $ref      = new \ReflectionClass(\App\Jobs\RevokeUserGrants::class);
             $clientId = $ref->getProperty('client_id');
-            $reason   = $ref->getProperty('reason');
             $clientId->setAccessible(true);
-            $reason->setAccessible(true);
 
-            return $clientId->getValue($job) === null
-                && $reason->getValue($job)   === 'password change';
+            return $clientId->getValue($job) === null;
         });
     }
 
@@ -165,12 +161,12 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
     }
 
     // -------------------------------------------------------------------------
-    // Test 5: DELETE /admin/api/v1/users/me/tokens schedules RevokeUserGrants
+    // Test 5: DELETE /admin/api/v1/users/me/tokens schedules RevokeUserGrantsOnSessionRevocation
     // -------------------------------------------------------------------------
 
     /**
      * The "sign out all other devices" endpoint must respond with 204 and
-     * schedule a RevokeUserGrants job for all clients.
+     * schedule a RevokeUserGrantsOnSessionRevocation job for all clients.
      */
     public function testBulkRevokeEndpointSchedulesRevokeUserGrantsJob(): void
     {
@@ -179,23 +175,20 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
 
         app()->terminate();
 
-        Queue::assertPushed(RevokeUserGrants::class, function (RevokeUserGrants $job) {
-            $ref      = new \ReflectionObject($job);
+        Queue::assertPushed(RevokeUserGrantsOnSessionRevocation::class, function (RevokeUserGrantsOnSessionRevocation $job) {
+            $ref      = new \ReflectionClass(\App\Jobs\RevokeUserGrants::class);
             $userId   = $ref->getProperty('user_id');
             $clientId = $ref->getProperty('client_id');
-            $reason   = $ref->getProperty('reason');
             $userId->setAccessible(true);
             $clientId->setAccessible(true);
-            $reason->setAccessible(true);
 
             return $userId->getValue($job)   === $this->test_user->getId()
-                && $clientId->getValue($job) === null
-                && $reason->getValue($job)   === 'user-initiated session revocation';
+                && $clientId->getValue($job) === null;
         });
     }
 
     // -------------------------------------------------------------------------
-    // Test 6: RevokeUserGrants::handle() calls revokeUsersToken with client_id
+    // Test 6: RevokeUserGrantsOnExplicitLogout passes client_id to token service
     // -------------------------------------------------------------------------
 
     /**
@@ -211,16 +204,16 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
                      ->once()
                      ->with($this->test_user->getId(), $client_id);
 
-        $job = new RevokeUserGrants($this->test_user, $client_id, 'unit test');
+        $job = new RevokeUserGrantsOnExplicitLogout($this->test_user, $client_id);
         $job->handle($mock_service);
     }
 
     // -------------------------------------------------------------------------
-    // Test 7: RevokeUserGrants::handle() calls revokeUsersToken with null client_id
+    // Test 7: RevokeUserGrantsOnPasswordChange passes null client_id to token service
     // -------------------------------------------------------------------------
 
     /**
-     * When constructed without a client_id the job must call
+     * RevokeUserGrantsOnPasswordChange must call
      * ITokenService::revokeUsersToken($user_id, null), revoking across all clients.
      */
     public function testRevokeUserGrantsJobPassesNullClientIdToTokenService(): void
@@ -230,7 +223,7 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
                      ->once()
                      ->with($this->test_user->getId(), null);
 
-        $job = new RevokeUserGrants($this->test_user, null, 'unit test');
+        $job = new RevokeUserGrantsOnPasswordChange($this->test_user);
         $job->handle($mock_service);
     }
 
@@ -239,8 +232,8 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
     // -------------------------------------------------------------------------
 
     /**
-     * When opentelemetry.enabled is true, RevokeUserGrants::handle() must
-     * dispatch an EmitAuditLogJob with the correct log message and audit fields.
+     * When opentelemetry.enabled is true, the job must dispatch an EmitAuditLogJob
+     * with the correct log message and audit fields.
      */
     public function testOtelAuditJobDispatchedWhenOpentelemetryEnabled(): void
     {
@@ -249,7 +242,7 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
         $mock_service = Mockery::mock(ITokenService::class);
         $mock_service->shouldReceive('revokeUsersToken')->once();
 
-        $job = new RevokeUserGrants($this->test_user, null, 'password change');
+        $job = new RevokeUserGrantsOnPasswordChange($this->test_user);
         $job->handle($mock_service);
 
         Queue::assertPushed(EmitAuditLogJob::class, function (EmitAuditLogJob $emitted) {
@@ -267,8 +260,7 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
     // -------------------------------------------------------------------------
 
     /**
-     * When opentelemetry.enabled is false, RevokeUserGrants::handle() must not
-     * dispatch any EmitAuditLogJob.
+     * When opentelemetry.enabled is false, the job must not dispatch any EmitAuditLogJob.
      */
     public function testOtelAuditJobNotDispatchedWhenOpentelemetryDisabled(): void
     {
@@ -277,7 +269,7 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
         $mock_service = Mockery::mock(ITokenService::class);
         $mock_service->shouldReceive('revokeUsersToken')->once();
 
-        $job = new RevokeUserGrants($this->test_user, null, 'password change');
+        $job = new RevokeUserGrantsOnPasswordChange($this->test_user);
         $job->handle($mock_service);
 
         Queue::assertNotPushed(EmitAuditLogJob::class);

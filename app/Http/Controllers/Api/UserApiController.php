@@ -13,7 +13,7 @@
  **/
 
 use App\Http\Controllers\APICRUDController;
-use App\Jobs\RevokeUserGrants;
+use App\Jobs\RevokeUserGrantsOnSessionRevocation;
 use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
 use App\ModelSerializers\SerializerRegistry;
@@ -259,7 +259,7 @@ final class UserApiController extends APICRUDController
             return $this->error403();
 
         $user = Auth::user();
-        RevokeUserGrants::dispatch($user, null, 'user-initiated session revocation')->afterResponse();
+        RevokeUserGrantsOnSessionRevocation::dispatch($user)->afterResponse();
         $user->setRememberToken(\Illuminate\Support\Str::random(60));
         return $this->deleted();
     }
