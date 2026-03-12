@@ -58,7 +58,7 @@ final class EventServiceProvider extends ServiceProvider
         'Illuminate\Database\Events\QueryExecuted' => [
         ],
         'Illuminate\Auth\Events\Logout' => [
-            'App\Listeners\OnUserLogout',
+            // 'App\Listeners\OnUserLogout',
         ],
         'Illuminate\Auth\Events\Login' => [
             'App\Listeners\OnUserLogin',

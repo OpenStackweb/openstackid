@@ -21,8 +21,10 @@ use Auth\User;
  */
 class RevokeUserGrantsOnExplicitLogout extends RevokeUserGrants
 {
+    const REASON = 'explicit logout';
+
     public function __construct(User $user, ?string $client_id = null)
     {
-        parent::__construct($user, $client_id, 'explicit logout');
+        parent::__construct($user, $client_id, self::REASON);
     }
 }

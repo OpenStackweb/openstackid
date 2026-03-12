@@ -21,8 +21,10 @@ use Auth\User;
  */
 class RevokeUserGrantsOnPasswordChange extends RevokeUserGrants
 {
+    const REASON = 'password change';
+
     public function __construct(User $user)
     {
-        parent::__construct($user, null, 'password change');
+        parent::__construct($user, null, self::REASON);
     }
 }

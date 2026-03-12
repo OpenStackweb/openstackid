@@ -15,6 +15,7 @@
 use App\Events\UserEmailUpdated;
 use App\Events\UserPasswordResetSuccessful;
 use App\Jobs\AddUserAction;
+use App\Jobs\RevokeUserGrantsOnSessionRevocation;
 use App\Jobs\PublishUserDeleted;
 use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
@@ -372,6 +373,7 @@ final class UserService extends AbstractService implements IUserService
 
             if ($former_password != $user->getPassword()) {
                 Log::warning(sprintf("UserService::update use id %s - password changed", $id));
+                request()->session()->regenerate();
                 Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
             }
 
@@ -471,6 +473,21 @@ final class UserService extends AbstractService implements IUserService
         }
 
         return $user;
+    }
+
+    public function revokeAllGrantsOnSessionRevocation(int $user_id): void
+    {
+        $user = $this->tx_service->transaction(function () use ($user_id) {
+            $user = $this->repository->getById($user_id);
+            if (!$user instanceof User)
+                throw new EntityNotFoundException("User not found.");
+
+            $user->setRememberToken(\Illuminate\Support\Str::random(60));
+
+            return $user;
+        });
+
+        RevokeUserGrantsOnSessionRevocation::dispatch($user)->afterResponse();
     }
 
     public function notifyMonitoredSecurityGroupActivity

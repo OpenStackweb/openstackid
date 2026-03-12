@@ -21,8 +21,10 @@ use Auth\User;
  */
 class RevokeUserGrantsOnSessionRevocation extends RevokeUserGrants
 {
+    const REASON = 'user-initiated session revocation';
+
     public function __construct(User $user)
     {
-        parent::__construct($user, null, 'user-initiated session revocation');
+        parent::__construct($user, null, self::REASON);
     }
 }
