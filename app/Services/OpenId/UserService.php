@@ -293,7 +293,9 @@ final class UserService extends AbstractService implements IUserService
      */
     public function update(int $id, array $payload): IEntity
     {
-        $user = $this->tx_service->transaction(function () use ($id, $payload) {
+        $password_changed = false;
+
+        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed) {
 
             $user = $this->repository->getById($id);
 
@@ -373,12 +375,16 @@ final class UserService extends AbstractService implements IUserService
 
             if ($former_password != $user->getPassword()) {
                 Log::warning(sprintf("UserService::update use id %s - password changed", $id));
-                request()->session()->regenerate();
-                Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
+                $password_changed = true;
             }
 
             return $user;
         });
+
+        if ($password_changed) {
+            request()->session()->regenerate();
+            Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
+        }
 
         try {
             if (Config::get("queue.enable_message_broker", false) == true)

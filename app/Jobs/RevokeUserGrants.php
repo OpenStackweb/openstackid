@@ -50,15 +50,21 @@ abstract class RevokeUserGrants implements ShouldQueue
     private string $reason;
 
     /**
+     * @var string
+     */
+    private string $client_ip;
+
+    /**
      * @param User $user
      * @param string|null $client_id  null = revoke across all clients
      * @param string $reason          audit message suffix
      */
     public function __construct(User $user, ?string $client_id, string $reason)
     {
-        $this->user_id   = $user->getId();
-        $this->client_id = $client_id;
-        $this->reason    = $reason;
+        $this->user_id    = $user->getId();
+        $this->client_id  = $client_id;
+        $this->reason     = $reason;
+        $this->client_ip  = IPHelper::getUserIp();
         Log::debug(sprintf(
             "RevokeUserGrants::constructor user %s client_id %s reason %s",
             $this->user_id,
@@ -71,6 +77,14 @@ abstract class RevokeUserGrants implements ShouldQueue
     {
         Log::debug("RevokeUserGrants::handle");
 
+        try {
+            $service->revokeUsersToken($this->user_id, $this->client_id);
+        } catch (\Exception $ex) {
+            Log::warning(sprintf("RevokeUserGrants::handle attempt %d failed: %s",
+                $this->attempts(), $ex->getMessage()));
+            throw $ex;
+        }
+
         $scope = !empty($this->client_id)
             ? sprintf("client %s", $this->client_id)
             : "all clients";
@@ -82,7 +96,7 @@ abstract class RevokeUserGrants implements ShouldQueue
             $this->reason
         );
 
-        AddUserAction::dispatch($this->user_id, IPHelper::getUserIp(), $action);
+        AddUserAction::dispatch($this->user_id, $this->client_ip, $action);
 
         // Emit to OTEL audit log (Elasticsearch) if enabled
         if (config('opentelemetry.enabled', false)) {
@@ -95,17 +109,9 @@ abstract class RevokeUserGrants implements ShouldQueue
                 'audit.reason'      => $this->reason,
                 'audit.scope'       => $scope,
                 'auth.user.id'      => $this->user_id,
-                'client.ip'         => IPHelper::getUserIp(),
+                'client.ip'         => $this->client_ip,
                 'elasticsearch.index' => config('opentelemetry.logs.elasticsearch_index', 'logs-audit'),
             ]);
-        }
-
-        try {
-            $service->revokeUsersToken($this->user_id, $this->client_id);
-        } catch (\Exception $ex) {
-            Log::warning(sprintf("RevokeUserGrants::handle attempt %d failed: %s",
-                $this->attempts(), $ex->getMessage()));
-            throw $ex;
         }
     }
 
