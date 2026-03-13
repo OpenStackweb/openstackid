@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use models\exceptions\EntityNotFoundException;
@@ -382,7 +383,7 @@ final class UserService extends AbstractService implements IUserService
         });
 
         if ($password_changed) {
-            request()->session()->regenerate();
+            Session::regenerate();
             Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
         }
 
