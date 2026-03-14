@@ -37,8 +37,11 @@ use OAuth2\Repositories\IClientRepository;
 use OAuth2\ResourceServer\IUserService;
 use Utils\Http\HttpContentType;
 use Utils\Services\ILogService;
+use App\libs\OAuth2\IUserScopes;
 use Exception;
+use OpenApi\Attributes as OA;
 use OpenId\Services\IUserService as IOpenIdUserService;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Class OAuth2UserApiController
  * @package App\Http\Controllers\Api\OAuth2
@@ -336,6 +339,49 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
      * @param $id
      * @return \Illuminate\Http\JsonResponse|mixed
      */
+    #[OA\Get(
+        path: '/api/v2/users/{id}',
+        summary: 'Get a user by ID',
+        description: 'Get a user by ID (only for accounts of type "SERVICE")',
+        operationId: 'getUserByIdV2',
+        tags: ['Users'],
+        security: [
+            ['OAuth2UserSecurity' => [
+                IUserScopes::ReadAll,
+            ]],
+        ],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'User ID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+            new OA\Parameter(
+                name: 'expand',
+                description: 'Expand relations: groups',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK',
+                content: new OA\JsonContent(ref: '#/components/schemas/User')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function getV2($id)
     {
         return $this->processRequest(function() use($id) {
