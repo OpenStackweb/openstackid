@@ -23,10 +23,11 @@
         "/api/v2/users/{id}": {
             "get": {
                 "tags": [
-                    "Users"
+                    "Users",
+                    "V2"
                 ],
                 "summary": "Get a user by ID",
-                "description": "Get a user by ID (only for accounts of type \"SERVICE\")",
+                "description": "Retrieves user details by their numeric ID.",
                 "operationId": "getUserByIdV2",
                 "parameters": [
                     {
@@ -64,6 +65,9 @@
                     },
                     "500": {
                         "description": "Server Error"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only service accounts are allowed"
                     }
                 },
                 "security": [
@@ -72,7 +76,8 @@
                             "users-read-all"
                         ]
                     }
-                ]
+                ],
+                "x-x-required-client-type": "SERVICE"
             }
         }
     },
@@ -402,6 +407,10 @@
         {
             "name": "Users",
             "description": "Users"
+        },
+        {
+            "name": "V2",
+            "description": "V2"
         }
     ]
 }
