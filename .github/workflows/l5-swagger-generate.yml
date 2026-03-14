@@ -1,0 +1,160 @@
+name: OpenAPI generation
+
+on:
+    push:
+    pull_request:
+jobs:
+    openapi-generate:
+        runs-on: ubuntu-latest
+        env:
+            APP_ENV: testing
+            APP_DEBUG: true
+            APP_KEY: base64:4vh0op/S1dAsXKQ2bbdCfWRyCI9r8NNIdPXyZWt9PX4=
+            DEV_EMAIL_TO: smarcet@gmail.com
+            APP_URL: http://localhost
+            DB_CONNECTION: mysql
+            DB_HOST: 127.0.0.1
+            DB_PORT: 3306
+            DB_DATABASE: idp_test
+            DB_USERNAME: root
+            DB_PASSWORD: 1qaz2wsx
+            REDIS_HOST: 127.0.0.1
+            REDIS_PORT: 6379
+            REDIS_DB: 0
+            REDIS_PASSWORD: 1qaz2wsx
+            REDIS_DATABASES: 16
+            SSL_ENABLED: false
+            SESSION_DRIVER: redis
+            PHP_VERSION: 8.3
+            OTEL_SDK_DISABLED: true
+            OTEL_SERVICE_ENABLED: false
+
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_ROOT_PASSWORD: ${{env.DB_PASSWORD}}
+                    MYSQL_DATABASE: ${{env.DB_DATABASE}}
+                ports:
+                    - 3306:3306
+                options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        steps:
+            - name: Create Redis
+              uses: supercharge/redis-github-action@1.8.1
+              with:
+                  redis-port: ${{env.REDIS_PORT}}
+                  redis-password: ${{env.REDIS_PASSWORD}}
+
+            - name: Check out repository code
+              uses: actions/checkout@v4
+
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ env.PHP_VERSION }}
+                  extensions: pdo_mysql, mbstring, exif, pcntl, bcmath, sockets, gettext, apcu, redis, igbinary, memcached
+
+            - name: Install dependencies
+              uses: "ramsey/composer-install@v3"
+              env:
+                  COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.PAT }}"} }'
+
+            - name: Generate OpenAPI docs
+              run: php artisan l5-swagger:generate
+
+            - name: Build Swagger UI preview
+              run: |
+                  mkdir -p swagger-ui
+                  cp storage/api-docs/api-docs.json swagger-ui/api-docs.json
+                  cat > swagger-ui/index.html << 'HTMLEOF'
+                  <!doctype html>
+                  <html lang="en">
+                  <head>
+                    <meta charset="utf-8" />
+                    <title>OpenStackID API - Swagger UI</title>
+                    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+                  </head>
+                  <body>
+                    <div id="swagger-ui"></div>
+                    <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+                    <script>
+                      window.onload = () => {
+                        window.ui = SwaggerUIBundle({
+                          url: 'api-docs.json',
+                          dom_id: '#swagger-ui'
+                        });
+                      };
+                    </script>
+                  </body>
+                  </html>
+                  HTMLEOF
+
+            - name: Upload Swagger UI artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: swagger-ui
+                  path: swagger-ui/
+                  if-no-files-found: error
+
+    pages-preview:
+        name: Publish Swagger UI to GitHub Pages
+        needs: openapi-generate
+        if: github.event_name == 'pull_request'
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: write
+            issues: write
+            pull-requests: write
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Download Swagger UI artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: swagger-ui
+                  path: swagger-ui
+
+            - name: Build public directory for GitHub Pages
+              run: |
+                  PR_PATH="openapi/pr-${{ github.event.number }}"
+                  mkdir -p "public/${PR_PATH}"
+                  cp -R swagger-ui/* "public/${PR_PATH}/"
+                  echo "Built GitHub Pages content at public/${PR_PATH}"
+
+            - name: Publish to GitHub Pages
+              uses: peaceiris/actions-gh-pages@v4
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./public
+                  keep_files: true
+
+            - name: Comment preview URL on PR
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const prNumber = context.payload.pull_request.number;
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const baseUrl = `https://${owner}.github.io/${repo}`;
+                      const previewPath = `/openapi/pr-${prNumber}/`;
+                      const url = `${baseUrl}${previewPath}`;
+
+                      const body = [
+                        '📘 **OpenAPI / Swagger preview**',
+                        '',
+                        `➡️ ${url}`,
+                        '',
+                        'This page is automatically updated on each push to this PR.'
+                      ].join('\n');
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: prNumber,
+                        body,
+                      });
+
