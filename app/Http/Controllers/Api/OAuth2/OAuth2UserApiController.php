@@ -342,13 +342,16 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
     #[OA\Get(
         path: '/api/v2/users/{id}',
         summary: 'Get a user by ID',
-        description: 'Get a user by ID (only for accounts of type "SERVICE")',
+        description: 'Retrieves user details by their numeric ID.',
         operationId: 'getUserByIdV2',
-        tags: ['Users'],
+        tags: ['Users', 'V2'],
         security: [
             ['OAuth2UserSecurity' => [
                 IUserScopes::ReadAll,
             ]],
+        ],
+        x: [
+            'x-required-client-type' => 'SERVICE',
         ],
         parameters: [
             new OA\Parameter(
@@ -379,6 +382,10 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             new OA\Response(
                 response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
                 description: 'Server Error'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_FORBIDDEN,
+                description: 'Forbidden - Only service accounts are allowed'
             ),
         ]
     )]
