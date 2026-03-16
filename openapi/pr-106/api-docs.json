@@ -80,7 +80,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PaginatedUserResponseSchema"
+                                    "$ref": "#/components/schemas/PaginatedUserResponse"
                                 }
                             }
                         }
@@ -97,7 +97,7 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
+                        "OAuth2UserSecurity": [
                             "users-read-all"
                         ]
                     }
@@ -146,7 +146,7 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
+                        "OAuth2UserSecurity": [
                             "users/write"
                         ]
                     }
@@ -178,9 +178,17 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
-                            "profile",
-                            "email",
+                        "OAuth2UserSecurity": [
+                            "profile"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "email"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
                             "address"
                         ]
                     }
@@ -229,7 +237,7 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
+                        "OAuth2UserSecurity": [
                             "me/write"
                         ]
                     }
@@ -277,7 +285,7 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
+                        "OAuth2UserSecurity": [
                             "users-read-all"
                         ]
                     }
@@ -337,7 +345,7 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
+                        "OAuth2UserSecurity": [
                             "users/write"
                         ]
                     }
@@ -388,7 +396,7 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
+                        "OAuth2UserSecurity": [
                             "me/write"
                         ]
                     }
@@ -419,9 +427,17 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
-                            "profile",
-                            "email",
+                        "OAuth2UserSecurity": [
+                            "profile"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "email"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
                             "address"
                         ]
                     }
@@ -450,7 +466,7 @@
                 },
                 "security": [
                     {
-                        "user_oauth2": [
+                        "OAuth2UserSecurity": [
                             "profile",
                             "email",
                             "address"
@@ -524,7 +540,7 @@
                 "tags": [
                     "Users"
                 ],
-                "summary": "Update user group assignments (only for account type \"SERVICE\")",
+                "summary": "Update user group assignments",
                 "operationId": "updateUserGroups",
                 "parameters": [
                     {
@@ -563,15 +579,19 @@
                     },
                     "500": {
                         "description": "Server Error"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only service accounts are allowed"
                     }
                 },
                 "security": [
                     {
-                        "user_oauth2": [
+                        "OAuth2UserSecurity": [
                             "users/groups/write"
                         ]
                     }
-                ]
+                ],
+                "x-x-required-client-type": "SERVICE"
             }
         }
     },
@@ -1069,7 +1089,7 @@
                     }
                 ]
             },
-            "PaginatedUserResponseSchema": {
+            "PaginatedUserResponse": {
                 "type": "object",
                 "allOf": [
                     {
@@ -1390,22 +1410,6 @@
         },
         "securitySchemes": {
             "OAuth2UserSecurity": {
-                "type": "oauth2",
-                "description": "OAuth2 security scheme for user-related API endpoints",
-                "flows": {
-                    "authorizationCode": {
-                        "authorizationUrl": "http://localhost/oauth/authorize",
-                        "tokenUrl": "http://localhost/oauth/token",
-                        "scopes": {
-                            "users-read-all": "Read All Users Data",
-                            "me/write": "Write current user data",
-                            "users/write": "Write Users Data",
-                            "users/groups/write": "Manage User Group assignments"
-                        }
-                    }
-                }
-            },
-            "user_oauth2": {
                 "type": "oauth2",
                 "flows": {
                     "authorizationCode": {
