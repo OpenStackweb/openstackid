@@ -37,22 +37,22 @@ abstract class RevokeUserGrants implements ShouldQueue
     /**
      * @var int
      */
-    private int $user_id;
+    protected int $user_id;
 
     /**
      * @var string|null
      */
-    private ?string $client_id;
+    protected ?string $client_id;
 
     /**
      * @var string
      */
-    private string $reason;
+    protected string $reason;
 
     /**
      * @var string
      */
-    private string $client_ip;
+    protected string $client_ip;
 
     /**
      * @param User $user
