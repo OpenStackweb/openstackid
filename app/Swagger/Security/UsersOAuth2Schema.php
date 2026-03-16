@@ -8,7 +8,7 @@ use OpenApi\Attributes as OA;
 #[
     OA\SecurityScheme(
     type: 'oauth2',
-    securityScheme: 'user_oauth2',
+    securityScheme: 'OAuth2UserSecurity',
     flows: [
         new OA\Flow(
             flow: 'authorizationCode',

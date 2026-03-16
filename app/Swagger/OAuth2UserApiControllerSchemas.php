@@ -5,7 +5,7 @@ namespace App\Swagger\schemas;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema: 'PaginatedUserResponseSchema',
+    schema: 'PaginatedUserResponse',
     type: 'object',
     allOf: [
         new OA\Schema(ref: '#/components/schemas/PaginateDataSchemaResponse'),

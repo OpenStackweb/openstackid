@@ -1,4 +1,5 @@
-<?php namespace App\Http\Controllers\Api\OAuth2;
+<?php
+namespace App\Http\Controllers\Api\OAuth2;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,7 +60,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         tags: ['Users'],
         security: [
             [
-                'user_oauth2' => [
+                'OAuth2UserSecurity' => [
                     IUserScopes::ReadAll,
                 ]
             ],
@@ -105,7 +106,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             new OA\Response(
                 response: HttpResponse::HTTP_OK,
                 description: 'OK',
-                content: new OA\JsonContent(ref: '#/components/schemas/PaginatedUserResponseSchema')
+                content: new OA\JsonContent(ref: '#/components/schemas/PaginatedUserResponse')
             ),
             new OA\Response(
                 response: HttpResponse::HTTP_NOT_FOUND,
@@ -197,8 +198,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         IOpenIdUserService $openid_user_service,
         IClientRepository $client_repository,
         IdTokenBuilder $id_token_builder
-    )
-    {
+    ) {
         parent::__construct($resource_server_context, $log_service);
         $this->repository = $repository;
         $this->user_service = $user_service;
@@ -217,13 +217,9 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         operationId: 'getCurrentUser',
         tags: ['Users'],
         security: [
-            [
-                'user_oauth2' => [
-                    IUserScopes::Profile,
-                    IUserScopes::Email,
-                    IUserScopes::Address,
-                ]
-            ],
+            ['OAuth2UserSecurity' => [IUserScopes::Profile]],
+            ['OAuth2UserSecurity' => [IUserScopes::Email]],
+            ['OAuth2UserSecurity' => [IUserScopes::Address]],
         ],
         responses: [
             new OA\Response(
@@ -252,24 +248,27 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
     {
         // remove possible fields that an user can not update
         // from this endpoint
-        if(isset($payload['groups']))
+        if (isset($payload['groups']))
             unset($payload['groups']);
 
-        if(isset($payload['email_verified']))
+        if (isset($payload['email_verified']))
             unset($payload['email_verified']);
 
-        if(isset($payload['active']))
+        if (isset($payload['active']))
             unset($payload['active']);
 
         return HTMLCleaner::cleanData($payload, [
-            'bio', 'statement_of_interest'
+            'bio',
+            'statement_of_interest'
         ]);
     }
 
-      private function _create(){
+    private function _create()
+    {
         try {
 
-            if(!Request::isJson()) return $this->error400();
+            if (!Request::isJson())
+                return $this->error400();
 
             $payload = Request::json()->all();
             // Creates a Validator instance and validates the data.
@@ -282,27 +281,24 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             $user = $this->openid_user_service->create($payload);
 
             return $this->created(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
-        }
-        catch (ValidationException $ex1)
-        {
+        } catch (ValidationException $ex1) {
             Log::warning($ex1);
             return $this->error412($ex1->getMessages());
-        }
-        catch (EntityNotFoundException $ex2)
-        {
+        } catch (EntityNotFoundException $ex2) {
             Log::warning($ex2);
             return $this->error404(['message' => $ex2->getMessage()]);
-        }
-        catch (Exception $ex) {
+        } catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }
     }
 
-    private function _update($id){
+    private function _update($id)
+    {
         try {
 
-            if(!Request::isJson()) return $this->error400();
+            if (!Request::isJson())
+                return $this->error400();
 
             $payload = Request::json()->all();
             // Creates a Validator instance and validates the data.
@@ -315,18 +311,13 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             $user = $this->openid_user_service->update($id, $this->curateUpdatePayload($payload));
 
             return $this->updated(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
-        }
-        catch (ValidationException $ex1)
-        {
+        } catch (ValidationException $ex1) {
             Log::warning($ex1);
             return $this->error412($ex1->getMessages());
-        }
-        catch (EntityNotFoundException $ex2)
-        {
+        } catch (EntityNotFoundException $ex2) {
             Log::warning($ex2);
             return $this->error404(['message' => $ex2->getMessage()]);
-        }
-        catch (Exception $ex) {
+        } catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }
@@ -339,7 +330,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         tags: ['Users'],
         security: [
             [
-                'user_oauth2' => [
+                'OAuth2UserSecurity' => [
                     IUserScopes::Write,
                 ]
             ],
@@ -373,8 +364,9 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             ),
         ]
     )]
-    public function create(){
-       return $this->_create();
+    public function create()
+    {
+        return $this->_create();
     }
 
     #[OA\Put(
@@ -384,7 +376,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         tags: ['Users'],
         security: [
             [
-                'user_oauth2' => [
+                'OAuth2UserSecurity' => [
                     IUserScopes::MeWrite,
                 ]
             ],
@@ -418,7 +410,8 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             ),
         ]
     )]
-    public function updateMe(){
+    public function updateMe()
+    {
         return $this->_update($this->resource_server_context->getCurrentUserId());
     }
 
@@ -429,7 +422,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         tags: ['Users'],
         security: [
             [
-                'user_oauth2' => [
+                'OAuth2UserSecurity' => [
                     IUserScopes::Write,
                 ]
             ],
@@ -472,8 +465,9 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             ),
         ]
     )]
-    public function update($id){
-       return $this->_update($id);
+    public function update($id)
+    {
+        return $this->_update($id);
     }
 
     #[OA\Put(
@@ -483,7 +477,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         tags: ['Users'],
         security: [
             [
-                'user_oauth2' => [
+                'OAuth2UserSecurity' => [
                     IUserScopes::MeWrite,
                 ]
             ],
@@ -520,31 +514,27 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             ),
         ]
     )]
-    public function updateMyPic(LaravelRequest $request){
+    public function updateMyPic(LaravelRequest $request)
+    {
         try {
             if (!$this->resource_server_context->getCurrentUserId()) {
                 return $this->error403();
             }
 
-            $file = $request->hasFile('file') ? $request->file('file'):null;
-            if(is_null($file)){
+            $file = $request->hasFile('file') ? $request->file('file') : null;
+            if (is_null($file)) {
                 throw new ValidationException('file is not present');
             }
             $user = $this->openid_user_service->updateProfilePhoto($this->resource_server_context->getCurrentUserId(), $file);
 
             return $this->updated(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
-        }
-        catch (ValidationException $ex1)
-        {
+        } catch (ValidationException $ex1) {
             Log::warning($ex1);
             return $this->error412($ex1->getMessages());
-        }
-        catch (EntityNotFoundException $ex2)
-        {
+        } catch (EntityNotFoundException $ex2) {
             Log::warning($ex2);
             return $this->error404(['message' => $ex2->getMessage()]);
-        }
-        catch (Exception $ex) {
+        } catch (Exception $ex) {
             Log::error($ex);
             return $this->error500($ex);
         }
@@ -556,13 +546,9 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         operationId: 'getUserInfo',
         tags: ['Users'],
         security: [
-            [
-                'user_oauth2' => [
-                    IUserScopes::Profile,
-                    IUserScopes::Email,
-                    IUserScopes::Address,
-                ]
-            ],
+            ['OAuth2UserSecurity' => [IUserScopes::Profile]],
+            ['OAuth2UserSecurity' => [IUserScopes::Email]],
+            ['OAuth2UserSecurity' => [IUserScopes::Address]],
         ],
         responses: [
             new OA\Response(
@@ -583,7 +569,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         tags: ['Users'],
         security: [
             [
-                'user_oauth2' => [
+                'OAuth2UserSecurity' => [
                     IUserScopes::Profile,
                     IUserScopes::Email,
                     IUserScopes::Address,
@@ -645,7 +631,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         tags: ['Users'],
         security: [
             [
-                'user_oauth2' => [
+                'OAuth2UserSecurity' => [
                     IUserScopes::ReadAll,
                 ]
             ],
@@ -710,9 +696,11 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         operationId: 'getUserByIdV2',
         tags: ['Users', 'V2'],
         security: [
-            ['OAuth2UserSecurity' => [
-                IUserScopes::ReadAll,
-            ]],
+            [
+                'OAuth2UserSecurity' => [
+                    IUserScopes::ReadAll,
+                ]
+            ],
         ],
         x: [
             'x-required-client-type' => 'SERVICE',
@@ -755,7 +743,7 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
     )]
     public function getV2($id)
     {
-        return $this->processRequest(function() use($id) {
+        return $this->processRequest(function () use ($id) {
             $user = $this->repository->getById(intval($id));
             if (is_null($user)) {
                 throw new EntityNotFoundException();
@@ -774,15 +762,18 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
      */
     #[OA\Put(
         path: '/api/v1/users/{id}/groups',
-        summary: 'Update user group assignments (only for account type "SERVICE")',
+        summary: 'Update user group assignments',
         operationId: 'updateUserGroups',
         tags: ['Users'],
         security: [
             [
-                'user_oauth2' => [
+                'OAuth2UserSecurity' => [
                     IUserScopes::UserGroupWrite,
                 ]
             ],
+        ],
+        x: [
+            'x-required-client-type' => 'SERVICE',
         ],
         parameters: [
             new OA\Parameter(
@@ -819,12 +810,17 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
                 response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
                 description: 'Server Error'
             ),
+            new OA\Response(
+                response: HttpResponse::HTTP_FORBIDDEN,
+                description: 'Forbidden - Only service accounts are allowed'
+            ),
         ]
     )]
     public function updateUserGroups($user_id): mixed
     {
-        return $this->processRequest(function() use($user_id) {
-            if(!Request::isJson()) return $this->error400();
+        return $this->processRequest(function () use ($user_id) {
+            if (!Request::isJson())
+                return $this->error400();
 
             $payload = Request::json()->all();
             // Creates a Validator instance and validates the data.
