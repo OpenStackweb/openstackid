@@ -12,7 +12,6 @@
  * limitations under the License.
  **/
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Redirect;
 use App\Http\Controllers\OpenId\OpenIdController;
@@ -37,8 +36,6 @@ class HomeController extends OpenIdController
         if ($this->isDiscoveryRequest())
             return $this->discovery->idp();
         if (Auth::guest()) {
-            Session::flush();
-            Session::regenerate();
             return View::make("home");
         }
         else
