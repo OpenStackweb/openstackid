@@ -105,4 +105,12 @@ interface IUserService extends IBaseService
         string $action_by,
     ): void;
 
+    /**
+     * Rotates the user's remember token (persisted) and schedules revocation
+     * of all OAuth2 grants for that user.
+     * @param int $user_id
+     * @throws EntityNotFoundException
+     */
+    public function revokeAllGrantsOnSessionRevocation(int $user_id): void;
+
 }

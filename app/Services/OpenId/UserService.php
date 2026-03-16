@@ -15,6 +15,7 @@
 use App\Events\UserEmailUpdated;
 use App\Events\UserPasswordResetSuccessful;
 use App\Jobs\AddUserAction;
+use App\Jobs\RevokeUserGrantsOnSessionRevocation;
 use App\Jobs\PublishUserDeleted;
 use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
@@ -33,6 +34,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use models\exceptions\EntityNotFoundException;
@@ -292,7 +294,9 @@ final class UserService extends AbstractService implements IUserService
      */
     public function update(int $id, array $payload): IEntity
     {
-        $user = $this->tx_service->transaction(function () use ($id, $payload) {
+        $password_changed = false;
+
+        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed) {
 
             $user = $this->repository->getById($id);
 
@@ -372,11 +376,16 @@ final class UserService extends AbstractService implements IUserService
 
             if ($former_password != $user->getPassword()) {
                 Log::warning(sprintf("UserService::update use id %s - password changed", $id));
-                Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
+                $password_changed = true;
             }
 
             return $user;
         });
+
+        if ($password_changed) {
+            Session::regenerate();
+            Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
+        }
 
         try {
             if (Config::get("queue.enable_message_broker", false) == true)
@@ -471,6 +480,21 @@ final class UserService extends AbstractService implements IUserService
         }
 
         return $user;
+    }
+
+    public function revokeAllGrantsOnSessionRevocation(int $user_id): void
+    {
+        $user = $this->tx_service->transaction(function () use ($user_id) {
+            $user = $this->repository->getById($user_id);
+            if (!$user instanceof User)
+                throw new EntityNotFoundException("User not found.");
+
+            $user->setRememberToken(\Illuminate\Support\Str::random(60));
+
+            return $user;
+        });
+
+        RevokeUserGrantsOnSessionRevocation::dispatch($user)->afterResponse();
     }
 
     public function notifyMonitoredSecurityGroupActivity

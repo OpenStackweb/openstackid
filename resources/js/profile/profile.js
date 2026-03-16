@@ -20,7 +20,7 @@ import RichTextEditor from "../components/rich_text_editor";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import UserAccessTokensGrid from "../components/user_access_tokens_grid";
 import UserActionsGrid from "../components/user_actions_grid";
-import {getUserActions, getUserAccessTokens, PAGE_SIZE, revokeToken, save} from "./actions";
+import {getUserActions, getUserAccessTokens, PAGE_SIZE, revokeToken, revokeAllTokens, save} from "./actions";
 import ProfileImageUploader from "./components/profile_image_uploader/profile_image_uploader";
 import Navbar from "../components/navbar/navbar";
 import Divider from "@material-ui/core/Divider";
@@ -81,6 +81,30 @@ const ProfilePage = ({
             });
         },
     });
+
+    const confirmRevokeAll = () => {
+        Swal({
+            title: 'Sign out all other devices?',
+            html: '<ul style="text-align:left">' +
+                '<li>All OAuth2 access and refresh tokens will be revoked</li>' +
+                '<li>All other browser sessions will need to re-authenticate</li>' +
+                '<li>Your current session will remain active</li>' +
+                '</ul>',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, sign out all devices!'
+        }).then((result) => {
+            if (result.value) {
+                revokeAllTokens().then(() => {
+                    Swal('Signed out', 'All other sessions and tokens have been revoked.', 'success');
+                    setAccessTokensListRefresh(!accessTokensListRefresh);
+                }).catch((err) => {
+                    handleErrorResponse(err);
+                });
+            }
+        });
+    };
 
     const confirmRevocation = (value) => {
         Swal({
@@ -839,6 +863,15 @@ const ProfilePage = ({
                                     tokensListChanged={accessTokensListRefresh}
                                     onRevoke={confirmRevocation}
                                 />
+                            </Grid>
+                            <Grid item container justifyContent="flex-end">
+                                <Button
+                                    variant="outlined"
+                                    color="secondary"
+                                    onClick={confirmRevokeAll}
+                                >
+                                    Sign Out All Other Devices
+                                </Button>
                             </Grid>
                             <Divider/>
                             <Grid item container>

@@ -15,16 +15,16 @@
 use Auth\User;
 
 /**
- * Class RevokeUserGrantsOnExplicitLogout
- * Revokes all OAuth2 grants for a user when they explicitly log out.
+ * Class RevokeUserGrantsOnSessionRevocation
+ * Revokes all OAuth2 grants for a user when they explicitly sign out all other devices.
  * @package App\Jobs
  */
-class RevokeUserGrantsOnExplicitLogout extends RevokeUserGrants
+class RevokeUserGrantsOnSessionRevocation extends RevokeUserGrants
 {
-    const REASON = 'explicit logout';
+    const REASON = 'user-initiated session revocation';
 
-    public function __construct(User $user, ?string $client_id = null)
+    public function __construct(User $user)
     {
-        parent::__construct($user, $client_id, self::REASON);
+        parent::__construct($user, null, self::REASON);
     }
 }

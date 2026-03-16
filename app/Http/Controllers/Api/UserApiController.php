@@ -247,6 +247,15 @@ final class UserApiController extends APICRUDController
         return $this->update(Auth::user()->getId());
     }
 
+    public function revokeAllMyTokens()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        $this->service->revokeAllGrantsOnSessionRevocation(Auth::user()->getId());
+        return $this->deleted();
+    }
+
     public function updateMyPic(){
         if (!Auth::check())
             return $this->error403();
