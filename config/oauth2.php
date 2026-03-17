@@ -11,5 +11,5 @@ return [
     | the request IP and the access token audience.
     |
     */
-    'validate_resource_server_ip' => env('OAUTH2_VALIDATE_RESOURCE_SERVER_IP', true),
+    'validate_resource_server_ip' => env('OAUTH2_VALIDATE_RESOURCE_SERVER_IP', false),
 ];

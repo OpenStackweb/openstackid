@@ -78,31 +78,31 @@ final class ValidateBearerTokenResourceServerStrategy implements IValidateBearer
                 'resource server is disabled!'
             );
         }
-        //check resource server ip address
-        if (!$resource_server->isOwn($current_ip))
-        {
-            throw new BearerTokenDisclosureAttemptException
-            (
-                sprintf
+        if (config('oauth2.validate_resource_server_ip', false)) {
+            //check resource server ip address
+            if (!$resource_server->isOwn($current_ip)) {
+                throw new BearerTokenDisclosureAttemptException
                 (
-                    'resource server ip (%s) differs from current request ip %s',
-                    $resource_server->getIPAddresses(),
-                    $current_ip
-                )
-            );
-        }
-        // check if current ip belongs to a registered resource server audience
-        if (!$this->token_service->checkAccessTokenAudience($access_token, $current_ip))
-        {
-            throw new BearerTokenDisclosureAttemptException
-            (
-                sprintf
+                    sprintf
+                    (
+                        'resource server ip (%s) differs from current request ip %s',
+                        $resource_server->getIPAddresses(),
+                        $current_ip
+                    )
+                );
+            }
+            // check if current ip belongs to a registered resource server audience
+            if (!$this->token_service->checkAccessTokenAudience($access_token, $current_ip)) {
+                throw new BearerTokenDisclosureAttemptException
                 (
-                    'access token current audience (%s) does not match with current request ip %s',
-                    $access_token->getAudience(),
-                    $current_ip
-                )
-            );
+                    sprintf
+                    (
+                        'access token current audience (%s) does not match with current request ip %s',
+                        $access_token->getAudience(),
+                        $current_ip
+                    )
+                );
+            }
         }
     }
 }
