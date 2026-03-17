@@ -1,0 +1,1636 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "OpenStackID API",
+        "description": "OpenStackID IDP API Documentation - OAuth2, OpenID Connect, and User Management",
+        "contact": {
+            "name": "OpenStack Foundation",
+            "email": "support@openstack.org"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost",
+            "description": "IDP API Server"
+        }
+    ],
+    "paths": {
+        "/api/v2/users/{id}": {
+            "get": {
+                "tags": [
+                    "Users",
+                    "V2"
+                ],
+                "summary": "Get a user by ID",
+                "description": "Retrieves user details by their numeric ID.",
+                "operationId": "getUserByIdV2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "description": "Expand relations: groups",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only service accounts are allowed"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "users-read-all"
+                        ]
+                    }
+                ],
+                "x-x-required-client-type": "SERVICE"
+            }
+        },
+        "/oauth2/auth": {
+            "get": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OAuth2 Authorization Endpoint (GET)",
+                "description": "Initiates an OAuth2 authorization flow. Supports Authorization Code, Implicit, Hybrid, and OpenID Connect flows. Per RFC 6749 §3.1, GET is required.",
+                "operationId": "oauth2AuthorizeGet",
+                "parameters": [
+                    {
+                        "name": "response_type",
+                        "in": "query",
+                        "description": "OAuth2 response type",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "code",
+                                "token",
+                                "id_token",
+                                "code token",
+                                "code id_token",
+                                "token id_token",
+                                "code token id_token",
+                                "otp",
+                                "none"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "client_id",
+                        "in": "query",
+                        "description": "OAuth2 client identifier",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "redirect_uri",
+                        "in": "query",
+                        "description": "Redirect URI (must match a registered URI)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uri"
+                        }
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "description": "Space-delimited scopes (include \"openid\" for OIDC)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "description": "Opaque state parameter returned in the redirect",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "nonce",
+                        "in": "query",
+                        "description": "Nonce for ID token replay protection (OIDC)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "response_mode",
+                        "in": "query",
+                        "description": "Response mode override",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "query",
+                                "fragment",
+                                "form_post",
+                                "direct"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "prompt",
+                        "in": "query",
+                        "description": "Space-delimited user interaction prompts (OIDC)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "login",
+                                "consent",
+                                "select_account"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "login_hint",
+                        "in": "query",
+                        "description": "Hint about login identifier (OIDC)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "display",
+                        "in": "query",
+                        "description": "UI display preference (OIDC)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "page",
+                                "popup",
+                                "touch",
+                                "wap",
+                                "native"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "max_age",
+                        "in": "query",
+                        "description": "Maximum authentication age in seconds (OIDC)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "acr_values",
+                        "in": "query",
+                        "description": "Authentication context class reference values (OIDC)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "code_challenge",
+                        "in": "query",
+                        "description": "PKCE code challenge",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "code_challenge_method",
+                        "in": "query",
+                        "description": "PKCE challenge method",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "plain",
+                                "S256"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "id_token_hint",
+                        "in": "query",
+                        "description": "Previously issued ID token hint (OIDC)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "approval_prompt",
+                        "in": "query",
+                        "description": "Consent handling",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "auto",
+                                "force"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "access_type",
+                        "in": "query",
+                        "description": "Token refresh behavior",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "online",
+                                "offline"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authorization request processed (response in body), depends on \"response_mode\" param"
+                    },
+                    "302": {
+                        "description": "Redirect to client redirect_uri with authorization code, tokens, or error"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OAuth2 Authorization Endpoint (PUT)",
+                "description": "Initiates an OAuth2 authorization flow via PUT. Same parameters as GET but sent as form data.",
+                "operationId": "oauth2AuthorizePut",
+                "requestBody": {
+                    "description": "Authorization request parameters",
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuth2AuthorizationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authorization request processed (response in body), depends on \"response_mode\" param"
+                    },
+                    "302": {
+                        "description": "Redirect to client redirect_uri with authorization code, tokens, or error"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OAuth2 Authorization Endpoint (POST)",
+                "description": "Initiates an OAuth2 authorization flow via POST. Same parameters as GET but sent as form data.",
+                "operationId": "oauth2AuthorizePost",
+                "requestBody": {
+                    "description": "Authorization request parameters",
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuth2AuthorizationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authorization request processed (response in body), depends on \"response_mode\" param"
+                    },
+                    "302": {
+                        "description": "Redirect to client redirect_uri with authorization code, tokens, or error"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OAuth2 Authorization Endpoint (DELETE)",
+                "description": "Initiates an OAuth2 authorization flow via DELETE. Same parameters as GET but sent as form data.",
+                "operationId": "oauth2AuthorizeDelete",
+                "requestBody": {
+                    "description": "Authorization request parameters",
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuth2AuthorizationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authorization request processed (response in body), depends on \"response_mode\" param"
+                    },
+                    "302": {
+                        "description": "Redirect to client redirect_uri with authorization code, tokens, or error"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OAuth2 Authorization Endpoint (PATCH)",
+                "description": "Initiates an OAuth2 authorization flow via PATCH. Same parameters as GET but sent as form data.",
+                "operationId": "oauth2AuthorizePatch",
+                "requestBody": {
+                    "description": "Authorization request parameters",
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuth2AuthorizationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authorization request processed (response in body), depends on \"response_mode\" param"
+                    },
+                    "302": {
+                        "description": "Redirect to client redirect_uri with authorization code, tokens, or error"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth2/token": {
+            "post": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OAuth2 Token Endpoint",
+                "description": "Issues access tokens. Supports authorization_code, client_credentials, password, refresh_token, and passwordless grant types.",
+                "operationId": "oauth2Token",
+                "requestBody": {
+                    "description": "Token request parameters",
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuth2TokenRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful token response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2TokenResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Token error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2ProviderSecurity": []
+                    }
+                ]
+            }
+        },
+        "/oauth2/token/revoke": {
+            "post": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OAuth2 Token Revocation Endpoint",
+                "description": "Revokes an access token or refresh token per RFC 7009. The endpoint is idempotent — revoking a non-existent token returns success.",
+                "operationId": "oauth2RevokeToken",
+                "requestBody": {
+                    "description": "Token revocation parameters",
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuth2TokenRevocationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token successfully revoked"
+                    },
+                    "400": {
+                        "description": "Revocation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2ProviderSecurity": []
+                    }
+                ]
+            }
+        },
+        "/oauth2/token/introspection": {
+            "post": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OAuth2 Token Introspection Endpoint",
+                "description": "Validates and returns metadata about an access token per RFC 7662. Returns detailed information about the token including associated user data.",
+                "operationId": "oauth2IntrospectToken",
+                "requestBody": {
+                    "description": "Token introspection parameters",
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuth2TokenIntrospectionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token introspection response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2IntrospectionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Introspection error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2ProviderSecurity": []
+                    }
+                ]
+            }
+        },
+        "/oauth2/certs": {
+            "get": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "JSON Web Key Set (JWKS) Endpoint",
+                "description": "Returns the OpenID Provider JSON Web Key Set document containing public keys used for signing tokens (RFC 7517).",
+                "operationId": "oauth2GetCerts",
+                "responses": {
+                    "200": {
+                        "description": "JWKS document",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JWKSResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/.well-known/openid-configuration": {
+            "get": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OpenID Connect Discovery Endpoint",
+                "description": "Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0. Also available at /oauth2/.well-known/openid-configuration.",
+                "operationId": "oauth2Discovery",
+                "responses": {
+                    "200": {
+                        "description": "OpenID Connect Discovery document",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OpenIDDiscoveryResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth2/end-session": {
+            "get": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OpenID Connect End Session Endpoint (GET)",
+                "description": "Initiates RP-Initiated Logout per OpenID Connect Session Management 1.0. Terminates the user session and optionally redirects to the post-logout URI.",
+                "operationId": "oauth2EndSessionGet",
+                "parameters": [
+                    {
+                        "name": "client_id",
+                        "in": "query",
+                        "description": "OAuth2 client identifier",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id_token_hint",
+                        "in": "query",
+                        "description": "Previously issued ID token",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "post_logout_redirect_uri",
+                        "in": "query",
+                        "description": "URI to redirect after logout (must be registered)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uri"
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "description": "Opaque state parameter returned in the redirect",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to post_logout_redirect_uri"
+                    },
+                    "200": {
+                        "description": "Session ended page (HTML)"
+                    },
+                    "400": {
+                        "description": "Invalid logout request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OpenID Connect End Session Endpoint (POST)",
+                "description": "Initiates RP-Initiated Logout via POST. Same parameters as GET but sent as form data.",
+                "operationId": "oauth2EndSessionPost",
+                "requestBody": {
+                    "description": "End session parameters",
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuth2EndSessionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "302": {
+                        "description": "Redirect to post_logout_redirect_uri"
+                    },
+                    "200": {
+                        "description": "Session ended page (HTML)"
+                    },
+                    "400": {
+                        "description": "Invalid logout request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "PaginateDataSchemaResponse": {
+                "description": "Base pagination metadata",
+                "properties": {
+                    "total": {
+                        "type": "integer",
+                        "example": 6
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "current_page": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "last_page": {
+                        "type": "integer",
+                        "example": 2
+                    }
+                },
+                "type": "object"
+            },
+            "Base": {
+                "description": "Base serializer fields",
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp (epoch)",
+                        "type": "integer",
+                        "example": 1609459200
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp (epoch)",
+                        "type": "integer",
+                        "example": 1609459200
+                    }
+                },
+                "type": "object"
+            },
+            "BaseUser": {
+                "title": "Base User",
+                "description": "Base User serialized representation",
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Base"
+                    },
+                    {
+                        "properties": {
+                            "first_name": {
+                                "description": "First name",
+                                "type": "string",
+                                "example": "John"
+                            },
+                            "last_name": {
+                                "description": "Last name",
+                                "type": "string",
+                                "example": "Doe"
+                            },
+                            "pic": {
+                                "description": "Profile picture URL",
+                                "type": "string",
+                                "format": "uri"
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            },
+            "Group": {
+                "title": "Group",
+                "description": "Group serialized representation",
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Base"
+                    },
+                    {
+                        "properties": {
+                            "name": {
+                                "description": "Group name",
+                                "type": "string"
+                            },
+                            "slug": {
+                                "description": "Group slug",
+                                "type": "string"
+                            },
+                            "active": {
+                                "description": "Whether the group is active",
+                                "type": "boolean"
+                            },
+                            "default": {
+                                "description": "Whether the group is a default group",
+                                "type": "boolean"
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            },
+            "User": {
+                "title": "User",
+                "description": "User serialized representation (private)",
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/BaseUser"
+                    },
+                    {
+                        "properties": {
+                            "email": {
+                                "description": "Primary email address",
+                                "type": "string",
+                                "format": "email"
+                            },
+                            "identifier": {
+                                "description": "User unique identifier string",
+                                "type": "string"
+                            },
+                            "email_verified": {
+                                "description": "Whether the primary email is verified",
+                                "type": "boolean"
+                            },
+                            "bio": {
+                                "description": "User biography",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "address1": {
+                                "description": "Address line 1",
+                                "type": "string"
+                            },
+                            "address2": {
+                                "description": "Address line 2",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "city": {
+                                "description": "City",
+                                "type": "string"
+                            },
+                            "state": {
+                                "description": "State or province",
+                                "type": "string"
+                            },
+                            "post_code": {
+                                "description": "Postal code",
+                                "type": "string"
+                            },
+                            "country_iso_code": {
+                                "description": "ISO country code",
+                                "type": "string"
+                            },
+                            "second_email": {
+                                "description": "Secondary email address",
+                                "type": "string",
+                                "format": "email",
+                                "nullable": true
+                            },
+                            "third_email": {
+                                "description": "Tertiary email address",
+                                "type": "string",
+                                "format": "email",
+                                "nullable": true
+                            },
+                            "gender": {
+                                "description": "Gender",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "gender_specify": {
+                                "description": "Gender specification",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "statement_of_interest": {
+                                "description": "Statement of interest",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "irc": {
+                                "description": "IRC handle",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "linked_in_profile": {
+                                "description": "LinkedIn profile URL",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "github_user": {
+                                "description": "GitHub username",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "wechat_user": {
+                                "description": "WeChat username",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "twitter_name": {
+                                "description": "Twitter handle",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "language": {
+                                "description": "Preferred language",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "birthday": {
+                                "description": "Date of birth (epoch)",
+                                "type": "integer",
+                                "nullable": true
+                            },
+                            "phone_number": {
+                                "description": "Phone number",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "company": {
+                                "description": "Company name",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "job_title": {
+                                "description": "Job title",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "spam_type": {
+                                "description": "Spam classification",
+                                "type": "string",
+                                "enum": [
+                                    "None",
+                                    "Spam",
+                                    "Ham"
+                                ]
+                            },
+                            "last_login_date": {
+                                "description": "Last login date (epoch)",
+                                "type": "integer",
+                                "nullable": true
+                            },
+                            "active": {
+                                "description": "Whether the user account is active",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_photo": {
+                                "description": "Show photo in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_fullname": {
+                                "description": "Show full name in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_email": {
+                                "description": "Show email in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_social_media_info": {
+                                "description": "Show social media info in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_bio": {
+                                "description": "Show bio in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_allow_chat_with_me": {
+                                "description": "Allow chat in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_telephone_number": {
+                                "description": "Show telephone in public profile",
+                                "type": "boolean"
+                            },
+                            "groups": {
+                                "description": "User groups (expandable with expand=groups)",
+                                "type": "array",
+                                "items": {
+                                    "oneOf": [
+                                        {
+                                            "description": "Group slug (when not expanded)",
+                                            "type": "string"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/Group"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            },
+            "OAuth2TokenResponse": {
+                "title": "OAuth2 Token Response",
+                "description": "Successful token response per RFC 6749 §5.1",
+                "properties": {
+                    "access_token": {
+                        "description": "The access token issued by the authorization server",
+                        "type": "string"
+                    },
+                    "token_type": {
+                        "description": "The type of the token (typically Bearer)",
+                        "type": "string",
+                        "example": "Bearer"
+                    },
+                    "expires_in": {
+                        "description": "Lifetime of the access token in seconds",
+                        "type": "integer",
+                        "example": 3600
+                    },
+                    "refresh_token": {
+                        "description": "Refresh token (only if access_type=offline)",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "scope": {
+                        "description": "Space-delimited list of granted scopes",
+                        "type": "string"
+                    },
+                    "id_token": {
+                        "description": "ID token JWT (only for OpenID Connect flows with openid scope)",
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "OAuth2ErrorResponse": {
+                "title": "OAuth2 Error Response",
+                "description": "Error response per RFC 6749 §5.2",
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "description": "Error code",
+                        "type": "string",
+                        "example": "invalid_request"
+                    },
+                    "error_description": {
+                        "description": "Human-readable error description",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "OAuth2IntrospectionResponse": {
+                "title": "OAuth2 Token Introspection Response",
+                "description": "Token introspection response per RFC 7662",
+                "properties": {
+                    "active": {
+                        "description": "Whether the token is active",
+                        "type": "boolean"
+                    },
+                    "access_token": {
+                        "description": "The access token value",
+                        "type": "string"
+                    },
+                    "client_id": {
+                        "description": "Client identifier",
+                        "type": "string"
+                    },
+                    "application_type": {
+                        "description": "Client application type",
+                        "type": "string",
+                        "enum": [
+                            "WEB",
+                            "NATIVE",
+                            "JS"
+                        ]
+                    },
+                    "token_type": {
+                        "description": "Token type",
+                        "type": "string",
+                        "example": "Bearer"
+                    },
+                    "scope": {
+                        "description": "Space-delimited scopes",
+                        "type": "string"
+                    },
+                    "audience": {
+                        "description": "Token audience",
+                        "type": "string"
+                    },
+                    "expires_in": {
+                        "description": "Remaining lifetime in seconds",
+                        "type": "integer"
+                    },
+                    "user_id": {
+                        "description": "Resource owner user ID",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "user_identifier": {
+                        "description": "Resource owner identifier",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "user_email": {
+                        "description": "Resource owner email",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "user_first_name": {
+                        "description": "Resource owner first name",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "user_last_name": {
+                        "description": "Resource owner last name",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "user_pic": {
+                        "description": "Resource owner profile picture URL",
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    },
+                    "user_groups": {
+                        "description": "Resource owner group memberships",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "nullable": true
+                    },
+                    "user_email_verified": {
+                        "description": "Whether the user email is verified",
+                        "type": "boolean",
+                        "nullable": true
+                    },
+                    "user_language": {
+                        "description": "User preferred language",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "user_country": {
+                        "description": "User country",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "allowed_return_uris": {
+                        "description": "Space-delimited allowed return URIs",
+                        "type": "string"
+                    },
+                    "allowed_origins": {
+                        "description": "Space-delimited allowed origins",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "JWKSResponse": {
+                "title": "JSON Web Key Set",
+                "description": "JWK Set document per RFC 7517",
+                "properties": {
+                    "keys": {
+                        "description": "Array of JSON Web Keys",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "kty": {
+                                    "description": "Key type",
+                                    "type": "string",
+                                    "example": "RSA"
+                                },
+                                "kid": {
+                                    "description": "Key ID",
+                                    "type": "string"
+                                },
+                                "use": {
+                                    "description": "Key usage",
+                                    "type": "string",
+                                    "example": "sig"
+                                },
+                                "alg": {
+                                    "description": "Algorithm",
+                                    "type": "string",
+                                    "example": "RS256"
+                                },
+                                "n": {
+                                    "description": "RSA modulus (Base64urlUInt-encoded)",
+                                    "type": "string"
+                                },
+                                "e": {
+                                    "description": "RSA exponent (Base64urlUInt-encoded)",
+                                    "type": "string",
+                                    "example": "AQAB"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "OpenIDDiscoveryResponse": {
+                "title": "OpenID Connect Discovery Document",
+                "description": "OpenID Provider Configuration per OpenID Connect Discovery 1.0",
+                "properties": {
+                    "issuer": {
+                        "description": "Issuer identifier URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "authorization_endpoint": {
+                        "description": "Authorization endpoint URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "token_endpoint": {
+                        "description": "Token endpoint URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "userinfo_endpoint": {
+                        "description": "UserInfo endpoint URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "revocation_endpoint": {
+                        "description": "Token revocation endpoint URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "introspection_endpoint": {
+                        "description": "Token introspection endpoint URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "jwks_uri": {
+                        "description": "JSON Web Key Set URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "scopes_supported": {
+                        "description": "Supported OAuth2 scopes",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "response_types_supported": {
+                        "description": "Supported response types",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "response_modes_supported": {
+                        "description": "Supported response modes",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "grant_types_supported": {
+                        "description": "Supported grant types",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "subject_types_supported": {
+                        "description": "Supported subject types",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "id_token_signing_alg_values_supported": {
+                        "description": "Supported ID token signing algorithms",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "code_challenge_methods_supported": {
+                        "description": "Supported PKCE code challenge methods",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "OAuth2AuthorizationRequest": {
+                "title": "OAuth2 Authorization Request",
+                "description": "Authorization request parameters per RFC 6749 §4.1.1 and OpenID Connect Core §3.1.2.1",
+                "required": [
+                    "response_type",
+                    "client_id",
+                    "redirect_uri"
+                ],
+                "properties": {
+                    "response_type": {
+                        "description": "OAuth2 response type",
+                        "type": "string",
+                        "enum": [
+                            "code",
+                            "token",
+                            "id_token",
+                            "code token",
+                            "code id_token",
+                            "token id_token",
+                            "code token id_token",
+                            "otp",
+                            "none"
+                        ]
+                    },
+                    "client_id": {
+                        "description": "OAuth2 client identifier",
+                        "type": "string"
+                    },
+                    "redirect_uri": {
+                        "description": "Redirect URI",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "scope": {
+                        "description": "Space-delimited scopes",
+                        "type": "string"
+                    },
+                    "state": {
+                        "description": "Opaque state parameter",
+                        "type": "string"
+                    },
+                    "nonce": {
+                        "description": "Nonce for ID token replay protection",
+                        "type": "string"
+                    },
+                    "response_mode": {
+                        "description": "Response mode override",
+                        "type": "string",
+                        "enum": [
+                            "query",
+                            "fragment",
+                            "form_post",
+                            "direct"
+                        ]
+                    },
+                    "prompt": {
+                        "description": "User interaction prompts",
+                        "type": "string"
+                    },
+                    "login_hint": {
+                        "description": "Login identifier hint",
+                        "type": "string"
+                    },
+                    "code_challenge": {
+                        "description": "PKCE code challenge",
+                        "type": "string"
+                    },
+                    "code_challenge_method": {
+                        "description": "PKCE challenge method",
+                        "type": "string",
+                        "enum": [
+                            "plain",
+                            "S256"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "OAuth2EndSessionRequest": {
+                "title": "OAuth2 End Session Request",
+                "description": "RP-Initiated Logout request parameters per OpenID Connect Session Management 1.0",
+                "required": [
+                    "client_id"
+                ],
+                "properties": {
+                    "client_id": {
+                        "description": "OAuth2 client identifier",
+                        "type": "string"
+                    },
+                    "id_token_hint": {
+                        "description": "Previously issued ID token",
+                        "type": "string"
+                    },
+                    "post_logout_redirect_uri": {
+                        "description": "URI to redirect after logout",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "state": {
+                        "description": "Opaque state parameter",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "OAuth2TokenIntrospectionRequest": {
+                "title": "OAuth2 Token Introspection Request",
+                "description": "Token introspection request parameters per RFC 7662 §2.1",
+                "required": [
+                    "token"
+                ],
+                "properties": {
+                    "token": {
+                        "description": "The token to introspect",
+                        "type": "string"
+                    },
+                    "client_id": {
+                        "description": "Client identifier (if not using HTTP Basic auth)",
+                        "type": "string"
+                    },
+                    "client_secret": {
+                        "description": "Client secret (if not using HTTP Basic auth)",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "OAuth2TokenRequest": {
+                "title": "OAuth2 Token Request",
+                "description": "Token request parameters per RFC 6749 §4.1.3. Fields required vary by grant_type.",
+                "required": [
+                    "grant_type"
+                ],
+                "properties": {
+                    "grant_type": {
+                        "description": "OAuth2 grant type",
+                        "type": "string",
+                        "enum": [
+                            "authorization_code",
+                            "client_credentials",
+                            "password",
+                            "refresh_token",
+                            "passwordless"
+                        ]
+                    },
+                    "code": {
+                        "description": "Authorization code (authorization_code grant)",
+                        "type": "string"
+                    },
+                    "redirect_uri": {
+                        "description": "Redirect URI (must match the one used in authorization request)",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "client_id": {
+                        "description": "Client identifier (if not using HTTP Basic auth)",
+                        "type": "string"
+                    },
+                    "client_secret": {
+                        "description": "Client secret (if not using HTTP Basic auth)",
+                        "type": "string"
+                    },
+                    "refresh_token": {
+                        "description": "Refresh token (refresh_token grant)",
+                        "type": "string"
+                    },
+                    "scope": {
+                        "description": "Space-delimited scopes",
+                        "type": "string"
+                    },
+                    "username": {
+                        "description": "Username (password grant)",
+                        "type": "string"
+                    },
+                    "password": {
+                        "description": "Password (password grant)",
+                        "type": "string"
+                    },
+                    "audience": {
+                        "description": "Target audience (client_credentials grant)",
+                        "type": "string"
+                    },
+                    "connection": {
+                        "description": "Connection type (passwordless grant)",
+                        "type": "string",
+                        "enum": [
+                            "sms",
+                            "email",
+                            "inline"
+                        ]
+                    },
+                    "send": {
+                        "description": "Delivery method (passwordless grant)",
+                        "type": "string",
+                        "enum": [
+                            "code",
+                            "link"
+                        ]
+                    },
+                    "email": {
+                        "description": "Email address (passwordless grant)",
+                        "type": "string"
+                    },
+                    "phone_number": {
+                        "description": "Phone number (passwordless grant)",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "OAuth2TokenRevocationRequest": {
+                "title": "OAuth2 Token Revocation Request",
+                "description": "Token revocation request parameters per RFC 7009 §2.1",
+                "required": [
+                    "token"
+                ],
+                "properties": {
+                    "token": {
+                        "description": "The token to revoke",
+                        "type": "string"
+                    },
+                    "token_type_hint": {
+                        "description": "Hint about the token type",
+                        "type": "string",
+                        "enum": [
+                            "access_token",
+                            "refresh_token"
+                        ]
+                    },
+                    "client_id": {
+                        "description": "Client identifier (if not using HTTP Basic auth)",
+                        "type": "string"
+                    },
+                    "client_secret": {
+                        "description": "Client secret (if not using HTTP Basic auth)",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "OAuth2ProviderSecurity": {
+                "type": "oauth2",
+                "description": "OAuth2 client credentials authentication for protocol endpoints (token, revoke, introspection)",
+                "flows": {
+                    "clientCredentials": {
+                        "tokenUrl": "http://localhost/oauth/token",
+                        "scopes": {}
+                    }
+                }
+            },
+            "OAuth2UserSecurity": {
+                "type": "oauth2",
+                "description": "OAuth2 security scheme for user-related API endpoints",
+                "flows": {
+                    "authorizationCode": {
+                        "authorizationUrl": "http://localhost/oauth/authorize",
+                        "tokenUrl": "http://localhost/oauth/token",
+                        "scopes": {
+                            "users-read-all": "Read All Users Data",
+                            "me/write": "Write current user data",
+                            "users/write": "Write Users Data",
+                            "users/groups/write": "Manage User Group assignments"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Users",
+            "description": "Users"
+        },
+        {
+            "name": "V2",
+            "description": "V2"
+        },
+        {
+            "name": "OAuth2 / OpenID Connect",
+            "description": "OAuth2 / OpenID Connect"
+        }
+    ]
+}
