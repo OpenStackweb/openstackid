@@ -1,0 +1,519 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "OpenStackID API",
+        "description": "OpenStackID IDP API Documentation - OAuth2, OpenID Connect, and User Management",
+        "contact": {
+            "name": "OpenStack Foundation",
+            "email": "support@openstack.org"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost",
+            "description": "IDP API Server"
+        }
+    ],
+    "paths": {
+        "/api/v1/sso/stream-chat/{forum_slug}/profile": {
+            "get": {
+                "tags": [
+                    "Stream Chat SSO"
+                ],
+                "summary": "Get Stream Chat user profile for a forum",
+                "description": "Returns the Stream Chat user profile and authentication token for the given forum. Requires SSO scope.",
+                "operationId": "getStreamChatUserProfile",
+                "parameters": [
+                    {
+                        "name": "forum_slug",
+                        "in": "path",
+                        "description": "Forum slug",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StreamChatUserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "412": {
+                        "description": "Validation Error"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    },
+                    "401": {
+                        "description": "Unauthorized - invalid or missing token"
+                    },
+                    "403": {
+                        "description": "Forbidden - insufficient scope"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2StreamChatSSOSecurity": [
+                            "sso"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v2/users/{id}": {
+            "get": {
+                "tags": [
+                    "Users",
+                    "V2"
+                ],
+                "summary": "Get a user by ID",
+                "description": "Retrieves user details by their numeric ID.",
+                "operationId": "getUserByIdV2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "description": "Expand relations: groups",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only service accounts are allowed"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "users-read-all"
+                        ]
+                    }
+                ],
+                "x-x-required-client-type": "SERVICE"
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "PaginateDataSchemaResponse": {
+                "description": "Base pagination metadata",
+                "properties": {
+                    "total": {
+                        "type": "integer",
+                        "example": 6
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "current_page": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "last_page": {
+                        "type": "integer",
+                        "example": 2
+                    }
+                },
+                "type": "object"
+            },
+            "Base": {
+                "description": "Base serializer fields",
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp (epoch)",
+                        "type": "integer",
+                        "example": 1609459200
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp (epoch)",
+                        "type": "integer",
+                        "example": 1609459200
+                    }
+                },
+                "type": "object"
+            },
+            "BaseUser": {
+                "title": "Base User",
+                "description": "Base User serialized representation",
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Base"
+                    },
+                    {
+                        "properties": {
+                            "first_name": {
+                                "description": "First name",
+                                "type": "string",
+                                "example": "John"
+                            },
+                            "last_name": {
+                                "description": "Last name",
+                                "type": "string",
+                                "example": "Doe"
+                            },
+                            "pic": {
+                                "description": "Profile picture URL",
+                                "type": "string",
+                                "format": "uri"
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            },
+            "Group": {
+                "title": "Group",
+                "description": "Group serialized representation",
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Base"
+                    },
+                    {
+                        "properties": {
+                            "name": {
+                                "description": "Group name",
+                                "type": "string"
+                            },
+                            "slug": {
+                                "description": "Group slug",
+                                "type": "string"
+                            },
+                            "active": {
+                                "description": "Whether the group is active",
+                                "type": "boolean"
+                            },
+                            "default": {
+                                "description": "Whether the group is a default group",
+                                "type": "boolean"
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            },
+            "StreamChatUserProfile": {
+                "description": "Stream Chat SSO user profile",
+                "properties": {
+                    "id": {
+                        "description": "User ID",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Display name",
+                        "type": "string"
+                    },
+                    "image": {
+                        "description": "Avatar URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "token": {
+                        "description": "Stream Chat JWT token",
+                        "type": "string"
+                    },
+                    "api_key": {
+                        "description": "Stream Chat API key",
+                        "type": "string"
+                    },
+                    "local_role": {
+                        "description": "User role in the forum",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "title": "User",
+                "description": "User serialized representation (private)",
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/BaseUser"
+                    },
+                    {
+                        "properties": {
+                            "email": {
+                                "description": "Primary email address",
+                                "type": "string",
+                                "format": "email"
+                            },
+                            "identifier": {
+                                "description": "User unique identifier string",
+                                "type": "string"
+                            },
+                            "email_verified": {
+                                "description": "Whether the primary email is verified",
+                                "type": "boolean"
+                            },
+                            "bio": {
+                                "description": "User biography",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "address1": {
+                                "description": "Address line 1",
+                                "type": "string"
+                            },
+                            "address2": {
+                                "description": "Address line 2",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "city": {
+                                "description": "City",
+                                "type": "string"
+                            },
+                            "state": {
+                                "description": "State or province",
+                                "type": "string"
+                            },
+                            "post_code": {
+                                "description": "Postal code",
+                                "type": "string"
+                            },
+                            "country_iso_code": {
+                                "description": "ISO country code",
+                                "type": "string"
+                            },
+                            "second_email": {
+                                "description": "Secondary email address",
+                                "type": "string",
+                                "format": "email",
+                                "nullable": true
+                            },
+                            "third_email": {
+                                "description": "Tertiary email address",
+                                "type": "string",
+                                "format": "email",
+                                "nullable": true
+                            },
+                            "gender": {
+                                "description": "Gender",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "gender_specify": {
+                                "description": "Gender specification",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "statement_of_interest": {
+                                "description": "Statement of interest",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "irc": {
+                                "description": "IRC handle",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "linked_in_profile": {
+                                "description": "LinkedIn profile URL",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "github_user": {
+                                "description": "GitHub username",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "wechat_user": {
+                                "description": "WeChat username",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "twitter_name": {
+                                "description": "Twitter handle",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "language": {
+                                "description": "Preferred language",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "birthday": {
+                                "description": "Date of birth (epoch)",
+                                "type": "integer",
+                                "nullable": true
+                            },
+                            "phone_number": {
+                                "description": "Phone number",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "company": {
+                                "description": "Company name",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "job_title": {
+                                "description": "Job title",
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "spam_type": {
+                                "description": "Spam classification",
+                                "type": "string",
+                                "enum": [
+                                    "None",
+                                    "Spam",
+                                    "Ham"
+                                ]
+                            },
+                            "last_login_date": {
+                                "description": "Last login date (epoch)",
+                                "type": "integer",
+                                "nullable": true
+                            },
+                            "active": {
+                                "description": "Whether the user account is active",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_photo": {
+                                "description": "Show photo in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_fullname": {
+                                "description": "Show full name in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_email": {
+                                "description": "Show email in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_social_media_info": {
+                                "description": "Show social media info in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_bio": {
+                                "description": "Show bio in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_allow_chat_with_me": {
+                                "description": "Allow chat in public profile",
+                                "type": "boolean"
+                            },
+                            "public_profile_show_telephone_number": {
+                                "description": "Show telephone in public profile",
+                                "type": "boolean"
+                            },
+                            "groups": {
+                                "description": "User groups (expandable with expand=groups)",
+                                "type": "array",
+                                "items": {
+                                    "oneOf": [
+                                        {
+                                            "description": "Group slug (when not expanded)",
+                                            "type": "string"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/Group"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            }
+        },
+        "securitySchemes": {
+            "OAuth2StreamChatSSOSecurity": {
+                "type": "oauth2",
+                "description": "OAuth2 authentication for Stream Chat SSO endpoints",
+                "flows": {
+                    "authorizationCode": {
+                        "authorizationUrl": "http://localhost/oauth/authorize",
+                        "tokenUrl": "http://localhost/oauth/token",
+                        "scopes": {
+                            "sso": "Single Sign-On access"
+                        }
+                    }
+                }
+            },
+            "OAuth2UserSecurity": {
+                "type": "oauth2",
+                "description": "OAuth2 security scheme for user-related API endpoints",
+                "flows": {
+                    "authorizationCode": {
+                        "authorizationUrl": "http://localhost/oauth/authorize",
+                        "tokenUrl": "http://localhost/oauth/token",
+                        "scopes": {
+                            "users-read-all": "Read All Users Data",
+                            "me/write": "Write current user data",
+                            "users/write": "Write Users Data",
+                            "users/groups/write": "Manage User Group assignments"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Stream Chat SSO",
+            "description": "Stream Chat SSO"
+        },
+        {
+            "name": "Users",
+            "description": "Users"
+        },
+        {
+            "name": "V2",
+            "description": "V2"
+        }
+    ]
+}
