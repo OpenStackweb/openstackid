@@ -65,7 +65,9 @@ class ResourceServer extends BaseEntity
      * @return bool
      */
     public function isOwn($ip)
-    {   $provided_ips = array_map('trim', explode(',', $ip));
+    {
+
+        $provided_ips = array_map('trim', explode(',', $ip));
         $own_ips = array_map('trim', explode(',', $this->ips));
         Log::debug
         (
