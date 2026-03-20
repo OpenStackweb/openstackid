@@ -81,6 +81,8 @@ final class RouteServiceProvider extends ServiceProvider
         Route::pattern('hint', '(access-token|refresh-token)');
         Route::pattern('scope_id', '[0-9]+');
 
+        $this->mapPublicApiRoutes();
+
         $this->mapApiRoutes();
 
         $this->mapWebRoutes();
@@ -120,6 +122,19 @@ final class RouteServiceProvider extends ServiceProvider
             ->namespace('App\Http\Controllers\Api\OAuth2')
             ->prefix('api/v2')
             ->group(base_path('routes/api_v2.php'));
+    }
+
+    /**
+     * Define the "public api" routes for the application.
+     *
+     * These routes are public and do not require authentication.
+     *
+     * @return void
+     */
+    protected function mapPublicApiRoutes()
+    {
+        Route::prefix('api/public/v1')
+            ->group(base_path('routes/api_public.php'));
     }
 
 }

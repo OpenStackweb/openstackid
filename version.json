@@ -1,0 +1,5 @@
+{
+  "service": "openstackid",
+  "git_sha": "dev",
+  "git_tag": "dev"
+}
