@@ -177,7 +177,7 @@ final class RegisterController extends Controller
             'country_iso_code'         => 'required|string|country_iso_alpha2_code',
             'email'                    => 'required|string|email|max:255',
             'password'                 => 'required|string|confirmed|password_policy',
-            'g-recaptcha-response'     => 'required|recaptcha',
+            'cf-turnstile-response'    => 'required|turnstile',
         ];
 
         if(!empty(Config::get("app.code_of_conduct_link", null))){

@@ -18,7 +18,6 @@ run following commands on root folder
    * curl -s https://getcomposer.org/installer | php
    * php composer.phar install --prefer-dist
    * php composer.phar dump-autoload --optimize
-   * php artisan vendor:publish --provider="Greggilbert\Recaptcha\RecaptchaServiceProvider"
    * php artisan migrate --env=YOUR_ENVIRONMENT
    * php artisan db:seed --env=YOUR_ENVIRONMENT
    * phpunit --bootstrap vendor/autoload.php
@@ -27,16 +26,16 @@ run following commands on root folder
 
 
 ## Permissions
-   
+
 Laravel may require some permissions to be configured: folders within storage and vendor require write access by the
-web server. 
+web server.
 
 chmod 777 vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serializer
 
 
 ## Permissions
 
-Laravel may require some permissions to be configured: folders within storage and vendor require write access by the web server.   
+Laravel may require some permissions to be configured: folders within storage and vendor require write access by the web server.
 
 ## validate schema
 
@@ -56,7 +55,7 @@ php artisan doctrine:migrations:generate --connection=model --create=<table-name
 php artisan doctrine:migrations:status --connection=model
 
 ## run
-php artisan doctrine:migrations:migrate --connection=model 
+php artisan doctrine:migrations:migrate --connection=model
 
 # start queue worker
 
@@ -85,7 +84,7 @@ php artisan cache:clear
 
 ./vendor/bin/phpunit
 
-# install docker compose 
+# install docker compose
 
 https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04
 
@@ -96,7 +95,7 @@ https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-c
 3. Setup debug configuration
 see
 https://www.tsukie.com/en/technologies/debug-laravel-web-application-in-docker-with-xdebug-and-phpstorm
-and 
+and
 https://medium.com/the-sensiolabs-tech-blog/how-to-use-xdebug-in-docker-phpstorm-76d998ef2534
 
 # Docker Compose

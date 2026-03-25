@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import ReCAPTCHA from "react-google-recaptcha";
+import { Turnstile } from "@marsidev/react-turnstile";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
@@ -11,8 +11,8 @@ import Grid from "@material-ui/core/Grid";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import Swal from "sweetalert2";
-import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
-import {useFormik} from "formik";
+import { MuiThemeProvider, createTheme } from "@material-ui/core/styles";
+import { useFormik } from "formik";
 import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
 
@@ -58,8 +58,8 @@ const ForgotPasswordPage = ({
     initialValues: initialValues,
     validationSchema: validationSchema,
     onSubmit: (values) => {
-      const recaptchaResponse = captcha.current.getValue();
-      if (!recaptchaResponse) {
+      const turnstileResponse = captcha.current?.getResponse();
+      if (!turnstileResponse) {
         setCaptchaConfirmation("Remember to check the captcha");
         return;
       }
@@ -67,8 +67,8 @@ const ForgotPasswordPage = ({
     },
   });
 
-  const onChangeRecaptcha = () => {
-    if (captcha.current.getValue()) {
+  const onChangeCaptchaProvider = () => {
+    if (captcha.current?.getResponse()) {
       setCaptchaConfirmation(null);
     }
   };
@@ -137,11 +137,12 @@ const ForgotPasswordPage = ({
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
                 <Grid container item justify='center'>
-                  <ReCAPTCHA
+                  <Turnstile
                     ref={captcha}
-                    className={styles.recaptcha}
-                    sitekey={captchaPublicKey}
-                    onChange={onChangeRecaptcha}
+                    className={styles.turnstile}
+                    siteKey={captchaPublicKey}
+                    options={{ responseFieldName: "cf-turnstile-response" }}
+                    onSuccess={onChangeCaptchaProvider}
                   />
                   {captchaConfirmation && (
                     <div className={styles.error_label}>

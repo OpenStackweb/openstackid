@@ -155,7 +155,7 @@ final class PasswordSetController extends Controller
             'company' => 'sometimes|string|max:100',
             'country_iso_code' => 'required|string|country_iso_alpha2_code',
             'password' => 'required|string|confirmed|password_policy',
-            'g-recaptcha-response' => 'required|recaptcha',
+            'cf-turnstile-response' => 'required|turnstile',
         ]);
     }
 

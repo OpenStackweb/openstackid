@@ -87,7 +87,7 @@ final class EmailVerificationController extends Controller
     {
         return Validator::make($data, [
             'email'                    => 'required|string|email|max:255',
-            'g-recaptcha-response'     => 'required|recaptcha',
+            'cf-turnstile-response'    => 'required|turnstile',
         ]);
     }
 

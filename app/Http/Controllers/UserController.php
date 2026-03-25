@@ -420,7 +420,7 @@ final class UserController extends OpenIdController
             ];
 
             if ($login_attempts >= $max_login_attempts_2_show_captcha) {
-                $rules['g-recaptcha-response'] = 'required|recaptcha';
+                $rules['cf-turnstile-response'] = 'required|turnstile';
             }
             // Create a new validator instance.
             $validator = Validator::make($data, $rules);

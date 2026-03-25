@@ -26,7 +26,7 @@
         let config = {
             appName: '{{ Config::get("app.app_name") }}',
             appLogo: '{{  Config::get("app.logo_url") }}',
-            captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
+            captchaPublicKey: '{{ Config::get("services.turnstile.key") }}',
             csrfToken :  document.head.querySelector('meta[name="csrf-token"]').content,
             emailVerificationAction: '{{ URL::action("Auth\EmailVerificationController@resend") }}',
             emailVerificationError: error,

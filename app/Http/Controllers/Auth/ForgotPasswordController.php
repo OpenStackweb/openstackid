@@ -162,6 +162,7 @@ final class ForgotPasswordController extends Controller
     {
         return Validator::make($data, [
             'email' => 'required|string|email|max:255',
+            'cf-turnstile-response' => 'required|turnstile',
         ]);
     }
 

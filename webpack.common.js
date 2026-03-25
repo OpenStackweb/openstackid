@@ -84,6 +84,13 @@ module.exports = {
     module: {
         rules: [
             {
+                // Fix for webpack 5 + ESM packages (e.g. @marsidev/react-turnstile) that import
+                // react/jsx-runtime without the .js extension, which webpack 5 requires in strict ESM mode.
+                test: /\.m?js/,
+                include: /node_modules/,
+                resolve: { fullySpecified: false }
+            },
+            {
                 test: /\.(js|jsx)$/,
                 exclude: /node_modules/,
                 use: {
