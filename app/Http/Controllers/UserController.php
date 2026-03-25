@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Controllers\OpenId\DiscoveryController;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 use App\Jobs\RevokeUserGrantsOnExplicitLogout;
 use App\Http\Controllers\OpenId\OpenIdController;
 use App\Http\Controllers\Traits\JsonResponses;
@@ -420,7 +421,7 @@ final class UserController extends OpenIdController
             ];
 
             if ($login_attempts >= $max_login_attempts_2_show_captcha) {
-                $rules['cf-turnstile-response'] = 'required|turnstile';
+                $rules['cf-turnstile-response'] = ['required', new Turnstile()];
             }
             // Create a new validator instance.
             $validator = Validator::make($data, $rules);

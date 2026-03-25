@@ -13,6 +13,7 @@
  **/
 
 use App\Http\Controllers\Controller;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 use App\libs\Utils\EmailUtils;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Log;
@@ -162,7 +163,7 @@ final class ForgotPasswordController extends Controller
     {
         return Validator::make($data, [
             'email' => 'required|string|email|max:255',
-            'cf-turnstile-response' => 'required|turnstile',
+            'cf-turnstile-response' => ['required', new Turnstile()],
         ]);
     }
 
