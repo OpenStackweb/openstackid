@@ -183,6 +183,7 @@ const PasswordInputForm = ({
             <input type="hidden" value={userNameValue} id="username" name="username"/>
             <input type="hidden" value={csrfToken} id="_token" name="_token"/>
             <input type="hidden" value="password" id="flow" name="flow"/>
+            <input type="hidden" value={loginAttempts ?? 0} name="login_attempts"/>
             {shouldShowCaptcha() && captchaPublicKey &&
                 <Turnstile
                     className={styles.turnstile}
@@ -214,7 +215,8 @@ const OTPInputForm = ({
                           shouldShowCaptcha,
                           captchaPublicKey,
                           onChangeCaptchaProvider,
-                          onReset
+                          onReset,
+                          loginAttempts
                       }) => {
     return (
         <>
@@ -263,6 +265,7 @@ const OTPInputForm = ({
                 <input type="hidden" value="otp" id="flow" name="flow"/>
                 <input type="hidden" value={otpCode} id="password" name="password"/>
                 <input type="hidden" value="email" id="connection" name="connection"/>
+                <input type="hidden" value={loginAttempts ?? 0} name="login_attempts"/>
                 {shouldShowCaptcha() && captchaPublicKey &&
                     <Turnstile
                         className={styles.turnstile}
@@ -725,6 +728,15 @@ class LoginPage extends React.Component {
         });
     };
 
+    componentDidUpdate(prevProps, prevState) {
+        if (this.state.user_verified && this.existingUserCanContinue() && prevState.authFlow !== this.state.authFlow) {
+            this.setState({
+                ...this.state,
+                captcha_value: '',
+            });
+        }
+    }
+
     render() {
         return (
             <Container component="main" maxWidth="xs" className={styles.main_container}>
@@ -861,6 +873,7 @@ class LoginPage extends React.Component {
                                     captchaPublicKey={this.props.captchaPublicKey}
                                     onChangeCaptchaProvider={this.onChangeCaptchaProvider}
                                     onReset={this.handleDelete}
+                                    loginAttempts={this.props?.loginAttempts}
                                 />
                                 <OTPHelpLinks emitOtpAction={this.handleEmitOtpAction}/>
                             </>
