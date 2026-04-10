@@ -411,7 +411,13 @@ final class UserController extends OpenIdController
             if (isset($data['password']))
                 $data['password'] = trim($data['password']);
 
-            $login_attempts = intval(Request::input('login_attempts'));
+            if (isset($data['username'])) {
+                $user = $this->auth_service->getUserByUsername($data['username']);
+                if (!is_null($user)) {
+                    $login_attempts = $user->getLoginFailedAttempt();
+                }
+            }
+
             // Build the validation constraint set.
             $rules = [
                 'username' => 'required|email',
