@@ -617,7 +617,7 @@ class LoginPage extends React.Component {
             }, function () {
                 //Once the state is updated, it's now possible to trigger emitOtpAction.
                 //No need to wait for the component to update.
-                if (!response.has_password_set) {
+                if (!response.has_password_set && response.is_verified !== false) {
                     this.emitOtpAction();
                 }
             });
