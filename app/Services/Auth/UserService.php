@@ -225,7 +225,12 @@ final class UserService extends AbstractService implements IUserService
         return $this->tx_service->transaction(function () use ($token) {
             $user = $this->user_repository->getByVerificationEmailToken($token);
 
-            if (is_null($user) || !$user->isActive()) {
+            if (is_null($user)) {
+                Log::warning("UserService::verifyEmail no user found for token");
+                throw new EntityNotFoundException();
+            }
+
+            if (!$user->isActive()) {
                 Log::warning(sprintf("UserService::verifyEmail user with id %s is not active", $user->getId()));
                 throw new EntityNotFoundException();
             }
