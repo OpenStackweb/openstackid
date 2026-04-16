@@ -13,7 +13,10 @@
  **/
 
 use App\libs\Auth\Models\SpamEstimatorFeed;
+use App\libs\Auth\Models\TwoFactorAuditLog;
+use App\libs\Auth\Models\UserRecoveryCode;
 use App\libs\Auth\Models\UserRegistrationRequest;
+use App\libs\Auth\Models\UserTrustedDevice;
 use App\libs\Auth\Repositories\IBannedIPRepository;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\libs\Auth\Repositories\ISpamEstimatorFeedRepository;
@@ -32,7 +35,10 @@ use App\Models\SSO\StreamChat\StreamChatSSOProfile;
 use App\Repositories\IServerConfigurationRepository;
 use App\Repositories\IServerExtensionRepository;
 use Auth\Group;
+use Auth\Repositories\ITwoFactorAuditLogRepository;
 use Auth\Repositories\IUserActionRepository;
+use Auth\Repositories\IUserRecoveryCodeRepository;
+use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\User;
 use Auth\UserPasswordResetRequest;
 use Illuminate\Contracts\Support\DeferrableProvider;
@@ -271,6 +277,27 @@ final class RepositoriesProvider extends ServiceProvider implements DeferrablePr
             }
         );
 
+        App::singleton(
+            IUserTrustedDeviceRepository::class,
+            function () {
+                return EntityManager::getRepository(UserTrustedDevice::class);
+            }
+        );
+
+        App::singleton(
+            ITwoFactorAuditLogRepository::class,
+            function () {
+                return EntityManager::getRepository(TwoFactorAuditLog::class);
+            }
+        );
+
+        App::singleton(
+            IUserRecoveryCodeRepository::class,
+            function () {
+                return EntityManager::getRepository(UserRecoveryCode::class);
+            }
+        );
+
     }
 
     public function provides()
@@ -304,6 +331,9 @@ final class RepositoriesProvider extends ServiceProvider implements DeferrablePr
             IStreamChatSSOProfileRepository::class,
             IOAuth2OTPRepository::class,
             IUserActionRepository::class,
+            IUserTrustedDeviceRepository::class,
+            ITwoFactorAuditLogRepository::class,
+            IUserRecoveryCodeRepository::class,
         ];
     }
 }
