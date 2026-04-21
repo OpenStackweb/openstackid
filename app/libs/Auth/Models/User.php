@@ -76,6 +76,8 @@ class User extends BaseEntity
         self::SpamTypeHam
     ];
 
+    public const ValidMFAMethods = ['email_otp'];
+
     /**
      * @var string
      */
@@ -303,6 +305,25 @@ class User extends BaseEntity
      */
     #[ORM\Column(name: 'email_verified_date', nullable: true, type: 'datetime')]
     private $email_verified_date;
+
+    /**
+     * @var bool
+     */
+    #[ORM\Column(name: 'two_factor_enabled', type: 'boolean', options: ['default' => 0])]
+    private $two_factor_enabled;
+
+    /**
+     * @var string
+     */
+    #[ORM\Column(name: 'two_factor_method', type: 'string', length: 32, options: ['default' => 'email_otp'])]
+    private $two_factor_method;
+
+    /**
+     * @var \DateTime|null
+     */
+    #[ORM\Column(name: 'two_factor_enforced_at', nullable: true, type: 'datetime')]
+    private $two_factor_enforced_at;
+
     /**
      * @var string
      */
@@ -457,6 +478,9 @@ class User extends BaseEntity
         parent::__construct();
         $this->active = true;
         $this->email_verified = false;
+        $this->two_factor_enabled = false;
+        $this->two_factor_method = 'email_otp';
+        $this->two_factor_enforced_at = null;
         // user profile settings
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
@@ -2357,6 +2381,122 @@ SQL;
     public function getAuthPasswordName()
     {
         return 'password';
+    }
+
+    // --- Two-factor authentication ---------------------------------------
+
+    public function isTwoFactorEnabled(): bool
+    {
+        return (bool) $this->two_factor_enabled;
+    }
+
+    public function setTwoFactorEnabled(bool $enabled): void
+    {
+        $this->two_factor_enabled = $enabled;
+    }
+
+    public function getTwoFactorMethod(): string
+    {
+        return $this->two_factor_method;
+    }
+
+    public function setTwoFactorMethod(string $method): void
+    {
+        $this->two_factor_method = $method;
+    }
+
+    public function getTwoFactorEnforcedAt(): ?\DateTime
+    {
+        return $this->two_factor_enforced_at;
+    }
+
+    public function setTwoFactorEnforcedAt(?\DateTime $at): void
+    {
+        $this->two_factor_enforced_at = $at;
+    }
+
+    /**
+     * Whether this user is required to complete 2FA to sign in.
+     *
+     * A user is required when they belong to any of the groups listed in
+     * config('two_factor.enforced_groups'); otherwise the stored flag applies.
+     */
+    public function shouldRequire2FA(): bool
+    {
+        $enforced_groups = Config::get('two_factor.enforced_groups', []);
+        foreach ($enforced_groups as $slug) {
+            if ($this->belongToGroup($slug)) {
+                return true;
+            }
+        }
+        return (bool) $this->two_factor_enabled;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function enable2FA(string $method): void
+    {
+        if (!in_array($method, self::ValidMFAMethods, true)) {
+            throw new ValidationException(
+                sprintf(
+                    "Invalid 2FA method '%s'. Allowed methods: %s",
+                    $method,
+                    implode(', ', self::ValidMFAMethods)
+                )
+            );
+        }
+        $this->two_factor_enabled     = true;
+        $this->two_factor_method      = $method;
+        $this->two_factor_enforced_at = new \DateTime('now', new \DateTimeZone('UTC'));
+    }
+
+    /**
+     * Returns the set of 2FA methods currently available to this user.
+     * Phase I only supports email_otp; other methods are stubs that will
+     * light up in Phase II/III once the backing verifications exist.
+     *
+     * @return string[]
+     */
+    public function getAvailableTwoFactorMethods(): array
+    {
+        $methods = [];
+        if ($this->isEmailVerified()) {
+            $methods[] = 'email_otp';
+        }
+        if ($this->isPhoneNumberVerified()) {
+            $methods[] = 'sms_otp';
+        }
+        if ($this->isTOTPConfirmed()) {
+            $methods[] = 'totp';
+        }
+        if ($this->isPassKeyEnabled()) {
+            $methods[] = 'passkey';
+        }
+        return $methods;
+    }
+
+    public function isTwoFactorMethodEnable(string $method): bool
+    {
+        return in_array($method, $this->getAvailableTwoFactorMethods(), true);
+    }
+
+    // Phase II stub
+    public function isPhoneNumberVerified(): bool
+    {
+        return false;
+    }
+
+    // Phase III stub
+    public function isTOTPConfirmed(): bool
+    {
+        return false;
+    }
+
+    // Phase III stub
+    public function isPassKeyEnabled(): bool
+    {
+        return false;
     }
 
 }
