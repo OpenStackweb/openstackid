@@ -305,7 +305,7 @@ final class OAuth2ProviderController extends Controller
         summary: 'OAuth2 Token Revocation Endpoint',
         description: 'Revokes an access token or refresh token per RFC 7009. The endpoint is idempotent — revoking a non-existent token returns success.',
         tags: ['OAuth2 / OpenID Connect'],
-        security: [['OAuth2ProviderSecurity' => []]],
+        security: [['OAuth2ProviderClientBasic' => []], ['OAuth2ProviderSecurity' => []]],
         requestBody: new OA\RequestBody(
             description: 'Token revocation parameters',
             required: true,
@@ -355,7 +355,7 @@ final class OAuth2ProviderController extends Controller
         summary: 'OAuth2 Token Introspection Endpoint',
         description: 'Validates and returns metadata about an access token per RFC 7662. Returns detailed information about the token including associated user data.',
         tags: ['OAuth2 / OpenID Connect'],
-        security: [['OAuth2ProviderSecurity' => []]],
+        security: [['OAuth2ProviderClientBasic' => []], ['OAuth2ProviderSecurity' => []]],
         requestBody: new OA\RequestBody(
             description: 'Token introspection parameters',
             required: true,

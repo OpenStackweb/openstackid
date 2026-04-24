@@ -16,6 +16,12 @@ use OpenApi\Attributes as OA;
         ),
     ]
 )]
+#[OA\SecurityScheme(
+    securityScheme: 'OAuth2ProviderClientBasic',
+    type: 'http',
+    scheme: 'basic',
+    description: 'HTTP Basic authentication with OAuth2 client_id:client_secret (RFC 6749 §2.3.1).'
+)]
 class OAuth2ProviderControllerSecuritySchema
 {
 }
