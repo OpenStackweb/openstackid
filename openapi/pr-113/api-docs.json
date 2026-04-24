@@ -173,16 +173,10 @@
                     {
                         "name": "prompt",
                         "in": "query",
-                        "description": "Space-delimited user interaction prompts (OIDC)",
+                        "description": "Space-delimited user interaction prompts (OIDC). Allowed tokens: none, login, consent, select_account. \"none\" cannot be combined with others. Example: \"login consent\"",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "enum": [
-                                "none",
-                                "login",
-                                "consent",
-                                "select_account"
-                            ]
+                            "type": "string"
                         }
                     },
                     {
@@ -494,12 +488,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OAuth2ProviderSecurity": []
-                    }
-                ]
+                }
             }
         },
         "/oauth2/token/revoke": {
@@ -619,8 +608,30 @@
                     "OAuth2 / OpenID Connect"
                 ],
                 "summary": "OpenID Connect Discovery Endpoint",
-                "description": "Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0. Also available at /oauth2/.well-known/openid-configuration.",
-                "operationId": "oauth2Discovery",
+                "description": "Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0.",
+                "operationId": "OpenIdDiscovery",
+                "responses": {
+                    "200": {
+                        "description": "OpenID Connect Discovery document",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OpenIDDiscoveryResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth2/.well-known/openid-configuration": {
+            "get": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OpenID Connect Discovery Endpoint",
+                "description": "Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0.",
+                "operationId": "OAclient_secretuth2OpenIdDiscovery",
                 "responses": {
                     "200": {
                         "description": "OpenID Connect Discovery document",
@@ -699,7 +710,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "OAuth2ProviderSecurity": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
@@ -736,7 +752,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "OAuth2ProviderSecurity": []
+                    }
+                ]
             }
         }
     },
@@ -1045,6 +1066,10 @@
             "OAuth2TokenResponse": {
                 "title": "OAuth2 Token Response",
                 "description": "Successful token response per RFC 6749 §5.1",
+                "required": [
+                    "access_token",
+                    "token_type"
+                ],
                 "properties": {
                     "access_token": {
                         "description": "The access token issued by the authorization server",
@@ -1217,6 +1242,9 @@
             "JWKSResponse": {
                 "title": "JSON Web Key Set",
                 "description": "JWK Set document per RFC 7517",
+                "required": [
+                    "keys"
+                ],
                 "properties": {
                     "keys": {
                         "description": "Array of JSON Web Keys",
@@ -1261,6 +1289,15 @@
             "OpenIDDiscoveryResponse": {
                 "title": "OpenID Connect Discovery Document",
                 "description": "OpenID Provider Configuration per OpenID Connect Discovery 1.0",
+                "required": [
+                    "issuer",
+                    "authorization_endpoint",
+                    "token_endpoint",
+                    "jwks_uri",
+                    "response_types_supported",
+                    "subject_types_supported",
+                    "id_token_signing_alg_values_supported"
+                ],
                 "properties": {
                     "issuer": {
                         "description": "Issuer identifier URL",
@@ -1405,7 +1442,7 @@
                         ]
                     },
                     "prompt": {
-                        "description": "User interaction prompts",
+                        "description": "Space-delimited user interaction prompts (OIDC). Allowed tokens: none, login, consent, select_account. \"none\" cannot be combined with others. Example: \"login consent\"",
                         "type": "string"
                     },
                     "login_hint": {
@@ -1471,7 +1508,8 @@
                     },
                     "client_secret": {
                         "description": "Client secret (if not using HTTP Basic auth)",
-                        "type": "string"
+                        "type": "string",
+                        "format": "password"
                     }
                 },
                 "type": "object"
