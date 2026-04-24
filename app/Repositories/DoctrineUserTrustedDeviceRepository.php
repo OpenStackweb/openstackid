@@ -14,6 +14,7 @@
 use App\libs\Auth\Models\UserTrustedDevice;
 use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\User;
+use Doctrine\Common\Collections\Criteria;
 
 final class DoctrineUserTrustedDeviceRepository
     extends ModelDoctrineRepository implements IUserTrustedDeviceRepository
@@ -23,20 +24,35 @@ final class DoctrineUserTrustedDeviceRepository
         return UserTrustedDevice::class;
     }
 
+    private function buildActiveExpiryExpr(): \Doctrine\Common\Collections\Expr\CompositeExpression
+    {
+        $now = new \DateTime('now', new \DateTimeZone('UTC'));
+        return Criteria::expr()->orX(
+            Criteria::expr()->gt('expires_at', $now),
+            Criteria::expr()->isNull('expires_at')
+        );
+    }
+
     public function getActiveByUserAndIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice
     {
-        return $this->findOneBy([
-            'user'              => $user,
-            'device_identifier' => $deviceIdentifier,
-            'is_revoked'        => false,
-        ]);
+        $criteria = Criteria::create()
+            ->where(Criteria::expr()->eq('user', $user))
+            ->andWhere(Criteria::expr()->eq('device_identifier', $deviceIdentifier))
+            ->andWhere(Criteria::expr()->eq('is_revoked', false))
+            ->andWhere($this->buildActiveExpiryExpr())
+            ->setMaxResults(1);
+
+        $result = $this->matching($criteria)->first();
+        return $result instanceof UserTrustedDevice ? $result : null;
     }
 
     public function getActiveByUser(User $user): array
     {
-        return $this->findBy([
-            'user'       => $user,
-            'is_revoked' => false,
-        ]);
+        $criteria = Criteria::create()
+            ->where(Criteria::expr()->eq('user', $user))
+            ->andWhere(Criteria::expr()->eq('is_revoked', false))
+            ->andWhere($this->buildActiveExpiryExpr());
+
+        return $this->matching($criteria)->toArray();
     }
 }
