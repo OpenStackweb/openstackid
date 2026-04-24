@@ -17,7 +17,6 @@ use App\libs\Auth\Models\UserTrustedDevice;
 use Auth\Repositories\ITwoFactorAuditLogRepository;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\Repositories\IUserTrustedDeviceRepository;
-use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Support\Facades\App;
 use LaravelDoctrine\ORM\Facades\EntityManager;
@@ -33,12 +32,32 @@ class TwoFactorRepositoriesTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        // Pull any persisted user; tests don't assert on user fields, only on FK linkage
-        $userRepo = App::make(IUserRepository::class);
-        $this->user = $userRepo->findOneBy([]);
-        if (is_null($this->user)) {
-            $this->markTestSkipped('No User exists; database must be seeded.');
+        $user = new User();
+        $user->setFirstName('Test');
+        $user->setLastName('TwoFactor');
+        $user->setEmail('test.twofactor.' . uniqid() . '@test.invalid');
+        $user->setAddress1('123 Test St');
+        $user->setState('CA');
+        $user->setCity('Testville');
+        $user->setPostCode('00000');
+        $user->setCountryIsoCode('US');
+        $user->setPic('');
+        $user->setLastLoginDate(new \DateTime('now', new \DateTimeZone('UTC')));
+        EntityManager::persist($user);
+        EntityManager::flush();
+        $this->user = $user;
+    }
+
+    public function tearDown(): void
+    {
+        if ($this->user !== null) {
+            $managed = EntityManager::find(User::class, $this->user->getId());
+            if ($managed !== null) {
+                EntityManager::remove($managed);
+                EntityManager::flush();
+            }
         }
+        parent::tearDown();
     }
 
     public function testTrustedDeviceRoundTrip(): void
@@ -136,6 +155,193 @@ class TwoFactorRepositoriesTest extends TestCase
         $this->assertTrue($reload->isUsed());
 
         $deleted = $repo->deleteAllForUser($this->user);
-        $this->assertGreaterThanOrEqual(1, $deleted);
+        $this->assertEquals(1, $deleted);
+    }
+
+    // -------------------------------------------------------------------------
+    // Targeted behaviour tests
+    // -------------------------------------------------------------------------
+
+    public function testExpiredTrustedDeviceIsExcluded(): void
+    {
+        $repo     = App::make(IUserTrustedDeviceRepository::class);
+        $now      = new \DateTime('now', new \DateTimeZone('UTC'));
+        $expired  = (clone $now)->modify('-1 minute');
+        $deviceId = hash('sha256', 'expired-device-' . uniqid());
+
+        $device = $this->buildDevice($deviceId, $now, $expired);
+        EntityManager::persist($device);
+        EntityManager::flush();
+        $id = $device->getId();
+        EntityManager::clear();
+
+        $this->assertNull(
+            $repo->getActiveByUserAndIdentifier($this->user, $deviceId),
+            'getActiveByUserAndIdentifier must return null for an expired device.'
+        );
+
+        $ids = array_map(
+            fn(UserTrustedDevice $d) => $d->getDeviceIdentifier(),
+            $repo->getActiveByUser($this->user)
+        );
+        $this->assertNotContains($deviceId, $ids, 'getActiveByUser must not include expired devices.');
+
+        $stale = EntityManager::find(UserTrustedDevice::class, $id);
+        if ($stale) { EntityManager::remove($stale); EntityManager::flush(); }
+    }
+
+    public function testRevokedTrustedDeviceIsExcluded(): void
+    {
+        $repo     = App::make(IUserTrustedDeviceRepository::class);
+        $now      = new \DateTime('now', new \DateTimeZone('UTC'));
+        $expires  = (clone $now)->modify('+30 days');
+        $deviceId = hash('sha256', 'revoked-device-' . uniqid());
+
+        $device = $this->buildDevice($deviceId, $now, $expires);
+        $device->setIsRevoked(true);
+        EntityManager::persist($device);
+        EntityManager::flush();
+        $id = $device->getId();
+        EntityManager::clear();
+
+        $this->assertNull(
+            $repo->getActiveByUserAndIdentifier($this->user, $deviceId),
+            'getActiveByUserAndIdentifier must return null for a revoked device.'
+        );
+
+        $ids = array_map(
+            fn(UserTrustedDevice $d) => $d->getDeviceIdentifier(),
+            $repo->getActiveByUser($this->user)
+        );
+        $this->assertNotContains($deviceId, $ids, 'getActiveByUser must not include revoked devices.');
+
+        $stale = EntityManager::find(UserTrustedDevice::class, $id);
+        if ($stale) { EntityManager::remove($stale); EntityManager::flush(); }
+    }
+
+    public function testDuplicateDeviceIdentifierCannotOccur(): void
+    {
+        $connection = EntityManager::getConnection();
+        $indexes    = $connection->createSchemaManager()->listTableIndexes('user_trusted_devices');
+
+        $hasUnique = false;
+        foreach ($indexes as $index) {
+            if ($index->isUnique()) {
+                $cols = $index->getColumns();
+                if (in_array('user_id', $cols) && in_array('device_identifier', $cols)) {
+                    $hasUnique = true;
+                    break;
+                }
+            }
+        }
+
+        $this->assertTrue(
+            $hasUnique,
+            'user_trusted_devices must have a UNIQUE index on (user_id, device_identifier).'
+        );
+    }
+
+    public function testRecoveryCodeDeletionRemovesUsedAndUnusedCodes(): void
+    {
+        $repo = App::make(IUserRecoveryCodeRepository::class);
+
+        $unused = new UserRecoveryCode();
+        $unused->setUser($this->user);
+        $unused->setCodeHash(password_hash('UNUSED_' . uniqid(), PASSWORD_BCRYPT));
+
+        $used = new UserRecoveryCode();
+        $used->setUser($this->user);
+        $used->setCodeHash(password_hash('USED_' . uniqid(), PASSWORD_BCRYPT));
+        $used->markUsed();
+
+        EntityManager::persist($unused);
+        EntityManager::persist($used);
+        EntityManager::flush();
+        $unusedId = $unused->getId();
+        $usedId   = $used->getId();
+
+        $deleted = $repo->deleteAllForUser($this->user);
+        $this->assertGreaterThanOrEqual(2, $deleted, 'deleteAllForUser must remove both used and unused codes.');
+
+        EntityManager::clear();
+        $this->assertNull(
+            EntityManager::find(UserRecoveryCode::class, $unusedId),
+            'Unused recovery code must be deleted.'
+        );
+        $this->assertNull(
+            EntityManager::find(UserRecoveryCode::class, $usedId),
+            'Used recovery code must also be deleted.'
+        );
+    }
+
+    public function testAuditLogsReturnedMostRecentFirst(): void
+    {
+        $repo       = App::make(ITwoFactorAuditLogRepository::class);
+        $createdIds = [];
+
+        $timestamps = [
+            new \DateTime('2020-01-01 01:00:00', new \DateTimeZone('UTC')),
+            new \DateTime('2020-01-01 02:00:00', new \DateTimeZone('UTC')),
+            new \DateTime('2020-01-01 03:00:00', new \DateTimeZone('UTC')),
+        ];
+
+        $setCreatedAt = static function (TwoFactorAuditLog $log, \DateTime $dt): void {
+            $prop = new \ReflectionProperty(TwoFactorAuditLog::class, 'created_at');
+            $prop->setAccessible(true);
+            $prop->setValue($log, $dt);
+        };
+
+        foreach ($timestamps as $ts) {
+            $entry = new TwoFactorAuditLog();
+            $entry->setUser($this->user);
+            $entry->setEventType(TwoFactorAuditLog::EventChallengeIssued);
+            $entry->setMethod(TwoFactorAuditLog::MethodEmailOtp);
+            $entry->setIpAddress('127.0.0.1');
+            $entry->setUserAgent('Mozilla/5.0 (test)');
+            $setCreatedAt($entry, $ts);
+            EntityManager::persist($entry);
+            EntityManager::flush();
+            $createdIds[] = $entry->getId();
+        }
+
+        EntityManager::clear();
+
+        $all  = $repo->getRecentByUser($this->user, 200);
+        $ours = array_values(array_filter($all, fn(TwoFactorAuditLog $e) => in_array($e->getId(), $createdIds)));
+
+        $this->assertCount(3, $ours, 'All three seeded audit entries must be returned.');
+
+        for ($i = 0; $i < count($ours) - 1; $i++) {
+            $this->assertGreaterThanOrEqual(
+                $ours[$i + 1]->getCreatedAt()->getTimestamp(),
+                $ours[$i]->getCreatedAt()->getTimestamp(),
+                'Audit logs must be ordered most-recent first.'
+            );
+        }
+
+        // cleanup
+        foreach ($createdIds as $logId) {
+            $log = EntityManager::find(TwoFactorAuditLog::class, $logId);
+            if ($log) { EntityManager::remove($log); }
+        }
+        EntityManager::flush();
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private function buildDevice(string $deviceId, \DateTime $now, \DateTime $expires): UserTrustedDevice
+    {
+        $device = new UserTrustedDevice();
+        $device->setUser($this->user);
+        $device->setDeviceIdentifier($deviceId);
+        $device->setDeviceName('Test Browser');
+        $device->setIpAddress('127.0.0.1');
+        $device->setUserAgent('Mozilla/5.0 (test)');
+        $device->setTrustedAt($now);
+        $device->setExpiresAt($expires);
+        $device->setLastSeenAt($now);
+        return $device;
     }
 }

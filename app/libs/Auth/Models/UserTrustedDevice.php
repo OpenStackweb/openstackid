@@ -81,6 +81,4 @@ class UserTrustedDevice extends BaseEntity
 
     public function isRevoked(): bool { return (bool) $this->is_revoked; }
     public function setIsRevoked(bool $value): void { $this->is_revoked = $value; }
-
-    public function __get($name) { return $this->{$name}; }
 }
