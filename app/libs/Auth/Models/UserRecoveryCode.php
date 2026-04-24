@@ -14,9 +14,10 @@
 
 use Auth\User;
 use Doctrine\ORM\Mapping AS ORM;
+use App\Repositories\DoctrineUserRecoveryCodeRepository;
 
 #[ORM\Table(name: 'user_recovery_codes')]
-#[ORM\Entity(repositoryClass: \App\Repositories\DoctrineUserRecoveryCodeRepository::class)]
+#[ORM\Entity(repositoryClass: DoctrineUserRecoveryCodeRepository::class)]
 class UserRecoveryCode
 {
     #[ORM\Id]
@@ -25,7 +26,7 @@ class UserRecoveryCode
     protected $id;
 
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
-    #[ORM\ManyToOne(targetEntity: \Auth\User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class)]
     private $user;
 
     #[ORM\Column(name: 'code_hash', type: 'string', length: 255)]
@@ -63,5 +64,4 @@ class UserRecoveryCode
         $this->used_at = new \DateTime('now', new \DateTimeZone('UTC'));
     }
 
-    public function __get($name) { return $this->{$name}; }
 }
