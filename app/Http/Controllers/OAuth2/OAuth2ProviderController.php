@@ -27,6 +27,8 @@ use OAuth2\Requests\OAuth2TokenRequest;
 use OAuth2\Requests\OAuth2TokenRevocationRequest;
 use OAuth2\Responses\OAuth2Response;
 use OAuth2\Strategies\OAuth2ResponseStrategyFactoryMethod;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Utils\Http\HttpContentType;
 use Utils\Services\IAuthService;
 use Illuminate\Support\Facades\Log;
@@ -76,6 +78,117 @@ final class OAuth2ProviderController extends Controller
      * use of the "POST" method as well.
      * @return mixed
      */
+    #[OA\Get(
+        path: '/oauth2/auth',
+        operationId: 'oauth2AuthorizeGet',
+        summary: 'OAuth2 Authorization Endpoint (GET)',
+        description: 'Initiates an OAuth2 authorization flow. Supports Authorization Code, Implicit, Hybrid, and OpenID Connect flows. Per RFC 6749 §3.1, GET is required.',
+        tags: ['OAuth2 / OpenID Connect'],
+        parameters: [
+            new OA\Parameter(name: 'response_type', in: 'query', required: true, description: 'OAuth2 response type', schema: new OA\Schema(type: 'string', enum: ['code', 'token', 'id_token', 'code token', 'code id_token', 'token id_token', 'code token id_token', 'otp', 'none'])),
+            new OA\Parameter(name: 'client_id', in: 'query', required: true, description: 'OAuth2 client identifier', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'redirect_uri', in: 'query', required: true, description: 'Redirect URI (must match a registered URI)', schema: new OA\Schema(type: 'string', format: 'uri')),
+            new OA\Parameter(name: 'scope', in: 'query', required: false, description: 'Space-delimited scopes (include "openid" for OIDC)', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'state', in: 'query', required: false, description: 'Opaque state parameter returned in the redirect', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'nonce', in: 'query', required: false, description: 'Nonce for ID token replay protection (OIDC)', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'response_mode', in: 'query', required: false, description: 'Response mode override', schema: new OA\Schema(type: 'string', enum: ['query', 'fragment', 'form_post', 'direct'])),
+            new OA\Parameter(name: 'prompt', in: 'query', required: false, description: 'Space-delimited user interaction prompts (OIDC)', schema: new OA\Schema(type: 'string', enum: ['none', 'login', 'consent', 'select_account'])),
+            new OA\Parameter(name: 'login_hint', in: 'query', required: false, description: 'Hint about login identifier (OIDC)', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'display', in: 'query', required: false, description: 'UI display preference (OIDC)', schema: new OA\Schema(type: 'string', enum: ['page', 'popup', 'touch', 'wap', 'native'])),
+            new OA\Parameter(name: 'max_age', in: 'query', required: false, description: 'Maximum authentication age in seconds (OIDC)', schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'acr_values', in: 'query', required: false, description: 'Authentication context class reference values (OIDC)', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'code_challenge', in: 'query', required: false, description: 'PKCE code challenge', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'code_challenge_method', in: 'query', required: false, description: 'PKCE challenge method', schema: new OA\Schema(type: 'string', enum: ['plain', 'S256'])),
+            new OA\Parameter(name: 'id_token_hint', in: 'query', required: false, description: 'Previously issued ID token hint (OIDC)', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'approval_prompt', in: 'query', required: false, description: 'Consent handling', schema: new OA\Schema(type: 'string', enum: ['auto', 'force'])),
+            new OA\Parameter(name: 'access_type', in: 'query', required: false, description: 'Token refresh behavior', schema: new OA\Schema(type: 'string', enum: ['online', 'offline'])),
+        ],
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
+            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to client redirect_uri with authorization code, tokens, or error'),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
+    #[OA\Post(
+        path: '/oauth2/auth',
+        operationId: 'oauth2AuthorizePost',
+        summary: 'OAuth2 Authorization Endpoint (POST)',
+        description: 'Initiates an OAuth2 authorization flow via POST. Same parameters as GET but sent as form data.',
+        tags: ['OAuth2 / OpenID Connect'],
+        requestBody: new OA\RequestBody(
+            description: 'Authorization request parameters',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'application/x-www-form-urlencoded',
+                schema: new OA\Schema(ref: '#/components/schemas/OAuth2AuthorizationRequest')
+            )
+        ),
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
+            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to client redirect_uri with authorization code, tokens, or error'),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
+    #[OA\Put(
+        path: '/oauth2/auth',
+        operationId: 'oauth2AuthorizePut',
+        summary: 'OAuth2 Authorization Endpoint (PUT)',
+        description: 'Initiates an OAuth2 authorization flow via PUT. Same parameters as GET but sent as form data.',
+        tags: ['OAuth2 / OpenID Connect'],
+        requestBody: new OA\RequestBody(
+            description: 'Authorization request parameters',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'application/x-www-form-urlencoded',
+                schema: new OA\Schema(ref: '#/components/schemas/OAuth2AuthorizationRequest')
+            )
+        ),
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
+            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to client redirect_uri with authorization code, tokens, or error'),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
+    #[OA\Patch(
+        path: '/oauth2/auth',
+        operationId: 'oauth2AuthorizePatch',
+        summary: 'OAuth2 Authorization Endpoint (PATCH)',
+        description: 'Initiates an OAuth2 authorization flow via PATCH. Same parameters as GET but sent as form data.',
+        tags: ['OAuth2 / OpenID Connect'],
+        requestBody: new OA\RequestBody(
+            description: 'Authorization request parameters',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'application/x-www-form-urlencoded',
+                schema: new OA\Schema(ref: '#/components/schemas/OAuth2AuthorizationRequest')
+            )
+        ),
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
+            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to client redirect_uri with authorization code, tokens, or error'),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
+    #[OA\Delete(
+        path: '/oauth2/auth',
+        operationId: 'oauth2AuthorizeDelete',
+        summary: 'OAuth2 Authorization Endpoint (DELETE)',
+        description: 'Initiates an OAuth2 authorization flow via DELETE. Same parameters as GET but sent as form data.',
+        tags: ['OAuth2 / OpenID Connect'],
+        requestBody: new OA\RequestBody(
+            description: 'Authorization request parameters',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'application/x-www-form-urlencoded',
+                schema: new OA\Schema(ref: '#/components/schemas/OAuth2AuthorizationRequest')
+            )
+        ),
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
+            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to client redirect_uri with authorization code, tokens, or error'),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
     public function auth()
     {
         try {
@@ -136,6 +249,26 @@ final class OAuth2ProviderController extends Controller
      * Token HTTP Endpoint
      * @return mixed
      */
+    #[OA\Post(
+        path: '/oauth2/token',
+        operationId: 'oauth2Token',
+        summary: 'OAuth2 Token Endpoint',
+        description: 'Issues access tokens. Supports authorization_code, client_credentials, password, refresh_token, and passwordless grant types.',
+        tags: ['OAuth2 / OpenID Connect'],
+        security: [['OAuth2ProviderSecurity' => []]],
+        requestBody: new OA\RequestBody(
+            description: 'Token request parameters',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'application/x-www-form-urlencoded',
+                schema: new OA\Schema(ref: '#/components/schemas/OAuth2TokenRequest')
+            )
+        ),
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Successful token response', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2TokenResponse')),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Token error', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
     public function token()
     {
 
@@ -166,6 +299,26 @@ final class OAuth2ProviderController extends Controller
      * Revoke Token HTTP Endpoint
      * @return mixed
      */
+    #[OA\Post(
+        path: '/oauth2/token/revoke',
+        operationId: 'oauth2RevokeToken',
+        summary: 'OAuth2 Token Revocation Endpoint',
+        description: 'Revokes an access token or refresh token per RFC 7009. The endpoint is idempotent — revoking a non-existent token returns success.',
+        tags: ['OAuth2 / OpenID Connect'],
+        security: [['OAuth2ProviderSecurity' => []]],
+        requestBody: new OA\RequestBody(
+            description: 'Token revocation parameters',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'application/x-www-form-urlencoded',
+                schema: new OA\Schema(ref: '#/components/schemas/OAuth2TokenRevocationRequest')
+            )
+        ),
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Token successfully revoked'),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Revocation error', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
     public function revoke()
     {
         $response = $this->oauth2_protocol->revoke
@@ -196,6 +349,26 @@ final class OAuth2ProviderController extends Controller
      * Introspection Token HTTP Endpoint
      * @return mixed
      */
+    #[OA\Post(
+        path: '/oauth2/token/introspection',
+        operationId: 'oauth2IntrospectToken',
+        summary: 'OAuth2 Token Introspection Endpoint',
+        description: 'Validates and returns metadata about an access token per RFC 7662. Returns detailed information about the token including associated user data.',
+        tags: ['OAuth2 / OpenID Connect'],
+        security: [['OAuth2ProviderSecurity' => []]],
+        requestBody: new OA\RequestBody(
+            description: 'Token introspection parameters',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'application/x-www-form-urlencoded',
+                schema: new OA\Schema(ref: '#/components/schemas/OAuth2TokenIntrospectionRequest')
+            )
+        ),
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Token introspection response', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2IntrospectionResponse')),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Introspection error', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
     public function introspection()
     {
 
@@ -226,6 +399,16 @@ final class OAuth2ProviderController extends Controller
      *  OP's JSON Web Key Set [JWK] document.
      * @return string
      */
+    #[OA\Get(
+        path: '/oauth2/certs',
+        operationId: 'oauth2GetCerts',
+        summary: 'JSON Web Key Set (JWKS) Endpoint',
+        description: 'Returns the OpenID Provider JSON Web Key Set document containing public keys used for signing tokens (RFC 7517).',
+        tags: ['OAuth2 / OpenID Connect'],
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'JWKS document', content: new OA\JsonContent(ref: '#/components/schemas/JWKSResponse')),
+        ]
+    )]
     public function certs()
     {
 
@@ -236,6 +419,16 @@ final class OAuth2ProviderController extends Controller
         return $response;
     }
 
+    #[OA\Get(
+        path: '/.well-known/openid-configuration',
+        operationId: 'oauth2Discovery',
+        summary: 'OpenID Connect Discovery Endpoint',
+        description: 'Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0. Also available at /oauth2/.well-known/openid-configuration.',
+        tags: ['OAuth2 / OpenID Connect'],
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'OpenID Connect Discovery document', content: new OA\JsonContent(ref: '#/components/schemas/OpenIDDiscoveryResponse')),
+        ]
+    )]
     public function discovery()
     {
 
@@ -258,6 +451,44 @@ final class OAuth2ProviderController extends Controller
     /**
      * @see http://openid.net/specs/openid-connect-session-1_0.html#RPLogout
      */
+    #[OA\Get(
+        path: '/oauth2/end-session',
+        operationId: 'oauth2EndSessionGet',
+        summary: 'OpenID Connect End Session Endpoint (GET)',
+        description: 'Initiates RP-Initiated Logout per OpenID Connect Session Management 1.0. Terminates the user session and optionally redirects to the post-logout URI.',
+        tags: ['OAuth2 / OpenID Connect'],
+        parameters: [
+            new OA\Parameter(name: 'client_id', in: 'query', required: true, description: 'OAuth2 client identifier', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'id_token_hint', in: 'query', required: false, description: 'Previously issued ID token', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'post_logout_redirect_uri', in: 'query', required: false, description: 'URI to redirect after logout (must be registered)', schema: new OA\Schema(type: 'string', format: 'uri')),
+            new OA\Parameter(name: 'state', in: 'query', required: false, description: 'Opaque state parameter returned in the redirect', schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to post_logout_redirect_uri'),
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Session ended page (HTML)'),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Invalid logout request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
+    #[OA\Post(
+        path: '/oauth2/end-session',
+        operationId: 'oauth2EndSessionPost',
+        summary: 'OpenID Connect End Session Endpoint (POST)',
+        description: 'Initiates RP-Initiated Logout via POST. Same parameters as GET but sent as form data.',
+        tags: ['OAuth2 / OpenID Connect'],
+        requestBody: new OA\RequestBody(
+            description: 'End session parameters',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'application/x-www-form-urlencoded',
+                schema: new OA\Schema(ref: '#/components/schemas/OAuth2EndSessionRequest')
+            )
+        ),
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to post_logout_redirect_uri'),
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Session ended page (HTML)'),
+            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Invalid logout request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
+        ]
+    )]
     public function endSession()
     {
         $request = new OAuth2LogoutRequest
@@ -285,4 +516,4 @@ final class OAuth2ProviderController extends Controller
 
         return View::make('oauth2.session.session-ended');
     }
-} 
+}
