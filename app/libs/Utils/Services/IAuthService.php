@@ -58,6 +58,28 @@ interface IAuthService
     public function login(string $username, string $password, bool $remember_me): bool;
 
     /**
+     * Validates the supplied credentials without establishing a session.
+     * Delegates to CustomAuthProvider::retrieveByCredentials() so security
+     * checkpoints (LockUserCounterMeasure, etc.) still fire on failure.
+     *
+     * @param string $username
+     * @param string $password
+     * @return User
+     * @throws AuthenticationException on invalid credentials, missing user, or locked account.
+     */
+    public function validateCredentials(string $username, string $password): User;
+
+    /**
+     * Establishes a Laravel session for an already-authenticated user.
+     * Used by the 2FA flow after the second factor is verified.
+     *
+     * @param User $user
+     * @param bool $remember
+     * @return void
+     */
+    public function loginUser(User $user, bool $remember): void;
+
+    /**
      * @param OAuth2OTP $otpClaim
      * @param Client|null $client
      * @param bool $remember
