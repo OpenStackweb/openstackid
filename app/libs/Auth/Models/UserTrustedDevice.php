@@ -1,4 +1,5 @@
-<?php namespace App\libs\Auth\Models;
+<?php
+namespace App\libs\Auth\Models;
 /**
  * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +15,11 @@
 
 use App\Models\Utils\BaseEntity;
 use Auth\User;
-use Doctrine\ORM\Mapping AS ORM;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Table(name: 'user_trusted_devices')]
 #[ORM\Entity(repositoryClass: \App\Repositories\DoctrineUserTrustedDeviceRepository::class)]
+#[ORM\UniqueConstraint(name: 'utd_user_device_uniq', columns: ['user_id', 'device_identifier'])]
 #[ORM\HasLifecycleCallbacks]
 class UserTrustedDevice extends BaseEntity
 {
@@ -55,30 +57,84 @@ class UserTrustedDevice extends BaseEntity
         $this->is_revoked = false;
     }
 
-    public function getUser(): User { return $this->user; }
-    public function setUser(User $user): void { $this->user = $user; }
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+    public function setUser(User $user): void
+    {
+        $this->user = $user;
+    }
 
-    public function getDeviceIdentifier(): string { return $this->device_identifier; }
-    public function setDeviceIdentifier(string $value): void { $this->device_identifier = $value; }
+    public function getDeviceIdentifier(): string
+    {
+        return $this->device_identifier;
+    }
+    public function setDeviceIdentifier(string $value): void
+    {
+        $this->device_identifier = $value;
+    }
 
-    public function getDeviceName(): string { return $this->device_name; }
-    public function setDeviceName(string $value): void { $this->device_name = $value; }
+    public function getDeviceName(): string
+    {
+        return $this->device_name;
+    }
+    public function setDeviceName(string $value): void
+    {
+        $this->device_name = $value;
+    }
 
-    public function getIpAddress(): string { return $this->ip_address; }
-    public function setIpAddress(string $value): void { $this->ip_address = $value; }
+    public function getIpAddress(): string
+    {
+        return $this->ip_address;
+    }
+    public function setIpAddress(string $value): void
+    {
+        $this->ip_address = $value;
+    }
 
-    public function getUserAgent(): string { return $this->user_agent; }
-    public function setUserAgent(string $value): void { $this->user_agent = $value; }
+    public function getUserAgent(): string
+    {
+        return $this->user_agent;
+    }
+    public function setUserAgent(string $value): void
+    {
+        $this->user_agent = $value;
+    }
 
-    public function getTrustedAt(): \DateTime { return $this->trusted_at; }
-    public function setTrustedAt(\DateTime $value): void { $this->trusted_at = $value; }
+    public function getTrustedAt(): \DateTime
+    {
+        return $this->trusted_at;
+    }
+    public function setTrustedAt(\DateTime $value): void
+    {
+        $this->trusted_at = $value;
+    }
 
-    public function getExpiresAt(): \DateTime { return $this->expires_at; }
-    public function setExpiresAt(\DateTime $value): void { $this->expires_at = $value; }
+    public function getExpiresAt(): \DateTime
+    {
+        return $this->expires_at;
+    }
+    public function setExpiresAt(\DateTime $value): void
+    {
+        $this->expires_at = $value;
+    }
 
-    public function getLastSeenAt(): \DateTime { return $this->last_seen_at; }
-    public function setLastSeenAt(\DateTime $value): void { $this->last_seen_at = $value; }
+    public function getLastSeenAt(): \DateTime
+    {
+        return $this->last_seen_at;
+    }
+    public function setLastSeenAt(\DateTime $value): void
+    {
+        $this->last_seen_at = $value;
+    }
 
-    public function isRevoked(): bool { return (bool) $this->is_revoked; }
-    public function setIsRevoked(bool $value): void { $this->is_revoked = $value; }
+    public function isRevoked(): bool
+    {
+        return (bool) $this->is_revoked;
+    }
+    public function setIsRevoked(bool $value): void
+    {
+        $this->is_revoked = $value;
+    }
 }
