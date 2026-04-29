@@ -1,4 +1,5 @@
-<?php namespace App\libs\Auth\Models;
+<?php
+namespace App\libs\Auth\Models;
 /**
  * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,26 +14,46 @@
  **/
 
 use Auth\User;
-use Doctrine\ORM\Mapping AS ORM;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Table(name: 'two_factor_audit_log')]
 #[ORM\Entity(repositoryClass: \App\Repositories\DoctrineTwoFactorAuditLogRepository::class)]
 class TwoFactorAuditLog
 {
-    public const EventChallengeIssued     = 'challenge_issued';
-    public const EventChallengeSucceeded  = 'challenge_succeeded';
-    public const EventChallengeFailed     = 'challenge_failed';
-    public const EventEnrollmentChanged   = 'enrollment_changed';
-    public const EventDeviceTrusted       = 'device_trusted';
-    public const EventDeviceRevoked       = 'device_revoked';
-    public const EventRecoveryUsed        = 'recovery_used';
-    public const EventSettingsChanged     = 'settings_changed';
+    public const EventChallengeIssued = 'challenge_issued';
+    public const EventChallengeSucceeded = 'challenge_succeeded';
+    public const EventChallengeFailed = 'challenge_failed';
+    public const EventEnrollmentChanged = 'enrollment_changed';
+    public const EventDeviceTrusted = 'device_trusted';
+    public const EventDeviceRevoked = 'device_revoked';
+    public const EventRecoveryUsed = 'recovery_used';
+    public const EventSettingsChanged = 'settings_changed';
 
-    public const MethodEmailOtp  = 'email_otp';
-    public const MethodSmsOtp    = 'sms_otp';
-    public const MethodTotp      = 'totp';
-    public const MethodPasskey   = 'passkey';
-    public const MethodRecovery  = 'recovery';
+    public const MethodEmailOtp = 'email_otp';
+    public const MethodSmsOtp = 'sms_otp';
+    public const MethodTotp = 'totp';
+    public const MethodPasskey = 'passkey';
+    public const MethodRecovery = 'recovery';
+
+
+    private const ALLOWED_EVENT_TYPES = [
+        self::EventChallengeIssued,
+        self::EventChallengeSucceeded,
+        self::EventChallengeFailed,
+        self::EventEnrollmentChanged,
+        self::EventDeviceTrusted,
+        self::EventDeviceRevoked,
+        self::EventRecoveryUsed,
+        self::EventSettingsChanged,
+    ];
+
+    private const ALLOWED_METHODS = [
+        self::MethodEmailOtp,
+        self::MethodSmsOtp,
+        self::MethodTotp,
+        self::MethodPasskey,
+        self::MethodRecovery,
+    ];
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -67,25 +88,73 @@ class TwoFactorAuditLog
         $this->metadata = null;
     }
 
-    public function getId(): int { return (int) $this->id; }
+    public function getId(): int
+    {
+        return (int) $this->id;
+    }
 
-    public function getUser(): User { return $this->user; }
-    public function setUser(User $user): void { $this->user = $user; }
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+    public function setUser(User $user): void
+    {
+        $this->user = $user;
+    }
 
-    public function getEventType(): string { return $this->event_type; }
-    public function setEventType(string $value): void { $this->event_type = $value; }
+    public function getEventType(): string
+    {
+        return $this->event_type;
+    }
+    public function setEventType(string $value): void
+    {
+        if (!in_array($value, self::ALLOWED_EVENT_TYPES, true)) {
+            throw new \InvalidArgumentException('Unsupported 2FA audit event type.');
+        }
+        $this->event_type = $value;
+    }
 
-    public function getMethod(): string { return $this->method; }
-    public function setMethod(string $value): void { $this->method = $value; }
+    public function getMethod(): string
+    {
+        return $this->method;
+    }
+    public function setMethod(string $value): void
+    {
+        if (!in_array($value, self::ALLOWED_METHODS, true)) {
+            throw new \InvalidArgumentException('Unsupported 2FA audit method.');
+        }
+        $this->method = $value;
+    }
 
-    public function getIpAddress(): string { return $this->ip_address; }
-    public function setIpAddress(string $value): void { $this->ip_address = $value; }
+    public function getIpAddress(): string
+    {
+        return $this->ip_address;
+    }
+    public function setIpAddress(string $value): void
+    {
+        $this->ip_address = $value;
+    }
 
-    public function getUserAgent(): string { return $this->user_agent; }
-    public function setUserAgent(string $value): void { $this->user_agent = $value; }
+    public function getUserAgent(): string
+    {
+        return $this->user_agent;
+    }
+    public function setUserAgent(string $value): void
+    {
+        $this->user_agent = $value;
+    }
 
-    public function getMetadata(): ?array { return $this->metadata; }
-    public function setMetadata(?array $value): void { $this->metadata = $value; }
+    public function getMetadata(): ?array
+    {
+        return $this->metadata;
+    }
+    public function setMetadata(?array $value): void
+    {
+        $this->metadata = $value;
+    }
 
-    public function getCreatedAt(): \DateTime { return $this->created_at; }
+    public function getCreatedAt(): \DateTime
+    {
+        return $this->created_at;
+    }
 }
