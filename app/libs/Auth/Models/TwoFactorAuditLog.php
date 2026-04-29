@@ -88,6 +88,4 @@ class TwoFactorAuditLog
     public function setMetadata(?array $value): void { $this->metadata = $value; }
 
     public function getCreatedAt(): \DateTime { return $this->created_at; }
-
-    public function __get($name) { return $this->{$name}; }
 }
