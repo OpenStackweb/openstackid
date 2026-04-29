@@ -1,4 +1,5 @@
-<?php namespace Auth;
+<?php
+namespace Auth;
 /**
  * Copyright 2016 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -97,21 +98,19 @@ final class AuthService extends AbstractService implements IAuthService
      * @param IAuthUserService $auth_user_service
      * @param ISecurityContextService $security_context_service
      * @param ITransactionService $tx_service
-     * @params ISecurityContextService $security_context_service
      */
     public function __construct
     (
-        IUserRepository         $user_repository,
-        IOAuth2OTPRepository    $otp_repository,
-        IPrincipalService       $principal_service,
-        IUserService            $user_service,
-        IUserActionService      $user_action_service,
-        ICacheService           $cache_service,
-        IAuthUserService        $auth_user_service,
+        IUserRepository $user_repository,
+        IOAuth2OTPRepository $otp_repository,
+        IPrincipalService $principal_service,
+        IUserService $user_service,
+        IUserActionService $user_action_service,
+        ICacheService $cache_service,
+        IAuthUserService $auth_user_service,
         ISecurityContextService $security_context_service,
-        ITransactionService     $tx_service
-    )
-    {
+        ITransactionService $tx_service
+    ) {
         parent::__construct($tx_service);
         $this->user_repository = $user_repository;
         $this->principal_service = $principal_service;
@@ -132,6 +131,17 @@ final class AuthService extends AbstractService implements IAuthService
     }
 
     /**
+     * @return User|null
+     */
+    public function getCurrentUser(): ?User
+    {
+        $user = Auth::user();
+        if ($user instanceof User) {
+            return $user;
+        }
+    }
+
+    /**
      * Finds the OTP by value/connection/username, logs the redeem attempt (TX-A),
      * then validates lifecycle / value / scope / audience (TX-B).
      * TX-A is committed independently so the brute-force counter increments even when TX-B throws.
@@ -140,13 +150,12 @@ final class AuthService extends AbstractService implements IAuthService
      * @throws InvalidOTPException
      */
     private function findAndValidateOTP(
-        string  $otp_value,
-        string  $user_name,
-        string  $otp_conn,
+        string $otp_value,
+        string $user_name,
+        string $otp_conn,
         ?string $otp_required_scopes,
         ?Client $client
-    ): OAuth2OTP
-    {
+    ): OAuth2OTP {
         // TX-A: find + log attempt (committed before any validation can throw)
         $otp = $this->tx_service->transaction(function () use ($otp_value, $otp_conn, $user_name, $client) {
 
@@ -189,8 +198,10 @@ final class AuthService extends AbstractService implements IAuthService
                 throw new InvalidOTPException("Single-use code requested scopes escalates former scopes.");
             }
 
-            if (($otp->hasClient() && is_null($client)) ||
-                ($otp->hasClient() && !is_null($client) && $client->getClientId() != $otp->getClient()->getClientId())) {
+            if (
+                ($otp->hasClient() && is_null($client)) ||
+                ($otp->hasClient() && !is_null($client) && $client->getClientId() != $otp->getClient()->getClientId())
+            ) {
                 throw new AuthenticationException("Single-use code audience mismatch.");
             }
 
@@ -319,8 +330,7 @@ final class AuthService extends AbstractService implements IAuthService
         OAuth2OTP $otpClaim,
         User $sessionUser,
         ?Client $client = null
-    ): OAuth2OTP
-    {
+    ): OAuth2OTP {
         Log::debug(sprintf(
             "AuthService::verifyOTPChallenge otp %s session user %s",
             $otpClaim->getValue(),
@@ -384,11 +394,10 @@ final class AuthService extends AbstractService implements IAuthService
     {
         Log::debug("AuthService::login");
 
-        $this->last_login_error = "";
         if (!Auth::attempt(['username' => $username, 'password' => $password], $remember_me)) {
             throw new AuthenticationException
             (
-                "We are sorry, your username or password does not match an existing record."
+                "username or password does not match an existing record."
             );
         }
         Log::debug("AuthService::login: clearing principal");
@@ -397,7 +406,7 @@ final class AuthService extends AbstractService implements IAuthService
         if (is_null($current_user) || !$current_user->canLogin())
             throw new AuthenticationException
             (
-                "We are sorry, your username or password does not match an existing record."
+                "username or password does not match an existing record."
             );
         $this->principal_service->register
         (
@@ -409,11 +418,51 @@ final class AuthService extends AbstractService implements IAuthService
     }
 
     /**
-     * @return User|null
+     * @param string $username
+     * @param string $password
+     * @return User
+     * @throws AuthenticationException
      */
-    public function getCurrentUser(): ?User
+    public function validateCredentials(string $username, string $password): User
     {
-        return Auth::user();
+        Log::debug("AuthService::validateCredentials");
+
+        // retrieveByCredentials swallows AuthenticationLockedUserLoginAttempt and returns null,
+        // so pre-check lock state here to surface a distinct message for locked accounts.
+        $existing = $this->user_repository->getByEmailOrName($username);
+        if (!is_null($existing) && !$existing->isActive()) {
+            throw new AuthenticationException(
+                sprintf("User %s is locked.", $username)
+            );
+        }
+
+        // Known cost: retrieveByCredentials() calls user_repository->getByEmailOrName() internally
+        // (CustomAuthProvider line ~122), duplicating the query above. Eliminating it would require
+        // either changing the provider API to accept a pre-fetched User, or moving
+        // LockUserCounterMeasure checkpoint logic out of the provider — both out of scope here.
+        $user = Auth::getProvider()->retrieveByCredentials([
+            'username' => $username,
+            'password' => $password,
+        ]);
+
+        if (is_null($user) || !$user instanceof User || !$user->canLogin()) {
+            throw new AuthenticationException(
+                "username or password does not match an existing record."
+            );
+        }
+
+        return $user;
+    }
+
+    /**
+     * @param User $user
+     * @param bool $remember
+     * @return void
+     */
+    public function loginUser(User $user, bool $remember): void
+    {
+        Log::debug("AuthService::loginUser");
+        Auth::login($user, $remember);
     }
 
     /**
@@ -618,7 +667,8 @@ final class AuthService extends AbstractService implements IAuthService
                 $rps = $zlib->uncompress($rps);
                 $rps .= '|';
             }
-            if (is_null($rps)) $rps = "";
+            if (is_null($rps))
+                $rps = "";
 
             if (!str_contains($rps, $client_id))
                 $rps .= $client_id;
@@ -720,12 +770,15 @@ final class AuthService extends AbstractService implements IAuthService
         Log::debug(sprintf("AuthService::postLoginUserActions user %s", $user_id));
         $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->user_repository->getById($user_id);
-            if (!$user instanceof User) return;
+            if (!$user instanceof User)
+                return;
 
             if (!$user->isActive()) {
                 Log::warning(sprintf("AuthService::postLoginUserActions user %s is not active.", $user_id));
-                throw new AuthenticationLockedUserLoginAttempt($user->getEmail(),
-                    sprintf("User %s is locked.", $user->getEmail()));
+                throw new AuthenticationLockedUserLoginAttempt(
+                    $user->getEmail(),
+                    sprintf("User %s is locked.", $user->getEmail())
+                );
             }
 
             //update user fields
