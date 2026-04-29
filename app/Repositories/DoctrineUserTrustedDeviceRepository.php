@@ -15,6 +15,7 @@ use App\libs\Auth\Models\UserTrustedDevice;
 use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\User;
 use Doctrine\Common\Collections\Criteria;
+use Doctrine\Common\Collections\Expr\Comparison;
 
 final class DoctrineUserTrustedDeviceRepository
     extends ModelDoctrineRepository implements IUserTrustedDeviceRepository
@@ -24,13 +25,10 @@ final class DoctrineUserTrustedDeviceRepository
         return UserTrustedDevice::class;
     }
 
-    private function buildActiveExpiryExpr(): \Doctrine\Common\Collections\Expr\CompositeExpression
+    private function buildActiveExpiryExpr(): Comparison
     {
         $now = new \DateTime('now', new \DateTimeZone('UTC'));
-        return Criteria::expr()->orX(
-            Criteria::expr()->gt('expires_at', $now),
-            Criteria::expr()->isNull('expires_at')
-        );
+        return Criteria::expr()->gt('expires_at', $now);
     }
 
     public function getActiveByUserAndIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice
