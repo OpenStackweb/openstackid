@@ -1,4 +1,5 @@
-<?php namespace Database\Migrations;
+<?php
+namespace Database\Migrations;
 /**
  * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +27,21 @@ final class Version20260424120000 extends AbstractMigration
 {
     public function up(Schema $schema): void
     {
+
+        $duplicates = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM (
+            SELECT 1
+            FROM user_trusted_devices
+            GROUP BY user_id, device_identifier
+            HAVING COUNT(*) > 1
+        ) dup'
+        );
+
+        $this->abortIf(
+            $duplicates > 0,
+            'Duplicate trusted devices exist; dedupe user_trusted_devices before applying utd_user_device_uniq.'
+        );
+
         $this->addSql(
             'ALTER TABLE user_trusted_devices
              DROP INDEX utd_user_device_idx,
