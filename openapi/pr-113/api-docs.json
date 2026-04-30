@@ -92,21 +92,10 @@
                     {
                         "name": "response_type",
                         "in": "query",
-                        "description": "OAuth2 response type",
+                        "description": "The OAuth 2.0 specification allows for registration of space-separated response_type parameter values. If a Response Type contains one of more space characters (%20), it is compared as a space-delimited list of values in which the order of values does not matter. Possible values are: code, token, id_token, otp, none. The \"none\" value cannot be used with any other response type value.",
                         "required": true,
                         "schema": {
-                            "type": "string",
-                            "enum": [
-                                "code",
-                                "token",
-                                "id_token",
-                                "code token",
-                                "code id_token",
-                                "token id_token",
-                                "code token id_token",
-                                "otp",
-                                "none"
-                            ]
+                            "type": "string"
                         }
                     },
                     {
@@ -121,7 +110,7 @@
                     {
                         "name": "redirect_uri",
                         "in": "query",
-                        "description": "Redirect URI (must match a registered URI)",
+                        "description": "Redirect URI",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -131,7 +120,7 @@
                     {
                         "name": "scope",
                         "in": "query",
-                        "description": "Space-delimited scopes (include \"openid\" for OIDC)",
+                        "description": "Space-delimited scopes",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -140,25 +129,42 @@
                     {
                         "name": "state",
                         "in": "query",
-                        "description": "Opaque state parameter returned in the redirect",
+                        "description": "Opaque state parameter",
                         "required": false,
                         "schema": {
                             "type": "string"
                         }
                     },
                     {
-                        "name": "nonce",
+                        "name": "approval_prompt",
                         "in": "query",
-                        "description": "Nonce for ID token replay protection (OIDC)",
+                        "description": "Indicates whether the user should be re-prompted for consent. The default is auto, so a given user should only see the consent page for a given set of scopes the first time through the sequence. If the value is force, then the user sees a consent page even if they previously gave consent to your application for a given set of scopes.",
                         "required": false,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "auto",
+                                "force"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "access_type",
+                        "in": "query",
+                        "description": "Indicates whether your application needs to access an API when the user is not present at the browser. This parameter defaults to online. If your application needs to refresh access tokens when the user is not present at the browser, then use offline. This will result in your application obtaining a refresh token the first time your application exchanges an authorization code for a user.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "online",
+                                "offline"
+                            ]
                         }
                     },
                     {
                         "name": "response_mode",
                         "in": "query",
-                        "description": "Response mode override",
+                        "description": "OPTIONAL. Informs the Authorization Server of the mechanism to be used for returning Authorization Response parameters from the Authorization Endpoint. This use of this parameter is NOT RECOMMENDED with a value that specifies the same Response Mode as the default Response Mode for the Response Type used.\\nThe default Response Mode for the OAuth 2.0 code Response Type is the query encoding. For purposes of this specification, the default Response Mode for the OAuth 2.0 token Response Type is the fragment encoding.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -171,27 +177,25 @@
                         }
                     },
                     {
-                        "name": "prompt",
+                        "name": "code_challenge",
                         "in": "query",
-                        "description": "Space-delimited user interaction prompts (OIDC)",
+                        "description": "PKCE code challenge",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "code_challenge_method",
+                        "in": "query",
+                        "description": "Optional. PKCE challenge method",
                         "required": false,
                         "schema": {
                             "type": "string",
                             "enum": [
-                                "none",
-                                "login",
-                                "consent",
-                                "select_account"
+                                "plain",
+                                "S256"
                             ]
-                        }
-                    },
-                    {
-                        "name": "login_hint",
-                        "in": "query",
-                        "description": "Hint about login identifier (OIDC)",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     {
@@ -211,78 +215,12 @@
                         }
                     },
                     {
-                        "name": "max_age",
+                        "name": "tenant",
                         "in": "query",
-                        "description": "Maximum authentication age in seconds (OIDC)",
-                        "required": false,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "acr_values",
-                        "in": "query",
-                        "description": "Authentication context class reference values (OIDC)",
+                        "description": "Tenant identifier",
                         "required": false,
                         "schema": {
                             "type": "string"
-                        }
-                    },
-                    {
-                        "name": "code_challenge",
-                        "in": "query",
-                        "description": "PKCE code challenge",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "code_challenge_method",
-                        "in": "query",
-                        "description": "PKCE challenge method",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "plain",
-                                "S256"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "id_token_hint",
-                        "in": "query",
-                        "description": "Previously issued ID token hint (OIDC)",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "approval_prompt",
-                        "in": "query",
-                        "description": "Consent handling",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "auto",
-                                "force"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "access_type",
-                        "in": "query",
-                        "description": "Token refresh behavior",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "online",
-                                "offline"
-                            ]
                         }
                     }
                 ],
@@ -497,6 +435,9 @@
                 },
                 "security": [
                     {
+                        "OAuth2ProviderClientBasic": []
+                    },
+                    {
                         "OAuth2ProviderSecurity": []
                     }
                 ]
@@ -625,7 +566,7 @@
                     "OAuth2 / OpenID Connect"
                 ],
                 "summary": "OpenID Connect Discovery Endpoint",
-                "description": "Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0. Also available at /oauth2/.well-known/openid-configuration.",
+                "description": "Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0.",
                 "operationId": "oauth2Discovery",
                 "responses": {
                     "200": {
@@ -1051,6 +992,10 @@
             "OAuth2TokenResponse": {
                 "title": "OAuth2 Token Response",
                 "description": "Successful token response per RFC 6749 §5.1",
+                "required": [
+                    "access_token",
+                    "token_type"
+                ],
                 "properties": {
                     "access_token": {
                         "description": "The access token issued by the authorization server",
@@ -1105,6 +1050,9 @@
             "OAuth2IntrospectionResponse": {
                 "title": "OAuth2 Token Introspection Response",
                 "description": "Token introspection response per RFC 7662",
+                "required": [
+                    "active"
+                ],
                 "properties": {
                     "active": {
                         "description": "Whether the token is active",
@@ -1223,6 +1171,9 @@
             "JWKSResponse": {
                 "title": "JSON Web Key Set",
                 "description": "JWK Set document per RFC 7517",
+                "required": [
+                    "keys"
+                ],
                 "properties": {
                     "keys": {
                         "description": "Array of JSON Web Keys",
@@ -1267,6 +1218,15 @@
             "OpenIDDiscoveryResponse": {
                 "title": "OpenID Connect Discovery Document",
                 "description": "OpenID Provider Configuration per OpenID Connect Discovery 1.0",
+                "required": [
+                    "issuer",
+                    "authorization_endpoint",
+                    "token_endpoint",
+                    "jwks_uri",
+                    "response_types_supported",
+                    "subject_types_supported",
+                    "id_token_signing_alg_values_supported"
+                ],
                 "properties": {
                     "issuer": {
                         "description": "Issuer identifier URL",
@@ -1365,19 +1325,8 @@
                 ],
                 "properties": {
                     "response_type": {
-                        "description": "OAuth2 response type",
-                        "type": "string",
-                        "enum": [
-                            "code",
-                            "token",
-                            "id_token",
-                            "code token",
-                            "code id_token",
-                            "token id_token",
-                            "code token id_token",
-                            "otp",
-                            "none"
-                        ]
+                        "description": "The OAuth 2.0 specification allows for registration of space-separated response_type parameter values. If a Response Type contains one of more space characters (%20), it is compared as a space-delimited list of values in which the order of values does not matter. Possible values are: code, token, id_token, otp, none. The \"none\" value cannot be used with any other response type value.",
+                        "type": "string"
                     },
                     "client_id": {
                         "description": "OAuth2 client identifier",
@@ -1396,12 +1345,24 @@
                         "description": "Opaque state parameter",
                         "type": "string"
                     },
-                    "nonce": {
-                        "description": "Nonce for ID token replay protection",
-                        "type": "string"
+                    "approval_prompt": {
+                        "description": "Indicates whether the user should be re-prompted for consent. The default is auto, so a given user should only see the consent page for a given set of scopes the first time through the sequence. If the value is force, then the user sees a consent page even if they previously gave consent to your application for a given set of scopes.",
+                        "type": "string",
+                        "enum": [
+                            "auto",
+                            "force"
+                        ]
+                    },
+                    "access_type": {
+                        "description": "Indicates whether your application needs to access an API when the user is not present at the browser. This parameter defaults to online. If your application needs to refresh access tokens when the user is not present at the browser, then use offline. This will result in your application obtaining a refresh token the first time your application exchanges an authorization code for a user.",
+                        "type": "string",
+                        "enum": [
+                            "online",
+                            "offline"
+                        ]
                     },
                     "response_mode": {
-                        "description": "Response mode override",
+                        "description": "OPTIONAL. Informs the Authorization Server of the mechanism to be used for returning Authorization Response parameters from the Authorization Endpoint. This use of this parameter is NOT RECOMMENDED with a value that specifies the same Response Mode as the default Response Mode for the Response Type used.\\nThe default Response Mode for the OAuth 2.0 code Response Type is the query encoding. For purposes of this specification, the default Response Mode for the OAuth 2.0 token Response Type is the fragment encoding.",
                         "type": "string",
                         "enum": [
                             "query",
@@ -1410,25 +1371,32 @@
                             "direct"
                         ]
                     },
-                    "prompt": {
-                        "description": "User interaction prompts",
-                        "type": "string"
-                    },
-                    "login_hint": {
-                        "description": "Login identifier hint",
-                        "type": "string"
-                    },
                     "code_challenge": {
                         "description": "PKCE code challenge",
                         "type": "string"
                     },
                     "code_challenge_method": {
-                        "description": "PKCE challenge method",
+                        "description": "Optional. PKCE challenge method",
                         "type": "string",
                         "enum": [
                             "plain",
                             "S256"
                         ]
+                    },
+                    "display": {
+                        "description": "UI display preference (OIDC)",
+                        "type": "string",
+                        "enum": [
+                            "page",
+                            "popup",
+                            "touch",
+                            "wap",
+                            "native"
+                        ]
+                    },
+                    "tenant": {
+                        "description": "Tenant identifier",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1542,8 +1510,7 @@
                         "type": "string",
                         "enum": [
                             "sms",
-                            "email",
-                            "inline"
+                            "email"
                         ]
                     },
                     "send": {
