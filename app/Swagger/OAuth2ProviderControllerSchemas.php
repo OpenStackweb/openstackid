@@ -9,6 +9,7 @@ use OpenApi\Attributes as OA;
     title: 'OAuth2 Token Response',
     description: 'Successful token response per RFC 6749 §5.1',
     type: 'object',
+    required: ['access_token', 'token_type'],
     properties: [
         new OA\Property(property: 'access_token', type: 'string', description: 'The access token issued by the authorization server'),
         new OA\Property(property: 'token_type', type: 'string', description: 'The type of the token (typically Bearer)', example: 'Bearer'),
@@ -42,6 +43,7 @@ class OAuth2ErrorResponseSchema
     title: 'OAuth2 Token Introspection Response',
     description: 'Token introspection response per RFC 7662',
     type: 'object',
+    required: ['active'],
     properties: [
         new OA\Property(property: 'active', type: 'boolean', description: 'Whether the token is active'),
         new OA\Property(property: 'access_token', type: 'string', description: 'The access token value'),
@@ -87,6 +89,7 @@ class OAuth2IntrospectionResponseSchema
     title: 'JSON Web Key Set',
     description: 'JWK Set document per RFC 7517',
     type: 'object',
+    required: ['keys'],
     properties: [
         new OA\Property(
             property: 'keys',
@@ -115,6 +118,7 @@ class JWKSResponseSchema
     title: 'OpenID Connect Discovery Document',
     description: 'OpenID Provider Configuration per OpenID Connect Discovery 1.0',
     type: 'object',
+    required: ['issuer', 'authorization_endpoint', 'token_endpoint', 'jwks_uri', 'response_types_supported', 'subject_types_supported', 'id_token_signing_alg_values_supported'],
     properties: [
         new OA\Property(property: 'issuer', type: 'string', format: 'uri', description: 'Issuer identifier URL'),
         new OA\Property(property: 'authorization_endpoint', type: 'string', format: 'uri', description: 'Authorization endpoint URL'),
