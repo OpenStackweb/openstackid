@@ -21,7 +21,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'username', type: 'string', description: 'Username (password grant)'),
         new OA\Property(property: 'password', type: 'string', description: 'Password (password grant)'),
         new OA\Property(property: 'audience', type: 'string', description: 'Target audience (client_credentials grant)'),
-        new OA\Property(property: 'connection', type: 'string', description: 'Connection type (passwordless grant)', enum: ['sms', 'email', 'inline']),
+        new OA\Property(property: 'connection', type: 'string', description: 'Connection type (passwordless grant)', enum: ['sms', 'email']),
         new OA\Property(property: 'send', type: 'string', description: 'Delivery method (passwordless grant)', enum: ['code', 'link']),
         new OA\Property(property: 'email', type: 'string', description: 'Email address (passwordless grant)'),
         new OA\Property(property: 'phone_number', type: 'string', description: 'Phone number (passwordless grant)'),

@@ -1,4 +1,5 @@
-<?php namespace App\Http\Controllers\OAuth2;
+<?php
+namespace App\Http\Controllers\OAuth2;
 /**
  * Copyright 2015 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,8 +65,7 @@ final class OAuth2ProviderController extends Controller
         IOAuth2Protocol $oauth2_protocol,
         IClientRepository $client_repository,
         IAuthService $auth_service
-    )
-    {
+    ) {
         $this->oauth2_protocol = $oauth2_protocol;
         $this->auth_service = $auth_service;
         $this->client_repository = $client_repository;
@@ -85,23 +85,18 @@ final class OAuth2ProviderController extends Controller
         description: 'Initiates an OAuth2 authorization flow. Supports Authorization Code, Implicit, Hybrid, and OpenID Connect flows. Per RFC 6749 §3.1, GET is required.',
         tags: ['OAuth2 / OpenID Connect'],
         parameters: [
-            new OA\Parameter(name: 'response_type', in: 'query', required: true, description: 'OAuth2 response type', schema: new OA\Schema(type: 'string', enum: ['code', 'token', 'id_token', 'code token', 'code id_token', 'token id_token', 'code token id_token', 'otp', 'none'])),
+            new OA\Parameter(name: 'response_type', in: 'query', required: true, description: 'The OAuth 2.0 specification allows for registration of space-separated response_type parameter values. If a Response Type contains one of more space characters (%20), it is compared as a space-delimited list of values in which the order of values does not matter. Possible values are: code, token, id_token, otp, none. The "none" value cannot be used with any other response type value.', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'client_id', in: 'query', required: true, description: 'OAuth2 client identifier', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'redirect_uri', in: 'query', required: true, description: 'Redirect URI (must match a registered URI)', schema: new OA\Schema(type: 'string', format: 'uri')),
-            new OA\Parameter(name: 'scope', in: 'query', required: false, description: 'Space-delimited scopes (include "openid" for OIDC)', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'state', in: 'query', required: false, description: 'Opaque state parameter returned in the redirect', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'nonce', in: 'query', required: false, description: 'Nonce for ID token replay protection (OIDC)', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'response_mode', in: 'query', required: false, description: 'Response mode override', schema: new OA\Schema(type: 'string', enum: ['query', 'fragment', 'form_post', 'direct'])),
-            new OA\Parameter(name: 'prompt', in: 'query', required: false, description: 'Space-delimited user interaction prompts (OIDC)', schema: new OA\Schema(type: 'string', enum: ['none', 'login', 'consent', 'select_account'])),
-            new OA\Parameter(name: 'login_hint', in: 'query', required: false, description: 'Hint about login identifier (OIDC)', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'display', in: 'query', required: false, description: 'UI display preference (OIDC)', schema: new OA\Schema(type: 'string', enum: ['page', 'popup', 'touch', 'wap', 'native'])),
-            new OA\Parameter(name: 'max_age', in: 'query', required: false, description: 'Maximum authentication age in seconds (OIDC)', schema: new OA\Schema(type: 'integer')),
-            new OA\Parameter(name: 'acr_values', in: 'query', required: false, description: 'Authentication context class reference values (OIDC)', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'redirect_uri', in: 'query', required: true, description: 'Redirect URI', schema: new OA\Schema(type: 'string', format: 'uri')),
+            new OA\Parameter(name: 'scope', in: 'query', required: false, description: 'Space-delimited scopes', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'state', in: 'query', required: false, description: 'Opaque state parameter', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'approval_prompt', in: 'query', required: false, description: 'Indicates whether the user should be re-prompted for consent. The default is auto, so a given user should only see the consent page for a given set of scopes the first time through the sequence. If the value is force, then the user sees a consent page even if they previously gave consent to your application for a given set of scopes.', enum: ['auto', 'force'], schema: new OA\Schema(type: 'string', enum: ['auto', 'force'])),
+            new OA\Parameter(name: 'access_type', in: 'query', required: false, description: 'Indicates whether your application needs to access an API when the user is not present at the browser. This parameter defaults to online. If your application needs to refresh access tokens when the user is not present at the browser, then use offline. This will result in your application obtaining a refresh token the first time your application exchanges an authorization code for a user.', schema: new OA\Schema(type: 'string', enum: ['online', 'offline'])),
+            new OA\Parameter(name: 'response_mode', in: 'query', required: false, description: 'OPTIONAL. Informs the Authorization Server of the mechanism to be used for returning Authorization Response parameters from the Authorization Endpoint. This use of this parameter is NOT RECOMMENDED with a value that specifies the same Response Mode as the default Response Mode for the Response Type used.\nThe default Response Mode for the OAuth 2.0 code Response Type is the query encoding. For purposes of this specification, the default Response Mode for the OAuth 2.0 token Response Type is the fragment encoding.', schema: new OA\Schema(type: 'string', enum: ['query', 'fragment', 'form_post', 'direct'])),
             new OA\Parameter(name: 'code_challenge', in: 'query', required: false, description: 'PKCE code challenge', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'code_challenge_method', in: 'query', required: false, description: 'PKCE challenge method', schema: new OA\Schema(type: 'string', enum: ['plain', 'S256'])),
-            new OA\Parameter(name: 'id_token_hint', in: 'query', required: false, description: 'Previously issued ID token hint (OIDC)', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'approval_prompt', in: 'query', required: false, description: 'Consent handling', schema: new OA\Schema(type: 'string', enum: ['auto', 'force'])),
-            new OA\Parameter(name: 'access_type', in: 'query', required: false, description: 'Token refresh behavior', schema: new OA\Schema(type: 'string', enum: ['online', 'offline'])),
+            new OA\Parameter(name: 'code_challenge_method', in: 'query', required: false, description: 'Optional. PKCE challenge method', schema: new OA\Schema(type: 'string', enum: ['plain', 'S256'])),
+            new OA\Parameter(name: 'display', in: 'query', required: false, description: 'UI display preference (OIDC)', schema: new OA\Schema(type: 'string', enum: ['page', 'popup', 'touch', 'wap', 'native'])),
+            new OA\Parameter(name: 'tenant', in: 'query', required: false, description: 'Tenant identifier', schema: new OA\Schema(type: 'string')),
         ],
         responses: [
             new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
@@ -255,7 +250,6 @@ final class OAuth2ProviderController extends Controller
         summary: 'OAuth2 Token Endpoint',
         description: 'Issues access tokens. Supports authorization_code, client_credentials, password, refresh_token, and passwordless grant types.',
         tags: ['OAuth2 / OpenID Connect'],
-        security: [['OAuth2ProviderSecurity' => []]],
         requestBody: new OA\RequestBody(
             description: 'Token request parameters',
             required: true,
@@ -423,7 +417,7 @@ final class OAuth2ProviderController extends Controller
         path: '/.well-known/openid-configuration',
         operationId: 'oauth2Discovery',
         summary: 'OpenID Connect Discovery Endpoint',
-        description: 'Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0. Also available at /oauth2/.well-known/openid-configuration.',
+        description: 'Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0.',
         tags: ['OAuth2 / OpenID Connect'],
         responses: [
             new OA\Response(response: HttpResponse::HTTP_OK, description: 'OpenID Connect Discovery document', content: new OA\JsonContent(ref: '#/components/schemas/OpenIDDiscoveryResponse')),
