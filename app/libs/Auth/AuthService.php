@@ -98,6 +98,7 @@ final class AuthService extends AbstractService implements IAuthService
      * @param IAuthUserService $auth_user_service
      * @param ISecurityContextService $security_context_service
      * @param ITransactionService $tx_service
+     * @params ISecurityContextService $security_context_service
      */
     public function __construct
     (
@@ -394,10 +395,11 @@ final class AuthService extends AbstractService implements IAuthService
     {
         Log::debug("AuthService::login");
 
+        $this->last_login_error = "";
         if (!Auth::attempt(['username' => $username, 'password' => $password], $remember_me)) {
             throw new AuthenticationException
             (
-                "username or password does not match an existing record."
+                "We are sorry, your username or password does not match an existing record."
             );
         }
         Log::debug("AuthService::login: clearing principal");
@@ -406,7 +408,7 @@ final class AuthService extends AbstractService implements IAuthService
         if (is_null($current_user) || !$current_user->canLogin())
             throw new AuthenticationException
             (
-                "username or password does not match an existing record."
+                "We are sorry, your username or password does not match an existing record."
             );
         $this->principal_service->register
         (
@@ -420,35 +422,19 @@ final class AuthService extends AbstractService implements IAuthService
     /**
      * @param string $username
      * @param string $password
-     * @return User
+     * @return User|null
      * @throws AuthenticationException
      */
     public function validateCredentials(string $username, string $password): User
     {
         Log::debug("AuthService::validateCredentials");
 
-        // retrieveByCredentials swallows AuthenticationLockedUserLoginAttempt and returns null,
-        // so pre-check lock state here to surface a distinct message for locked accounts.
-        $existing = $this->user_repository->getByEmailOrName($username);
-        if (!is_null($existing) && !$existing->isActive()) {
-            throw new AuthenticationException(
-                sprintf("User %s is locked.", $username)
-            );
-        }
-
-        // Known cost: retrieveByCredentials() calls user_repository->getByEmailOrName() internally
-        // (CustomAuthProvider line ~122), duplicating the query above. Eliminating it would require
-        // either changing the provider API to accept a pre-fetched User, or moving
-        // LockUserCounterMeasure checkpoint logic out of the provider — both out of scope here.
-        $user = Auth::getProvider()->retrieveByCredentials([
-            'username' => $username,
-            'password' => $password,
-        ]);
-
-        if (is_null($user) || !$user instanceof User || !$user->canLogin()) {
-            throw new AuthenticationException(
-                "username or password does not match an existing record."
-            );
+        /**
+         * @var User|null $user
+         */
+        $user = Auth::getProvider()->retrieveByCredentials(['username' => $username, 'password' => $password]);
+        if (!$user) {
+            throw new AuthenticationException();
         }
 
         return $user;
@@ -462,6 +448,8 @@ final class AuthService extends AbstractService implements IAuthService
     public function loginUser(User $user, bool $remember): void
     {
         Log::debug("AuthService::loginUser");
+        if (!$user->canLogin())
+            throw new AuthenticationException("User is not active or cannot login.");
         Auth::login($user, $remember);
     }
 
