@@ -582,6 +582,46 @@
                 }
             }
         },
+        "/oauth2/.well-known/openid-configuration": {
+            "get": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OpenID Connect Discovery Endpoint (oauth2-prefixed alias)",
+                "description": "Alias for /.well-known/openid-configuration. Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0.",
+                "operationId": "oauth2DiscoveryAlias",
+                "responses": {
+                    "200": {
+                        "description": "OpenID Connect Discovery document",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OpenIDDiscoveryResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth2/check-session": {
+            "get": {
+                "tags": [
+                    "OAuth2 / OpenID Connect"
+                ],
+                "summary": "OpenID Connect Check Session iFrame",
+                "description": "Returns the HTML iFrame page used by clients for OIDC Session Management (OpenID Connect Session Management 1.0 §3). The URL is advertised as check_session_iframe in the discovery document.",
+                "operationId": "oauth2CheckSession",
+                "responses": {
+                    "200": {
+                        "description": "Session check iFrame HTML page",
+                        "content": {
+                            "text/html": {}
+                        }
+                    }
+                }
+            }
+        },
         "/oauth2/end-session": {
             "get": {
                 "tags": [
@@ -1463,13 +1503,18 @@
                         "enum": [
                             "authorization_code",
                             "client_credentials",
-                            "password",
+                            "implicit",
                             "refresh_token",
-                            "passwordless"
+                            "passwordless",
+                            "hybrid"
                         ]
                     },
                     "code": {
                         "description": "Authorization code (authorization_code grant)",
+                        "type": "string"
+                    },
+                    "code_verifier": {
+                        "description": "PKCE code verifier (authorization_code grant with PKCE)",
                         "type": "string"
                     },
                     "redirect_uri": {
@@ -1493,14 +1538,6 @@
                         "description": "Space-delimited scopes",
                         "type": "string"
                     },
-                    "username": {
-                        "description": "Username (password grant)",
-                        "type": "string"
-                    },
-                    "password": {
-                        "description": "Password (password grant)",
-                        "type": "string"
-                    },
                     "audience": {
                         "description": "Target audience (client_credentials grant)",
                         "type": "string"
@@ -1513,20 +1550,16 @@
                             "email"
                         ]
                     },
-                    "send": {
-                        "description": "Delivery method (passwordless grant)",
-                        "type": "string",
-                        "enum": [
-                            "code",
-                            "link"
-                        ]
+                    "otp": {
+                        "description": "One-time password code (passwordless grant)",
+                        "type": "string"
                     },
                     "email": {
-                        "description": "Email address (passwordless grant)",
+                        "description": "Email address (passwordless grant, connection=email)",
                         "type": "string"
                     },
                     "phone_number": {
-                        "description": "Phone number (passwordless grant)",
+                        "description": "Phone number (passwordless grant, connection=sms)",
                         "type": "string"
                     }
                 },
