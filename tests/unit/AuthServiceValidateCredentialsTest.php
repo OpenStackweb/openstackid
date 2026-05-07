@@ -16,6 +16,7 @@ use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\AuthService;
 use Auth\CustomAuthProvider;
 use Auth\Exceptions\AuthenticationException;
+use Auth\Exceptions\UnverifiedEmailMemberException;
 use Auth\Repositories\IUserRepository;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
@@ -91,6 +92,7 @@ final class AuthServiceValidateCredentialsTest extends PHPUnitTestCase
         $password = 'Str0ng!Pass';
 
         $resolved_user = Mockery::mock('Auth\User');
+        $resolved_user->shouldReceive('canLogin')->once()->andReturn(true);
 
         $provider_mock = Mockery::mock(CustomAuthProvider::class);
         $provider_mock->shouldReceive('retrieveByCredentials')
@@ -177,6 +179,56 @@ final class AuthServiceValidateCredentialsTest extends PHPUnitTestCase
         $this->expectExceptionMessageMatches('/User is not active or cannot login\./');
 
         $this->service->loginUser($user, true);
+    }
+
+    /**
+     * UnverifiedEmailMemberException from the provider must be caught and
+     * re-thrown as AuthenticationException (contract: @throws AuthenticationException only).
+     */
+    public function testUnverifiedUser_throwsAuthenticationException(): void
+    {
+        $username = 'unverified@example.com';
+        $password = 'any';
+
+        $provider_mock = Mockery::mock(CustomAuthProvider::class);
+        $provider_mock->shouldReceive('retrieveByCredentials')
+            ->once()
+            ->with(['username' => $username, 'password' => $password])
+            ->andThrow(new UnverifiedEmailMemberException('Email not verified.'));
+
+        $this->auth_mock->shouldReceive('getProvider')->once()->andReturn($provider_mock);
+        $this->auth_mock->shouldNotReceive('login');
+
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage('Email not verified.');
+
+        $this->service->validateCredentials($username, $password);
+    }
+
+    /**
+     * Provider returns a valid User but canLogin() is false (locked/inactive):
+     * must throw AuthenticationException — not silently return the user.
+     */
+    public function testUserCannotLogin_throwsAuthenticationException(): void
+    {
+        $username = 'locked@example.com';
+        $password = 'any';
+
+        $locked_user = Mockery::mock('Auth\User');
+        $locked_user->shouldReceive('canLogin')->once()->andReturn(false);
+
+        $provider_mock = Mockery::mock(CustomAuthProvider::class);
+        $provider_mock->shouldReceive('retrieveByCredentials')
+            ->once()
+            ->with(['username' => $username, 'password' => $password])
+            ->andReturn($locked_user);
+
+        $this->auth_mock->shouldReceive('getProvider')->once()->andReturn($provider_mock);
+        $this->auth_mock->shouldNotReceive('login');
+
+        $this->expectException(AuthenticationException::class);
+
+        $this->service->validateCredentials($username, $password);
     }
 
 }

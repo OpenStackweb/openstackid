@@ -19,6 +19,7 @@ use App\Services\AbstractService;
 use App\Services\Auth\IUserService as IAuthUserService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\AuthenticationLockedUserLoginAttempt;
+use Auth\Exceptions\UnverifiedEmailMemberException;
 use Auth\Repositories\IUserRepository;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -429,12 +430,16 @@ final class AuthService extends AbstractService implements IAuthService
     {
         Log::debug("AuthService::validateCredentials");
 
-        /**
-         * @var User|null $user
-         */
-        $user = Auth::getProvider()->retrieveByCredentials(['username' => $username, 'password' => $password]);
-        if (!$user) {
-            throw new AuthenticationException();
+        try {
+            /**
+             * @var User|null $user
+             */
+            $user = Auth::getProvider()->retrieveByCredentials(['username' => $username, 'password' => $password]);
+            if (!$user instanceof User || !$user->canLogin()) {
+                throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
+            }
+        } catch (UnverifiedEmailMemberException $ex) {
+            throw new AuthenticationException($ex->getMessage());
         }
 
         return $user;
