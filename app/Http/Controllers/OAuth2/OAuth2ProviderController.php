@@ -424,6 +424,16 @@ final class OAuth2ProviderController extends Controller
             new OA\Response(response: HttpResponse::HTTP_OK, description: 'OpenID Connect Discovery document', content: new OA\JsonContent(ref: '#/components/schemas/OpenIDDiscoveryResponse')),
         ]
     )]
+    #[OA\Get(
+        path: '/oauth2/.well-known/openid-configuration',
+        operationId: 'oauth2DiscoveryAlias',
+        summary: 'OpenID Connect Discovery Endpoint (oauth2-prefixed alias)',
+        description: 'Alias for /.well-known/openid-configuration. Returns the OpenID Provider Configuration document per OpenID Connect Discovery 1.0.',
+        tags: ['OAuth2 / OpenID Connect'],
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'OpenID Connect Discovery document', content: new OA\JsonContent(ref: '#/components/schemas/OpenIDDiscoveryResponse')),
+        ]
+    )]
     public function discovery()
     {
 
@@ -437,6 +447,16 @@ final class OAuth2ProviderController extends Controller
     /**
      * @see http://openid.net/specs/openid-connect-session-1_0.html#OPiframe
      */
+    #[OA\Get(
+        path: '/oauth2/check-session',
+        operationId: 'oauth2CheckSession',
+        summary: 'OpenID Connect Check Session iFrame',
+        description: 'Returns the HTML iFrame page used by clients for OIDC Session Management (OpenID Connect Session Management 1.0 §3). The URL is advertised as check_session_iframe in the discovery document.',
+        tags: ['OAuth2 / OpenID Connect'],
+        responses: [
+            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Session check iFrame HTML page', content: new OA\MediaType(mediaType: 'text/html')),
+        ]
+    )]
     public function checkSessionIFrame()
     {
         $data = [];
