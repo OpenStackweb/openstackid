@@ -183,7 +183,6 @@ const PasswordInputForm = ({
             <input type="hidden" value={userNameValue} id="username" name="username"/>
             <input type="hidden" value={csrfToken} id="_token" name="_token"/>
             <input type="hidden" value="password" id="flow" name="flow"/>
-            <input type="hidden" value={loginAttempts ?? 0} name="login_attempts"/>
             {shouldShowCaptcha() && captchaPublicKey &&
                 <Turnstile
                     className={styles.turnstile}
@@ -265,7 +264,6 @@ const OTPInputForm = ({
                 <input type="hidden" value="otp" id="flow" name="flow"/>
                 <input type="hidden" value={otpCode} id="password" name="password"/>
                 <input type="hidden" value="email" id="connection" name="connection"/>
-                <input type="hidden" value={loginAttempts ?? 0} name="login_attempts"/>
                 {shouldShowCaptcha() && captchaPublicKey &&
                     <Turnstile
                         className={styles.turnstile}
