@@ -14,6 +14,7 @@
 
 use App\libs\Utils\PunnyCodeHelper;
 use App\Models\Utils\BaseEntity;
+use Auth\User;
 use Doctrine\ORM\Mapping AS ORM;
 use DateTime;
 use DateInterval;
@@ -117,6 +118,12 @@ class OAuth2OTP extends BaseEntity implements Identifier
     #[ORM\JoinColumn(name: 'oauth2_client_id', referencedColumnName: 'id', nullable: true)]
     #[ORM\ManyToOne(targetEntity: \Models\OAuth2\Client::class, inversedBy: 'otp_grants', cascade: ['persist'])]
     private $client;
+
+    /**
+     * @var User
+     * this is a transient state
+     */
+    private $user;
 
     /**
      * OAuth2OTP constructor.
@@ -499,4 +506,11 @@ class OAuth2OTP extends BaseEntity implements Identifier
         return $this->user_id;
     }
 
+    public function setUser(User $user): void{
+        $this->user = $user;
+    }
+
+    public function getUser():?User{
+        return $this->user;
+    }
 }
