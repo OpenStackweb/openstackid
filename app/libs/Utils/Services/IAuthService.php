@@ -156,23 +156,12 @@ interface IAuthService
     public function postLoginUserActions(int $user_id):void;
 
     /**
-     * @param string      $otp_value
-     * @param string      $user_name
-     * @param string      $otp_conn
-     * @param bool        $should_create_user
-     * @param string|null $otp_required_scopes
+     * @param OAuth2OTP   $otpClaim
      * @param Client|null $client
-     * @return OAuth2OTP|null
-     * @throws Exception
+     * @return OAuth2OTP
+     * @throws AuthenticationException
+     * @throws \OAuth2\Exceptions\InvalidOTPException
      */
-    public function verifyOTPChallenge
-    (
-        string  $otp_value,
-        string  $user_name,
-        string  $otp_conn,
-        bool    $should_create_user = true,
-        ?string $otp_required_scopes = null,
-        ?Client $client = null
-    ): ?OAuth2OTP;
+    public function verifyOTPChallenge(OAuth2OTP $otpClaim, ?Client $client = null): OAuth2OTP;
 
 }

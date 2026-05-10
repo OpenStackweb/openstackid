@@ -131,63 +131,24 @@ final class AuthService extends AbstractService implements IAuthService
     }
 
     /**
-     * @param OAuth2OTP $otpClaim
-     * @param Client|null $client
-     * @param bool $remember
-     * @return OAuth2OTP|null
-     * @throws Exception
+     * Finds the OTP by value/connection/username, logs the redeem attempt (TX-A),
+     * then validates lifecycle / value / scope / audience (TX-B).
+     * TX-A is committed independently so the brute-force counter increments even when TX-B throws.
+     *
+     * @throws AuthenticationException
+     * @throws InvalidOTPException
      */
-    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP
-    {
-
-        Log::debug(sprintf("AuthService::loginWithOTP otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
-
-        $otp = $this->verifyOTPChallenge(
-            $otpClaim->getValue(),
-            $otpClaim->getUserName(),
-            $otpClaim->getConnection(),
-            true,
-            $otpClaim->getScope(),
-            $client
-        );
-
-        $user = $otp->getUser();
-
-        if(is_null($user)){
-            throw new AuthenticationException("Non existent user.");
-        }
-
-        Auth::login($user, $remember);
-
-        Log::debug(sprintf("AuthService::verifyOTPChallenge user %s logged in.", $user->getId()));
-
-        return $otp;
-    }
-
-    /**
-     * @param string      $otp_value
-     * @param string      $user_name
-     * @param string      $otp_conn
-     * @param bool        $should_create_user
-     * @param string|null $otp_required_scopes
-     * @param Client|null $client
-     * @return OAuth2OTP|null
-     * @throws Exception
-     */
-    public function verifyOTPChallenge
-    (
+    private function findAndValidateOTP(
         string  $otp_value,
         string  $user_name,
         string  $otp_conn,
-        bool    $should_create_user = true,
-        ?string $otp_required_scopes = null,
-        ?Client $client = null
-    ): ?OAuth2OTP
+        ?string $otp_required_scopes,
+        ?Client $client
+    ): OAuth2OTP
     {
-        Log::debug(sprintf("AuthService::verifyOTPChallenge otp_value %s user %s", $otp_value, $user_name));
+        // TX-A: find + log attempt (committed before any validation can throw)
         $otp = $this->tx_service->transaction(function () use ($otp_value, $otp_conn, $user_name, $client) {
 
-            // find by value, connection and user name
             $otp = $this->otp_repository->getByValueConnectionAndUserName(
                 $otp_value,
                 $otp_conn,
@@ -196,17 +157,11 @@ final class AuthService extends AbstractService implements IAuthService
             );
 
             if (is_null($otp)) {
-                // otp no emitted
-                Log::warning
-                (
-                    sprintf
-                    (
-                        "AuthService::verifyOTPChallenge otp %s user %s grant not found",
-                        $otp_value,
-                        $user_name
-                    )
-                );
-
+                Log::warning(sprintf(
+                    "AuthService::findAndValidateOTP otp %s user %s grant not found",
+                    $otp_value,
+                    $user_name
+                ));
                 throw new AuthenticationException("Non existent single-use code.");
             }
 
@@ -214,7 +169,8 @@ final class AuthService extends AbstractService implements IAuthService
             return $otp;
         });
 
-        return $this->tx_service->transaction(function () use ($otp, $otp_value, $otp_required_scopes, $user_name, $should_create_user, $client) {
+        // TX-B: lifecycle / value / scope / audience checks
+        return $this->tx_service->transaction(function () use ($otp, $otp_value, $otp_required_scopes, $client) {
 
             if (!$otp->isAlive()) {
                 throw new AuthenticationException("Single-use code is expired.");
@@ -228,77 +184,135 @@ final class AuthService extends AbstractService implements IAuthService
                 throw new AuthenticationException("Single-use code mismatch.");
             }
 
-            if (!empty($otp_required_scopes) && !$otp->allowScope($otp_required_scopes))
+            if (!empty($otp_required_scopes) && !$otp->allowScope($otp_required_scopes)) {
                 throw new InvalidOTPException("Single-use code requested scopes escalates former scopes.");
+            }
 
             if (($otp->hasClient() && is_null($client)) ||
                 ($otp->hasClient() && !is_null($client) && $client->getClientId() != $otp->getClient()->getClientId())) {
                 throw new AuthenticationException("Single-use code audience mismatch.");
             }
 
+            return $otp;
+        });
+    }
+
+    /**
+     * Marks the OTP redeemed, attaches the user (transient), revokes sibling pending OTPs.
+     * Entity methods short-circuit for inline OTPs — no special-casing needed here.
+     */
+    private function finalizeRedemption(OAuth2OTP $otp, User $user, ?Client $client): void
+    {
+        $otp->setAuthTime(time());
+        $otp->setUserId($user->getId());
+        $otp->setUser($user);
+        $otp->redeem();
+
+        $grants2Revoke = $this->otp_repository->getByUserNameNotRedeemed($otp->getUserName(), $client);
+        foreach ($grants2Revoke as $otp2Revoke) {
+            try {
+                Log::debug(sprintf("AuthService::finalizeRedemption revoking otp %s", $otp2Revoke->getValue()));
+                if ($otp2Revoke->getValue() !== $otp->getValue())
+                    $otp2Revoke->redeem();
+            } catch (Exception $ex) {
+                Log::warning($ex);
+            }
+        }
+    }
+
+    /**
+     * @param OAuth2OTP $otpClaim
+     * @param Client|null $client
+     * @param bool $remember
+     * @return OAuth2OTP|null
+     * @throws Exception
+     */
+    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP
+    {
+        Log::debug(sprintf("AuthService::loginWithOTP otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
+
+        $otp = $this->findAndValidateOTP(
+            $otpClaim->getValue(),
+            $otpClaim->getUserName(),
+            $otpClaim->getConnection(),
+            $otpClaim->getScope(),
+            $client
+        );
+
+        // TX-C: resolve or create user, finalize, login
+        return $this->tx_service->transaction(function () use ($otp, $otpClaim, $client, $remember) {
+
             $user = $this->getUserByUsername($otp->getUserName());
-            $new_user = is_null($user);
-            if ($new_user) {
 
-                if (!$should_create_user) {
-                    Log::warning(sprintf(
-                        "AuthService::verifyOTPChallenge user %s not found and auto-create disabled.",
-                        $otp->getUserName()
-                    ));
-                    throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
-                }
-                // we need to create a new one ( auto register)
-
-                Log::debug(sprintf("AuthService::verifyOTPChallenge user %s does not exists ...", $otp->getUserName()));
-
-                $user = $this->auth_user_service->registerUser
-                (
+            if (is_null($user)) {
+                Log::debug(sprintf("AuthService::loginWithOTP user %s does not exist; auto-registering.", $otp->getUserName()));
+                $user = $this->auth_user_service->registerUser(
                     [
                         'email' => $otp->getUserName(),
                         'email_verified' => true,
-                        // dont send email
                         'send_email_verified_notice' => false,
                         'active' => true,
                     ],
                     $otp
                 );
-            } else {
-                if ($user->isActive()) {
-                    // verify email
-                    $user->verifyEmail(false);
-                }
+            } else if ($user->isActive()) {
+                $user->verifyEmail(false);
             }
 
             if (!$user->canLogin()) {
-                Log::warning(sprintf("AuthService::verifyOTPChallenge user %s cannot login ( is not active ).", $user->getId()));
+                Log::warning(sprintf("AuthService::loginWithOTP user %s cannot login (not active).", $user->getId()));
                 throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
             }
 
-            $otp->setAuthTime(time());
-            $otp->setUserId($user->getId());
-            $otp->setUser($user);
-            $otp->redeem();
+            $this->finalizeRedemption($otp, $user, $client);
 
-            // revoke former ones
-            $grants2Revoke = $this->otp_repository->getByUserNameNotRedeemed
-            (
-                $user_name,
-                $client
-            );
-
-            foreach ($grants2Revoke as $otp2Revoke) {
-                try {
-                    Log::debug(sprintf("AuthService::verifyOTPChallenge revoking otp %s ", $otp2Revoke->getValue()));
-                    if ($otp2Revoke->getValue() !== $otp_value)
-                        $otp2Revoke->redeem();
-                } catch (Exception $ex) {
-                    Log::warning($ex);
-                }
-            }
-
+            Auth::login($user, $remember);
+            Log::debug(sprintf("AuthService::loginWithOTP user %s logged in.", $user->getId()));
             return $otp;
         });
+    }
 
+    /**
+     * Verifies an OTP against an EXISTING user. Marks the OTP redeemed.
+     * Does NOT auto-register users and does NOT call Auth::login.
+     * Intended as the strict primitive for MFA challenge verification.
+     *
+     * @param OAuth2OTP   $otpClaim
+     * @param Client|null $client
+     * @return OAuth2OTP
+     * @throws AuthenticationException when the OTP is invalid or the user does not exist / cannot login.
+     * @throws InvalidOTPException     when the OTP requested scopes escalate.
+     */
+    public function verifyOTPChallenge(OAuth2OTP $otpClaim, ?Client $client = null): OAuth2OTP
+    {
+        Log::debug(sprintf("AuthService::verifyOTPChallenge otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
+
+        $otp = $this->findAndValidateOTP(
+            $otpClaim->getValue(),
+            $otpClaim->getUserName(),
+            $otpClaim->getConnection(),
+            $otpClaim->getScope(),
+            $client
+        );
+
+        // TX-C: resolve existing user, finalize
+        return $this->tx_service->transaction(function () use ($otp, $client) {
+
+            $user = $this->getUserByUsername($otp->getUserName());
+
+            if (is_null($user) || !$user->canLogin()) {
+                Log::warning(sprintf(
+                    "AuthService::verifyOTPChallenge user %s not found or cannot login.",
+                    $otp->getUserName()
+                ));
+                throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
+            }
+
+            $this->finalizeRedemption($otp, $user, $client);
+
+            Log::debug(sprintf("AuthService::verifyOTPChallenge user %s verified.", $user->getId()));
+            return $otp;
+        });
     }
 
     /**
