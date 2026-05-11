@@ -138,4 +138,10 @@ class DoctrineOAuth2OTPRepository
             ->setMaxResults(1)
             ->getOneOrNullResult();
     }
+
+    public function refreshExclusiveLock(OAuth2OTP $otp): void
+    {
+        // Single round-trip: SELECT ... FOR UPDATE that also re-hydrates the entity.
+        $this->getEntityManager()->refresh($otp, \Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE);
+    }
 }

@@ -32,6 +32,7 @@ use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Exceptions\InvalidOTPException;
 use OAuth2\Models\IClient;
+use OAuth2\OAuth2Protocol;
 use OAuth2\Services\IPrincipalService;
 use OAuth2\Services\ISecurityContextService;
 use OpenId\Services\IUserService;
@@ -200,9 +201,30 @@ final class AuthService extends AbstractService implements IAuthService
     /**
      * Marks the OTP redeemed, attaches the user (transient), revokes sibling pending OTPs.
      * Entity methods short-circuit for inline OTPs — no special-casing needed here.
+     *
+     * Concurrency: acquires a PESSIMISTIC_WRITE row lock and re-hydrates state
+     * before checking redemption. This closes the validate→redeem race window:
+     * a second concurrent submitter blocks on the lock and, on resume, sees the
+     * row already redeemed and gets a clean AuthenticationException instead of
+     * silently double-redeeming.
+     *
+     * Inline OTPs are intentionally not locked — they are non-redeemable by
+     * design (see OAuth2OTP::redeem()) and there is no race to close.
      */
     private function finalizeRedemption(OAuth2OTP $otp, User $user, ?Client $client): void
     {
+        if ($otp->getConnection() !== OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
+            $this->otp_repository->refreshExclusiveLock($otp);
+
+            if ($otp->isRedeemed()) {
+                Log::warning(sprintf(
+                    "AuthService::finalizeRedemption otp %s already redeemed (concurrent submission).",
+                    $otp->getValue()
+                ));
+                throw new AuthenticationException("Single-use code is already redeemed.");
+            }
+        }
+
         $otp->setAuthTime(time());
         $otp->setUserId($user->getId());
         $otp->setUser($user);
@@ -212,7 +234,7 @@ final class AuthService extends AbstractService implements IAuthService
         foreach ($grants2Revoke as $otp2Revoke) {
             try {
                 Log::debug(sprintf("AuthService::finalizeRedemption revoking otp %s", $otp2Revoke->getValue()));
-                if ($otp2Revoke->getValue() !== $otp->getValue())
+                if ($otp2Revoke->getId() !== $otp->getId())
                     $otp2Revoke->redeem();
             } catch (Exception $ex) {
                 Log::warning($ex);
