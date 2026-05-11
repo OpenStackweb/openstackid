@@ -498,5 +498,4 @@ class OAuth2OTP extends BaseEntity implements Identifier
     {
         return $this->user_id;
     }
-
 }

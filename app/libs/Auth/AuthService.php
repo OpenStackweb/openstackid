@@ -15,32 +15,33 @@
 use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use App\Services\AbstractService;
+use App\Services\Auth\IUserService as IAuthUserService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\AuthenticationLockedUserLoginAttempt;
 use Auth\Repositories\IUserRepository;
+use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use jwe\compression_algorithms\CompressionAlgorithms_Registry;
+use jwe\compression_algorithms\CompressionAlgorithmsNames;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Exceptions\InvalidOTPException;
 use OAuth2\Models\IClient;
+use OAuth2\OAuth2Protocol;
 use OAuth2\Services\IPrincipalService;
 use OAuth2\Services\ISecurityContextService;
 use OpenId\Services\IUserService;
-use App\Services\Auth\IUserService as IAuthUserService;
 use Services\IUserActionService;
 use utils\Base64UrlRepresentation;
 use Utils\Db\ITransactionService;
 use Utils\IPHelper;
 use Utils\Services\IAuthService;
 use Utils\Services\ICacheService;
-use jwe\compression_algorithms\CompressionAlgorithms_Registry;
-use jwe\compression_algorithms\CompressionAlgorithmsNames;
-use Exception;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class AuthService
@@ -131,11 +132,245 @@ final class AuthService extends AbstractService implements IAuthService
     }
 
     /**
-     * @return User|null
+     * Finds the OTP by value/connection/username, logs the redeem attempt (TX-A),
+     * then validates lifecycle / value / scope / audience (TX-B).
+     * TX-A is committed independently so the brute-force counter increments even when TX-B throws.
+     *
+     * @throws AuthenticationException
+     * @throws InvalidOTPException
      */
-    public function getCurrentUser(): ?User
+    private function findAndValidateOTP(
+        string  $otp_value,
+        string  $user_name,
+        string  $otp_conn,
+        ?string $otp_required_scopes,
+        ?Client $client
+    ): OAuth2OTP
     {
-        return Auth::user();
+        // TX-A: find + log attempt (committed before any validation can throw)
+        $otp = $this->tx_service->transaction(function () use ($otp_value, $otp_conn, $user_name, $client) {
+
+            $otp = $this->otp_repository->getByValueConnectionAndUserName(
+                $otp_value,
+                $otp_conn,
+                $user_name,
+                $client
+            );
+
+            if (is_null($otp)) {
+                Log::warning(sprintf(
+                    "AuthService::findAndValidateOTP otp %s user %s grant not found",
+                    $otp_value,
+                    $user_name
+                ));
+                throw new AuthenticationException("Non existent single-use code.");
+            }
+
+            $otp->logRedeemAttempt();
+            return $otp;
+        });
+
+        // TX-B: lifecycle / value / scope / audience checks
+        return $this->tx_service->transaction(function () use ($otp, $otp_value, $otp_required_scopes, $client) {
+
+            if (!$otp->isAlive()) {
+                throw new AuthenticationException("Single-use code is expired.");
+            }
+
+            if (!$otp->isValid()) {
+                throw new AuthenticationException("Single-use code is not valid.");
+            }
+
+            if ($otp->getValue() != $otp_value) {
+                throw new AuthenticationException("Single-use code mismatch.");
+            }
+
+            if (!empty($otp_required_scopes) && !$otp->allowScope($otp_required_scopes)) {
+                throw new InvalidOTPException("Single-use code requested scopes escalates former scopes.");
+            }
+
+            if (($otp->hasClient() && is_null($client)) ||
+                ($otp->hasClient() && !is_null($client) && $client->getClientId() != $otp->getClient()->getClientId())) {
+                throw new AuthenticationException("Single-use code audience mismatch.");
+            }
+
+            return $otp;
+        });
+    }
+
+    /**
+     * Marks the OTP redeemed, stores the resolved user id, and revokes sibling
+     * pending OTPs. Entity methods short-circuit for inline OTPs — no special-
+     * casing needed here.
+     *
+     * Concurrency: acquires a PESSIMISTIC_WRITE row lock and re-hydrates state
+     * before checking redemption. This closes the validate→redeem race window:
+     * a second concurrent submitter blocks on the lock and, on resume, sees the
+     * row already redeemed and gets a clean AuthenticationException instead of
+     * silently double-redeeming.
+     *
+     * Inline OTPs are intentionally not locked — they are non-redeemable by
+     * design (see OAuth2OTP::redeem()) and there is no race to close.
+     */
+    private function finalizeRedemption(OAuth2OTP $otp, User $user, ?Client $client): void
+    {
+        if ($otp->getConnection() !== OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
+            $this->otp_repository->refreshExclusiveLock($otp);
+
+            if ($otp->isRedeemed()) {
+                Log::warning(sprintf(
+                    "AuthService::finalizeRedemption otp %s already redeemed (concurrent submission).",
+                    $otp->getValue()
+                ));
+                throw new AuthenticationException("Single-use code is already redeemed.");
+            }
+        }
+
+        $otp->setAuthTime(time());
+        $otp->setUserId($user->getId());
+        $otp->redeem();
+
+        $grants2Revoke = $this->otp_repository->getByUserNameNotRedeemed($otp->getUserName(), $client);
+        foreach ($grants2Revoke as $otp2Revoke) {
+            try {
+                Log::debug(sprintf("AuthService::finalizeRedemption revoking otp %s", $otp2Revoke->getValue()));
+                if ($otp2Revoke->getId() !== $otp->getId())
+                    $otp2Revoke->redeem();
+            } catch (Exception $ex) {
+                Log::warning($ex);
+            }
+        }
+    }
+
+    /**
+     * @param OAuth2OTP $otpClaim
+     * @param Client|null $client
+     * @param bool $remember
+     * @return OAuth2OTP|null
+     * @throws Exception
+     */
+    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP
+    {
+        Log::debug(sprintf("AuthService::loginWithOTP otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
+
+        $otp = $this->findAndValidateOTP(
+            $otpClaim->getValue(),
+            $otpClaim->getUserName(),
+            $otpClaim->getConnection(),
+            $otpClaim->getScope(),
+            $client
+        );
+
+        // TX-C: resolve or create user, finalize, login
+        return $this->tx_service->transaction(function () use ($otp, $otpClaim, $client, $remember) {
+
+            $user = $this->getUserByUsername($otp->getUserName());
+
+            if (is_null($user)) {
+                Log::debug(sprintf("AuthService::loginWithOTP user %s does not exist; auto-registering.", $otp->getUserName()));
+                $user = $this->auth_user_service->registerUser(
+                    [
+                        'email' => $otp->getUserName(),
+                        'email_verified' => true,
+                        'send_email_verified_notice' => false,
+                        'active' => true,
+                    ],
+                    $otp
+                );
+            } else if ($user->isActive()) {
+                $user->verifyEmail(false);
+            }
+
+            if (!$user->canLogin()) {
+                Log::warning(sprintf("AuthService::loginWithOTP user %s cannot login (not active).", $user->getId()));
+                throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
+            }
+
+            $this->finalizeRedemption($otp, $user, $client);
+
+            Auth::login($user, $remember);
+            Log::debug(sprintf("AuthService::loginWithOTP user %s logged in.", $user->getId()));
+            return $otp;
+        });
+    }
+
+    /**
+     * Verifies an OTP against an already-authenticated session user (MFA primitive).
+     *
+     * The OTP is resolved by its own claim (value + connection + user_name) but the
+     * redemption is only finalized if the resolved user matches $sessionUser. This
+     * binding is what makes the method safe to use as an MFA second factor: a stolen
+     * OTP for account B cannot satisfy MFA for an in-session user A.
+     *
+     * On user mismatch, the method throws BEFORE finalizeRedemption — the OTP is NOT
+     * consumed, so an attacker probing OTPs across accounts cannot burn down legitimate
+     * codes by guessing. The redeem-attempt counter (committed in TX-A) still increments,
+     * so brute-force tracking is preserved.
+     *
+     * Does NOT auto-register users and does NOT call Auth::login — the caller is
+     * responsible for the session state changes that follow a successful MFA.
+     *
+     * @throws AuthenticationException  when the OTP is invalid, the resolved user is
+     *                                  missing/inactive, or the OTP does not belong
+     *                                  to $sessionUser.
+     * @throws InvalidOTPException      when the OTP requested scopes escalate.
+     */
+    public function verifyOTPChallenge(
+        OAuth2OTP $otpClaim,
+        User $sessionUser,
+        ?Client $client = null
+    ): OAuth2OTP
+    {
+        Log::debug(sprintf(
+            "AuthService::verifyOTPChallenge otp %s session user %s",
+            $otpClaim->getValue(),
+            $sessionUser->getId()
+        ));
+
+        $otp = $this->findAndValidateOTP(
+            $otpClaim->getValue(),
+            $otpClaim->getUserName(),
+            $otpClaim->getConnection(),
+            $otpClaim->getScope(),
+            $client
+        );
+
+        // TX-C: resolve OTP's user, enforce session-user binding, then finalize.
+        return $this->tx_service->transaction(function () use ($otp, $sessionUser, $client) {
+
+            $user = $this->getUserByUsername($otp->getUserName());
+
+            if (is_null($user) || !$user->canLogin()) {
+                Log::warning(sprintf(
+                    "AuthService::verifyOTPChallenge otp user %s not found or cannot login.",
+                    $otp->getUserName()
+                ));
+                throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
+            }
+
+            if ($user->getId() !== $sessionUser->getId()) {
+                Log::warning(sprintf(
+                    "AuthService::verifyOTPChallenge MFA mismatch: otp user %s != session user %s",
+                    $user->getId(),
+                    $sessionUser->getId()
+                ));
+                throw new AuthenticationException("Single-use code does not belong to the authenticated user.");
+            }
+
+            $this->finalizeRedemption($otp, $user, $client);
+
+            Log::debug(sprintf("AuthService::verifyOTPChallenge session user %s verified.", $sessionUser->getId()));
+            return $otp;
+        });
+    }
+
+    /**
+     * @param string $username
+     * @return null|User
+     */
+    public function getUserByUsername(string $username): ?User
+    {
+        return $this->user_repository->getByEmailOrName($username);
     }
 
     /**
@@ -159,7 +394,7 @@ final class AuthService extends AbstractService implements IAuthService
         Log::debug("AuthService::login: clearing principal");
         $this->principal_service->clear();
         $current_user = $this->getCurrentUser();
-        if(is_null($current_user) || !$current_user->canLogin())
+        if (is_null($current_user) || !$current_user->canLogin())
             throw new AuthenticationException
             (
                 "We are sorry, your username or password does not match an existing record."
@@ -174,137 +409,23 @@ final class AuthService extends AbstractService implements IAuthService
     }
 
     /**
-     * @param OAuth2OTP $otpClaim
-     * @param Client|null $client
-     * @param bool $remember
-     * @return OAuth2OTP|null
-     * @throws Exception
+     * @return User|null
      */
-    public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP
+    public function getCurrentUser(): ?User
     {
-
-        Log::debug(sprintf("AuthService::loginWithOTP otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
-
-        $otp = $this->tx_service->transaction(function () use ($otpClaim, $client, $remember) {
-
-            // find by value, connection and user name
-            $otp = $this->otp_repository->getByValueConnectionAndUserName(
-                $otpClaim->getValue(),
-                $otpClaim->getConnection(),
-                $otpClaim->getUserName(),
-                $client
-            );
-
-            if (is_null($otp)) {
-                // otp no emitted
-                Log::warning
-                (
-                    sprintf
-                    (
-                        "AuthService::loginWithOTP otp %s user %s grant not found",
-                        $otpClaim->getValue(),
-                        $otpClaim->getUserName()
-                    )
-                );
-
-                throw new AuthenticationException("Non existent single-use code.");
-            }
-
-            $otp->logRedeemAttempt();
-            return $otp;
-        });
-
-        return $this->tx_service->transaction(function () use ($otp, $otpClaim, $client, $remember) {
-
-            if (!$otp->isAlive()) {
-                throw new AuthenticationException("Single-use code is expired.");
-            }
-
-            if (!$otp->isValid()) {
-                throw new AuthenticationException("Single-use code is not valid.");
-            }
-
-            if ($otp->getValue() != $otpClaim->getValue()) {
-                throw new AuthenticationException("Single-use code mismatch.");
-            }
-
-            if(!empty($otpClaim->getScope()) && !$otp->allowScope($otpClaim->getScope()))
-                throw new InvalidOTPException("Single-use code requested scopes escalates former scopes.");
-
-            if (($otp->hasClient() && is_null($client)) ||
-                ($otp->hasClient() && !is_null($client) && $client->getClientId() != $otp->getClient()->getClientId())) {
-                throw new AuthenticationException("Single-use code audience mismatch.");
-            }
-
-            $user = $this->getUserByUsername($otp->getUserName());
-            $new_user = is_null($user);
-            if ($new_user) {
-                // we need to create a new one ( auto register)
-
-                Log::debug(sprintf("AuthService::loginWithOTP user %s does not exists ...", $otp->getUserName()));
-
-                $user = $this->auth_user_service->registerUser
-                (
-                    [
-                        'email' => $otp->getUserName(),
-                        'email_verified' => true,
-                        // dont send email
-                        'send_email_verified_notice' => false,
-                        'active' => true,
-                    ],
-                    $otp
-                );
-            }
-            else{
-                if($user->isActive()) {
-                    // verify email
-                    $user->verifyEmail(false);
-                }
-            }
-
-            if(!$user->canLogin()){
-                Log::warning(sprintf("AuthService::loginWithOTP user %s cannot login ( is not active ).", $user->getId()));
-                throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
-            }
-
-            $otp->setAuthTime(time());
-            $otp->setUserId($user->getId());
-            $otp->redeem();
-
-            // revoke former ones
-            $grants2Revoke = $this->otp_repository->getByUserNameNotRedeemed
-            (
-                $otpClaim->getUserName(),
-                $client
-            );
-
-            foreach ($grants2Revoke as $otp2Revoke){
-                try {
-                    Log::debug(sprintf("AuthService::loginWithOTP revoking otp %s ", $otp2Revoke->getValue()));
-                    if ($otp2Revoke->getValue() !== $otpClaim->getValue())
-                        $otp2Revoke->redeem();
-                } catch (Exception $ex) {
-                    Log::warning($ex);
-                }
-            }
-
-            Auth::login($user, $remember);
-
-            Log::debug(sprintf("AuthService::loginWithOTP user %s logged in.", $user->getId()));
-            return $otp;
-        });
+        return Auth::user();
     }
 
     /**
      * @param bool $clear_security_ctx
      * @return void
      */
-    public function logout(bool $clear_security_ctx = true):void
+    public function logout(bool $clear_security_ctx = true): void
     {
         Log::debug("AuthService::logout");
         $current_user = $this->getCurrentUser();
         // check if we have user on session
-        if(!is_null($current_user)) {
+        if (!is_null($current_user)) {
             $ip = IPHelper::getUserIp();
             Log::debug(sprintf("AuthService::logout we have user %s from ip %s", $current_user->getId(), $ip));
             $this->user_action_service->addUserAction
@@ -318,7 +439,7 @@ final class AuthService extends AbstractService implements IAuthService
         // regular flow
         $this->invalidateSession();
         $this->principal_service->clear();
-        if($clear_security_ctx)
+        if ($clear_security_ctx)
             $this->security_context_service->clear();
         Auth::logout();
         // put in past
@@ -341,6 +462,21 @@ final class AuthService extends AbstractService implements IAuthService
         Session::regenerate();
     }
 
+    public function invalidateSession(): void
+    {
+        $session_id = Crypt::encrypt(Session::getId());
+        $this->cache_service->addSingleValue($session_id . "invalid", $session_id);
+    }
+
+    /**
+     * @param string $value
+     * @return String
+     */
+    private function encrypt(string $value): string
+    {
+        return base64_encode(Crypt::encrypt($value));
+    }
+
     /**
      * @return string
      */
@@ -354,7 +490,6 @@ final class AuthService extends AbstractService implements IAuthService
 
         return IAuthService::AuthorizationResponse_None;
     }
-
 
     public function clearUserAuthorizationResponse()
     {
@@ -370,6 +505,8 @@ final class AuthService extends AbstractService implements IAuthService
         Session::save();
     }
 
+    // Authentication
+
     /**
      * @param string $openid
      * @return User|null
@@ -378,26 +515,6 @@ final class AuthService extends AbstractService implements IAuthService
     {
         return $this->user_repository->getByIdentifier($openid);
     }
-
-    /**
-     * @param string $username
-     * @return null|User
-     */
-    public function getUserByUsername(string $username): ?User
-    {
-        return $this->user_repository->getByEmailOrName($username);
-    }
-
-    /**
-     * @param int $id
-     * @return null|User
-     */
-    public function getUserById(int $id): ?User
-    {
-        return $this->user_repository->getByIdWithGroups($id);
-    }
-
-    // Authentication
 
     public function getUserAuthenticationResponse()
     {
@@ -438,11 +555,29 @@ final class AuthService extends AbstractService implements IAuthService
             $unwrapped_name = $this->decrypt($user_id);
             $parts = explode(':', $unwrapped_name);
             return intval($parts[1]);
-        }
-        catch (Exception $ex){
+        } catch (Exception $ex) {
             Log::warning($ex);
         }
         return $user_id;
+    }
+
+    /**
+     * @param int $id
+     * @return null|User
+     */
+    public function getUserById(int $id): ?User
+    {
+        return $this->user_repository->getByIdWithGroups($id);
+    }
+
+    /**
+     * @param string $value
+     * @return String
+     */
+    private function decrypt(string $value): string
+    {
+        $value = base64_decode($value);
+        return Crypt::decrypt($value);
     }
 
     /**
@@ -457,25 +592,6 @@ final class AuthService extends AbstractService implements IAuthService
 
         $wrapped_name = sprintf('%s:%s', $client->getClientId(), $user_id);
         return $this->encrypt($wrapped_name);
-    }
-
-    /**
-     * @param string $value
-     * @return String
-     */
-    private function encrypt(string $value): string
-    {
-        return base64_encode(Crypt::encrypt($value));
-    }
-
-    /**
-     * @param string $value
-     * @return String
-     */
-    private function decrypt(string $value): string
-    {
-        $value = base64_decode($value);
-        return Crypt::decrypt($value);
     }
 
     /**
@@ -541,8 +657,7 @@ final class AuthService extends AbstractService implements IAuthService
                 $rps = $zlib->uncompress($rps);
                 return explode('|', $rps);
             }
-        }
-        catch (Exception $ex){
+        } catch (Exception $ex) {
             Log::warning($ex);
         }
         return [];
@@ -595,12 +710,6 @@ final class AuthService extends AbstractService implements IAuthService
         return $jti;
     }
 
-    public function invalidateSession(): void
-    {
-        $session_id = Crypt::encrypt(Session::getId());
-        $this->cache_service->addSingleValue($session_id . "invalid", $session_id);
-    }
-
     /**
      * @param int $user_id
      * @return void
@@ -609,12 +718,12 @@ final class AuthService extends AbstractService implements IAuthService
     public function postLoginUserActions(int $user_id): void
     {
         Log::debug(sprintf("AuthService::postLoginUserActions user %s", $user_id));
-        $this->tx_service->transaction(function () use($user_id){
+        $this->tx_service->transaction(function () use ($user_id) {
             $user = $this->user_repository->getById($user_id);
-            if(!$user instanceof User) return;
+            if (!$user instanceof User) return;
 
             if (!$user->isActive()) {
-               Log::warning(sprintf("AuthService::postLoginUserActions user %s is not active.", $user_id));
+                Log::warning(sprintf("AuthService::postLoginUserActions user %s is not active.", $user_id));
                 throw new AuthenticationLockedUserLoginAttempt($user->getEmail(),
                     sprintf("User %s is locked.", $user->getEmail()));
             }

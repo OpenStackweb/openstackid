@@ -66,4 +66,12 @@ interface IOAuth2OTPRepository extends IBaseRepository
         string $user_name,
         ?Client $client = null
     ): ?OAuth2OTP;
+
+    /**
+     * Acquires a PESSIMISTIC_WRITE row lock on the given OTP and re-hydrates
+     * its in-memory state from the database in the same round-trip. Required
+     * before reading redemption state during finalization, because the entity
+     * may be stale (loaded under an earlier transaction in the same UoW).
+     */
+    public function refreshExclusiveLock(OAuth2OTP $otp): void;
 }

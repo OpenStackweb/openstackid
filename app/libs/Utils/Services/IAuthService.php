@@ -155,4 +155,20 @@ interface IAuthService
 
     public function postLoginUserActions(int $user_id):void;
 
+    /**
+     * Verifies an OTP against an already-authenticated session user (MFA primitive).
+     * Rejects the challenge if the OTP resolves to a different user than $sessionUser
+     * without consuming the OTP, so a stolen OTP for account B cannot satisfy MFA
+     * for an in-session user A.
+     *
+     * @throws AuthenticationException                  invalid OTP, missing/inactive user,
+     *                                                  or user mismatch with $sessionUser.
+     * @throws \OAuth2\Exceptions\InvalidOTPException   requested scopes escalate.
+     */
+    public function verifyOTPChallenge(
+        OAuth2OTP $otpClaim,
+        User $sessionUser,
+        ?Client $client = null
+    ): OAuth2OTP;
+
 }
