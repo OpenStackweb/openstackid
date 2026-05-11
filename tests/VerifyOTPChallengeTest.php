@@ -145,6 +145,7 @@ final class VerifyOTPChallengeTest extends PHPUnitTestCase
     public function testSucceedsAndConsumesOTPWhenSessionUserMatchesOTPUser(): void
     {
         $otp = $this->buildValidOTPMock('user-a@example.com');
+        $otp->shouldReceive('isRedeemed')->andReturn(false);
 
         // finalizeRedemption mutations expected
         $otp->shouldReceive('setAuthTime')->once();
@@ -184,6 +185,72 @@ final class VerifyOTPChallengeTest extends PHPUnitTestCase
         $this->assertSame($otp, $result);
     }
 
+    /**
+     * Race-fix path: a concurrent submitter of the same OTP has already
+     * redeemed the row between TX-B (validation) and TX-C (finalize). After
+     * refreshExclusiveLock acquires the lock and re-hydrates the entity,
+     * isRedeemed() returns true. The method MUST reject cleanly with
+     * AuthenticationException AND MUST NOT call redeem()/setAuthTime/
+     * setUserId, and MUST NOT run the sibling-revoke sweep — otherwise the
+     * loser would double-write the redemption (the bug the race fix exists
+     * to prevent).
+     *
+     * "Already redeemed" is simulated by flipping isRedeemed() to true ONLY
+     * after refreshExclusiveLock fires, modelling what actually happens in
+     * production: the in-memory state was stale until the lock+refresh
+     * re-loaded fresh DB state showing the concurrent winner's commit.
+     */
+    public function testRejectsAndDoesNotRedeemWhenLockedOTPWasRedeemedByConcurrentWinner(): void
+    {
+        $otp = $this->buildValidOTPMock('user-a@example.com');
+
+        // Models stale-then-fresh: before refresh the entity says "not redeemed",
+        // after refresh it reflects the DB row the concurrent winner committed.
+        // (Arrow fns capture by value — must use a long closure with `use (&…)`.)
+        $lock_acquired = false;
+        $otp->shouldReceive('isRedeemed')->andReturnUsing(function () use (&$lock_acquired) {
+            return $lock_acquired;
+        });
+
+        $this->mock_otp_repository
+            ->expects($this->once())
+            ->method('getByValueConnectionAndUserName')
+            ->willReturn($otp);
+
+        $session_user = Mockery::mock(User::class);
+        $session_user->shouldReceive('getId')->andReturn(100);
+        $session_user->shouldReceive('canLogin')->andReturn(true);
+
+        $this->mock_user_repository
+            ->expects($this->once())
+            ->method('getByEmailOrName')
+            ->with('user-a@example.com')
+            ->willReturn($session_user);
+
+        $this->mock_otp_repository
+            ->expects($this->once())
+            ->method('refreshExclusiveLock')
+            ->with($otp)
+            ->willReturnCallback(function () use (&$lock_acquired) {
+                $lock_acquired = true;
+            });
+
+        // ⚡ Contract: redemption side-effects MUST NOT run when the lock reveals
+        // the OTP was already redeemed.
+        $otp->shouldNotReceive('setAuthTime');
+        $otp->shouldNotReceive('setUserId');
+        $otp->shouldNotReceive('redeem');
+
+        $this->mock_otp_repository
+            ->expects($this->never())
+            ->method('getByUserNameNotRedeemed');
+
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage('Single-use code is already redeemed.');
+
+        $this->service->verifyOTPChallenge($this->buildClaim('user-a@example.com'), $session_user);
+    }
+
     private function buildClaim(string $user_name): OAuth2OTP
     {
         $claim = Mockery::mock(OAuth2OTP::class);
@@ -196,7 +263,9 @@ final class VerifyOTPChallengeTest extends PHPUnitTestCase
 
     /**
      * A resolved OTP that passes findAndValidateOTP (alive, valid, value matches,
-     * scope OK, audience OK) and is not already redeemed.
+     * scope OK, audience OK). isRedeemed() is intentionally left unconfigured —
+     * each test that reaches finalizeRedemption sets it explicitly (false for
+     * the happy path, true to simulate a concurrent winner having committed).
      */
     private function buildValidOTPMock(string $user_name): Mockery\MockInterface
     {
@@ -209,7 +278,6 @@ final class VerifyOTPChallengeTest extends PHPUnitTestCase
         $otp->shouldReceive('isValid')->andReturn(true);
         $otp->shouldReceive('allowScope')->andReturn(true);
         $otp->shouldReceive('hasClient')->andReturn(false);
-        $otp->shouldReceive('isRedeemed')->andReturn(false);
         return $otp;
     }
 }
