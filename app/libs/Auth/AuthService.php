@@ -295,19 +295,37 @@ final class AuthService extends AbstractService implements IAuthService
     }
 
     /**
-     * Verifies an OTP against an EXISTING user. Marks the OTP redeemed.
-     * Does NOT auto-register users and does NOT call Auth::login.
-     * Intended as the strict primitive for MFA challenge verification.
+     * Verifies an OTP against an already-authenticated session user (MFA primitive).
      *
-     * @param OAuth2OTP   $otpClaim
-     * @param Client|null $client
-     * @return OAuth2OTP
-     * @throws AuthenticationException when the OTP is invalid or the user does not exist / cannot login.
-     * @throws InvalidOTPException     when the OTP requested scopes escalate.
+     * The OTP is resolved by its own claim (value + connection + user_name) but the
+     * redemption is only finalized if the resolved user matches $sessionUser. This
+     * binding is what makes the method safe to use as an MFA second factor: a stolen
+     * OTP for account B cannot satisfy MFA for an in-session user A.
+     *
+     * On user mismatch, the method throws BEFORE finalizeRedemption — the OTP is NOT
+     * consumed, so an attacker probing OTPs across accounts cannot burn down legitimate
+     * codes by guessing. The redeem-attempt counter (committed in TX-A) still increments,
+     * so brute-force tracking is preserved.
+     *
+     * Does NOT auto-register users and does NOT call Auth::login — the caller is
+     * responsible for the session state changes that follow a successful MFA.
+     *
+     * @throws AuthenticationException  when the OTP is invalid, the resolved user is
+     *                                  missing/inactive, or the OTP does not belong
+     *                                  to $sessionUser.
+     * @throws InvalidOTPException      when the OTP requested scopes escalate.
      */
-    public function verifyOTPChallenge(OAuth2OTP $otpClaim, ?Client $client = null): OAuth2OTP
+    public function verifyOTPChallenge(
+        OAuth2OTP $otpClaim,
+        User $sessionUser,
+        ?Client $client = null
+    ): OAuth2OTP
     {
-        Log::debug(sprintf("AuthService::verifyOTPChallenge otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
+        Log::debug(sprintf(
+            "AuthService::verifyOTPChallenge otp %s session user %s",
+            $otpClaim->getValue(),
+            $sessionUser->getId()
+        ));
 
         $otp = $this->findAndValidateOTP(
             $otpClaim->getValue(),
@@ -317,22 +335,31 @@ final class AuthService extends AbstractService implements IAuthService
             $client
         );
 
-        // TX-C: resolve existing user, finalize
-        return $this->tx_service->transaction(function () use ($otp, $client) {
+        // TX-C: resolve OTP's user, enforce session-user binding, then finalize.
+        return $this->tx_service->transaction(function () use ($otp, $sessionUser, $client) {
 
             $user = $this->getUserByUsername($otp->getUserName());
 
             if (is_null($user) || !$user->canLogin()) {
                 Log::warning(sprintf(
-                    "AuthService::verifyOTPChallenge user %s not found or cannot login.",
+                    "AuthService::verifyOTPChallenge otp user %s not found or cannot login.",
                     $otp->getUserName()
                 ));
                 throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
             }
 
+            if ($user->getId() !== $sessionUser->getId()) {
+                Log::warning(sprintf(
+                    "AuthService::verifyOTPChallenge MFA mismatch: otp user %s != session user %s",
+                    $user->getId(),
+                    $sessionUser->getId()
+                ));
+                throw new AuthenticationException("Single-use code does not belong to the authenticated user.");
+            }
+
             $this->finalizeRedemption($otp, $user, $client);
 
-            Log::debug(sprintf("AuthService::verifyOTPChallenge user %s verified.", $user->getId()));
+            Log::debug(sprintf("AuthService::verifyOTPChallenge session user %s verified.", $sessionUser->getId()));
             return $otp;
         });
     }
