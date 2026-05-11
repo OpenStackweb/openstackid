@@ -53,7 +53,8 @@ module.exports = {
             assert:false,
             tls: false,
             net:false,
-            child_process: false
+            child_process: false,
+            util: false
         }
     },
     plugins: [
