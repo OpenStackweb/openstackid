@@ -199,8 +199,9 @@ final class AuthService extends AbstractService implements IAuthService
     }
 
     /**
-     * Marks the OTP redeemed, attaches the user (transient), revokes sibling pending OTPs.
-     * Entity methods short-circuit for inline OTPs — no special-casing needed here.
+     * Marks the OTP redeemed, stores the resolved user id, and revokes sibling
+     * pending OTPs. Entity methods short-circuit for inline OTPs — no special-
+     * casing needed here.
      *
      * Concurrency: acquires a PESSIMISTIC_WRITE row lock and re-hydrates state
      * before checking redemption. This closes the validate→redeem race window:
@@ -227,7 +228,6 @@ final class AuthService extends AbstractService implements IAuthService
 
         $otp->setAuthTime(time());
         $otp->setUserId($user->getId());
-        $otp->setUser($user);
         $otp->redeem();
 
         $grants2Revoke = $this->otp_repository->getByUserNameNotRedeemed($otp->getUserName(), $client);

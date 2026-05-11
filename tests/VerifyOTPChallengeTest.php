@@ -149,7 +149,6 @@ final class VerifyOTPChallengeTest extends PHPUnitTestCase
         // finalizeRedemption mutations expected
         $otp->shouldReceive('setAuthTime')->once();
         $otp->shouldReceive('setUserId')->once()->with(100);
-        $otp->shouldReceive('setUser')->once();
         $otp->shouldReceive('redeem')->once();
         $otp->shouldReceive('getId')->andReturn(7);
 
