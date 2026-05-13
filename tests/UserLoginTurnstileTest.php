@@ -21,9 +21,10 @@ use RyanChandler\LaravelCloudflareTurnstile\Facades\Turnstile;
  * Class UserLoginTurnstileTest
  *
  * Covers Cloudflare Turnstile integration in UserController::postLogin():
- *  - cf-turnstile-response required when login_failed_attempt >= threshold
- *  - threshold gating (before / at boundary)
- *  - server-side attempt lookup for existing vs. unknown users
+ *  - cf-turnstile-response required when login_attempts (from request body) >= threshold
+ *  - threshold gating (before / at boundary / above boundary)
+ *  - omitted login_attempts field defaults to zero (no captcha required)
+ *  - captcha is gated on the request-body counter, not on DB state
  *  - login screen emits Turnstile JS config after a failed attempt
  *  - expired or unsolved token is rejected
  */
@@ -41,6 +42,9 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
         parent::prepareForTests();
         $this->testEmail    = env('TEST_USER_EMAIL');
         $this->testPassword = env('TEST_USER_PASSWORD');
+        if (empty($this->testEmail) || empty($this->testPassword)) {
+            $this->markTestSkipped('TEST_USER_EMAIL and TEST_USER_PASSWORD env vars are required.');
+        }
         Session::start();
     }
 
@@ -143,10 +147,10 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
         );
     }
 
-    public function testLoginAttemptsDefaultToZeroForUnknownUsername(): void
+    public function testOmittedLoginAttemptsFieldDefaultsToZeroNoCaptchaRequired(): void
     {
-        // No user with this email → auth_service->getUserByUsername() returns null
-        // login_attempts stays 0 → captcha rule is never added to the validator
+        // No login_attempts key posted → intval(null) = 0 → below threshold →
+        // captcha rule is never added to the validator.
         $this->postLogin([
             'username' => 'nobody@doesnotexist.example',
             'password' => 'irrelevant',
@@ -154,7 +158,24 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
 
         $this->assertFalse(
             $this->sessionHasValidationError('cf-turnstile-response'),
-            'Turnstile must not be required when the username does not exist in the DB'
+            'Turnstile must not be required when login_attempts is absent from the request'
+        );
+    }
+
+    public function testCaptchaGatingUsesRequestBodyCounterNotDbState(): void
+    {
+        // Even for a username that doesn't exist in the DB, if the request body
+        // carries login_attempts >= threshold the captcha rule must fire.
+        // This proves gating is driven by the request-body counter, not by DB lookup.
+        $this->postLogin([
+            'username'       => 'nobody@doesnotexist.example',
+            'password'       => 'irrelevant',
+            'login_attempts' => self::CAPTCHA_THRESHOLD,
+        ]); // no cf-turnstile-response
+
+        $this->assertTrue(
+            $this->sessionHasValidationError('cf-turnstile-response'),
+            'Turnstile must be required when login_attempts >= threshold, regardless of whether the user exists'
         );
     }
 

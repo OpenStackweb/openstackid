@@ -85,6 +85,8 @@ const PasswordInputForm = ({
                                shouldShowCaptcha,
                                captchaPublicKey,
                                onChangeCaptchaProvider,
+                               onExpireCaptchaProvider,
+                               onErrorCaptchaProvider,
                                handleEmitOtpAction,
                                forgotPasswordAction,
                                loginAttempts,
@@ -183,12 +185,15 @@ const PasswordInputForm = ({
             <input type="hidden" value={userNameValue} id="username" name="username"/>
             <input type="hidden" value={csrfToken} id="_token" name="_token"/>
             <input type="hidden" value="password" id="flow" name="flow"/>
+            <input type="hidden" value={loginAttempts} id="login_attempts" name="login_attempts"/>
             {shouldShowCaptcha() && captchaPublicKey &&
                 <Turnstile
                     className={styles.turnstile}
                     siteKey={captchaPublicKey}
                     options={{ responseFieldName: "cf-turnstile-response" }}
                     onSuccess={onChangeCaptchaProvider}
+                    onExpire={onExpireCaptchaProvider}
+                    onError={onErrorCaptchaProvider}
                 />
             }
             <ExistingAccountActions
@@ -214,6 +219,8 @@ const OTPInputForm = ({
                           shouldShowCaptcha,
                           captchaPublicKey,
                           onChangeCaptchaProvider,
+                          onExpireCaptchaProvider,
+                          onErrorCaptchaProvider,
                           onReset,
                           loginAttempts
                       }) => {
@@ -264,12 +271,15 @@ const OTPInputForm = ({
                 <input type="hidden" value="otp" id="flow" name="flow"/>
                 <input type="hidden" value={otpCode} id="password" name="password"/>
                 <input type="hidden" value="email" id="connection" name="connection"/>
+                <input type="hidden" value={loginAttempts} id="login_attempts" name="login_attempts"/>
                 {shouldShowCaptcha() && captchaPublicKey &&
                     <Turnstile
                         className={styles.turnstile}
                         siteKey={captchaPublicKey}
                         options={{ responseFieldName: "cf-turnstile-response" }}
                         onSuccess={onChangeCaptchaProvider}
+                        onExpire={onExpireCaptchaProvider}
+                        onError={onErrorCaptchaProvider}
                     />
                 }
             </form>
@@ -474,6 +484,8 @@ class LoginPage extends React.Component {
         this.handleDelete = this.handleDelete.bind(this);
         this.onAuthenticate = this.onAuthenticate.bind(this);
         this.onChangeCaptchaProvider = this.onChangeCaptchaProvider.bind(this);
+        this.onExpireCaptchaProvider = this.onExpireCaptchaProvider.bind(this);
+        this.onErrorCaptchaProvider = this.onErrorCaptchaProvider.bind(this);
         this.onUserPasswordChange = this.onUserPasswordChange.bind(this);
         this.onOTPCodeChange = this.onOTPCodeChange.bind(this);
         this.shouldShowCaptcha = this.shouldShowCaptcha.bind(this);
@@ -560,6 +572,14 @@ class LoginPage extends React.Component {
 
     onChangeCaptchaProvider(value) {
         this.setState({ ...this.state, captcha_value: value });
+    }
+
+    onExpireCaptchaProvider() {
+        this.setState({ ...this.state, captcha_value: '' });
+    }
+
+    onErrorCaptchaProvider() {
+        this.setState({ ...this.state, captcha_value: '' });
     }
 
     onHandleUserNameChange(ev) {
@@ -833,6 +853,8 @@ class LoginPage extends React.Component {
                                     shouldShowCaptcha={this.shouldShowCaptcha}
                                     captchaPublicKey={this.props.captchaPublicKey}
                                     onChangeCaptchaProvider={this.onChangeCaptchaProvider}
+                                    onExpireCaptchaProvider={this.onExpireCaptchaProvider}
+                                    onErrorCaptchaProvider={this.onErrorCaptchaProvider}
                                     handleEmitOtpAction={this.handleEmitOtpAction}
                                     forgotPasswordAction={this.props.forgotPasswordAction}
                                     loginAttempts={this.props?.loginAttempts}
@@ -870,6 +892,8 @@ class LoginPage extends React.Component {
                                     shouldShowCaptcha={this.shouldShowCaptcha}
                                     captchaPublicKey={this.props.captchaPublicKey}
                                     onChangeCaptchaProvider={this.onChangeCaptchaProvider}
+                                    onExpireCaptchaProvider={this.onExpireCaptchaProvider}
+                                    onErrorCaptchaProvider={this.onErrorCaptchaProvider}
                                     onReset={this.handleDelete}
                                     loginAttempts={this.props?.loginAttempts}
                                 />

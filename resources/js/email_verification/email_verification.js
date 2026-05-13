@@ -127,6 +127,8 @@ const EmailVerificationPage = ({
                     siteKey={captchaPublicKey}
                     options={{ responseFieldName: "cf-turnstile-response" }}
                     onSuccess={onChangeCaptchaProvider}
+                    onExpire={() => { captcha.current?.reset(); }}
+                    onError={() => setCaptchaConfirmation('The security check encountered an error. Please refresh the page and try again.')}
                   />
                   {captchaConfirmation && (
                     <div className={styles.error_label}>
