@@ -97,6 +97,7 @@ class TwoFactorAuditLog
     {
         return $this->user;
     }
+
     public function setUser(User $user): void
     {
         $this->user = $user;
@@ -106,6 +107,7 @@ class TwoFactorAuditLog
     {
         return $this->event_type;
     }
+
     public function setEventType(string $value): void
     {
         if (!in_array($value, self::ALLOWED_EVENT_TYPES, true)) {
@@ -118,6 +120,7 @@ class TwoFactorAuditLog
     {
         return $this->method;
     }
+
     public function setMethod(string $value): void
     {
         if (!in_array($value, self::ALLOWED_METHODS, true)) {
@@ -130,6 +133,7 @@ class TwoFactorAuditLog
     {
         return $this->ip_address;
     }
+
     public function setIpAddress(string $value): void
     {
         $this->ip_address = $value;
@@ -139,6 +143,7 @@ class TwoFactorAuditLog
     {
         return $this->user_agent;
     }
+
     public function setUserAgent(string $value): void
     {
         $this->user_agent = $value;
@@ -148,6 +153,7 @@ class TwoFactorAuditLog
     {
         return $this->metadata;
     }
+
     public function setMetadata(?array $value): void
     {
         $this->metadata = $value;
