@@ -36,6 +36,8 @@ final class TurnstileClient implements ClientInterface
             ->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
                 'secret' => $this->secret,
                 'response' => $token,
+                'remoteip' => request()->ip(),
+                'idempotency_key' => uniqid('', true),
             ]);
 
         if (!$response->ok()) {
