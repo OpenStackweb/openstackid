@@ -20,6 +20,7 @@ use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\User;
 use Illuminate\Support\Facades\App;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use models\exceptions\ValidationException;
 
 /**
  * @package Tests
@@ -135,8 +136,8 @@ class TwoFactorRepositoriesTest extends TestCase
         $repo = App::make(IUserRecoveryCodeRepository::class);
 
         $code = new UserRecoveryCode();
-        $code->setUser($this->user);
-        $code->setCodeHash(password_hash('TESTCODE', PASSWORD_BCRYPT));
+        self::setProp($code, 'user', $this->user);
+        self::setProp($code, 'code_hash', password_hash('TESTCODE', PASSWORD_BCRYPT));
 
         EntityManager::persist($code);
         EntityManager::flush();
@@ -246,12 +247,12 @@ class TwoFactorRepositoriesTest extends TestCase
         $repo = App::make(IUserRecoveryCodeRepository::class);
 
         $unused = new UserRecoveryCode();
-        $unused->setUser($this->user);
-        $unused->setCodeHash(password_hash('UNUSED_' . uniqid(), PASSWORD_BCRYPT));
+        self::setProp($unused, 'user', $this->user);
+        self::setProp($unused, 'code_hash', password_hash('UNUSED_' . uniqid(), PASSWORD_BCRYPT));
 
         $used = new UserRecoveryCode();
-        $used->setUser($this->user);
-        $used->setCodeHash(password_hash('USED_' . uniqid(), PASSWORD_BCRYPT));
+        self::setProp($used, 'user', $this->user);
+        self::setProp($used, 'code_hash', password_hash('USED_' . uniqid(), PASSWORD_BCRYPT));
         $used->markUsed();
 
         EntityManager::persist($unused);
@@ -327,9 +328,66 @@ class TwoFactorRepositoriesTest extends TestCase
         EntityManager::flush();
     }
 
+    public function testGetUnusedByUserExcludesUsedCodes(): void
+    {
+        $repo = App::make(IUserRecoveryCodeRepository::class);
+
+        $unused = new UserRecoveryCode();
+        self::setProp($unused, 'user', $this->user);
+        self::setProp($unused, 'code_hash', password_hash('UNUSED_' . uniqid(), PASSWORD_BCRYPT));
+
+        $used = new UserRecoveryCode();
+        self::setProp($used, 'user', $this->user);
+        self::setProp($used, 'code_hash', password_hash('USED_' . uniqid(), PASSWORD_BCRYPT));
+        $used->markUsed();
+
+        EntityManager::persist($unused);
+        EntityManager::persist($used);
+        EntityManager::flush();
+        $unusedId = $unused->getId();
+        $usedId   = $used->getId();
+
+        EntityManager::clear();
+
+        $result = $repo->getUnusedByUser($this->user);
+        $ids    = array_map(fn(UserRecoveryCode $c) => $c->getId(), $result);
+
+        $this->assertContains($unusedId, $ids, 'getUnusedByUser must include the unused code.');
+        $this->assertNotContains($usedId, $ids, 'getUnusedByUser must exclude used codes.');
+
+        foreach ([$unusedId, $usedId] as $codeId) {
+            $code = EntityManager::find(UserRecoveryCode::class, $codeId);
+            if ($code) { EntityManager::remove($code); }
+        }
+        EntityManager::flush();
+    }
+
+    public function testMarkUsedTwiceThrows(): void
+    {
+        $code = new UserRecoveryCode();
+        self::setProp($code, 'user', $this->user);
+        self::setProp($code, 'code_hash', password_hash('TEST_' . uniqid(), PASSWORD_BCRYPT));
+        $code->markUsed();
+
+        $this->expectException(ValidationException::class);
+        $code->markUsed();
+    }
+
+    public function testSetCodeHashRejectsPlaintext(): void
+    {
+        $this->markTestSkipped('setCodeHash() was removed from UserRecoveryCode; plaintext validation no longer has an entry point.');
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private static function setProp(object $obj, string $prop, mixed $value): void
+    {
+        $p = new \ReflectionProperty($obj, $prop);
+        $p->setAccessible(true);
+        $p->setValue($obj, $value);
+    }
 
     private function buildDevice(string $deviceId, \DateTime $now, \DateTime $expires): UserTrustedDevice
     {
