@@ -1,4 +1,5 @@
-<?php namespace App\Services;
+<?php
+namespace App\Services;
 /**
  * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +24,9 @@ use RyanChandler\LaravelCloudflareTurnstile\Responses\SiteverifyResponse;
  */
 final class TurnstileClient implements ClientInterface
 {
-    public function __construct(private string $secret) {}
+    public function __construct(private string $secret)
+    {
+    }
 
     public function siteverify(string $token): SiteverifyResponse
     {
@@ -31,11 +34,11 @@ final class TurnstileClient implements ClientInterface
             ->asForm()
             ->acceptJson()
             ->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-                'secret'   => $this->secret,
+                'secret' => $this->secret,
                 'response' => $token,
             ]);
 
-        if (! $response->ok()) {
+        if (!$response->ok()) {
             return SiteverifyResponse::failure(['http-error']);
         }
 
@@ -43,7 +46,7 @@ final class TurnstileClient implements ClientInterface
             return SiteverifyResponse::success();
         }
 
-        return SiteverifyResponse::failure($response->json('error-codes') ?? []);
+        return SiteverifyResponse::failure($response->json('error-codes') ?: ['internal-error']);
     }
 
     public function dummy(): string

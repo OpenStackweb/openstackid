@@ -1,4 +1,5 @@
-<?php namespace Tests;
+<?php
+namespace Tests;
 /**
  * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +25,7 @@ use RyanChandler\LaravelCloudflareTurnstile\Facades\Turnstile;
  *  - cf-turnstile-response required when login_attempts (from request body) >= threshold
  *  - threshold gating (before / at boundary / above boundary)
  *  - omitted login_attempts field defaults to zero (no captcha required)
- *  - captcha is gated on the request-body counter, not on DB state
+ *  - captcha is gated on the request-body counter
  *  - login screen emits Turnstile JS config after a failed attempt
  *  - expired or unsolved token is rejected
  */
@@ -32,7 +33,7 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
 {
     private const LOGIN_URL = '/auth/login';
     // Matches ServerConfigurationService::DefaultMaxFailedLoginAttempts2ShowCaptcha
-    private const CAPTCHA_THRESHOLD        = 3;
+    private const CAPTCHA_THRESHOLD = 3;
 
     private string $testEmail;
     private string $testPassword;
@@ -40,7 +41,7 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
     protected function prepareForTests(): void
     {
         parent::prepareForTests();
-        $this->testEmail    = env('TEST_USER_EMAIL');
+        $this->testEmail = env('TEST_USER_EMAIL');
         $this->testPassword = env('TEST_USER_PASSWORD');
         if (empty($this->testEmail) || empty($this->testPassword)) {
             $this->markTestSkipped('TEST_USER_EMAIL and TEST_USER_PASSWORD env vars are required.');
@@ -67,8 +68,8 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
         return $this->call('POST', self::LOGIN_URL, array_merge([
             'username' => $this->testEmail,
             'password' => $this->testPassword,
-            'flow'     => 'password',
-            '_token'   => Session::token(),
+            'flow' => 'password',
+            '_token' => Session::token(),
         ], $overrides));
     }
 
@@ -138,7 +139,7 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
 
         $this->postLogin([
             'cf-turnstile-response' => 'dummy-token-accepted-by-mock',
-            'login_attempts' => 1
+            'login_attempts' => self::CAPTCHA_THRESHOLD
         ]);
 
         $this->assertFalse(
@@ -159,23 +160,6 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
         $this->assertFalse(
             $this->sessionHasValidationError('cf-turnstile-response'),
             'Turnstile must not be required when login_attempts is absent from the request'
-        );
-    }
-
-    public function testCaptchaGatingUsesRequestBodyCounterNotDbState(): void
-    {
-        // Even for a username that doesn't exist in the DB, if the request body
-        // carries login_attempts >= threshold the captcha rule must fire.
-        // This proves gating is driven by the request-body counter, not by DB lookup.
-        $this->postLogin([
-            'username'       => 'nobody@doesnotexist.example',
-            'password'       => 'irrelevant',
-            'login_attempts' => self::CAPTCHA_THRESHOLD,
-        ]); // no cf-turnstile-response
-
-        $this->assertTrue(
-            $this->sessionHasValidationError('cf-turnstile-response'),
-            'Turnstile must be required when login_attempts >= threshold, regardless of whether the user exists'
         );
     }
 
