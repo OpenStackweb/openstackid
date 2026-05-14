@@ -1,4 +1,5 @@
-<?php namespace Database\Migrations;
+<?php
+namespace Database\Migrations;
 /**
  * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +43,8 @@ final class Version20260416194357 extends AbstractMigration
         if (!$builder->hasTable("user_trusted_devices")) {
             $builder->create('user_trusted_devices', function (Table $table) {
                 $table->increments('id');
-                $table->timestamps();
+                $table->dateTime('created_at');
+                $table->dateTime('updated_at')->setNotnull(false);
                 $table->bigInteger("user_id")->setUnsigned(true);
                 $table->string('device_identifier', 255);
                 $table->string('device_name', 255);
@@ -64,6 +66,7 @@ final class Version20260416194357 extends AbstractMigration
             $builder->create('two_factor_audit_log', function (Table $table) {
                 $table->increments('id');
                 $table->dateTime('created_at');
+                $table->dateTime('updated_at')->setNotnull(false);
                 $table->bigInteger("user_id")->setUnsigned(true);
                 $table->string('event_type', 64);
                 $table->string('method', 32);
@@ -81,10 +84,12 @@ final class Version20260416194357 extends AbstractMigration
             $builder->create('user_recovery_codes', function (Table $table) {
                 $table->increments('id');
                 $table->dateTime('created_at');
+                $table->dateTime('updated_at')->setNotnull(false);
                 $table->bigInteger("user_id")->setUnsigned(true);
-                $table->string('code_hash', 255);
+                $table->string('code_hash', 72)->setNotnull(true);
                 $table->dateTime('used_at')->setNotnull(false)->setDefault(null);
                 $table->index(["user_id", "used_at"], "urc_user_used_idx");
+                $table->unique(["user_id", "code_hash"], "urc_user_codehash_uniq");
                 $table->foreign("users", "user_id", "id", ["onDelete" => "CASCADE"]);
             });
         }
