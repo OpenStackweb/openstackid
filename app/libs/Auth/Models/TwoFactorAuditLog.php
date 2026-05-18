@@ -13,12 +13,13 @@ namespace App\libs\Auth\Models;
  * limitations under the License.
  **/
 
+use App\Models\Utils\BaseEntity;
 use Auth\User;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Table(name: 'two_factor_audit_log')]
 #[ORM\Entity(repositoryClass: \App\Repositories\DoctrineTwoFactorAuditLogRepository::class)]
-class TwoFactorAuditLog
+class TwoFactorAuditLog extends BaseEntity
 {
     public const EventChallengeIssued = 'challenge_issued';
     public const EventChallengeSucceeded = 'challenge_succeeded';
@@ -55,11 +56,6 @@ class TwoFactorAuditLog
         self::MethodRecovery,
     ];
 
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'id', type: 'integer', unique: true, nullable: false)]
-    protected $id;
-
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\ManyToOne(targetEntity: \Auth\User::class)]
     private $user;
@@ -79,18 +75,11 @@ class TwoFactorAuditLog
     #[ORM\Column(name: 'metadata', type: 'json', nullable: true)]
     private $metadata;
 
-    #[ORM\Column(name: 'created_at', type: 'datetime')]
-    private $created_at;
 
     public function __construct()
     {
-        $this->created_at = new \DateTime('now', new \DateTimeZone('UTC'));
+        parent::__construct();
         $this->metadata = null;
-    }
-
-    public function getId(): int
-    {
-        return (int) $this->id;
     }
 
     public function getUser(): User
@@ -157,10 +146,5 @@ class TwoFactorAuditLog
     public function setMetadata(?array $value): void
     {
         $this->metadata = $value;
-    }
-
-    public function getCreatedAt(): \DateTime
-    {
-        return $this->created_at;
     }
 }
