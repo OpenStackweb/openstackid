@@ -13,6 +13,7 @@ namespace App\Services;
  * limitations under the License.
  **/
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RyanChandler\LaravelCloudflareTurnstile\Contracts\ClientInterface;
 use RyanChandler\LaravelCloudflareTurnstile\Responses\SiteverifyResponse;
@@ -30,7 +31,8 @@ final class TurnstileClient implements ClientInterface
 
     public function siteverify(string $token): SiteverifyResponse
     {
-        $response = Http::retry(3, 100)
+        $response = Http::timeout(5)
+            ->retry(3, 100, fn($e) => $e instanceof ConnectionException)
             ->asForm()
             ->acceptJson()
             ->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
