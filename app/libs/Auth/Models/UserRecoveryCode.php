@@ -35,16 +35,12 @@ class UserRecoveryCode extends BaseEntity
 
     public function __construct()
     {
-        $this->created_at = new \DateTime('now', new \DateTimeZone('UTC'));
+        parent::__construct();
         $this->used_at = null;
     }
 
-    public function getId(): int
-    {
-        return (int) $this->id;
-    }
 
-    public function getUser(): User
+    public function getUser(): ?User
     {
         return $this->user;
     }
@@ -73,10 +69,6 @@ class UserRecoveryCode extends BaseEntity
         return $this->used_at;
     }
 
-    public function getCreatedAt(): \DateTime
-    {
-        return $this->created_at;
-    }
 
     public function isUsed(): bool
     {
