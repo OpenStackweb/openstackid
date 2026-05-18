@@ -375,7 +375,9 @@ class TwoFactorRepositoriesTest extends TestCase
 
     public function testSetCodeHashRejectsPlaintext(): void
     {
-        $this->markTestSkipped('setCodeHash() was removed from UserRecoveryCode; plaintext validation no longer has an entry point.');
+        $code = new UserRecoveryCode();
+        $this->expectException(\InvalidArgumentException::class);
+        $code->setCodeHash('plaintext-not-a-hash');
     }
 
     // -------------------------------------------------------------------------
