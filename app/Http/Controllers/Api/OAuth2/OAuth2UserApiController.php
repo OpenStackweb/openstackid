@@ -568,13 +568,9 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         operationId: 'getUserInfoPost',
         tags: ['Users'],
         security: [
-            [
-                'OAuth2UserSecurity' => [
-                    IUserScopes::Profile,
-                    IUserScopes::Email,
-                    IUserScopes::Address,
-                ]
-            ],
+            ['OAuth2UserSecurity' => [IUserScopes::Profile]],
+            ['OAuth2UserSecurity' => [IUserScopes::Email]],
+            ['OAuth2UserSecurity' => [IUserScopes::Address]],
         ],
         responses: [
             new OA\Response(
