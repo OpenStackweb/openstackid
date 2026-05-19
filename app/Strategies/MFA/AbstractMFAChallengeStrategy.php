@@ -5,6 +5,7 @@ use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
+use Models\OAuth2\Client;
 
 abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
 {
@@ -61,5 +62,14 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
         Session::put(self::KEY_USER_ID,    $userId);
         Session::put(self::KEY_PENDING_AT, time());
         Session::put(self::KEY_REMEMBER,   $remember);
+    }
+
+    public function verifyChallenge(User $user, string $code, ?Client $client = null): void
+    {
+    }
+
+    public function issueChallenge(User $user, ?Client $client, bool $remember): array
+    {
+        return [];
     }
 }

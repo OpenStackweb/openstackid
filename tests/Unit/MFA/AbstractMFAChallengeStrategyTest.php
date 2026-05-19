@@ -19,7 +19,7 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
         $this->strategy = new class($repo) extends AbstractMFAChallengeStrategy {
             public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }
-            public function verifyChallenge(User $user, string $code): void {}
+            public function verifyChallenge(User $user, string $code, ?Client $client = null): void {}
             public function resendChallenge(User $user, ?Client $client, bool $remember): array { return []; }
             public function exposeStorePendingState(int $userId, bool $remember): void {
                 $this->storePendingState($userId, $remember);
@@ -93,7 +93,7 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
             public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }
-            public function verifyChallenge(User $user, string $code): void {}
+            public function verifyChallenge(User $user, string $code, ?Client $client = null): void {}
             public function resendChallenge(User $user, ?Client $client, bool $remember): array { return []; }
         };
 
@@ -114,7 +114,7 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
             public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }
-            public function verifyChallenge(User $user, string $code): void {}
+            public function verifyChallenge(User $user, string $code, ?Client $client = null): void {}
             public function resendChallenge(User $user, ?Client $client, bool $remember): array { return []; }
         };
 
@@ -132,7 +132,7 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
             public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }
-            public function verifyChallenge(User $user, string $code): void {}
+            public function verifyChallenge(User $user, string $code, ?Client $client = null): void {}
             public function resendChallenge(User $user, ?Client $client, bool $remember): array { return []; }
         };
 
