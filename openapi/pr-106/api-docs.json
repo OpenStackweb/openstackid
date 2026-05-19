@@ -467,8 +467,16 @@
                 "security": [
                     {
                         "OAuth2UserSecurity": [
-                            "profile",
-                            "email",
+                            "profile"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "email"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
                             "address"
                         ]
                     }
