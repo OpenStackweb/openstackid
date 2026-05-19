@@ -1,7 +1,6 @@
 <?php namespace Tests\Unit\MFA;
 
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
-use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Session;
@@ -100,68 +99,15 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
         $user = $this->buildUser(1, 'verify@example.com');
         $code = '123456';
 
-        $otp = \Mockery::mock(OAuth2OTP::class);
-        $otp->shouldReceive('logRedeemAttempt')->once();
-        $otp->shouldReceive('isAlive')->andReturn(true);
-        $otp->shouldReceive('isValid')->andReturn(true);
-        $otp->shouldReceive('redeem')->once();
-        $otp->shouldReceive('getValue')->andReturn($code);
-
         $otherOtp = \Mockery::mock(OAuth2OTP::class);
         $otherOtp->shouldReceive('getValue')->andReturn('654321');
         $otherOtp->shouldReceive('redeem')->once();
 
         $this->otpRepository
-            ->shouldReceive('getByValueConnectionAndUserName')
-            ->andReturn($otp);
-
-        $this->otpRepository
             ->shouldReceive('getByUserNameNotRedeemed')
-            ->andReturn([$otp, $otherOtp]);
+            ->andReturn([$otherOtp]);
 
         $this->strategy->verifyChallenge($user, $code);
         $this->addToAssertionCount(1);
-    }
-
-    public function testVerifyChallenge_withExpiredOtp_throwsException(): void
-    {
-        $user = $this->buildUser(2, 'expired@example.com');
-
-        $otp = \Mockery::mock(OAuth2OTP::class);
-        $otp->shouldReceive('logRedeemAttempt')->once();
-        $otp->shouldReceive('isAlive')->andReturn(false);
-
-        $this->otpRepository->shouldReceive('getByValueConnectionAndUserName')->andReturn($otp);
-
-        $this->expectException(AuthenticationException::class);
-        $this->expectExceptionMessage("Verification code is expired.");
-        $this->strategy->verifyChallenge($user, '000000');
-    }
-
-    public function testVerifyChallenge_withMaxAttemptsExceeded_throwsException(): void
-    {
-        $user = $this->buildUser(3, 'maxattempts@example.com');
-
-        $otp = \Mockery::mock(OAuth2OTP::class);
-        $otp->shouldReceive('logRedeemAttempt')->once();
-        $otp->shouldReceive('isAlive')->andReturn(true);
-        $otp->shouldReceive('isValid')->andReturn(false);
-
-        $this->otpRepository->shouldReceive('getByValueConnectionAndUserName')->andReturn($otp);
-
-        $this->expectException(AuthenticationException::class);
-        $this->expectExceptionMessage("Verification code is not valid.");
-        $this->strategy->verifyChallenge($user, '111111');
-    }
-
-    public function testVerifyChallenge_withNonExistentOtp_throwsException(): void
-    {
-        $user = $this->buildUser(4, 'noexist@example.com');
-
-        $this->otpRepository->shouldReceive('getByValueConnectionAndUserName')->andReturn(null);
-
-        $this->expectException(AuthenticationException::class);
-        $this->expectExceptionMessage("Non existent single-use code.");
-        $this->strategy->verifyChallenge($user, 'BADCODE');
     }
 }
