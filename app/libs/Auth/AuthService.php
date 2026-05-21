@@ -99,7 +99,6 @@ final class AuthService extends AbstractService implements IAuthService
      * @param IAuthUserService $auth_user_service
      * @param ISecurityContextService $security_context_service
      * @param ITransactionService $tx_service
-     * @params ISecurityContextService $security_context_service
      */
     public function __construct
     (
@@ -137,10 +136,7 @@ final class AuthService extends AbstractService implements IAuthService
      */
     public function getCurrentUser(): ?User
     {
-        $user = Auth::user();
-        if ($user instanceof User) {
-            return $user;
-        }
+        return Auth::user();
     }
 
     /**
@@ -435,13 +431,13 @@ final class AuthService extends AbstractService implements IAuthService
              * @var User|null $user
              */
             $user = Auth::getProvider()->retrieveByCredentials(['username' => $username, 'password' => $password]);
-            if (!$user instanceof User || !$user->canLogin()) {
-                throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
-            }
         } catch (UnverifiedEmailMemberException $ex) {
             throw new AuthenticationException($ex->getMessage());
         }
 
+        if (is_null($user) || !$user instanceof User || !$user->canLogin()) {
+            throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
+        }
         return $user;
     }
 
