@@ -54,7 +54,7 @@ final class Version20260416194357 extends AbstractMigration
                 $table->dateTime('expires_at');
                 $table->dateTime('last_seen_at');
                 $table->boolean('is_revoked')->setNotnull(true)->setDefault(false);
-                $table->index(["user_id", "device_identifier"], "utd_user_device_idx");
+                $table->unique(["user_id", "device_identifier"], "utd_user_device_uniq");
                 $table->index(["user_id", "is_revoked"], "utd_user_revoked_idx");
                 $table->index(["expires_at"], "utd_expires_idx");
                 $table->foreign("users", "user_id", "id", ["onDelete" => "CASCADE"]);
