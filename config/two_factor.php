@@ -30,4 +30,12 @@ return [
         IGroupSlugs::OAuth2ServerAdminGroup,
         IGroupSlugs::OpenIdServerAdminsGroup,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Device Trust
+    |--------------------------------------------------------------------------
+    */
+    'device_trust_lifetime_days' => env('DEVICE_TRUST_LIFETIME_DAYS', 30),
+    'cookie_name' => env('DEVICE_TRUST_COOKIE_NAME', 'device_trust_token'),
 ];
