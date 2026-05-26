@@ -30,12 +30,14 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
     public function register(): void
     {
         $this->app->singleton(IDeviceTrustService::class, DeviceTrustService::class);
+        $this->app->singleton(ITwoFactorAuditService::class, TwoFactorAuditService::class);
     }
 
     public function provides(): array
     {
         return [
             IDeviceTrustService::class,
+            ITwoFactorAuditService::class,
         ];
     }
 }

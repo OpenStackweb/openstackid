@@ -28,6 +28,7 @@
       <file>./tests/Unit/MFA/AbstractMFAChallengeStrategyTest.php</file>
       <file>./tests/Unit/MFA/EmailOTPMFAChallengeStrategyTest.php</file>
       <file>./tests/Unit/MFA/MFAChallengeStrategyFactoryTest.php</file>
+      <file>./tests/Unit/TwoFactorAuditServiceTest.php</file>
     </testsuite>
   </testsuites>
   <php>
