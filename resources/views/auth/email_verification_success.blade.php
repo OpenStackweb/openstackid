@@ -3,7 +3,6 @@
     <title>Welcome to {{ Config::get("app.app_name") }} - Email Verification Complete !!!</title>
 @append
 @section('scripts')
-    {!! script_to('assets/js/auth/email-verification-complete.js') !!}
     <script type="application/javascript">
     </script>
 @append

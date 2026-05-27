@@ -13,6 +13,7 @@
  **/
 use App\Http\Controllers\Controller;
 use App\Http\Utils\CountryList;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -177,7 +178,7 @@ final class RegisterController extends Controller
             'country_iso_code'         => 'required|string|country_iso_alpha2_code',
             'email'                    => 'required|string|email|max:255',
             'password'                 => 'required|string|confirmed|password_policy',
-            'g-recaptcha-response'     => 'required|recaptcha',
+            'cf-turnstile-response'    => ['required', new Turnstile()],
         ];
 
         if(!empty(Config::get("app.code_of_conduct_link", null))){

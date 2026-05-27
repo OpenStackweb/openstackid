@@ -75,4 +75,8 @@ return array_merge([
         'base_url' => env("OKTA_BASE_URL"),
         'redirect' => env('OKTA_REDIRECT_URI')
     ],
+    'turnstile' => [
+        'key' => env('TURNSTILE_SITE_KEY'),
+        'secret' => env('TURNSTILE_SECRET_KEY'),
+    ],
 ], $custom_auth0_tenants);

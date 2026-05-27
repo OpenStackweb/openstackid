@@ -35,7 +35,7 @@
             emitOtpAction : '{{URL::action("UserController@emitOTP")}}',
             resendVerificationEmailAction: '{{ URL::action("UserController@resendVerificationEmail") }}',
             authError: authError,
-            captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
+            captchaPublicKey: '{{ Config::get("services.turnstile.key") }}',
             flow: 'password',
             thirdPartyProviders: [
                 @foreach($supported_providers as $provider => $label)

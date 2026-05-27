@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import ReCAPTCHA from "react-google-recaptcha";
+import { Turnstile } from "@marsidev/react-turnstile";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
@@ -61,8 +61,8 @@ const ResetPasswordPage = ({
     initialValues: initialValues,
     validationSchema: buildValidationSchema(passwordPolicy),
     onSubmit: (values) => {
-      const recaptchaResponse = captcha.current.getValue();
-      if (!recaptchaResponse) {
+      const turnstileResponse = captcha.current?.getResponse();
+      if (!turnstileResponse) {
         setCaptchaConfirmation("Remember to check the captcha");
         return;
       }
@@ -70,8 +70,8 @@ const ResetPasswordPage = ({
     },
   });
 
-  const onChangeRecaptcha = () => {
-    if (captcha.current.getValue()) {
+  const onChangeCaptchaProvider = () => {
+    if (captcha.current?.getResponse()) {
       setCaptchaConfirmation(null);
     }
   };
@@ -172,11 +172,14 @@ const ResetPasswordPage = ({
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
                 <Grid container item justify='center'>
-                  <ReCAPTCHA
-                      ref={captcha}
-                      className={styles.recaptcha}
-                      sitekey={captchaPublicKey}
-                      onChange={onChangeRecaptcha}
+                  <Turnstile
+                    ref={captcha}
+                    className={styles.turnstile}
+                    siteKey={captchaPublicKey}
+                    options={{ responseFieldName: "cf-turnstile-response" }}
+                    onSuccess={onChangeCaptchaProvider}
+                    onExpire={() => { captcha.current?.reset(); }}
+                    onError={() => setCaptchaConfirmation('The security check encountered an error. Please refresh the page and try again.')}
                   />
                   {captchaConfirmation && (
                       <div className={styles.error_label}>

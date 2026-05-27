@@ -13,6 +13,7 @@
  **/
 use App\Http\Controllers\Controller;
 use App\libs\Utils\EmailUtils;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -87,7 +88,7 @@ final class EmailVerificationController extends Controller
     {
         return Validator::make($data, [
             'email'                    => 'required|string|email|max:255',
-            'g-recaptcha-response'     => 'required|recaptcha',
+            'cf-turnstile-response'    => ['required', new Turnstile()],
         ]);
     }
 
@@ -100,7 +101,6 @@ final class EmailVerificationController extends Controller
             if (!$validator->passes()) {
                 return Redirect::action('Auth\EmailVerificationController@showVerificationForm')->withErrors($validator);
             }
-
             $user = $this->user_service->resendVerificationEmail($payload);
 
             return view("auth.email_verification_resend_success", ['user' => $user]);

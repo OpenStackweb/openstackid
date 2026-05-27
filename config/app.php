@@ -156,7 +156,6 @@ return [
         OAuth2\OAuth2ServiceProvider::class,
         OpenId\OpenIdServiceProvider::class,
         \Providers\OAuth2\ClientAuthContextValidatorFactoryProvider::class,
-        Greggilbert\Recaptcha\RecaptchaServiceProvider::class,
         Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
         // Doctrine ORM
         LaravelDoctrine\ORM\DoctrineServiceProvider::class,
@@ -220,7 +219,6 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
-        'Recaptcha' => Kuttumiah\Recaptcha\Facades\Recaptcha::class,
         'ServerConfigurationService' => \Services\Facades\ServerConfigurationService::class,
         'ExternalUrlService' => \Services\Facades\ExternalUrlService::class,
         // Doctrine ORM Facades

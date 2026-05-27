@@ -49,7 +49,7 @@
 
         let config = {
             appLogo: '{{  Config::get("app.logo_url") }}',
-            captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
+            captchaPublicKey: '{{ Config::get("services.turnstile.key") }}',
             clientId: '{{ $client_id }}',
             countries: countries,
             csrfToken :  document.head.querySelector('meta[name="csrf-token"]').content,

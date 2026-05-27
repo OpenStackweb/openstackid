@@ -13,6 +13,7 @@
  **/
 
 use App\libs\Utils\TextUtils;
+use App\Services\TurnstileClient;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Validator;
 use models\exceptions\ValidationException;
+use RyanChandler\LaravelCloudflareTurnstile\Contracts\ClientInterface;
 use Sokil\IsoCodes\IsoCodesFactory;
 use Validators\CustomValidator;
 use App\Http\Utils\Log\LaravelMailerHandler;
@@ -142,6 +144,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        // Override vendor Client v3.0.3 whose siteverify() has inverted logic.
+        $this->app->scoped(ClientInterface::class, function ($app) {
+            return new TurnstileClient($app['config']->get('services.turnstile.secret'));
+        });
     }
 }

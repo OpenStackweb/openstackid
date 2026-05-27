@@ -13,6 +13,7 @@
  **/
 use App\Http\Controllers\Controller;
 use App\libs\Auth\Repositories\IUserPasswordResetRequestRepository;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 use App\Services\Auth\IUserService;
 use Auth\Exceptions\UserPasswordResetRequestVoidException;
 use Illuminate\Support\Facades\Log;
@@ -113,7 +114,7 @@ final class ResetPasswordController extends Controller
         return Validator::make($data, [
             'token'                    => 'required',
             'password'                 => 'required|string|confirmed|password_policy',
-            'g-recaptcha-response'     => 'required|recaptcha',
+            'cf-turnstile-response'    => ['required', new Turnstile()],
         ]);
     }
 

@@ -58,7 +58,7 @@
             signInAction:'{{ URL::action("UserController@getLogin") }}',
             signUpAction: '{{ URL::action("Auth\RegisterController@register") }}',
             signUpError: signUpError,
-            captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
+            captchaPublicKey: '{{ Config::get("services.turnstile.key") }}',
             showInfoBanner: parseInt('{{ Config::get("app.show_info_banner", 0) }}') === 1 ? true: false,
             infoBannerContent: '{!! html_entity_decode(Config::get("app.info_banner_content")) !!}',
             tenantName: '{{ Config::get("app.tenant_name") }}',

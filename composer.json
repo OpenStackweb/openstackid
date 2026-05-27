@@ -11,12 +11,6 @@
   ],
   "license": "MIT",
   "type": "project",
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/smarcet/recaptcha"
-    }
-  ],
   "require": {
     "php": "^8.3",
     "ext-json": "*",
@@ -29,7 +23,6 @@
     "firebase/php-jwt": "6.11.1",
     "get-stream/stream-chat": "^3.10.0",
     "glenscott/url-normalizer": "1.4.0",
-    "greggilbert/recaptcha": "dev-master",
     "guzzlehttp/guzzle": "7.9.3",
     "guzzlehttp/uri-template": "^1.0",
     "ircmaxell/random-lib": "1.2.0",
@@ -49,6 +42,7 @@
     "php-opencloud/openstack": "3.10.0",
     "phpseclib/phpseclib": "^3.0.43",
     "predis/predis": "v2.2.2",
+    "ryangjchandler/laravel-cloudflare-turnstile": "~3.0.3",
     "s-ichikawa/laravel-sendgrid-driver": "^4.0",
     "smarcet/jose4php": "2.0.0",
     "socialiteproviders/apple": "^5.6.1",

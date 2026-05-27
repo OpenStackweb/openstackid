@@ -36,7 +36,7 @@
 
         let config = {
             appLogo: '{{  Config::get("app.logo_url") }}',
-            captchaPublicKey: '{{ Config::get("recaptcha.public_key") }}',
+            captchaPublicKey: '{{ Config::get("services.turnstile.key") }}',
             csrfToken :  document.head.querySelector('meta[name="csrf-token"]').content,
             infoBannerContent: '{!! html_entity_decode(Config::get("app.info_banner_content")) !!}',
             initialValues: initialValues,
