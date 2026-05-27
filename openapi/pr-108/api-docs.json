@@ -20,6 +20,469 @@
         }
     ],
     "paths": {
+        "/api/v1/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get all users",
+                "operationId": "getUsers",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page (5-100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Filter (first_name, last_name, email, primary_email)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "description": "Order",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "description": "Expand relations: groups",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedUserResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "412": {
+                        "description": "Validation Failed"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "users-read-all"
+                        ]
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create a new user",
+                "operationId": "createUser",
+                "requestBody": {
+                    "description": "User data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateUserRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "412": {
+                        "description": "Validation Failed"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "users/write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get current user basic info",
+                "description": "Gets User Basic Info",
+                "operationId": "getCurrentUser",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "profile"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "email"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "address"
+                        ]
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update current user",
+                "operationId": "updateCurrentUser",
+                "requestBody": {
+                    "description": "User data to update",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "412": {
+                        "description": "Validation Failed"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "me/write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/{id}": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get a user by ID",
+                "operationId": "getUserById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "412": {
+                        "description": "Validation Failed"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "users-read-all"
+                        ]
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update a user by ID",
+                "operationId": "updateUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "User data to update",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "412": {
+                        "description": "Validation Failed"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "users/write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/me/pic": {
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update current user profile picture",
+                "operationId": "updateCurrentUserProfilePicture",
+                "requestBody": {
+                    "description": "Profile picture file",
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserPicRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "412": {
+                        "description": "Validation Failed"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "me/write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/info": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get current user info (OpenID Connect UserInfo)",
+                "operationId": "getUserInfo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserInfoResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "profile"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "email"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "address"
+                        ]
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get current user info (OpenID Connect UserInfo)",
+                "operationId": "getUserInfoPost",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserInfoResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "profile"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "email"
+                        ]
+                    },
+                    {
+                        "OAuth2UserSecurity": [
+                            "address"
+                        ]
+                    }
+                ]
+            }
+        },
         "/api/v2/users/{id}": {
             "get": {
                 "tags": [
@@ -74,6 +537,65 @@
                     {
                         "OAuth2UserSecurity": [
                             "users-read-all"
+                        ]
+                    }
+                ],
+                "x-x-required-client-type": "SERVICE"
+            }
+        },
+        "/api/v1/users/{id}/groups": {
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update user group assignments",
+                "operationId": "updateUserGroups",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Group IDs to assign",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserGroupsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Updated"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "412": {
+                        "description": "Validation Failed"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only service accounts are allowed"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2UserSecurity": [
+                            "users/groups/write"
                         ]
                     }
                 ],
@@ -137,6 +659,12 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "412": {
                         "description": "Precondition Failed"
                     },
@@ -179,6 +707,12 @@
                                 }
                             }
                         }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     },
                     "400": {
                         "description": "Bad Request"
@@ -233,7 +767,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "OK",
+                        "description": "Updated",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -241,6 +775,12 @@
                                 }
                             }
                         }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     },
                     "400": {
                         "description": "Bad Request"
@@ -370,6 +910,198 @@
                         "type": "object"
                     }
                 ]
+            },
+            "UserInfoAddressClaim": {
+                "title": "Address Claim",
+                "description": "OpenID Connect Address Claim (RFC 5.1.1)",
+                "properties": {
+                    "country": {
+                        "description": "Country name",
+                        "type": "string"
+                    },
+                    "street_address": {
+                        "description": "Full street address component",
+                        "type": "string"
+                    },
+                    "address1": {
+                        "description": "Address line 1",
+                        "type": "string"
+                    },
+                    "address2": {
+                        "description": "Address line 2",
+                        "type": "string"
+                    },
+                    "postal_code": {
+                        "description": "Zip code or postal code",
+                        "type": "string"
+                    },
+                    "region": {
+                        "description": "State, province, or region",
+                        "type": "string"
+                    },
+                    "locality": {
+                        "description": "City or locality",
+                        "type": "string"
+                    },
+                    "formatted": {
+                        "description": "Full mailing address, formatted for display",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "UserInfoResponse": {
+                "title": "UserInfo Response",
+                "description": "OpenID Connect UserInfo endpoint response. Claims returned depend on the requested scopes (profile, email, address).",
+                "required": [
+                    "sub",
+                    "aud"
+                ],
+                "properties": {
+                    "sub": {
+                        "description": "Subject identifier for the End-User",
+                        "type": "string"
+                    },
+                    "aud": {
+                        "description": "Audience (client ID)",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Full name",
+                        "type": "string"
+                    },
+                    "given_name": {
+                        "description": "First name",
+                        "type": "string"
+                    },
+                    "preferred_username": {
+                        "description": "Preferred username",
+                        "type": "string"
+                    },
+                    "family_name": {
+                        "description": "Last name",
+                        "type": "string"
+                    },
+                    "nickname": {
+                        "description": "Casual name or identifier",
+                        "type": "string"
+                    },
+                    "picture": {
+                        "description": "Profile picture URL",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "birthdate": {
+                        "description": "Date of birth",
+                        "type": "string"
+                    },
+                    "gender": {
+                        "description": "Gender",
+                        "type": "string"
+                    },
+                    "gender_specify": {
+                        "description": "Gender specification",
+                        "type": "string"
+                    },
+                    "locale": {
+                        "description": "Preferred language",
+                        "type": "string"
+                    },
+                    "bio": {
+                        "description": "User biography",
+                        "type": "string"
+                    },
+                    "statement_of_interest": {
+                        "description": "Statement of interest",
+                        "type": "string"
+                    },
+                    "irc": {
+                        "description": "IRC handle",
+                        "type": "string"
+                    },
+                    "github_user": {
+                        "description": "GitHub username",
+                        "type": "string"
+                    },
+                    "wechat_user": {
+                        "description": "WeChat username",
+                        "type": "string"
+                    },
+                    "twitter_name": {
+                        "description": "Twitter handle",
+                        "type": "string"
+                    },
+                    "linked_in_profile": {
+                        "description": "LinkedIn profile URL",
+                        "type": "string"
+                    },
+                    "company": {
+                        "description": "Company name",
+                        "type": "string"
+                    },
+                    "job_title": {
+                        "description": "Job title",
+                        "type": "string"
+                    },
+                    "public_profile_show_photo": {
+                        "description": "Show photo in public profile",
+                        "type": "boolean"
+                    },
+                    "public_profile_show_bio": {
+                        "description": "Show bio in public profile",
+                        "type": "boolean"
+                    },
+                    "public_profile_show_social_media_info": {
+                        "description": "Show social media info in public profile",
+                        "type": "boolean"
+                    },
+                    "public_profile_show_fullname": {
+                        "description": "Show full name in public profile",
+                        "type": "boolean"
+                    },
+                    "public_profile_allow_chat_with_me": {
+                        "description": "Allow chat in public profile",
+                        "type": "boolean"
+                    },
+                    "public_profile_show_telephone_number": {
+                        "description": "Show telephone in public profile",
+                        "type": "boolean"
+                    },
+                    "groups": {
+                        "description": "User groups",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Group"
+                        }
+                    },
+                    "email": {
+                        "description": "Primary email address",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "second_email": {
+                        "description": "Secondary email address",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "third_email": {
+                        "description": "Tertiary email address",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "email_verified": {
+                        "description": "Whether the primary email is verified",
+                        "type": "boolean"
+                    },
+                    "public_profile_show_email": {
+                        "description": "Whether to show the email or not",
+                        "type": "boolean"
+                    },
+                    "address": {
+                        "$ref": "#/components/schemas/UserInfoAddressClaim"
+                    }
+                },
+                "type": "object"
             },
             "UserRegistrationRequest": {
                 "type": "object",
@@ -605,6 +1337,25 @@
                     }
                 ]
             },
+            "PaginatedUserResponse": {
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/PaginateDataSchemaResponse"
+                    },
+                    {
+                        "properties": {
+                            "data": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            },
             "PaginatedUserRegistrationRequestResponse": {
                 "type": "object",
                 "allOf": [
@@ -654,6 +1405,56 @@
                     }
                 ]
             },
+            "CreateUserRequest": {
+                "title": "Create User Request",
+                "description": "Request body for creating a new user. Only email is required, all other fields are optional.",
+                "required": [
+                    "email"
+                ],
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/UserFields"
+                    }
+                ]
+            },
+            "UpdateUserGroupsRequest": {
+                "title": "Update User Groups Request",
+                "description": "Request body for updating user group assignments",
+                "required": [
+                    "groups"
+                ],
+                "properties": {
+                    "groups": {
+                        "description": "Array of group IDs to assign to the user",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateUserPicRequest": {
+                "title": "Update User Profile Picture Request",
+                "description": "Request body for uploading a user profile picture",
+                "required": [
+                    "file"
+                ],
+                "properties": {
+                    "file": {
+                        "description": "Profile picture image file",
+                        "type": "string",
+                        "format": "binary"
+                    }
+                },
+                "type": "object"
+            },
             "UpdateUserRegistrationRequestRequest": {
                 "title": "Update User Registration Request",
                 "description": "Request body for updating a user registration request. All fields are optional.",
@@ -675,6 +1476,255 @@
                         "type": "object"
                     }
                 ]
+            },
+            "UpdateUserRequest": {
+                "title": "Update User Request",
+                "description": "Request body for updating a user. All fields are optional. Note: groups, email_verified, and active fields are automatically removed from non-admin requests.",
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/UserFields"
+                    }
+                ]
+            },
+            "UserFields": {
+                "title": "User Fields",
+                "description": "Common user fields used across user operations",
+                "properties": {
+                    "first_name": {
+                        "description": "User first name",
+                        "type": "string",
+                        "example": "John",
+                        "nullable": true
+                    },
+                    "last_name": {
+                        "description": "User last name",
+                        "type": "string",
+                        "example": "Doe",
+                        "nullable": true
+                    },
+                    "gender": {
+                        "description": "User gender",
+                        "type": "string",
+                        "example": "Male",
+                        "nullable": true
+                    },
+                    "gender_specify": {
+                        "description": "Custom gender specification",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "birthday": {
+                        "description": "Birthday as Unix timestamp (seconds since epoch)",
+                        "type": "integer",
+                        "example": 631152000,
+                        "nullable": true
+                    },
+                    "language": {
+                        "description": "Preferred language",
+                        "type": "string",
+                        "example": "en",
+                        "nullable": true
+                    },
+                    "email": {
+                        "description": "Primary email address",
+                        "type": "string",
+                        "format": "email",
+                        "example": "john.doe@example.com"
+                    },
+                    "second_email": {
+                        "description": "Secondary email address",
+                        "type": "string",
+                        "format": "email",
+                        "example": "john.work@example.com",
+                        "nullable": true
+                    },
+                    "third_email": {
+                        "description": "Tertiary email address",
+                        "type": "string",
+                        "format": "email",
+                        "example": "john.alt@example.com",
+                        "nullable": true
+                    },
+                    "phone_number": {
+                        "description": "Phone number",
+                        "type": "string",
+                        "example": "+1-555-0123",
+                        "nullable": true
+                    },
+                    "address1": {
+                        "description": "Address line 1",
+                        "type": "string",
+                        "example": "123 Main Street",
+                        "nullable": true
+                    },
+                    "address2": {
+                        "description": "Address line 2",
+                        "type": "string",
+                        "example": "Apt 4B",
+                        "nullable": true
+                    },
+                    "city": {
+                        "description": "City",
+                        "type": "string",
+                        "example": "San Francisco",
+                        "nullable": true
+                    },
+                    "state": {
+                        "description": "State or province",
+                        "type": "string",
+                        "example": "CA",
+                        "nullable": true
+                    },
+                    "post_code": {
+                        "description": "Postal code",
+                        "type": "string",
+                        "example": "94102",
+                        "nullable": true
+                    },
+                    "country_iso_code": {
+                        "description": "ISO 3166-1 alpha-2 country code",
+                        "type": "string",
+                        "example": "US",
+                        "nullable": true
+                    },
+                    "company": {
+                        "description": "Company name",
+                        "type": "string",
+                        "example": "Acme Corp",
+                        "nullable": true
+                    },
+                    "job_title": {
+                        "description": "Job title (max 200 characters)",
+                        "type": "string",
+                        "maxLength": 200,
+                        "example": "Software Engineer",
+                        "nullable": true
+                    },
+                    "bio": {
+                        "description": "User biography (HTML content will be sanitized)",
+                        "type": "string",
+                        "example": "Passionate developer with 10 years of experience",
+                        "nullable": true
+                    },
+                    "statement_of_interest": {
+                        "description": "Statement of interest (HTML content will be sanitized)",
+                        "type": "string",
+                        "example": "Interested in cloud computing and open source",
+                        "nullable": true
+                    },
+                    "irc": {
+                        "description": "IRC nickname",
+                        "type": "string",
+                        "example": "johndoe",
+                        "nullable": true
+                    },
+                    "twitter_name": {
+                        "description": "Twitter username",
+                        "type": "string",
+                        "example": "@johndoe",
+                        "nullable": true
+                    },
+                    "linked_in_profile": {
+                        "description": "LinkedIn profile URL",
+                        "type": "string",
+                        "example": "https://linkedin.com/in/johndoe",
+                        "nullable": true
+                    },
+                    "github_user": {
+                        "description": "GitHub username",
+                        "type": "string",
+                        "example": "johndoe",
+                        "nullable": true
+                    },
+                    "wechat_user": {
+                        "description": "WeChat username",
+                        "type": "string",
+                        "example": "johndoe",
+                        "nullable": true
+                    },
+                    "public_profile_show_photo": {
+                        "description": "Show photo in public profile",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "public_profile_show_fullname": {
+                        "description": "Show full name in public profile",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "public_profile_show_email": {
+                        "description": "Show email in public profile",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "public_profile_show_social_media_info": {
+                        "description": "Show social media information in public profile",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "public_profile_show_bio": {
+                        "description": "Show biography in public profile",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "public_profile_allow_chat_with_me": {
+                        "description": "Allow others to chat with me",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "public_profile_show_telephone_number": {
+                        "description": "Show telephone number in public profile",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "password": {
+                        "description": "Password (must meet password policy requirements)",
+                        "type": "string",
+                        "example": "SecureP@ssw0rd"
+                    },
+                    "password_confirmation": {
+                        "description": "Password confirmation (required when password is provided)",
+                        "type": "string",
+                        "example": "SecureP@ssw0rd"
+                    },
+                    "current_password": {
+                        "description": "Current password (required when changing password for non-admin users)",
+                        "type": "string",
+                        "example": "OldP@ssw0rd"
+                    },
+                    "groups": {
+                        "description": "Array of group IDs to assign (admin only, requires users/write scope)",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    },
+                    "email_verified": {
+                        "description": "Email verification status (admin only, requires users/write scope; ignored on update for non-admin users)",
+                        "type": "boolean",
+                        "example": true,
+                        "nullable": true
+                    },
+                    "active": {
+                        "description": "Account active status (admin only, requires users/write scope; ignored on update for non-admin users)",
+                        "type": "boolean",
+                        "example": true,
+                        "nullable": true
+                    },
+                    "identifier": {
+                        "description": "User identifier",
+                        "type": "string",
+                        "example": "user-12345",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
             },
             "UserRegistrationRequestFields": {
                 "title": "User Registration Request Fields",
@@ -703,22 +1753,6 @@
             }
         },
         "securitySchemes": {
-            "OAuth2UserSecurity": {
-                "type": "oauth2",
-                "description": "OAuth2 security scheme for user-related API endpoints",
-                "flows": {
-                    "authorizationCode": {
-                        "authorizationUrl": "http://localhost/oauth/authorize",
-                        "tokenUrl": "http://localhost/oauth/token",
-                        "scopes": {
-                            "users-read-all": "Read All Users Data",
-                            "me/write": "Write current user data",
-                            "users/write": "Write Users Data",
-                            "users/groups/write": "Manage User Group assignments"
-                        }
-                    }
-                }
-            },
             "OAuth2UserRegistrationRequestApi": {
                 "type": "oauth2",
                 "flows": {
@@ -727,6 +1761,24 @@
                         "tokenUrl": "http://localhost/oauth/token",
                         "scopes": {
                             "user-registration": "User registration"
+                        }
+                    }
+                }
+            },
+            "OAuth2UserSecurity": {
+                "type": "oauth2",
+                "flows": {
+                    "authorizationCode": {
+                        "authorizationUrl": "http://localhost/oauth/authorize",
+                        "tokenUrl": "http://localhost/oauth/token",
+                        "scopes": {
+                            "profile": "Read User Profile",
+                            "email": "Read User Email",
+                            "address": "Read User Address",
+                            "users-read-all": "Read All Users Data",
+                            "me/write": "Write Current User Data",
+                            "users/write": "Write Users Data",
+                            "users/groups/write": "Write User Group Assignments"
                         }
                     }
                 }
