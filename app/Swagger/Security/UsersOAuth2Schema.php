@@ -9,22 +9,24 @@ use OpenApi\Attributes as OA;
     OA\SecurityScheme(
     type: 'oauth2',
     securityScheme: 'OAuth2UserSecurity',
-    description: 'OAuth2 security scheme for user-related API endpoints',
     flows: [
         new OA\Flow(
             flow: 'authorizationCode',
             authorizationUrl: L5_SWAGGER_CONST_AUTH_URL,
             tokenUrl: L5_SWAGGER_CONST_TOKEN_URL,
             scopes: [
+                IUserScopes::Profile => 'Read User Profile',
+                IUserScopes::Email => 'Read User Email',
+                IUserScopes::Address => 'Read User Address',
                 IUserScopes::ReadAll => 'Read All Users Data',
-                IUserScopes::MeWrite => 'Write current user data',
+                IUserScopes::MeWrite => 'Write Current User Data',
                 IUserScopes::Write => 'Write Users Data',
-                IUserScopes::UserGroupWrite => 'Manage User Group assignments',
+                IUserScopes::UserGroupWrite => 'Write User Group Assignments',
             ],
         ),
     ],
 )
 ]
-class OAuth2UserApiControllerSecuritySchema
+class UsersOAuth2Schema
 {
 }
