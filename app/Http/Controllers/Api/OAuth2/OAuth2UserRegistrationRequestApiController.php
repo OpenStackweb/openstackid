@@ -73,6 +73,14 @@ use Utils\Services\ILogService;
             content: new OA\JsonContent(ref: '#/components/schemas/PaginatedUserRegistrationRequestResponse')
         ),
         new OA\Response(
+            response: HttpResponse::HTTP_FORBIDDEN,
+            description: 'Forbidden'
+        ),
+        new OA\Response(
+            response: HttpResponse::HTTP_UNAUTHORIZED,
+            description: 'Unauthorized'
+        ),
+        new OA\Response(
             response: HttpResponse::HTTP_PRECONDITION_FAILED,
             description: 'Precondition Failed'
         ),
@@ -170,6 +178,14 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
                 content: new OA\JsonContent(ref: '#/components/schemas/UserRegistrationRequest')
             ),
             new OA\Response(
+                response: HttpResponse::HTTP_FORBIDDEN,
+                description: 'Forbidden'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_UNAUTHORIZED,
+                description: 'Unauthorized'
+            ),
+            new OA\Response(
                 response: HttpResponse::HTTP_BAD_REQUEST,
                 description: 'Bad Request'
             ),
@@ -261,8 +277,16 @@ final class OAuth2UserRegistrationRequestApiController extends OAuth2ProtectedCo
         responses: [
             new OA\Response(
                 response: HttpResponse::HTTP_CREATED,
-                description: 'OK',
+                description: 'Updated',
                 content: new OA\JsonContent(ref: '#/components/schemas/UserRegistrationRequest')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_FORBIDDEN,
+                description: 'Forbidden'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_UNAUTHORIZED,
+                description: 'Unauthorized'
             ),
             new OA\Response(
                 response: HttpResponse::HTTP_BAD_REQUEST,
