@@ -61,8 +61,10 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
     {
         Log::debug("OAuth2LoginStrategy::getLogin");
 
-        if (!Auth::guest())
-            return Redirect::action("UserController@getProfile");
+        if (!Auth::guest()) {
+            Log::debug("OAuth2LoginStrategy::getLogin user already authenticated, redirecting to auth endpoint");
+            return Redirect::action("OAuth2\OAuth2ProviderController@auth");
+        }
 
         $this->login_hint_process_strategy->process();
 

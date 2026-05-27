@@ -461,7 +461,16 @@ abstract class InteractiveGrantType extends AbstractGrantType
         $token_hint = $request->getIdTokenHint();
         $otp_login_hint = $request->getOTPLoginHint();
 
-        Log::debug(sprintf("InteractiveGrant::processUserHint request %s client %s", $request->__toString(), $client->getId()));
+        Log::debug
+        (
+            sprintf
+            (
+                "InteractiveGrant::processUserHint request %s client %s",
+                $request->__toString(),
+                $client->getId()
+            )
+        );
+
         // process login hint
         $user = null;
         if (!empty($otp_login_hint) && !empty ($login_hint)
@@ -484,7 +493,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $user    = $this->auth_service->getUserById($user_id);
             }
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_LoginHint);
-        } else if(!empty($token_hint)) {
+        } else if(!empty($token_hint) && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_IDTokenHint)) {
             Log::debug("InteractiveGrant::processUserHint processing Token hint...");
 
             $jwt = BasicJWTFactory::build($token_hint);
@@ -544,6 +553,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
             $this->auth_service->reloadSession($jti->getValue());
 
+            $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_IDTokenHint);
         }
         if(!is_null($user))
         {
@@ -689,6 +699,15 @@ abstract class InteractiveGrantType extends AbstractGrantType
      */
     protected function mustAuthenticateUser(OAuth2AuthorizationRequest $request, Client $client)
     {
+        Log::debug
+        (
+            sprintf
+            (
+                "InteractiveGrant::mustAuthenticateUser: request %s client %s",
+                $request->__toString(),
+                $client->getClientId()
+            )
+        );
 
         if ($request instanceof OAuth2AuthenticationRequest) {
             try {
@@ -702,19 +721,22 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 throw $ex;
             }
             catch (Exception $ex){
-                Log::warning($ex);
+                Log::warning("InteractiveGrant::mustAuthenticateUser processUserHint generic error", [ 'error' => $ex]);
+                $this->auth_service->logout(false);
                 return true;
             }
         }
 
         if($this->shouldPromptLogin($request))
         {
+            Log::warning("InteractiveGrant::mustAuthenticateUser: shouldPromptLogin");
             $this->auth_service->logout(false);
             return true;
         }
 
         if($this->shouldForceReLogin($request, $client))
         {
+            Log::warning("InteractiveGrant::mustAuthenticateUser: shouldForceReLogin");
             $this->auth_service->logout(false);
             return true;
         }
