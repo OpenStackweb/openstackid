@@ -124,66 +124,6 @@ final class OAuth2ProviderController extends Controller
             new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
         ]
     )]
-    #[OA\Put(
-        path: '/oauth2/auth',
-        operationId: 'oauth2AuthorizePut',
-        summary: 'OAuth2 Authorization Endpoint (PUT)',
-        description: 'Initiates an OAuth2 authorization flow via PUT. Same parameters as GET but sent as form data.',
-        tags: ['OAuth2 / OpenID Connect'],
-        requestBody: new OA\RequestBody(
-            description: 'Authorization request parameters',
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'application/x-www-form-urlencoded',
-                schema: new OA\Schema(ref: '#/components/schemas/OAuth2AuthorizationRequest')
-            )
-        ),
-        responses: [
-            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
-            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to client redirect_uri with authorization code, tokens, or error'),
-            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
-        ]
-    )]
-    #[OA\Patch(
-        path: '/oauth2/auth',
-        operationId: 'oauth2AuthorizePatch',
-        summary: 'OAuth2 Authorization Endpoint (PATCH)',
-        description: 'Initiates an OAuth2 authorization flow via PATCH. Same parameters as GET but sent as form data.',
-        tags: ['OAuth2 / OpenID Connect'],
-        requestBody: new OA\RequestBody(
-            description: 'Authorization request parameters',
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'application/x-www-form-urlencoded',
-                schema: new OA\Schema(ref: '#/components/schemas/OAuth2AuthorizationRequest')
-            )
-        ),
-        responses: [
-            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
-            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to client redirect_uri with authorization code, tokens, or error'),
-            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
-        ]
-    )]
-    #[OA\Delete(
-        path: '/oauth2/auth',
-        operationId: 'oauth2AuthorizeDelete',
-        summary: 'OAuth2 Authorization Endpoint (DELETE)',
-        description: 'Initiates an OAuth2 authorization flow via DELETE. Same parameters as GET but sent as form data.',
-        tags: ['OAuth2 / OpenID Connect'],
-        requestBody: new OA\RequestBody(
-            description: 'Authorization request parameters',
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'application/x-www-form-urlencoded',
-                schema: new OA\Schema(ref: '#/components/schemas/OAuth2AuthorizationRequest')
-            )
-        ),
-        responses: [
-            new OA\Response(response: HttpResponse::HTTP_OK, description: 'Authorization request processed (response in body), depends on "response_mode" param'),
-            new OA\Response(response: HttpResponse::HTTP_FOUND, description: 'Redirect to client redirect_uri with authorization code, tokens, or error'),
-            new OA\Response(response: HttpResponse::HTTP_BAD_REQUEST, description: 'Bad Request', content: new OA\JsonContent(ref: '#/components/schemas/OAuth2ErrorResponse')),
-        ]
-    )]
     public function auth()
     {
         try {
