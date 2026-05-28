@@ -29,6 +29,7 @@
       <file>./tests/Unit/MFA/EmailOTPMFAChallengeStrategyTest.php</file>
       <file>./tests/Unit/MFA/MFAChallengeStrategyFactoryTest.php</file>
       <file>./tests/Unit/TwoFactorAuditServiceTest.php</file>
+      <file>./tests/Unit/MFAGateServiceTest.php</file>
     </testsuite>
   </testsuites>
   <php>

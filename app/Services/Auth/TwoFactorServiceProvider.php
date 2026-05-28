@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Services\Auth;
+
 /**
  * Copyright 2025 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,6 +33,7 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
     {
         $this->app->singleton(IDeviceTrustService::class, DeviceTrustService::class);
         $this->app->singleton(ITwoFactorAuditService::class, TwoFactorAuditService::class);
+        $this->app->singleton(ITwoFactorGateService::class, MFAGateService::class);
     }
 
     public function provides(): array
@@ -38,6 +41,7 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
         return [
             IDeviceTrustService::class,
             ITwoFactorAuditService::class,
+            ITwoFactorGateService::class,
         ];
     }
 }
