@@ -182,10 +182,10 @@ final class AuthServiceValidateCredentialsTest extends PHPUnitTestCase
     }
 
     /**
-     * UnverifiedEmailMemberException from the provider must be caught and
-     * re-thrown as AuthenticationException (contract: @throws AuthenticationException only).
+     * UnverifiedEmailMemberException from the provider propagates to the caller
+     * so UserController::postLogin() can handle it with a specific UI message.
      */
-    public function testUnverifiedUser_throwsAuthenticationException(): void
+    public function testUnverifiedUser_throwsUnverifiedEmailMemberException(): void
     {
         $username = 'unverified@example.com';
         $password = 'any';
@@ -199,7 +199,7 @@ final class AuthServiceValidateCredentialsTest extends PHPUnitTestCase
         $this->auth_mock->shouldReceive('getProvider')->once()->andReturn($provider_mock);
         $this->auth_mock->shouldNotReceive('login');
 
-        $this->expectException(AuthenticationException::class);
+        $this->expectException(UnverifiedEmailMemberException::class);
         $this->expectExceptionMessage('Email not verified.');
 
         $this->service->validateCredentials($username, $password);

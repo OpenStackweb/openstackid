@@ -39,6 +39,7 @@ use OAuth2\Services\IPrincipalService;
 use OAuth2\Services\ISecurityContextService;
 use OpenId\Services\IUserService;
 use Services\IUserActionService;
+use Strategies\MFA\IMFAChallengeStrategy;
 use utils\Base64UrlRepresentation;
 use Utils\Db\ITransactionService;
 use Utils\IPHelper;
@@ -426,15 +427,10 @@ final class AuthService extends AbstractService implements IAuthService
     {
         Log::debug("AuthService::validateCredentials");
 
-        try {
-            /**
-             * @var User|null $user
-             */
-            $user = Auth::getProvider()->retrieveByCredentials(['username' => $username, 'password' => $password]);
-        } catch (UnverifiedEmailMemberException $ex) {
-            throw new AuthenticationException($ex->getMessage());
-        }
-
+        /**
+         * @var User|null $user
+         */
+        $user = Auth::getProvider()->retrieveByCredentials(['username' => $username, 'password' => $password]);
         if (is_null($user) || !$user instanceof User || !$user->canLogin()) {
             throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
         }
@@ -776,6 +772,48 @@ final class AuthService extends AbstractService implements IAuthService
             $user->activate();
             $user->clearResetPasswordRequests();
 
+        });
+    }
+
+    public function issueMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        ?Client $client = null,
+        bool $remember = false
+    ): array {
+        return $this->tx_service->transaction(function () use ($user, $strategy, $client, $remember) {
+            return $strategy->issueChallenge($user, $client, $remember);
+        });
+    }
+
+    public function verifyMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        string $value
+    ): void {
+        $this->tx_service->transaction(function () use ($user, $strategy, $value) {
+            $strategy->verifyChallenge($user, $value);
+        });
+    }
+
+    public function verifyMFARecoveryCode(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        string $inputCode
+    ): void {
+        $this->tx_service->transaction(function () use ($user, $strategy, $inputCode) {
+            $strategy->verifyRecoveryCode($user, $inputCode);
+        });
+    }
+
+    public function resendMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        ?Client $client = null,
+        bool $remember = false
+    ): array {
+        return $this->tx_service->transaction(function () use ($user, $strategy, $client, $remember) {
+            return $strategy->resendChallenge($user, $client, $remember);
         });
     }
 }

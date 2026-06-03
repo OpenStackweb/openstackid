@@ -90,6 +90,7 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
         $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
+        $repo->shouldReceive('add')->with($recoveryCode, false)->once();
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
             public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }

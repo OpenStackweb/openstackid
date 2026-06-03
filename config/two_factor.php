@@ -38,4 +38,23 @@ return [
     */
     'device_trust_lifetime_days' => env('DEVICE_TRUST_LIFETIME_DAYS', 30),
     'cookie_name' => env('DEVICE_TRUST_COOKIE_NAME', 'device_trust_token'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limiting
+    |--------------------------------------------------------------------------
+    |
+    | Counters live in the cache (NOT the session) so they survive session
+    | cleanup and keep an independent, fixed TTL window.
+    |
+    | verify/recovery: max_attempts failed attempts per window_seconds.
+    | resend:          max_otp_requests requests per otp_window_minutes.
+    |
+    */
+    'rate_limit' => [
+        'max_attempts'       => env('TWO_FACTOR_MAX_ATTEMPTS', 3),
+        'window_seconds'     => env('TWO_FACTOR_RATE_WINDOW_SECONDS', 900),
+        'max_otp_requests'   => env('TWO_FACTOR_MAX_OTP_REQUESTS', 5),
+        'otp_window_minutes' => env('TWO_FACTOR_OTP_WINDOW_MINUTES', 15),
+    ],
 ];

@@ -5,7 +5,6 @@ use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
 use Models\OAuth2\Client;
-use Models\OAuth2\OAuth2OTP;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Services\ITokenService;
 
@@ -37,7 +36,14 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
 
     public function verifyChallenge(User $user, string $code, ?Client $client = null): void
     {
-        $otp = OAuth2OTP::fromParams($user->getEmail(), OAuth2Protocol::OAuth2PasswordlessConnectionEmail, $code);
+        // Look up the STORED single-use code so the submitted value is actually
+        // validated against what was issued (a non-matching code resolves to null).
+        $otp = $this->otp_repository->getByValueConnectionAndUserName(
+            $code,
+            OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
+            $user->getEmail(),
+            $client
+        );
 
         if (is_null($otp)) {
             throw new AuthenticationException("Non existent single-use code.");
@@ -54,10 +60,12 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
         }
 
         $otp->redeem();
+        $this->otp_repository->add($otp, false);
 
         foreach ($this->otp_repository->getByUserNameNotRedeemed($user->getEmail()) as $otpToRevoke) {
             if ($otpToRevoke->getValue() !== $otp->getValue()) {
                 $otpToRevoke->redeem();
+                $this->otp_repository->add($otpToRevoke, false);
             }
         }
     }

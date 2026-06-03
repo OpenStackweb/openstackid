@@ -99,6 +99,19 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
         $user = $this->buildUser(1, 'verify@example.com');
         $code = '123456';
 
+        $storedOtp = \Mockery::mock(OAuth2OTP::class);
+        $storedOtp->shouldReceive('getValue')->andReturn($code);
+        $storedOtp->shouldReceive('logRedeemAttempt')->once();
+        $storedOtp->shouldReceive('isAlive')->andReturn(true);
+        $storedOtp->shouldReceive('isValid')->andReturn(true);
+        $storedOtp->shouldReceive('redeem')->once();
+
+        $this->otpRepository
+            ->shouldReceive('getByValueConnectionAndUserName')
+            ->once()
+            ->with($code, 'email', 'verify@example.com', null)
+            ->andReturn($storedOtp);
+
         $otherOtp = \Mockery::mock(OAuth2OTP::class);
         $otherOtp->shouldReceive('getValue')->andReturn('654321');
         $otherOtp->shouldReceive('redeem')->once();
@@ -107,7 +120,24 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
             ->shouldReceive('getByUserNameNotRedeemed')
             ->andReturn([$otherOtp]);
 
+        // The redeemed code and the revoked sibling are both persisted with deferred flush.
+        $this->otpRepository->shouldReceive('add')->with($storedOtp, false)->once();
+        $this->otpRepository->shouldReceive('add')->with($otherOtp, false)->once();
+
         $this->strategy->verifyChallenge($user, $code);
         $this->addToAssertionCount(1);
+    }
+
+    public function testVerifyChallenge_withNonMatchingCode_throws(): void
+    {
+        $user = $this->buildUser(1, 'verify@example.com');
+
+        $this->otpRepository
+            ->shouldReceive('getByValueConnectionAndUserName')
+            ->once()
+            ->andReturn(null);
+
+        $this->expectException(\Auth\Exceptions\AuthenticationException::class);
+        $this->strategy->verifyChallenge($user, 'wrong-code');
     }
 }
