@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Tests\TestCase;
+use Utils\Db\ITransactionService;
 
 /**
  * Class TwoFactorAuditServiceTest
@@ -35,6 +36,9 @@ final class TwoFactorAuditServiceTest extends TestCase
     /** @var \Mockery\MockInterface&ITwoFactorAuditLogRepository */
     private $repository;
 
+    /** @var \Mockery\MockInterface&ITransactionService */
+    private $tx_service;
+
     /** @var \Mockery\MockInterface&User */
     private $user;
 
@@ -44,7 +48,8 @@ final class TwoFactorAuditServiceTest extends TestCase
         Queue::fake();
 
         $this->repository = Mockery::mock(ITwoFactorAuditLogRepository::class);
-        $this->service = new TwoFactorAuditService($this->repository);
+        $this->tx_service = Mockery::mock(ITransactionService::class);
+        $this->service = new TwoFactorAuditService($this->repository, $this->tx_service);
 
         $this->user = Mockery::mock(User::class);
         $this->user->shouldReceive('getId')->andReturn(42);
@@ -70,7 +75,14 @@ final class TwoFactorAuditServiceTest extends TestCase
             ->once()
             ->withArgs(function (TwoFactorAuditLog $log, bool $sync) use (&$persisted) {
                 $persisted = $log;
-                return $sync === true;
+                return $sync === false;
+            });
+
+        $this->tx_service
+            ->shouldReceive('transaction')
+            ->once()
+            ->andReturnUsing(function (callable $callback) {
+                return $callback();
             });
 
         $this->service->log(
@@ -98,6 +110,13 @@ final class TwoFactorAuditServiceTest extends TestCase
         Config::set('opentelemetry.enabled', true);
 
         $this->repository->shouldReceive('add')->once();
+
+        $this->tx_service
+            ->shouldReceive('transaction')
+            ->once()
+            ->andReturnUsing(function (callable $callback) {
+                return $callback();
+            });
 
         $this->service->log(
             $this->user,
@@ -127,6 +146,13 @@ final class TwoFactorAuditServiceTest extends TestCase
 
         $this->repository->shouldReceive('add')->once();
 
+        $this->tx_service
+            ->shouldReceive('transaction')
+            ->once()
+            ->andReturnUsing(function (callable $callback) {
+                return $callback();
+            });
+
         $this->service->log(
             $this->user,
             TwoFactorAuditLog::EventChallengeFailed,
@@ -149,6 +175,13 @@ final class TwoFactorAuditServiceTest extends TestCase
         Config::set('opentelemetry.enabled', false);
 
         $this->repository->shouldReceive('add')->once();
+
+        $this->tx_service
+            ->shouldReceive('transaction')
+            ->once()
+            ->andReturnUsing(function (callable $callback) {
+                return $callback();
+            });
 
         $this->service->log(
             $this->user,
@@ -175,6 +208,13 @@ final class TwoFactorAuditServiceTest extends TestCase
             ->withArgs(function (TwoFactorAuditLog $log) use (&$persisted) {
                 $persisted = $log;
                 return true;
+            });
+
+        $this->tx_service
+            ->shouldReceive('transaction')
+            ->once()
+            ->andReturnUsing(function (callable $callback) {
+                return $callback();
             });
 
         $this->service->log(

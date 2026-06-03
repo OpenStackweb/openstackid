@@ -13,12 +13,15 @@ namespace App\Services\Auth;
  * limitations under the License.
  **/
 
+use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserTrustedDevice;
 use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\User;
 use DateTime;
 use DateInterval;
 use DateTimeZone;
+use Utils\IPHelper;
+use Utils\Db\ITransactionService;
 
 /**
  * Class DeviceTrustService
@@ -26,7 +29,11 @@ use DateTimeZone;
  */
 final class DeviceTrustService implements IDeviceTrustService
 {
-    public function __construct(private readonly IUserTrustedDeviceRepository $repository)
+    public function __construct(
+        private readonly IUserTrustedDeviceRepository $repository,
+        private readonly ITwoFactorAuditService $audit_service,
+        private readonly ITransactionService $tx_service
+    )
     {
     }
 
@@ -55,7 +62,16 @@ final class DeviceTrustService implements IDeviceTrustService
         $device->setLastSeenAt(clone $now);
         $device->setIsRevoked(false);
 
-        $this->repository->add($device, true);
+        $this->tx_service->transaction(function () use ($device) {
+            $this->repository->add($device, false);
+        });
+
+        $this->audit_service->log(
+            $user,
+            TwoFactorAuditLog::EventDeviceTrusted,
+            $user->getTwoFactorMethod(),
+            $ipAddress
+        );
 
         return $rawToken;
     }
@@ -74,12 +90,21 @@ final class DeviceTrustService implements IDeviceTrustService
         }
 
         $device->setLastSeenAt(new DateTime('now', new DateTimeZone('UTC')));
-        $this->repository->add($device, true);
+        $this->tx_service->transaction(function () use ($device) {
+            $this->repository->add($device, false);
+        });
         return true;
     }
 
     public function removeTrustedDevices(User $user): void
     {
         $this->repository->revokeAllForUser($user);
+
+        $this->audit_service->log(
+            $user,
+            TwoFactorAuditLog::EventDeviceRevoked,
+            $user->getTwoFactorMethod(),
+            IPHelper::getUserIp()
+        );
     }
 }

@@ -15,12 +15,14 @@ namespace Tests;
 
 use App\libs\Auth\Models\UserTrustedDevice;
 use App\Services\Auth\DeviceTrustService;
+use App\Services\Auth\ITwoFactorAuditService;
 use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\User;
 use DateTime;
 use DateInterval;
 use DateTimeZone;
 use Mockery;
+use Utils\Db\ITransactionService;
 
 /**
  * Class DeviceTrustServiceTest
@@ -33,11 +35,21 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     /** @var \Mockery\MockInterface&IUserTrustedDeviceRepository */
     private $repo;
 
+    /** @var \Mockery\MockInterface&ITwoFactorAuditService */
+    private $audit_service;
+
+    /** @var \Mockery\MockInterface&ITransactionService */
+    private $tx_service;
+
     public function setUp(): void
     {
         parent::setUp();
         $this->repo = Mockery::mock(IUserTrustedDeviceRepository::class);
-        $this->service = new DeviceTrustService($this->repo);
+        $this->audit_service = Mockery::mock(ITwoFactorAuditService::class);
+        $this->audit_service->shouldReceive('log')->byDefault();
+        $this->tx_service = Mockery::mock(ITransactionService::class);
+        $this->tx_service->shouldReceive('transaction')->andReturnUsing(fn($cb) => $cb())->byDefault();
+        $this->service = new DeviceTrustService($this->repo, $this->audit_service, $this->tx_service);
     }
 
     public function tearDown(): void
@@ -53,6 +65,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testIsDeviceTrustedNullCookie(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
         $this->repo->shouldNotReceive('getByUserAndDeviceIdentifier');
 
         $this->assertFalse($this->service->isDeviceTrusted($user, null));
@@ -61,6 +74,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testIsDeviceTrustedEmptyCookie(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
         $this->repo->shouldNotReceive('getByUserAndDeviceIdentifier');
 
         $this->assertFalse($this->service->isDeviceTrusted($user, ''));
@@ -69,6 +83,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testIsDeviceTrustedWrongCookie(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
         $this->repo
             ->shouldReceive('getByUserAndDeviceIdentifier')
             ->once()
@@ -80,6 +95,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testIsDeviceTrustedRevokedDevice(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         $device = $this->makeDevice(expired: false, revoked: true);
 
@@ -94,6 +110,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testIsDeviceTrustedExpiredDevice(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         $device = $this->makeDevice(expired: true, revoked: false);
 
@@ -108,6 +125,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testIsDeviceTrustedValidDevice(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         $device = $this->makeDevice(expired: false, revoked: false);
 
@@ -123,6 +141,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testIsDeviceTrustedUpdatesLastSeenAt(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         $device = $this->makeDevice(expired: false, revoked: false);
         // set last_seen_at to a known old value so the update is detectable
@@ -148,6 +167,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testTrustDeviceReturnsToken(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         $this->repo->shouldReceive('add')->once();
 
@@ -160,6 +180,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testTrustDeviceStoresHash(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         /** @var UserTrustedDevice|null $persistedDevice */
         $persistedDevice = null;
@@ -181,6 +202,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testTrustDeviceRawTokenNotStored(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         /** @var UserTrustedDevice|null $persistedDevice */
         $persistedDevice = null;
@@ -202,8 +224,24 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testTrustDeviceCreatesExactlyOneRecord(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         $this->repo->shouldReceive('add')->once();
+
+        $this->service->trustDevice($user, 'Mozilla/5.0', '127.0.0.1');
+    }
+
+    public function testTrustDeviceEmitsDeviceTrustedAuditEvent(): void
+    {
+        $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
+
+        $this->repo->shouldReceive('add')->once();
+
+        $this->audit_service
+            ->shouldReceive('log')
+            ->once()
+            ->with($user, \App\libs\Auth\Models\TwoFactorAuditLog::EventDeviceTrusted, User::MFAMethod_OTP, '127.0.0.1');
 
         $this->service->trustDevice($user, 'Mozilla/5.0', '127.0.0.1');
     }
@@ -211,6 +249,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testTrustDeviceSetsExpiresAtFromConfig(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         /** @var UserTrustedDevice|null $persistedDevice */
         $persistedDevice = null;
@@ -239,11 +278,17 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     public function testRemoveTrustedDevicesRevokesAll(): void
     {
         $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         $this->repo
             ->shouldReceive('revokeAllForUser')
             ->once()
             ->with($user);
+
+        $this->audit_service
+            ->shouldReceive('log')
+            ->once()
+            ->with($user, \App\libs\Auth\Models\TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'));
 
         $this->service->removeTrustedDevices($user);
     }

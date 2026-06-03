@@ -49,6 +49,11 @@ Route::group(array('middleware' => ['ssl']), function () {
             Route::group(array('prefix' => 'verification'), function () {
                 Route::post('resend', ['middleware' => ['csrf'], 'uses' => 'UserController@resendVerificationEmail']);
             });
+            Route::group(array('prefix' => '2fa'), function () {
+                Route::post('verify',   ['middleware' => ['csrf', '2fa.rate:verify'],   'uses' => 'UserController@verify2FA']);
+                Route::post('recovery', ['middleware' => ['csrf', '2fa.rate:recovery'], 'uses' => 'UserController@verify2FARecovery']);
+                Route::post('resend',   ['middleware' => ['csrf', '2fa.rate:resend'],   'uses' => 'UserController@resend2FA']);
+            });
             Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
             Route::get('cancel', "UserController@cancelLogin");
             Route::group(array('prefix' => '{provider}'), function () {

@@ -18,6 +18,7 @@ use App\libs\Auth\Models\TwoFactorAuditLog;
 use Auth\Repositories\ITwoFactorAuditLogRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Log;
+use Utils\Db\ITransactionService;
 
 /**
  * Class TwoFactorAuditService
@@ -26,7 +27,8 @@ use Illuminate\Support\Facades\Log;
 final class TwoFactorAuditService implements ITwoFactorAuditService
 {
     public function __construct(
-        private readonly ITwoFactorAuditLogRepository $repository
+        private readonly ITwoFactorAuditLogRepository $repository,
+        private readonly ITransactionService $tx_service
     ) {
     }
 
@@ -53,7 +55,9 @@ final class TwoFactorAuditService implements ITwoFactorAuditService
         $auditLog->setUserAgent(request()?->userAgent() ?? '');
         $auditLog->setMetadata($metadata);
 
-        $this->repository->add($auditLog, true);
+        $this->tx_service->transaction(function () use ($auditLog) {
+            $this->repository->add($auditLog, false);
+        });
 
         if (config('opentelemetry.enabled', false)) {
             EmitAuditLogJob::dispatch('two_factor.audit', [

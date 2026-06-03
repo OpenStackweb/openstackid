@@ -51,6 +51,7 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
         foreach ($this->recovery_code_repository->getUnusedByUser($user) as $recoveryCode) {
             if (Hash::check($code, $recoveryCode->getCodeHash())) {
                 $recoveryCode->markUsed();
+                $this->recovery_code_repository->add($recoveryCode, false);
                 return;
             }
         }
