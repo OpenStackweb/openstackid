@@ -205,7 +205,8 @@ interface IAuthService
     public function verifyMFAChallenge(
         User $user,
         IMFAChallengeStrategy $strategy,
-        string $value
+        string $value,
+        ?Client $client = null
     ): void;
 
     public function verifyMFARecoveryCode(

@@ -13,6 +13,7 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
     private const KEY_USER_ID           = '2fa_pending_user_id';
     private const KEY_PENDING_AT        = '2fa_pending_at';
     private const KEY_REMEMBER          = '2fa_remember';
+    private const KEY_CLIENT_ID         = '2fa_pending_client_id';
     private const KEY_RECOVERY_ATTEMPTS = '2fa_recovery_attempts';
 
     public function __construct(protected IUserRecoveryCodeRepository $recovery_code_repository) {}
@@ -35,6 +36,7 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
             'user_id'    => $user_id,
             'pending_at' => $pending_at,
             'remember'   => Session::get(self::KEY_REMEMBER, false),
+            'client_id'  => Session::get(self::KEY_CLIENT_ID),
         ];
     }
 
@@ -43,6 +45,7 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
         Session::remove(self::KEY_USER_ID);
         Session::remove(self::KEY_PENDING_AT);
         Session::remove(self::KEY_REMEMBER);
+        Session::remove(self::KEY_CLIENT_ID);
         Session::remove(self::KEY_RECOVERY_ATTEMPTS);
     }
 
@@ -50,6 +53,14 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
     {
         foreach ($this->recovery_code_repository->getUnusedByUser($user) as $recoveryCode) {
             if (Hash::check($code, $recoveryCode->getCodeHash())) {
+                // Concurrency: acquire a PESSIMISTIC_WRITE row lock and re-hydrate
+                // used_at before mutating. This closes the check->markUsed race
+                // window: a second concurrent submitter blocks on the lock and, on
+                // resume, sees the code already used instead of double-spending it.
+                $this->recovery_code_repository->refreshExclusiveLock($recoveryCode);
+                if ($recoveryCode->isUsed()) {
+                    throw new AuthenticationException("Invalid recovery code.");
+                }
                 $recoveryCode->markUsed();
                 $this->recovery_code_repository->add($recoveryCode, false);
                 return;
@@ -58,11 +69,16 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
         throw new AuthenticationException("Invalid recovery code.");
     }
 
-    protected function storePendingState(int $userId, bool $remember): void
+    protected function storePendingState(int $userId, bool $remember, ?string $clientId = null): void
     {
         Session::put(self::KEY_USER_ID,    $userId);
         Session::put(self::KEY_PENDING_AT, time());
         Session::put(self::KEY_REMEMBER,   $remember);
+        if (is_null($clientId)) {
+            Session::remove(self::KEY_CLIENT_ID);
+        } else {
+            Session::put(self::KEY_CLIENT_ID, $clientId);
+        }
     }
 
     public function verifyChallenge(User $user, string $code, ?Client $client = null): void

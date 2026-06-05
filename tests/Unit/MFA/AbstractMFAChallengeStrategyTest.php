@@ -86,10 +86,13 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
         $recoveryCode = \Mockery::mock(\App\libs\Auth\Models\UserRecoveryCode::class);
         $recoveryCode->shouldReceive('getCodeHash')->andReturn(Hash::make($code));
+        $recoveryCode->shouldReceive('isUsed')->andReturn(false);
         $recoveryCode->shouldReceive('markUsed')->once();
 
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
         $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
+        // Lock is taken before mutating (regression guard for 3357348455).
+        $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once();
         $repo->shouldReceive('add')->with($recoveryCode, false)->once();
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
@@ -100,6 +103,34 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
         $strategy->verifyRecoveryCode($user, $code);
         $this->addToAssertionCount(1); // markUsed()->once() verified by Mockery in tearDown
+    }
+
+    public function testVerifyRecoveryCode_locksAndRejects_whenUsedAfterLock(): void
+    {
+        $user = new User();
+        $code = 'VALID-CODE';
+
+        // Hash matches, but a concurrent winner marked it used; the lock+recheck
+        // must reject without double-spending (regression guard for 3357348455).
+        $recoveryCode = \Mockery::mock(\App\libs\Auth\Models\UserRecoveryCode::class);
+        $recoveryCode->shouldReceive('getCodeHash')->andReturn(Hash::make($code));
+        $recoveryCode->shouldReceive('isUsed')->andReturn(true);
+        $recoveryCode->shouldNotReceive('markUsed');
+
+        $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
+        $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
+        $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once();
+        $repo->shouldNotReceive('add');
+
+        $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
+            public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }
+            public function verifyChallenge(User $user, string $code, ?Client $client = null): void {}
+            public function resendChallenge(User $user, ?Client $client, bool $remember): array { return []; }
+        };
+
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage("Invalid recovery code.");
+        $strategy->verifyRecoveryCode($user, $code);
     }
 
     public function testVerifyRecoveryCode_withNonMatchingCode_throwsException(): void

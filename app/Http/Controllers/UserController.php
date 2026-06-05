@@ -469,7 +469,7 @@ final class UserController extends OpenIdController
                 $connection = $data['connection'] ?? null;
 
                 try {
-                    if ($flow == "password") {
+                    if ($flow == IAuthService::AuthenticationFlowPassword) {
                         // Validate credentials WITHOUT establishing a session, so the
                         // MFA gate can run before the user is authenticated.
                         $user = $this->auth_service->validateCredentials($username, $password);
@@ -501,7 +501,7 @@ final class UserController extends OpenIdController
                         return $this->login_strategy->postLogin();
                     }
 
-                    if ($flow == "otp") {
+                    if ($flow == IAuthService::AuthenticationFlowPasswordless) {
 
                         $client = $this->resolveClientFromMemento();
 
@@ -632,6 +632,24 @@ final class UserController extends OpenIdController
     }
 
     /**
+     * Resolves the OAuth2 client carried in the pending MFA state (the client the
+     * challenge was issued for), so verification scopes the OTP lookup and
+     * sibling-revoke to the same client. Returns null when the challenge was not
+     * issued in a client context.
+     *
+     * @param array $pending
+     * @return Client|null
+     */
+    private function resolveClientFromPendingState(array $pending): ?Client
+    {
+        $clientId = $pending['client_id'] ?? null;
+        if (is_null($clientId)) {
+            return null;
+        }
+        return $this->client_repository->getClientById($clientId);
+    }
+
+    /**
      * Verifies a 2FA OTP challenge and, on success, establishes the session.
      *
      * @return \Illuminate\Http\JsonResponse|mixed
@@ -667,8 +685,19 @@ final class UserController extends OpenIdController
                 return $this->mfaSessionExpired();
             }
 
+            // Scope verification to the client the challenge was issued for.
+            $client = $this->resolveClientFromPendingState($pending);
+
             try {
-                $this->auth_service->verifyMFAChallenge($user, $strategy, $otp_value);
+                // Commits the OTP redeem (+ sibling revoke) in its own tx. The
+                // session, trusted-device enrollment and audit are applied below
+                // as separate post-verification steps.
+                $this->auth_service->verifyMFAChallenge(
+                    $user,
+                    $strategy,
+                    $otp_value,
+                    $client
+                );
             } catch (AuthenticationException $ex) {
                 Log::warning($ex);
                 // Re-fetch user: the tx wrapper closed/reset the EM on failure, detaching the entity.
@@ -687,17 +716,29 @@ final class UserController extends OpenIdController
             $this->auth_service->loginUser($user, (bool) $pending['remember']);
 
             if ($trust_device) {
-                $this->queueDeviceTrustCookie($user);
+                // Best-effort: the OTP is already redeemed and the session
+                // established, so a trusted-device enrollment failure must not
+                // 500 the user (which would lock them out on retry against a
+                // burned OTP). Log and continue; the device just isn't remembered.
+                try {
+                    $this->queueDeviceTrustCookie($user);
+                } catch (Exception $ex) {
+                    Log::warning($ex);
+                }
             }
 
             $strategy->clearPendingState();
 
-            $this->two_factor_audit_service->log(
-                $user,
-                TwoFactorAuditLog::EventChallengeSucceeded,
-                $method,
-                IPHelper::getUserIp()
-            );
+            try {
+                $this->two_factor_audit_service->log(
+                    $user,
+                    TwoFactorAuditLog::EventChallengeSucceeded,
+                    $method,
+                    IPHelper::getUserIp()
+                );
+            } catch (Exception $ex) {
+                Log::warning($ex);
+            }
 
             return $this->login_strategy->postLogin();
         } catch (ValidationException $ex) {

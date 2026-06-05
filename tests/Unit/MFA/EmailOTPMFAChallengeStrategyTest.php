@@ -4,6 +4,7 @@ use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Session;
+use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Services\ITokenService;
 use Strategies\MFA\EmailOTPMFAChallengeStrategy;
@@ -94,7 +95,51 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
 
     // ---------- verifyChallenge ----------
 
-    public function testVerifyChallenge_withValidOtp_redeemsAndRevokesOthers(): void
+    public function testVerifyChallenge_withValidOtp_redeemsAndRevokesOthers_scopedToClient(): void
+    {
+        $user   = $this->buildUser(1, 'verify@example.com');
+        $code   = '123456';
+        $client = \Mockery::mock(Client::class);
+
+        $storedOtp = \Mockery::mock(OAuth2OTP::class);
+        $storedOtp->shouldReceive('getValue')->andReturn($code);
+        $storedOtp->shouldReceive('logRedeemAttempt')->once();
+        $storedOtp->shouldReceive('isAlive')->andReturn(true);
+        $storedOtp->shouldReceive('isValid')->andReturn(true);
+        $storedOtp->shouldReceive('getConnection')->andReturn('email');
+        $storedOtp->shouldReceive('isRedeemed')->andReturn(false);
+        $storedOtp->shouldReceive('redeem')->once();
+
+        // Lookup MUST be scoped to the issuing client (regression guard for r3357348448).
+        $this->otpRepository
+            ->shouldReceive('getByValueConnectionAndUserName')
+            ->once()
+            ->with($code, 'email', 'verify@example.com', $client)
+            ->andReturn($storedOtp);
+
+        // A pessimistic row lock is taken before redeeming (regression guard for 3357348444).
+        $this->otpRepository->shouldReceive('refreshExclusiveLock')->with($storedOtp)->once();
+
+        $otherOtp = \Mockery::mock(OAuth2OTP::class);
+        $otherOtp->shouldReceive('getValue')->andReturn('654321');
+        $otherOtp->shouldReceive('redeem')->once();
+
+        // Sibling revoke MUST be scoped to the SAME client so unrelated OTPs survive.
+        $this->otpRepository
+            ->shouldReceive('getByUserNameNotRedeemed')
+            ->once()
+            ->with('verify@example.com', $client)
+            ->andReturn([$otherOtp]);
+
+        // The redeemed code and the revoked sibling are both persisted with deferred flush.
+        $this->otpRepository->shouldReceive('add')->with($storedOtp, false)->once();
+        $this->otpRepository->shouldReceive('add')->with($otherOtp, false)->once();
+
+        $this->strategy->verifyChallenge($user, $code, $client);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testVerifyChallenge_acquiresLock_andRejectsAlreadyRedeemed(): void
     {
         $user = $this->buildUser(1, 'verify@example.com');
         $code = '123456';
@@ -104,28 +149,23 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
         $storedOtp->shouldReceive('logRedeemAttempt')->once();
         $storedOtp->shouldReceive('isAlive')->andReturn(true);
         $storedOtp->shouldReceive('isValid')->andReturn(true);
-        $storedOtp->shouldReceive('redeem')->once();
+        $storedOtp->shouldReceive('getConnection')->andReturn('email');
+        // Concurrent winner already redeemed the row under the lock.
+        $storedOtp->shouldReceive('isRedeemed')->andReturn(true);
+        // Must NOT redeem again nor sweep siblings.
+        $storedOtp->shouldReceive('redeem')->never();
 
         $this->otpRepository
             ->shouldReceive('getByValueConnectionAndUserName')
             ->once()
-            ->with($code, 'email', 'verify@example.com', null)
             ->andReturn($storedOtp);
 
-        $otherOtp = \Mockery::mock(OAuth2OTP::class);
-        $otherOtp->shouldReceive('getValue')->andReturn('654321');
-        $otherOtp->shouldReceive('redeem')->once();
+        $this->otpRepository->shouldReceive('refreshExclusiveLock')->with($storedOtp)->once();
+        $this->otpRepository->shouldReceive('getByUserNameNotRedeemed')->never();
+        $this->otpRepository->shouldReceive('add')->never();
 
-        $this->otpRepository
-            ->shouldReceive('getByUserNameNotRedeemed')
-            ->andReturn([$otherOtp]);
-
-        // The redeemed code and the revoked sibling are both persisted with deferred flush.
-        $this->otpRepository->shouldReceive('add')->with($storedOtp, false)->once();
-        $this->otpRepository->shouldReceive('add')->with($otherOtp, false)->once();
-
+        $this->expectException(\Auth\Exceptions\AuthenticationException::class);
         $this->strategy->verifyChallenge($user, $code);
-        $this->addToAssertionCount(1);
     }
 
     public function testVerifyChallenge_withNonMatchingCode_throws(): void
