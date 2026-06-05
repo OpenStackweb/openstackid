@@ -17,6 +17,7 @@ use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserRecoveryCode;
 use App\libs\Auth\Models\UserTrustedDevice;
 use App\Services\Auth\IDeviceTrustService;
+use App\Services\Auth\ITwoFactorAuditService;
 use Auth\AuthHelper;
 use Auth\User;
 use Illuminate\Support\Facades\App;
@@ -240,6 +241,58 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     }
 
     // -------------------------------------------------------------------------
+    // post-verify transaction boundary (Task 5: device-trust atomic, audit best-effort)
+    // -------------------------------------------------------------------------
+
+    public function testAuditFailureDoesNotBlockLogin(): void
+    {
+        // Audit is best-effort: a failure emitting challenge_succeeded must NOT
+        // 500 a user whose OTP is already redeemed and session established.
+        $auditMock = \Mockery::mock(ITwoFactorAuditService::class);
+        $auditMock->shouldReceive('log')
+            ->andReturnUsing(function (User $user, string $eventType) {
+                // Allow challenge_issued (postLogin) so the challenge is created;
+                // blow up only on the post-success event.
+                if ($eventType === TwoFactorAuditLog::EventChallengeSucceeded) {
+                    throw new \Exception('audit sink unavailable');
+                }
+            });
+        $this->app->instance(ITwoFactorAuditService::class, $auditMock);
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $response = $this->verify($code);
+
+        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
+        $this->assertTrue(Auth::check(), 'session must be established despite the audit failure');
+    }
+
+    public function testDeviceTrustFailureDoesNotBlockLogin(): void
+    {
+        // Device-trust enrollment is best-effort: by the time it runs the OTP is
+        // already redeemed and the session established, so a failure must NOT 500
+        // the user (which would lock them out on retry against a now-burned OTP),
+        // and the pending MFA state must still be cleared.
+        $deviceTrustMock = \Mockery::mock(IDeviceTrustService::class);
+        // Gate path: no cookie -> not trusted, so the challenge is still issued.
+        $deviceTrustMock->shouldReceive('isDeviceTrusted')->andReturn(false);
+        // Enrollment blows up AFTER the OTP has been redeemed and the session set.
+        $deviceTrustMock->shouldReceive('trustDevice')
+            ->andThrow(new \Exception('trusted-device store unavailable'));
+        $this->app->instance(IDeviceTrustService::class, $deviceTrustMock);
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $response = $this->verify($code, true); // trust_device = true
+
+        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort device-trust failure must not fail the login');
+        $this->assertTrue(Auth::check(), 'session must be established despite the device-trust failure');
+        $this->assertNull(Session::get('2fa_pending_user_id'), 'pending MFA state must be cleared even when device-trust enrollment fails');
+    }
+
+    // -------------------------------------------------------------------------
     // recovery codes
     // -------------------------------------------------------------------------
 
@@ -306,6 +359,21 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         }
 
         $response = $this->verify('bad-code-final');
+        $this->assertResponseStatus(429);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+    }
+
+    public function testRecoveryRateLimitBlocksAfterThreshold(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $max = (int) Config::get('two_factor.rate_limit.max_attempts');
+        for ($i = 0; $i < $max; $i++) {
+            $this->recovery('bad-recovery-' . $i);
+        }
+
+        $response = $this->recovery('bad-recovery-final');
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_rate_limit', $payload['error_code']);

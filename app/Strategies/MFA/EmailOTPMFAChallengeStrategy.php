@@ -20,7 +20,9 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
 
     public function issueChallenge(User $user, ?Client $client, bool $remember): array
     {
-        $this->storePendingState($user->getId(), $remember);
+        // Carry the issuing client into the pending state so verification scopes
+        // the OTP lookup and sibling-revoke to the same client (see verifyChallenge).
+        $this->storePendingState($user->getId(), $remember, $client?->getClientId());
 
         $otp = $this->token_service->createOTPFromPayload([
             OAuth2Protocol::OAuth2PasswordlessConnection => OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
@@ -38,6 +40,8 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
     {
         // Look up the STORED single-use code so the submitted value is actually
         // validated against what was issued (a non-matching code resolves to null).
+        // Scope the lookup to the issuing client so an MFA OTP is only matched
+        // against the client it was issued for.
         $otp = $this->otp_repository->getByValueConnectionAndUserName(
             $code,
             OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
@@ -59,10 +63,23 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
             throw new AuthenticationException("Verification code is not valid.");
         }
 
+        // Concurrency: acquire a PESSIMISTIC_WRITE row lock and re-hydrate redemption
+        // state before redeeming, mirroring AuthService::finalizeRedemption(). This
+        // closes the validate->redeem race so two concurrent submissions of the same
+        // valid code cannot both succeed. Runs inside the verifyMFAChallenge tx.
+        if ($otp->getConnection() !== OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
+            $this->otp_repository->refreshExclusiveLock($otp);
+            if ($otp->isRedeemed()) {
+                throw new AuthenticationException("Verification code is already redeemed.");
+            }
+        }
+
         $otp->redeem();
         $this->otp_repository->add($otp, false);
 
-        foreach ($this->otp_repository->getByUserNameNotRedeemed($user->getEmail()) as $otpToRevoke) {
+        // Revoke other pending OTPs for this user, scoped to the same client so we
+        // never burn unrelated OTPs (e.g. passwordless-login codes for other clients).
+        foreach ($this->otp_repository->getByUserNameNotRedeemed($user->getEmail(), $client) as $otpToRevoke) {
             if ($otpToRevoke->getValue() !== $otp->getValue()) {
                 $otpToRevoke->redeem();
                 $this->otp_repository->add($otpToRevoke, false);

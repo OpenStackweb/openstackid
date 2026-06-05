@@ -447,6 +447,13 @@ final class AuthService extends AbstractService implements IAuthService
         Log::debug("AuthService::loginUser");
         if (!$user->canLogin())
             throw new AuthenticationException("User is not active or cannot login.");
+
+        $this->principal_service->clear();
+        $this->principal_service->register
+        (
+            $user->getId(),
+            time()
+        );
         Auth::login($user, $remember);
     }
 
@@ -789,10 +796,15 @@ final class AuthService extends AbstractService implements IAuthService
     public function verifyMFAChallenge(
         User $user,
         IMFAChallengeStrategy $strategy,
-        string $value
+        string $value,
+        ?Client $client = null
     ): void {
-        $this->tx_service->transaction(function () use ($user, $strategy, $value) {
-            $strategy->verifyChallenge($user, $value);
+        // Commits the OTP redeem (+ sibling revoke) as a single tx. Trusted-device
+        // enrollment and audit are applied by the caller as best-effort,
+        // non-blocking side effects after this commits, so a failure in either
+        // does not block (or roll back) an already-verified second factor.
+        $this->tx_service->transaction(function () use ($user, $strategy, $value, $client) {
+            $strategy->verifyChallenge($user, $value, $client);
         });
     }
 
