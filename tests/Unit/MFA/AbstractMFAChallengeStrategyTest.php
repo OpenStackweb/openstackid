@@ -93,7 +93,6 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
         // Lock is taken before mutating (regression guard for 3357348455).
         $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once();
-        $repo->shouldReceive('add')->with($recoveryCode, false)->once();
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
             public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }

@@ -19,7 +19,6 @@ use App\Services\AbstractService;
 use App\Services\Auth\IUserService as IAuthUserService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\AuthenticationLockedUserLoginAttempt;
-use Auth\Exceptions\UnverifiedEmailMemberException;
 use Auth\Repositories\IUserRepository;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -393,7 +392,6 @@ final class AuthService extends AbstractService implements IAuthService
     {
         Log::debug("AuthService::login");
 
-        $this->last_login_error = "";
         if (!Auth::attempt(['username' => $username, 'password' => $password], $remember_me)) {
             throw new AuthenticationException
             (
@@ -799,10 +797,6 @@ final class AuthService extends AbstractService implements IAuthService
         string $value,
         ?Client $client = null
     ): void {
-        // Commits the OTP redeem (+ sibling revoke) as a single tx. Trusted-device
-        // enrollment and audit are applied by the caller as best-effort,
-        // non-blocking side effects after this commits, so a failure in either
-        // does not block (or roll back) an already-verified second factor.
         $this->tx_service->transaction(function () use ($user, $strategy, $value, $client) {
             $strategy->verifyChallenge($user, $value, $client);
         });

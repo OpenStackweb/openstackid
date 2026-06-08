@@ -20,9 +20,7 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
 
     public function issueChallenge(User $user, ?Client $client, bool $remember): array
     {
-        // Carry the issuing client into the pending state so verification scopes
-        // the OTP lookup and sibling-revoke to the same client (see verifyChallenge).
-        $this->storePendingState($user->getId(), $remember, $client?->getClientId());
+        $this->storePendingState($user->getId(), $remember);
 
         $otp = $this->token_service->createOTPFromPayload([
             OAuth2Protocol::OAuth2PasswordlessConnection => OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
@@ -75,14 +73,12 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
         }
 
         $otp->redeem();
-        $this->otp_repository->add($otp, false);
 
         // Revoke other pending OTPs for this user, scoped to the same client so we
         // never burn unrelated OTPs (e.g. passwordless-login codes for other clients).
         foreach ($this->otp_repository->getByUserNameNotRedeemed($user->getEmail(), $client) as $otpToRevoke) {
             if ($otpToRevoke->getValue() !== $otp->getValue()) {
                 $otpToRevoke->redeem();
-                $this->otp_repository->add($otpToRevoke, false);
             }
         }
     }
