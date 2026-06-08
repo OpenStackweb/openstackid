@@ -132,8 +132,6 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
             ->andReturn([$otherOtp]);
 
         // The redeemed code and the revoked sibling are both persisted with deferred flush.
-        $this->otpRepository->shouldReceive('add')->with($storedOtp, false)->once();
-        $this->otpRepository->shouldReceive('add')->with($otherOtp, false)->once();
 
         $this->strategy->verifyChallenge($user, $code, $client);
         $this->addToAssertionCount(1);

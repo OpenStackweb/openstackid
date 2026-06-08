@@ -632,24 +632,6 @@ final class UserController extends OpenIdController
     }
 
     /**
-     * Resolves the OAuth2 client carried in the pending MFA state (the client the
-     * challenge was issued for), so verification scopes the OTP lookup and
-     * sibling-revoke to the same client. Returns null when the challenge was not
-     * issued in a client context.
-     *
-     * @param array $pending
-     * @return Client|null
-     */
-    private function resolveClientFromPendingState(array $pending): ?Client
-    {
-        $clientId = $pending['client_id'] ?? null;
-        if (is_null($clientId)) {
-            return null;
-        }
-        return $this->client_repository->getClientById($clientId);
-    }
-
-    /**
      * Verifies a 2FA OTP challenge and, on success, establishes the session.
      *
      * @return \Illuminate\Http\JsonResponse|mixed
@@ -686,7 +668,7 @@ final class UserController extends OpenIdController
             }
 
             // Scope verification to the client the challenge was issued for.
-            $client = $this->resolveClientFromPendingState($pending);
+            $client = $this->resolveClientFromMemento();
 
             try {
                 // Commits the OTP redeem (+ sibling revoke) in its own tx. The
