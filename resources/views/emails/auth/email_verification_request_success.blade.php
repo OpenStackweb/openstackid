@@ -19,7 +19,7 @@
         @if(!$user_is_complete)
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">
-                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">You may enter your profile details <a href="{!! URL::action("UserController@getLogin") !!}" target="_blank">here</a>.</div>
+                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">You may enter your profile details <a href="{!! $profile_link !!}" target="_blank">here</a>.</div>
             </td>
         </tr>
         @endif
