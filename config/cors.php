@@ -15,7 +15,7 @@ return [
    |
    */
 
-    'paths' => ['api/*', 'oauth2/*'],
+    'paths' => ['api/*', 'oauth2/*', '.well-known/openid-configuration'],
 
     'allowed_methods' => [
         'POST',
