@@ -34,6 +34,11 @@
             accountVerifyAction : '{{URL::action("UserController@getAccount")}}',
             emitOtpAction : '{{URL::action("UserController@emitOTP")}}',
             resendVerificationEmailAction: '{{ URL::action("UserController@resendVerificationEmail") }}',
+            verify2faAction: '{{ URL::action("UserController@verify2FA") }}',
+            resend2faAction: '{{ URL::action("UserController@resend2FA") }}',
+            cancelLogin: '{{ URL::action("UserController@cancelLogin") }}',
+            recovery2faAction: '{{ URL::action("UserController@verify2FARecovery") }}',
+            mfaMethod: '{{ Session::has("mfa_method") ? Session::get("mfa_method") : "email_otp" }}',
             authError: authError,
             captchaPublicKey: '{{ Config::get("services.turnstile.key") }}',
             flow: 'password',
@@ -84,9 +89,21 @@
             config.flow = '{{Session::get('flow')}}';
         @endif
 
+        @if(Session::has('otp_length'))
+            config.otpLength = {{Session::get("otp_length")}};
+        @endif
+        @if(Session::has('otp_lifetime'))
+            config.otpLifetime = {{Session::get("otp_lifetime")}};
+        @endif
+
         window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
         window.EMIT_OTP_ENDPOINT = config.emitOtpAction;
         window.RESEND_VERIFICATION_EMAIL_ENDPOINT = config.resendVerificationEmailAction;
+        window.VERIFY_2FA_ENDPOINT = config.verify2faAction;
+        window.RESEND_2FA_ENDPOINT = config.resend2faAction;
+        window.CANCEL_LOGIN_ENDPOINT = config.cancelLogin;
+        window.RECOVERY_2FA_ENDPOINT = config.recovery2faAction;
+        window.FORM_ACTION_ENDPOINT = config.formAction;
     </script>
     {!! script_to('assets/login.js') !!}
 @append
