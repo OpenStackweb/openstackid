@@ -8,7 +8,7 @@
     "clean": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' + && yarn",
     "build-dev": "./node_modules/.bin/webpack --config webpack.dev.js",
     "build": "./node_modules/.bin/webpack --config webpack.prod.js",
-    "serve": "webpack-dev-server --open --port=8888 --https --config webpack.dev.js",
+    "serve": "webpack-dev-server --open --port=8888 --server-type https --config webpack.dev.js",
     "test": "jest --watch"
   },
   "devDependencies": {
@@ -81,6 +81,7 @@
     "bootstrap-tagsinput": "^0.7.1",
     "chosen-js": "^1.8.7",
     "crypto-js": "^3.1.9-1",
+    "dompurify": "^3.4.11",
     "easymde": "^2.18.0",
     "font-awesome": "^4.7.0",
     "formik": "^2.2.9",
@@ -95,6 +96,7 @@
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.21",
     "popper.js": "^1.14.3",
+    "prop-types": "^15.8.1",
     "pure": "^2.85.0",
     "pwstrength-bootstrap": "^3.0.10",
     "react-otp-input": "^3.1.1",

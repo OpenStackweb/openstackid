@@ -1,0 +1,84 @@
+import React from 'react';
+import TextField from '@material-ui/core/TextField';
+import Button from '@material-ui/core/Button';
+import Link from '@material-ui/core/Link';
+import styles from '../login.module.scss';
+import HTMLRender from '../../shared/HTMLRender';
+
+const RecoveryCodeForm = ({
+                              recoveryCode,
+                              recoveryError,
+                              onRecoveryCodeChange,
+                              onVerify,
+                              onBackToOtp,
+                              onCancel,
+                              disableInput
+                          }) => {
+
+    const handleSubmit = (ev) => {
+        ev.preventDefault();
+        onVerify();
+    };
+
+    const handleBack = (ev) => {
+        ev.preventDefault();
+        onBackToOtp();
+    };
+
+    const handleCancel = (ev) => {
+        ev.preventDefault();
+        onCancel();
+    };
+
+    return (
+        <form onSubmit={handleSubmit} target="_self" className={styles.otp_form}>
+            <div className={styles.subtitle}>Enter a recovery code</div>
+            <p className={styles.info_message}>
+                Enter one of the recovery codes you saved when you enabled two-step verification.
+            </p>
+            <TextField
+                id="recovery_code"
+                name="recovery_code"
+                value={recoveryCode}
+                variant="outlined"
+                margin="normal"
+                required
+                fullWidth
+                autoFocus={true}
+                label="Recovery code"
+                autoComplete="one-time-code"
+                disabled={disableInput}
+                onChange={onRecoveryCodeChange}
+                error={!!recoveryError}
+            />
+            {recoveryError && (
+                <HTMLRender component="p" className={styles.error_label}>
+                {recoveryError}
+                </HTMLRender>
+            )}
+            <div>
+                <Button variant="contained"
+                        disabled={disableInput || recoveryCode === ''}
+                        color="primary"
+                        type="submit"
+                        target="_self">
+                    VERIFY
+                </Button>
+            </div>
+            <div className={styles.footer_instructions}>
+                <hr className={styles.separator}/>
+                <div className={styles.box}>
+                    <Link href="#" onClick={handleBack} variant="body2" target="_self">
+                        Back to verification code
+                    </Link>
+                    {" · "}
+                    <Link href="#" onClick={handleCancel} variant="body2" target="_self">
+                        Cancel
+                    </Link>
+                </div>
+            </div>
+        </form>
+    );
+}
+
+export default RecoveryCodeForm;
