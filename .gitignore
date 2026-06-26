@@ -53,3 +53,10 @@ model.sql
 docker-compose/mysql/model/*.sql
 public/assets/*.map
 public/assets/css/*.map
+# Playwright
+/tests/e2e/report/
+
+# Jest
+/tests/js/coverage/
+/playwright-report/
+/.playwright-out/
