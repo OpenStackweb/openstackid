@@ -9,7 +9,13 @@
     "build-dev": "./node_modules/.bin/webpack --config webpack.dev.js",
     "build": "./node_modules/.bin/webpack --config webpack.prod.js",
     "serve": "webpack-dev-server --open --port=8888 --server-type https --config webpack.dev.js",
-    "test": "jest --watch"
+    "test": "jest --watch",
+    "test:unit": "jest --testPathPattern=tests/js",
+    "test:unit:ci": "jest --testPathPattern=tests/js --ci --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report tests/e2e/report"
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",
@@ -21,6 +27,10 @@
     "@babel/preset-flow": "^7.7.4",
     "@babel/preset-react": "^7.7.4",
     "@babel/runtime": "^7.20.7",
+    "@playwright/test": "^1.61.1",
+    "@testing-library/jest-dom": "^5",
+    "@testing-library/react": "^12",
+    "@testing-library/user-event": "^13",
     "babel-cli": "^6.26.0",
     "babel-jest": "^26.6.3",
     "babel-loader": "^8.2.4",
