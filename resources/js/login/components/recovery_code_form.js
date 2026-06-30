@@ -31,7 +31,7 @@ const RecoveryCodeForm = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} target="_self" className={styles.otp_form}>
+        <form onSubmit={handleSubmit} target="_self" className={styles.otp_form} data-testid="recovery-form">
             <div className={styles.subtitle}>Enter a recovery code</div>
             <p className={styles.info_message}>
                 Enter one of the recovery codes you saved when you enabled two-step verification.
@@ -52,7 +52,7 @@ const RecoveryCodeForm = ({
                 error={!!recoveryError}
             />
             {recoveryError && (
-                <HTMLRender component="p" className={styles.error_label}>
+                <HTMLRender component="p" className={styles.error_label} data-testid="error-label">
                 {recoveryError}
                 </HTMLRender>
             )}
@@ -61,7 +61,8 @@ const RecoveryCodeForm = ({
                         disabled={disableInput || recoveryCode === ''}
                         color="primary"
                         type="submit"
-                        target="_self">
+                        target="_self"
+                        data-testid="verify-button">
                     VERIFY
                 </Button>
             </div>
@@ -72,7 +73,7 @@ const RecoveryCodeForm = ({
                         Back to verification code
                     </Link>
                     {" · "}
-                    <Link href="#" onClick={handleCancel} variant="body2" target="_self">
+                    <Link href="#" onClick={handleCancel} variant="body2" target="_self" data-testid="cancel-link">
                         Cancel
                     </Link>
                 </div>

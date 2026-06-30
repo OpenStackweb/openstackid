@@ -33,6 +33,8 @@ jobs:
       PHP_VERSION: 8.3
       OTEL_SDK_DISABLED: true
       OTEL_SERVICE_ENABLED: false
+      TURNSTILE_SITE_KEY: '1x00000000000000000000AA'
+      TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA'
     services:
       mysql:
         image: mysql:8.0

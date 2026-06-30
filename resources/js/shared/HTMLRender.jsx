@@ -1,8 +1,9 @@
 /* eslint-disable react/no-danger */
+import React from "react";
 import PropTypes from "prop-types";
 import DOMPurify from "dompurify";
 
-const HTMLRender = ({ children, className, style, component = "div" }) => {
+const HTMLRender = ({ children, className, style, component = "div", ...rest }) => {
   const html = DOMPurify.sanitize(children || "");
   const Component = component;
 
@@ -11,6 +12,7 @@ const HTMLRender = ({ children, className, style, component = "div" }) => {
       style={style}
       className={className}
       dangerouslySetInnerHTML={{ __html: html }}
+      {...rest}
     />
   );
 };
