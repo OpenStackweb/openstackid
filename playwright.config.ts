@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? parseInt(process.env.PLAYWRIGHT_WORKERS ?? '1') : undefined,
   reporter: [['html', { outputFolder: 'tests/e2e/report' }]],
   use: {
     baseURL: process.env.APP_URL || 'http://localhost:8001',
