@@ -57,6 +57,22 @@ services:
     networks:
       - idp-local-net
     env_file: ./.env
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.61.1-jammy
+    container_name: idp-playwright
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - playwright_cache:/root/.cache/ms-playwright
+    networks:
+      - idp-local-net
+    depends_on:
+      - nginx
+    profiles:
+      - e2e
+    environment:
+      - APP_URL=http://nginx
+
   nginx:
     image: nginx:alpine
     container_name: nginx-idp
@@ -119,3 +135,4 @@ networks:
 volumes:
   mysql_idp:
   elasticsearch_data:
+  playwright_cache:

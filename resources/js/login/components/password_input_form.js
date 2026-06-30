@@ -55,7 +55,7 @@ const PasswordInputForm = ({
 
     if (attempts > 0 && attempts < maxAttempts && userIsActive) {
       return (
-        <p className={styles.error_label}>
+        <p className={styles.error_label} data-testid="error-label">
           Incorrect password. You have {attemptsLeft} more attempt
           {attemptsLeft !== 1 ? "s" : ""} before your account is locked.
         </p>
@@ -64,7 +64,7 @@ const PasswordInputForm = ({
 
     if (attempts > 0 && attempts === maxAttempts && userIsActive) {
       return (
-        <p className={styles.error_label}>
+        <p className={styles.error_label} data-testid="error-label">
           Incorrect password. You have reached the maximum ({maxAttempts})
           login attempts. Your account will be locked after another failed
           login.
@@ -74,7 +74,7 @@ const PasswordInputForm = ({
 
     if (attempts > 0 && attempts === maxAttempts && !userIsActive) {
       return (
-        <p className={styles.error_label}>
+        <p className={styles.error_label} data-testid="error-label">
           Your account has been locked due to multiple failed login
           attempts. Please <a href={helpAction}>contact support</a> to
           unlock it.
@@ -83,7 +83,7 @@ const PasswordInputForm = ({
     }
 
     return (
-      <HTMLRender component="p" className={styles.error_label}>
+      <HTMLRender component="p" className={styles.error_label} data-testid="error-label">
         {passwordError}
       </HTMLRender>
     );

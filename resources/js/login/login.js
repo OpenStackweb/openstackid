@@ -839,7 +839,7 @@ class LoginPage extends React.Component {
             )}
             {isPasswordFlow && (
               // proceed to ask for password ( 2nd step )
-              <>
+              <div data-testid="password-form">
                 <PasswordInputForm
                   formAction={this.props.formAction}
                   disableInput={this.state.disableInput}
@@ -876,7 +876,7 @@ class LoginPage extends React.Component {
                   showHelpAction={true}
                   emitOtpAction={this.handleEmitOtpAction}
                 />
-              </>
+              </div>
             )}
             {isOtpFlow && (
               // proceed to ask for password ( 2nd step )
@@ -992,9 +992,14 @@ const theme = createTheme({
   },
 });
 
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <LoginPage {...config} />
-  </MuiThemeProvider>,
-  document.querySelector("#root"),
-);
+export { LoginPage };
+
+const root = document.querySelector("#root");
+if (root) {
+  ReactDOM.render(
+    <MuiThemeProvider theme={theme}>
+      <LoginPage {...config} />
+    </MuiThemeProvider>,
+    root,
+  );
+}

@@ -1,9 +1,9 @@
 <?php
 
-namespace Tests\Unit;
+namespace Tests\unit;
 
 /**
- * Copyright 2025 OpenStack Foundation
+ * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,12 +19,12 @@ use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\MFAGateService;
 use Auth\User;
 use Mockery;
-use Tests\TestCase;
 use Mockery\MockInterface;
+use Tests\TestCase;
 
 /**
  * Class MFAGateServiceTest
- * @package Tests\Unit
+ * @package Tests\unit
  */
 final class MFAGateServiceTest extends TestCase
 {
