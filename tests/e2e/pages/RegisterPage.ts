@@ -7,10 +7,12 @@ export class RegisterPage {
   readonly emailInput: Locator;
   readonly passwordInput: Locator;
   readonly passwordConfirmInput: Locator;
-  readonly countrySelect: Locator;
   readonly codeOfConductCheckbox: Locator;
   readonly submitButton: Locator;
+  // MUI FormHelperText error messages (not CSS-module classes, so not hashed)
   readonly errorContainer: Locator;
+  // SweetAlert2 popup shown for server-side errors (e.g. duplicate email)
+  readonly swalPopup: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -19,14 +21,20 @@ export class RegisterPage {
     this.emailInput = page.locator('[name="email"]');
     this.passwordInput = page.locator('[name="password"]');
     this.passwordConfirmInput = page.locator('[name="password_confirmation"]');
-    this.countrySelect = page.locator('[name="country_iso_code"]');
     this.codeOfConductCheckbox = page.locator('[name="agree_code_of_conduct"]');
     this.submitButton = page.locator('button[type="submit"]');
-    this.errorContainer = page.locator('[class*="error"]');
+    this.errorContainer = page.locator('p.MuiFormHelperText-root.Mui-error').first();
+    this.swalPopup = page.locator('.swal2-popup');
   }
 
   async goto() {
     await this.page.goto('/auth/register');
+  }
+
+  // MUI Select does not render a native <select>; click the visible button then the option.
+  async selectCountry(countryCode: string) {
+    await this.page.getByRole('button', { name: 'Select a country' }).click();
+    await this.page.locator(`[data-value="${countryCode}"]`).click();
   }
 
   async register(data: {
@@ -42,7 +50,7 @@ export class RegisterPage {
     await this.emailInput.fill(data.email);
     await this.passwordInput.fill(data.password);
     await this.passwordConfirmInput.fill(data.password);
-    await this.countrySelect.selectOption(data.country);
+    await this.selectCountry(data.country);
     await this.codeOfConductCheckbox.check();
     await this.submitButton.click();
   }

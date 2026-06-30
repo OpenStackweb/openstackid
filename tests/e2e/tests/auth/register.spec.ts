@@ -21,6 +21,7 @@ test.describe('Registration flow', () => {
       password: 'TestPass123!',
       country: 'US',
     });
-    await expect(registerPage.errorContainer).toBeVisible();
+    // Duplicate email: server redirects back and React shows a SweetAlert2 dialog
+    await expect(registerPage.swalPopup).toBeVisible();
   });
 });
