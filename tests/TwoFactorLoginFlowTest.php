@@ -16,6 +16,7 @@ use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserRecoveryCode;
 use App\libs\Auth\Models\UserTrustedDevice;
+use App\Mail\OAuth2PasswordlessOTPMail;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\ITwoFactorAuditService;
 use Auth\AuthHelper;
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\Repositories\IUserRecoveryCodeRepository;
@@ -361,6 +363,33 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('user_fullname'));
         $this->assertNull(Session::get('user_pic'));
         $this->assertNull(Session::get('user_is_active'));
+    }
+
+    // -------------------------------------------------------------------------
+    // email delivery
+    // -------------------------------------------------------------------------
+
+    public function testMFAChallengeQueuesEmailWithCorrectOTPCode(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $dbCode = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        Mail::assertQueued(
+            OAuth2PasswordlessOTPMail::class,
+            function (OAuth2PasswordlessOTPMail $mail) use ($dbCode): bool {
+                return $mail->email === self::ADMIN_EMAIL
+                    && $mail->otp === $dbCode;
+            }
+        );
+    }
+
+    public function testResendMFAChallengeQueuesAdditionalEmail(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $this->resend();
+
+        Mail::assertQueued(OAuth2PasswordlessOTPMail::class, 2);
     }
 
     // -------------------------------------------------------------------------

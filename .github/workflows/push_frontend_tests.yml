@@ -1,9 +1,6 @@
-name: Front End Tests On Pull Request
+name: Front End Tests On Push
 
-on:
-  pull_request:
-    types: [opened, reopened, edited, synchronize]
-    branches: ["main"]
+on: push
 
 jobs:
 
@@ -56,6 +53,10 @@ jobs:
       OTEL_SERVICE_ENABLED: false
       TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+      # `php artisan serve` (below) is PHP's built-in single-threaded dev server —
+      # it can only handle one request at a time, so Playwright workers must stay
+      # at 1 here or concurrent page loads queue up and blow the 30s test timeout.
+      PLAYWRIGHT_WORKERS: 1
     services:
       mysql:
         image: mysql:8.0
