@@ -15,7 +15,10 @@
 use App\Http\Controllers\APICRUDController;
 use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
+use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\ModelSerializers\SerializerRegistry;
+use App\Services\Auth\IRecoveryCodeService;
+use App\Services\Auth\ITwoFactorAuditService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Exception;
@@ -23,10 +26,13 @@ use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Validator;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\Services\ITokenService;
 use OpenId\Services\IUserService;
+use Utils\Db\ITransactionService;
+use Utils\IPHelper;
 use Utils\Services\ILogService;
 
 /**
@@ -44,22 +50,46 @@ final class UserApiController extends APICRUDController
     private $token_service;
 
     /**
+     * @var IRecoveryCodeService
+     */
+    private $recovery_code_service;
+
+    /**
+     * @var ITransactionService
+     */
+    private $tx_service;
+
+    /**
+     * @var ITwoFactorAuditService
+     */
+    private $two_factor_audit_service;
+
+    /**
      * UserApiController constructor.
      * @param IUserRepository $user_repository
      * @param ILogService $log_service
      * @param IUserService $user_service
      * @param ITokenService $token_service
+     * @param IRecoveryCodeService $recovery_code_service
+     * @param ITransactionService $tx_service
+     * @param ITwoFactorAuditService $two_factor_audit_service
      */
     public function __construct
     (
         IUserRepository $user_repository,
         ILogService     $log_service,
         IUserService    $user_service,
-        ITokenService   $token_service
+        ITokenService   $token_service,
+        IRecoveryCodeService $recovery_code_service,
+        ITransactionService $tx_service,
+        ITwoFactorAuditService $two_factor_audit_service
     )
     {
         parent::__construct($user_repository, $user_service, $log_service);
         $this->token_service = $token_service;
+        $this->recovery_code_service = $recovery_code_service;
+        $this->tx_service = $tx_service;
+        $this->two_factor_audit_service = $two_factor_audit_service;
     }
 
     /**
@@ -245,6 +275,76 @@ final class UserApiController extends APICRUDController
             return $this->error403();
 
         return $this->update(Auth::user()->getId());
+    }
+
+    /**
+     * Enables a 2FA method for the current user and generates the first batch of
+     * recovery codes for them. Plaintext codes are returned once in the response
+     * and never persisted.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function enableTwoFactor()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $data = Request::all();
+            $validator = Validator::make($data, [
+                'method' => 'required|string|in:' . implode(',', User::ValidMFAMethods),
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+
+            $user = Auth::user();
+            $method = $data['method'];
+
+            $codes = $this->tx_service->transaction(function () use ($user, $method) {
+                $user->enable2FA($method);
+                $this->repository->add($user, false);
+
+                return $this->recovery_code_service->generateRecoveryCodes($user);
+            });
+
+            $this->two_factor_audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventEnrollmentChanged,
+                $method,
+                IPHelper::getUserIp()
+            );
+
+            return $this->ok(['recovery_codes' => $codes]);
+        });
+    }
+
+    /**
+     * Invalidates the current user's recovery codes and generates a fresh batch.
+     * Plaintext codes are returned once in the response and never persisted.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function regenerateRecoveryCodes()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $data = Request::all();
+            $validator = Validator::make($data, [
+                'current_password' => 'required|string',
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+
+            $codes = $this->recovery_code_service->regenerateRecoveryCodes(Auth::user(), $data['current_password']);
+
+            return $this->ok(['recovery_codes' => $codes]);
+        });
     }
 
     public function revokeAllMyTokens()

@@ -318,9 +318,13 @@ class LoginPage extends React.Component {
 
   onRecoveryCodeChange(ev) {
     let { value } = ev.target;
+    // Recovery codes are generated and hashed without the "-" separator; it is
+    // added only for on-screen readability (XXXX-XXXX). Strip any non-alphanumeric
+    // characters here so a code typed or pasted exactly as displayed still matches.
+    const normalized = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     this.setState({
       ...this.state,
-      recoveryCode: value,
+      recoveryCode: normalized,
       errors: { ...this.state.errors, recovery: "" },
     });
   }
