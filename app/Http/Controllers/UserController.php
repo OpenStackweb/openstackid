@@ -21,6 +21,7 @@ use App\Http\Controllers\Traits\MFACookieManager;
 use App\Http\Utils\CountryList;
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\Services\Auth\IDeviceTrustService;
+use App\Services\Auth\IRecoveryCodeService;
 use App\Services\Auth\ITwoFactorAuditService;
 use App\Services\Auth\ITwoFactorGateService;
 use Auth\User;
@@ -158,6 +159,11 @@ final class UserController extends OpenIdController
     private $mfa_gate_service;
 
     /**
+     * @var IRecoveryCodeService
+     */
+    private $recovery_code_service;
+
+    /**
      * @param IMementoOpenIdSerializerService $openid_memento_service
      * @param IMementoOAuth2SerializerService $oauth2_memento_service
      * @param IAuthService $auth_service
@@ -196,6 +202,7 @@ final class UserController extends OpenIdController
         IDeviceTrustService $device_trust_service,
         ITwoFactorAuditService $two_factor_audit_service,
         ITwoFactorGateService $mfa_gate_service,
+        IRecoveryCodeService $recovery_code_service,
     )
     {
         $this->openid_memento_service = $openid_memento_service;
@@ -216,6 +223,7 @@ final class UserController extends OpenIdController
         $this->device_trust_service = $device_trust_service;
         $this->two_factor_audit_service = $two_factor_audit_service;
         $this->mfa_gate_service = $mfa_gate_service;
+        $this->recovery_code_service = $recovery_code_service;
 
         $this->middleware(function ($request, $next) use($login_hint_process_strategy){
 
@@ -1007,6 +1015,10 @@ final class UserController extends OpenIdController
             'actions' => $actions,
             'countries' => CountryList::getCountries(),
             'languages' => $lang2Code,
+            'two_factor_enabled' => $user->shouldRequire2FA(),
+            'recovery_codes_remaining' => $this->recovery_code_service->countUnusedRecoveryCodes($user),
+            'recovery_codes_total' => (int)config('auth.recovery_codes.count', 10),
+            'recovery_codes_low_threshold' => (int)config('auth.recovery_codes.low_threshold', 3),
         ]);
     }
 

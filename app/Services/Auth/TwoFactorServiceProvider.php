@@ -34,6 +34,7 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
         $this->app->singleton(IDeviceTrustService::class, DeviceTrustService::class);
         $this->app->singleton(ITwoFactorAuditService::class, TwoFactorAuditService::class);
         $this->app->singleton(ITwoFactorGateService::class, MFAGateService::class);
+        $this->app->singleton(IRecoveryCodeService::class, RecoveryCodeService::class);
     }
 
     public function provides(): array
@@ -42,6 +43,7 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
             IDeviceTrustService::class,
             ITwoFactorAuditService::class,
             ITwoFactorGateService::class,
+            IRecoveryCodeService::class,
         ];
     }
 }
