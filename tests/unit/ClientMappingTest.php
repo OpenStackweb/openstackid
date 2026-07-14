@@ -24,6 +24,7 @@ use Models\OAuth2\Client;
 use Models\OAuth2\ClientPublicKey;
 use Models\OAuth2\OAuth2OTP;
 use Models\OAuth2\ResourceServer;
+use OAuth2\Models\IClient;
 use Tests\BrowserKitTestCase;
 use Auth\User;
 
@@ -151,5 +152,104 @@ PPK;
         $this->assertFalse($found_client->hasOTP($otp_value));
         $this->assertEmpty($found_client->getAdminUsers()->toArray());
         $this->assertEmpty($found_client->getClientScopes());
+    }
+
+    public function testIsPostLogoutUriAllowedNativeClientAcceptsCustomScheme()
+    {
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('myapp://callback');
+
+        $this->assertTrue($client->isPostLogoutUriAllowed('myapp://callback'));
+        $this->assertFalse($client->isPostLogoutUriAllowed('otherapp://callback'));
+    }
+
+    public function testIsPostLogoutUriAllowedNativeClientMatchesCaseInsensitiveScheme()
+    {
+        // URI schemes are case-insensitive per RFC 3986. The write path (ClientFactory::populate) normally
+        // lowercases the stored value, but a row can bypass that (same defense-in-depth rationale as the
+        // dangerous-scheme and host-less-URI checks above) - the runtime match must not silently depend on it.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('MyApp://Callback');
+
+        $this->assertTrue($client->isPostLogoutUriAllowed('myapp://callback'));
+    }
+
+    public function testIsPostLogoutUriAllowedNonNativeClientRequiresHttps()
+    {
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Web_App);
+        $client->setPostLogoutRedirectUris('myapp://callback,https://www.test.com');
+
+        $this->assertFalse($client->isPostLogoutUriAllowed('myapp://callback'));
+        $this->assertTrue($client->isPostLogoutUriAllowed('https://www.test.com'));
+    }
+
+    public function testIsPostLogoutUriAllowedNativeClientRejectsHostlessUriWithoutError()
+    {
+        // host-less URIs (mailto:, file:///x, myapp:///cb) pass FILTER_VALIDATE_URL but have no authority;
+        // for a native client the https guard is skipped, so this must not raise an undefined-array-key error.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('myapp://callback');
+
+        $this->assertFalse($client->isPostLogoutUriAllowed('mailto:foo@bar.com'));
+        $this->assertFalse($client->isPostLogoutUriAllowed('file:///etc/passwd'));
+        $this->assertFalse($client->isPostLogoutUriAllowed('myapp:///cb'));
+    }
+
+    public function testIsPostLogoutUriAllowedNativeClientRejectsDangerousSchemeEvenWhenWrittenDirectly()
+    {
+        // defense-in-depth: ClientService::assertNativeCustomSchemesAllowed() is the write-time gate, but a row
+        // can reach storage through a path that bypasses ClientService entirely (e.g. ClientFactory::build()
+        // called directly by a seeder). isPostLogoutUriAllowed() must independently reject dangerous schemes
+        // at the runtime allow-gate, not rely solely on write-time validation having run.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('javascript://x%0aalert(1),intent://scan/#Intent;end,myapp://callback');
+
+        $this->assertFalse($client->isPostLogoutUriAllowed('javascript://x%0aalert(1)'));
+        $this->assertFalse($client->isPostLogoutUriAllowed('intent://scan/#Intent;end'));
+        $this->assertTrue($client->isPostLogoutUriAllowed('myapp://callback'));
+    }
+
+    public function testIsUriAllowedNativeClientRejectsDangerousSchemeEvenWhenWrittenDirectly()
+    {
+        // same defense-in-depth as isPostLogoutUriAllowed, but for redirect_uris / isUriAllowed: the field
+        // that actually carries the OAuth2 authorization code, and the more security-critical of the two.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setRedirectUris('javascript://x%0aalert(1),myapp://callback');
+
+        $this->assertFalse($client->isUriAllowed('javascript://x%0aalert(1)'));
+        $this->assertTrue($client->isUriAllowed('myapp://callback'));
+    }
+
+    public function testIsUriAllowedNativeClientAllowsHttpLoopbackButRejectsHttpElsewhere()
+    {
+        // RFC 8252 loopback interface redirection: http://127.0.0.1:{port}/... (or ::1 / localhost) is the
+        // recommended pattern for native apps and was always allowed pre-existing (Native clients were fully
+        // exempt from the https-required check). The dangerous-scheme deny-list must carve this out, or every
+        // native app using the RFC-recommended pattern breaks the moment the deny-list includes 'http'.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setRedirectUris('http://127.0.0.1:51204/callback,http://localhost:8080/callback');
+
+        $this->assertTrue($client->isUriAllowed('http://127.0.0.1:51204/callback'));
+        $this->assertTrue($client->isUriAllowed('http://localhost:8080/callback'));
+        $this->assertFalse($client->isUriAllowed('http://insecure.example.com/callback'));
+    }
+
+    public function testIsUriAllowedNativeClientRejectsHostlessUriWithoutError()
+    {
+        // canonicalUrl() had the same missing-host crash as isPostLogoutUriAllowed did before that fix;
+        // isUriAllowed (used by the authorize/token/register/password-reset flows) must not crash either.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setRedirectUris('myapp://callback');
+
+        $this->assertFalse($client->isUriAllowed('mailto:foo@bar.com'));
+        $this->assertFalse($client->isUriAllowed('file:///etc/passwd'));
     }
 }

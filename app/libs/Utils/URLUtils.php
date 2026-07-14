@@ -40,6 +40,11 @@ final class URLUtils
         {
             return null;
         }
+        // host-less URIs (e.g. mailto:, file:///x) pass FILTER_VALIDATE_URL but have no authority to
+        // canonicalize; without this guard the concatenation below raises an "Undefined array key host" warning.
+        if (!isset($parts['host'])) {
+            return null;
+        }
         $canonical_url = $parts['scheme'].'://'.strtolower($parts['host']);
         if(isset($parts['port']) && $usePort) {
             $canonical_url .= ':'.strtolower($parts['port']);

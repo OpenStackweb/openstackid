@@ -221,6 +221,40 @@ final class ClientService extends AbstractService implements IClientService
     }
 
     /**
+     * Native clients may register genuine custom app URI schemes (e.g. myapp://, com.example.app://) in
+     * allowed_origins and post_logout_redirect_uris. They may NOT register plain http:// outside the RFC 8252
+     * loopback carve-out, nor dangerous/launch pseudo-schemes (javascript:, data:, intent:, ...): at
+     * end-session these fields become live 302 redirect targets. See HttpUtils::DISALLOWED_NATIVE_URI_SCHEMES
+     * for the deny-list (shared with the runtime allow-gates in Client::isUriAllowed/isPostLogoutUriAllowed).
+     * Also enforces the same cross-client scheme-uniqueness rule redirect_uris already has, since a scheme
+     * claimed by another client here creates the identical OS-level interception risk.
+     *
+     * @param array $payload
+     * @param int $exclude_client_id the client being written; -1 (never a real id) when creating a new one
+     * @throws ValidationException
+     */
+    private function assertNativeCustomSchemesAllowed(array $payload, int $exclude_client_id = -1): void
+    {
+        foreach (['allowed_origins', 'post_logout_redirect_uris'] as $field) {
+            if (empty($payload[$field])) continue;
+            foreach (explode(',', $payload[$field]) as $uri) {
+                $parts = @parse_url(trim($uri));
+                if (!isset($parts['scheme'])) {
+                    throw new ValidationException(sprintf('invalid scheme on %s uri.', $field));
+                }
+                $scheme = strtolower($parts['scheme']);
+                if (HttpUtils::isDisallowedNativeUriScheme($scheme, $parts['host'] ?? null)) {
+                    throw new ValidationException(sprintf('scheme %s:// is not allowed.', $scheme));
+                }
+                if (HttpUtils::isCustomSchema($scheme)
+                    && $this->client_repository->hasCustomSchemeRegisteredOnAnotherClientThan($exclude_client_id, $scheme)) {
+                    throw new ValidationException(sprintf('schema %s:// already registered for another client.', $scheme));
+                }
+            }
+        }
+    }
+
+    /**
      * @param array $payload
      * @return IEntity
      * @throws \Exception
@@ -236,6 +270,12 @@ final class ClientService extends AbstractService implements IClientService
 
             if($this->client_repository->getByApplicationName($app_name) != null){
                 throw new ValidationException('there is already another application with that name, please choose another one.');
+            }
+
+            // close the create-path bypass: the same scheme allow-list update() enforces (only reachable
+            // for native clients, where the runtime https gate is relaxed).
+            if (($payload['application_type'] ?? null) === IClient::ApplicationType_Native) {
+                $this->assertNativeCustomSchemesAllowed($payload);
             }
 
             $client = ClientFactory::build($payload);
@@ -307,20 +347,22 @@ final class ClientService extends AbstractService implements IClientService
                                 if (!isset($uri['scheme'])) {
                                     throw new ValidationException('invalid scheme on redirect uri.');
                                 }
-                                if (HttpUtils::isCustomSchema($uri['scheme'])) {
-                                    if ($this->client_repository->hasCustomSchemeRegisteredForRedirectUrisOnAnotherClientThan($id, $uri['scheme'])) {
-                                        throw new ValidationException(sprintf('schema %s:// already registered for another client.',
-                                            $uri['scheme']));
-                                    }
-                                } else {
-                                    if (!HttpUtils::isHttpSchema($uri['scheme'])) {
-                                        throw new ValidationException(sprintf('scheme %s:// is invalid.',
-                                            $uri['scheme']));
-                                    }
+                                if (HttpUtils::isDisallowedNativeUriScheme($uri['scheme'], $uri['host'] ?? null)) {
+                                    throw new ValidationException(sprintf('scheme %s:// is not allowed.', $uri['scheme']));
+                                }
+                                // the else branch previously here (rejecting non-http(s) "non-custom" schemes)
+                                // is unreachable now: ftp/file and non-loopback http are already rejected by
+                                // the deny-list check above, and https/loopback-http both satisfy isHttpSchema.
+                                if (HttpUtils::isCustomSchema($uri['scheme'])
+                                    && $this->client_repository->hasCustomSchemeRegisteredOnAnotherClientThan($id, $uri['scheme'])) {
+                                    throw new ValidationException(sprintf('schema %s:// already registered for another client.',
+                                        $uri['scheme']));
                                 }
                             }
                         }
                     }
+
+                    $this->assertNativeCustomSchemesAllowed($payload, $id);
                 }
                 break;
                 case IClient::ApplicationType_Web_App:

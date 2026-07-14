@@ -14,6 +14,7 @@
 
 use App\libs\Utils\URLUtils;
 use Auth\User;
+use Utils\Http\HttpUtils;
 use Doctrine\Common\Collections\Criteria;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
@@ -630,12 +631,33 @@ class Client extends BaseEntity implements IClient
     }
 
     /**
+     * Single source of truth for "is this scheme dangerous for a Native client" across the runtime allow-gates
+     * (isUriAllowed for redirect_uris, isPostLogoutUriAllowed for post_logout_redirect_uris). Delegates the
+     * actual deny-list to HttpUtils, which ClientService's write-time validation also uses.
+     *
+     * @param string $scheme
+     * @param string|null $host enables the RFC 8252 http-loopback carve-out (see HttpUtils::isDisallowedNativeUriScheme)
+     * @return bool
+     */
+    private function isNativeDangerousScheme(string $scheme, ?string $host = null): bool
+    {
+        return $this->application_type === IClient::ApplicationType_Native && HttpUtils::isDisallowedNativeUriScheme($scheme, $host);
+    }
+
+    /**
      * @param string $uri
      * @return bool
      */
     public function isUriAllowed(string $uri):bool
     {
         Log::debug(sprintf("Client::isUriAllowed client %s original uri %s", $this->client_id, $uri));
+
+        $original_parts = @parse_url($uri);
+        if ($original_parts !== false && isset($original_parts['scheme']) && $this->isNativeDangerousScheme($original_parts['scheme'], $original_parts['host'] ?? null)) {
+            Log::debug(sprintf("Client::isUriAllowed url %s scheme is not allowed for native client %s", $uri, $this->client_id));
+            return false;
+        }
+
         $uri = URLUtils::canonicalUrl($uri);
         if(empty($uri)) {
             Log::debug(sprintf("Client::isUriAllowed url %s is not valid", $uri));
@@ -1097,17 +1119,33 @@ class Client extends BaseEntity implements IClient
         if ($parts == false) {
             return false;
         }
-        if($parts['scheme']!=='https')
+        // native clients may register custom schemes (myapp://...); every other app type requires https
+        if($this->application_type !== IClient::ApplicationType_Native && strtolower($parts['scheme'])!=='https')
             return false;
 
-        $logout_without_port = $parts['scheme'].'://'.$parts['host'];
+        // defense-in-depth: re-check the scheme deny-list at the runtime allow-gate, not just at write time
+        // (ClientService::assertNativeCustomSchemesAllowed). A row can reach storage through a path other than
+        // ClientService (e.g. ClientFactory::build() called directly by a seeder or a future write path), so
+        // the gate that actually authorizes the live 302 redirect must not be the only enforcement point.
+        if($this->isNativeDangerousScheme($parts['scheme'], $parts['host'] ?? null))
+            return false;
 
-        if(str_contains($this->post_logout_redirect_uris, $logout_without_port )) return true;
+        // host-less URIs (e.g. mailto:, file:///x, myapp:///cb) pass FILTER_VALIDATE_URL but have no
+        // authority to match against; without this guard the concatenation below raises an
+        // "Undefined array key host" warning (converted to ErrorException) on the public end-session endpoint.
+        if(!isset($parts['host'])) return false;
+
+        // scheme/host are case-insensitive (RFC 3986); the write path normally lowercases the stored value,
+        // but match case-insensitively regardless so a bypassing write path can't silently break matching.
+        $stored_post_logout_uris = strtolower($this->post_logout_redirect_uris);
+        $logout_without_port = strtolower($parts['scheme'].'://'.$parts['host']);
+
+        if(str_contains($stored_post_logout_uris, $logout_without_port )) return true;
 
         if(isset($parts['port']))
         {
-            $logout_with_port    = $parts['scheme'].'://'.$parts['host'].':'.$parts['port'];
-            return str_contains($this->post_logout_redirect_uris, $logout_with_port );
+            $logout_with_port    = $logout_without_port.':'.$parts['port'];
+            return str_contains($stored_post_logout_uris, $logout_with_port );
         }
         return false;
     }

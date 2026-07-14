@@ -10,10 +10,27 @@ import TagsInput, {getTags} from "../../../../components/tags_input";
 
 import styles from "./common.module.scss";
 
-const LogoutOptions = ({initialValues, onSavePromise}) => {
+// mirrors HttpUtils::$disallowed_native_uri_schemes on the backend; keep the two lists in sync.
+const DISALLOWED_NATIVE_SCHEMES = [
+    'http:', 'javascript:', 'data:', 'vbscript:', 'intent:', 'file:', 'ftp:', 'blob:', 'about:', 'mailto:', 'tel:',
+    'itms-services:', 'market:', 'sms:', 'content:', 'chrome-extension:', 'filesystem:', 'view-source:',
+    'ws:', 'wss:', 'googlechrome:', 'applewebdata:',
+];
+
+const LogoutOptions = ({appTypes, initialValues, onSavePromise}) => {
     const [loading, setLoading] = useState(false);
 
     const validatePostLogoutRedirectURI = (value) => {
+        // native clients may register genuine custom app schemes (myapp://...) or https, but not plain http
+        // nor dangerous/launch pseudo-schemes (javascript:, data:, intent:, ...): matches the backend allow-list.
+        if (initialValues.application_type === appTypes.Native) {
+            try {
+                const protocol = new URL(value).protocol.toLowerCase();
+                return protocol === 'https:' || !DISALLOWED_NATIVE_SCHEMES.includes(protocol);
+            } catch (err) {
+                return false;
+            }
+        }
         const regex = /^https:\/\/([\w@][\w.:@]+)\/?[\w\.?=%&=\-@/$,]*$/ig;
         return regex.test(value);
     }
@@ -72,7 +89,6 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
                             fullWidth
                             size="small"
                             variant="outlined"
-                            type="url"
                             tags={getTags(formik.values.post_logout_redirect_uris)}
                             errors={formik.errors.post_logout_redirect_uris}
                             onChange={formik.handleChange}
