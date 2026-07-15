@@ -14,9 +14,12 @@
 use OAuth2\Models\IClient;
 use Auth\User;
 use Models\OAuth2\Client;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Services\OAuth2\ClientService;
+use Utils\Services\ILockManagerService;
 /**
  * Class ClientApiTest
  */
@@ -411,6 +414,35 @@ class ClientApiTest extends BrowserKitTestCase {
             []);
 
         $this->assertResponseStatus(412);
+    }
+
+    public function testUpdateNativeClientRejectsCustomSchemeRegistrationWhenAnotherIsInProgress(){
+
+        // Closes the TOCTOU race in hasCustomSchemeRegisteredOnAnotherClientThan(): without a lock,
+        // two concurrent create()/update() calls can both pass the "is this scheme already registered"
+        // uniqueness check before either transaction commits, letting two different clients claim the
+        // same custom scheme. create()/update() now serialize behind a single Redis-backed lock
+        // (ILockManagerService). Simulate contention directly by pre-acquiring that same lock.
+        $lock_manager = App::make(ILockManagerService::class);
+        $lock_manager->acquireLock(ClientService::NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK, 5);
+
+        try {
+            $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+
+            $response = $this->action("PUT", "Api\\ClientApiController@update",
+                array(
+                    'id'                => $client->id,
+                    'application_type'  => IClient::ApplicationType_Native,
+                    'redirect_uris'     => 'lockcontention://callback',
+                ),
+                [],
+                [],
+                []);
+
+            $this->assertResponseStatus(412);
+        } finally {
+            $lock_manager->releaseLock(ClientService::NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK);
+        }
     }
 
 }
