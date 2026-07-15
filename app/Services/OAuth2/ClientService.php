@@ -224,7 +224,7 @@ final class ClientService extends AbstractService implements IClientService
      * Native clients may register genuine custom app URI schemes (e.g. myapp://, com.example.app://) in
      * allowed_origins and post_logout_redirect_uris. They may NOT register plain http:// outside the RFC 8252
      * loopback carve-out, nor dangerous/launch pseudo-schemes (javascript:, data:, intent:, ...): at
-     * end-session these fields become live 302 redirect targets. See HttpUtils::DISALLOWED_NATIVE_URI_SCHEMES
+     * end-session these fields become live 302 redirect targets. See IClient::DISALLOWED_NATIVE_URI_SCHEMES
      * for the deny-list (shared with the runtime allow-gates in Client::isUriAllowed/isPostLogoutUriAllowed).
      * Also enforces the same cross-client scheme-uniqueness rule redirect_uris already has, since a scheme
      * claimed by another client here creates the identical OS-level interception risk.
@@ -243,7 +243,7 @@ final class ClientService extends AbstractService implements IClientService
                     throw new ValidationException(sprintf('invalid scheme on %s uri.', $field));
                 }
                 $scheme = strtolower($parts['scheme']);
-                if (HttpUtils::isDisallowedNativeUriScheme($scheme, $parts['host'] ?? null)) {
+                if (Client::isDisallowedNativeUriScheme($scheme, $parts['host'] ?? null)) {
                     throw new ValidationException(sprintf('scheme %s:// is not allowed.', $scheme));
                 }
                 if (HttpUtils::isCustomSchema($scheme)
@@ -347,7 +347,7 @@ final class ClientService extends AbstractService implements IClientService
                                 if (!isset($uri['scheme'])) {
                                     throw new ValidationException('invalid scheme on redirect uri.');
                                 }
-                                if (HttpUtils::isDisallowedNativeUriScheme($uri['scheme'], $uri['host'] ?? null)) {
+                                if (Client::isDisallowedNativeUriScheme($uri['scheme'], $uri['host'] ?? null)) {
                                     throw new ValidationException(sprintf('scheme %s:// is not allowed.', $uri['scheme']));
                                 }
                                 // the else branch previously here (rejecting non-http(s) "non-custom" schemes)

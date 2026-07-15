@@ -299,6 +299,8 @@ class AdminController extends Controller {
                 'client' => json_encode(SerializerRegistry::getInstance()
                     ->getSerializer($client, SerializerRegistry::SerializerType_Private)->serialize()),
                 'client_types' => json_encode($client_types),
+                'disallowed_native_uri_schemes' => json_encode(IClient::DISALLOWED_NATIVE_URI_SCHEMES),
+                'native_loopback_hosts' => json_encode(IClient::NATIVE_LOOPBACK_HOSTS),
                 'selected_scopes' => json_encode($aux_scopes),
                 'scopes' => json_encode($final_scopes),
                 'access_tokens' => $access_tokens->getItems(),

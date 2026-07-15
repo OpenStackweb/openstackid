@@ -14,7 +14,6 @@
 
 use App\libs\Utils\URLUtils;
 use Auth\User;
-use Utils\Http\HttpUtils;
 use Doctrine\Common\Collections\Criteria;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
@@ -631,17 +630,32 @@ class Client extends BaseEntity implements IClient
     }
 
     /**
-     * Single source of truth for "is this scheme dangerous for a Native client" across the runtime allow-gates
-     * (isUriAllowed for redirect_uris, isPostLogoutUriAllowed for post_logout_redirect_uris). Delegates the
-     * actual deny-list to HttpUtils, which ClientService's write-time validation also uses.
+     * Single source of truth for "is this scheme disallowed for a Native client's URI fields" (redirect_uris,
+     * allowed_origins, post_logout_redirect_uris). The deny-list itself lives on IClient (domain policy, not a
+     * generic HTTP concern); this is the one place that interprets it, called by both the write-time validator
+     * (ClientService) and the runtime allow-gates (isUriAllowed/isPostLogoutUriAllowed below).
      *
      * @param string $scheme
-     * @param string|null $host enables the RFC 8252 http-loopback carve-out (see HttpUtils::isDisallowedNativeUriScheme)
+     * @param string|null $host enables the RFC 8252 http-loopback carve-out (see IClient::NATIVE_LOOPBACK_HOSTS)
+     * @return bool
+     */
+    public static function isDisallowedNativeUriScheme(string $scheme, ?string $host = null): bool
+    {
+        $scheme = strtolower($scheme);
+        if ($scheme === 'http') {
+            return !in_array(strtolower((string)$host), IClient::NATIVE_LOOPBACK_HOSTS);
+        }
+        return in_array($scheme, IClient::DISALLOWED_NATIVE_URI_SCHEMES);
+    }
+
+    /**
+     * @param string $scheme
+     * @param string|null $host enables the RFC 8252 http-loopback carve-out (see isDisallowedNativeUriScheme)
      * @return bool
      */
     private function isNativeDangerousScheme(string $scheme, ?string $host = null): bool
     {
-        return $this->application_type === IClient::ApplicationType_Native && HttpUtils::isDisallowedNativeUriScheme($scheme, $host);
+        return $this->application_type === IClient::ApplicationType_Native && self::isDisallowedNativeUriScheme($scheme, $host);
     }
 
     /**
