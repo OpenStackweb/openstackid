@@ -44,7 +44,10 @@ final class LockManagerService implements ILockManagerService {
     public function acquireLock($name,$lifetime = 3600)
     {
         $time    = time()+$lifetime+1;
-        $success = $this->cache_service->addSingleValue($name, $time, $time);
+        // the stored value is the absolute expiry timestamp, but the redis TTL must be RELATIVE
+        // seconds: passing $time as the TTL kept an unreleased lock (owner crashed/killed before
+        // releaseLock) held for ~55 years instead of auto-recovering after $lifetime.
+        $success = $this->cache_service->addSingleValue($name, $time, $lifetime > 0 ? $lifetime + 1 : 0);
         if (!$success)
         {
             // only one time we could use this handle
@@ -67,29 +70,24 @@ final class LockManagerService implements ILockManagerService {
      * @param string $name
      * @param Closure $callback
      * @param int $lifetime
-     * @return null
+     * @return mixed the callback result
      * @throws UnacquiredLockException
      * @throws Exception
      */
     public function lock($name, Closure $callback, $lifetime = 3600)
     {
-        $result = null;
+        // on acquisition failure we don't own the lock, so there is nothing to release
+        $this->acquireLock($name, $lifetime);
 
         try
         {
-            $this->acquireLock($name, $lifetime);
-            $result = $callback($this);
+            return $callback($this);
+        }
+        finally
+        {
+            // release on ANY outcome: the former catch(Exception) missed Throwables that don't
+            // extend Exception (TypeError, Error), leaking the lock until its TTL expired.
             $this->releaseLock($name);
         }
-        catch(UnacquiredLockException $ex1)
-        {
-            throw $ex1;
-        }
-        catch(Exception $ex)
-        {
-            $this->releaseLock($name);
-            throw $ex;
-        }
-        return $result;
     }
 }
