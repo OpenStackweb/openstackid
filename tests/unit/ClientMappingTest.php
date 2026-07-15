@@ -214,6 +214,33 @@ PPK;
         $this->assertTrue($client->isPostLogoutUriAllowed('myapp://callback'));
     }
 
+    public function testIsPostLogoutUriAllowedNativeClientRejectsPathSuffixOnRegisteredUri()
+    {
+        // same substring/prefix bypass fixed on isUriAllowed(): isPostLogoutUriAllowed() previously matched
+        // only scheme://host[:port] as a substring of the whole registered CSV, ignoring path entirely - so
+        // registering "myapp://callback/safe" also permitted "myapp://callback/other". The full path is now
+        // part of the comparison.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('myapp://callback/safe');
+
+        $this->assertTrue($client->isPostLogoutUriAllowed('myapp://callback/safe'));
+        $this->assertFalse($client->isPostLogoutUriAllowed('myapp://callback/other'));
+        $this->assertFalse($client->isPostLogoutUriAllowed('myapp://callback/safe/extra'));
+    }
+
+    public function testIsPostLogoutUriAllowedNativeClientAcceptsDynamicQueryString()
+    {
+        // query strings are dynamic per logout request (session/state params) and were never part of the
+        // registered value - canonicalUrl() drops them from both sides before comparison, so this must keep
+        // working after the exact-match fix above.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('myapp://callback/safe');
+
+        $this->assertTrue($client->isPostLogoutUriAllowed('myapp://callback/safe?session=abc123&state=xyz'));
+    }
+
     public function testIsUriAllowedNativeClientRejectsDangerousSchemeEvenWhenWrittenDirectly()
     {
         // same defense-in-depth as isPostLogoutUriAllowed, but for redirect_uris / isUriAllowed: the field

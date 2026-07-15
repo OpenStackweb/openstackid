@@ -1159,18 +1159,28 @@ class Client extends BaseEntity implements IClient
         // "Undefined array key host" warning (converted to ErrorException) on the public end-session endpoint.
         if(!isset($parts['host'])) return false;
 
-        // scheme/host are case-insensitive (RFC 3986); the write path normally lowercases the stored value,
-        // but match case-insensitively regardless so a bypassing write path can't silently break matching.
-        $stored_post_logout_uris = strtolower($this->post_logout_redirect_uris);
-        $logout_without_port = strtolower($parts['scheme'].'://'.$parts['host']);
+        // exact match against each registered value, through the same canonicalize+normalize pipeline on
+        // both sides (mirrors isUriAllowed()): a registered value's scheme+host[:port] must no longer match
+        // as a prefix of an unrelated path - the full path is now part of the comparison, and scheme/host
+        // are still matched case-insensitively since canonicalUrl()+normalizeUrl() lowercase both. Query
+        // strings remain tolerated - canonicalUrl() drops them from both sides, so a client's dynamic
+        // ?state=.../?session=... params never break the match.
+        $canonical_uri = URLUtils::canonicalUrl($post_logout_uri);
+        if(empty($canonical_uri)) return false;
+        $canonical_uri = URLUtils::normalizeUrl($canonical_uri);
+        if(empty($canonical_uri)) return false;
 
-        if(str_contains($stored_post_logout_uris, $logout_without_port )) return true;
+        foreach(explode(',', $this->post_logout_redirect_uris) as $registered_uri){
+            $registered_uri = trim($registered_uri);
+            if(empty($registered_uri)) continue;
 
-        if(isset($parts['port']))
-        {
-            $logout_with_port    = $logout_without_port.':'.$parts['port'];
-            return str_contains($stored_post_logout_uris, $logout_with_port );
+            $canonical_registered_uri = URLUtils::canonicalUrl($registered_uri);
+            if(empty($canonical_registered_uri)) continue;
+            $canonical_registered_uri = URLUtils::normalizeUrl($canonical_registered_uri);
+
+            if($canonical_uri === $canonical_registered_uri) return true;
         }
+
         return false;
     }
 
