@@ -272,6 +272,62 @@ class ClientApiTest extends BrowserKitTestCase {
         $this->assertResponseStatus(412);
     }
 
+    public function testCreateNativeClientRejectsDangerousSchemeOnRedirectUris(){
+
+        // CodeRabbit PR #147 finding: create() validated allowed_origins/post_logout_redirect_uris for
+        // dangerous schemes but never redirect_uris - a create payload could register javascript:// etc.
+        // there and it would only ever be caught later by the runtime isUriAllowed() gate, not at write time.
+        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
+
+        $data = array(
+            'user_id'          => $user->id,
+            'app_name'         => 'native_dangerous_redirect_uri_app',
+            'app_description'  => 'native app with dangerous scheme on redirect_uris',
+            'application_type' => IClient::ApplicationType_Native,
+            'redirect_uris'    => 'javascript://x%0aalert(1)',
+        );
+
+        $response = $this->action("POST", "Api\\ClientApiController@create",
+            $data,
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(412);
+    }
+
+    public function testCreateNativeClientRejectsRedirectUriSchemeAlreadyRegisteredByAnotherClient(){
+
+        // CodeRabbit PR #147 finding, cross-client uniqueness half: create() never checked redirect_uris
+        // scheme collisions either (only update() did, via a separate now-removed inline loop).
+        $existing = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+        $response = $this->action("PUT", "Api\\ClientApiController@update",
+            array(
+                'id'               => $existing->id,
+                'application_type' => IClient::ApplicationType_Native,
+                'redirect_uris'    => 'createuniqueness://callback',
+            ),
+            [],
+            [],
+            []);
+        $this->assertResponseStatus(201);
+
+        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
+        $response = $this->action("POST", "Api\\ClientApiController@create",
+            array(
+                'user_id'          => $user->id,
+                'app_name'         => 'native_duplicate_redirect_scheme_app',
+                'app_description'  => 'native app registering an already-claimed redirect_uris scheme',
+                'application_type' => IClient::ApplicationType_Native,
+                'redirect_uris'    => 'createuniqueness://other',
+            ),
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(412);
+    }
+
     public function testUpdateJsClientRejectsCustomSchemeOnPostLogoutUrisAndAllowedOrigins(){
 
         $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_test_app_public_2']);
