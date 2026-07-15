@@ -296,4 +296,35 @@ PPK;
         $this->assertFalse($client->isUriAllowed('myapp://callback/other'));
         $this->assertFalse($client->isUriAllowed('myapp://callback/safe/extra'));
     }
+
+    public function testIsOriginAllowedRejectsOriginThatIsSubstringPrefixOfRegisteredOrigin()
+    {
+        // isOriginAllowed() used str_contains($this->allowed_origins, $normalizedOrigin) - a substring
+        // check, not an exact match. A requested origin that is a strict character-prefix of a registered
+        // one (e.g. "https://my-app.example.co" is literally the first N characters of the registered
+        // "https://my-app.example.com") therefore passed as if it were the registered origin itself.
+        // Same bypass class already fixed on isUriAllowed()/isPostLogoutUriAllowed() in this PR.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_JS_Client);
+        $client->setAllowedOrigins('https://my-app.example.com');
+
+        $this->assertTrue($client->isOriginAllowed('https://my-app.example.com'));
+        $this->assertFalse($client->isOriginAllowed('https://my-app.example.co'));
+    }
+
+    public function testIsOriginAllowedMatchesRegardlessOfExplicitDefaultPort()
+    {
+        // pre-existing behavior to preserve: a registered origin with no explicit port matches a request
+        // regardless of the request's port (checked port-agnostically first); a registered origin that
+        // DOES specify a port only matches a request carrying that exact port.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_JS_Client);
+        $client->setAllowedOrigins('https://app.example.com,https://other.example.com:8443');
+
+        $this->assertTrue($client->isOriginAllowed('https://app.example.com'));
+        $this->assertTrue($client->isOriginAllowed('https://app.example.com:9999'));
+        $this->assertTrue($client->isOriginAllowed('https://other.example.com:8443'));
+        $this->assertFalse($client->isOriginAllowed('https://other.example.com:9999'));
+        $this->assertFalse($client->isOriginAllowed('https://evil.example.com'));
+    }
 }

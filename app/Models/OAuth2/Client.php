@@ -855,9 +855,29 @@ class Client extends BaseEntity implements IClient
     {
         $originWithoutPort = URLUtils::canonicalUrl($origin, false);
         if(empty($originWithoutPort)) return false;
-        if(str_contains($this->allowed_origins, URLUtils::normalizeUrl($originWithoutPort) )) return true;
+        $originWithoutPort = URLUtils::normalizeUrl($originWithoutPort);
+
         $originWithPort = URLUtils::canonicalUrl($origin);
-        return str_contains($this->allowed_origins, URLUtils::normalizeUrl($originWithPort));
+        $originWithPort = empty($originWithPort) ? null : URLUtils::normalizeUrl($originWithPort);
+
+        // exact match against each registered value, through the same canonicalize+normalize pipeline on
+        // both sides (mirrors isUriAllowed()/isPostLogoutUriAllowed()) - a registered origin must no longer
+        // match merely because the requested origin is a string prefix of it (e.g. registered
+        // "https://my-app.example.com" incorrectly matching a requested "https://my-app.example.co" under
+        // the old str_contains($this->allowed_origins, $origin) check).
+        foreach(explode(',', $this->allowed_origins) as $allowed_origin){
+            $allowed_origin = trim($allowed_origin);
+            if(empty($allowed_origin)) continue;
+
+            $canonical_allowed_origin = URLUtils::canonicalUrl($allowed_origin);
+            if(empty($canonical_allowed_origin)) continue;
+            $canonical_allowed_origin = URLUtils::normalizeUrl($canonical_allowed_origin);
+
+            if($originWithoutPort === $canonical_allowed_origin) return true;
+            if($originWithPort !== null && $originWithPort === $canonical_allowed_origin) return true;
+        }
+
+        return false;
     }
 
     public function getWebsite()
