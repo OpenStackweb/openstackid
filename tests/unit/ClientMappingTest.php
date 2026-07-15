@@ -327,4 +327,43 @@ PPK;
         $this->assertFalse($client->isOriginAllowed('https://other.example.com:9999'));
         $this->assertFalse($client->isOriginAllowed('https://evil.example.com'));
     }
+
+    public function testIsUriAllowedIgnoresPathCasingDifferences()
+    {
+        // Documents a known gap (review Finding 2): URLUtils::canonicalUrl() lowercases the ENTIRE path
+        // before comparison, not just scheme/host as the inline comments on isUriAllowed() claim ("path...
+        // remain case-sensitive"). A registered value and a requested URI differing only in path casing
+        // are therefore treated as identical - looser than RFC 6749 SS3.1.2.2's exact-match requirement.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setRedirectUris('myapp://callback/Safe');
+
+        $this->assertTrue($client->isUriAllowed('myapp://callback/safe'));
+    }
+
+    public function testIsPostLogoutUriAllowedIgnoresPathCasingDifferences()
+    {
+        // Same gap as isUriAllowed() above (review Finding 2), same root cause (canonicalUrl()).
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('myapp://callback/Safe');
+
+        $this->assertTrue($client->isPostLogoutUriAllowed('myapp://callback/safe'));
+    }
+
+    public function testIsUriAllowedAcceptsAnyQueryStringNotJustDynamicOnes()
+    {
+        // Documents a known gap (review Finding 2): canonicalUrl() drops the query string entirely from
+        // both sides before comparison, so isUriAllowed() accepts ANY query string on the requested URI,
+        // not just legitimate dynamic ones. Unlike isPostLogoutUriAllowed's dynamic query string tolerance
+        // (see testIsPostLogoutUriAllowedNativeClientAcceptsDynamicQueryString above, which documents a
+        // deliberate choice for end-session's session/state params), the redirect_uri sent to
+        // /oauth2/authorize is not expected to carry a client-appended dynamic query string, so this
+        // coverage gap is closer to an unintended byproduct than a deliberate design choice.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setRedirectUris('myapp://callback/safe');
+
+        $this->assertTrue($client->isUriAllowed('myapp://callback/safe?unexpected=value&injected=1'));
+    }
 }
