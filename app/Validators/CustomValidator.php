@@ -294,6 +294,8 @@ class CustomValidator extends Validator
 
     public function validateCustomUrlSet($attribute, $value, $parameters)
     {
+        if (!is_string($value)) return false;
+
         $app_type_param = $parameters[0];
         if(!isset($this->data[$app_type_param])) return true;
         $app_type = $this->data[$app_type_param];

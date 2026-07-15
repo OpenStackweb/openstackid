@@ -361,4 +361,56 @@ class ClientApiTest extends BrowserKitTestCase {
         $this->assertResponseStatus(412);
     }
 
+    public function testCreateNativeClientRejectsCustomSchemeWithLeadingSpaceInList(){
+
+        // Regression: hasCustomSchemeRegisteredOnAnotherClientThan() anchors matches to "starts the
+        // field" or "immediately follows a comma" with no tolerance for whitespace, and (before this
+        // fix) create() applied zero request-level validation to redirect_uris/allowed_origins/
+        // post_logout_redirect_uris (absent from getCreatePayloadValidationRules()), so a list with a
+        // space after the comma reached storage verbatim - silently defeating the cross-client scheme
+        // uniqueness check for that entry. Now that create() validates these fields with the same
+        // custom_url_set rule update() already used, the malformed list is rejected outright before it
+        // can ever reach storage.
+        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
+
+        $response = $this->action("POST", "Api\\ClientApiController@create",
+            array(
+                'user_id'                   => $user->id,
+                'app_name'                  => 'native_wspacebypass_app',
+                'app_description'           => 'native app sending a list with a space after the comma',
+                'application_type'          => IClient::ApplicationType_Native,
+                'post_logout_redirect_uris' => 'https://web.example.com/logout, wspacebypass://callback/logout',
+            ),
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(412);
+    }
+
+    public function testCreateNativeClientRejectsArrayValueForRedirectUrisCleanly(){
+
+        // Regression: getCreatePayloadValidationRules() does not declare redirect_uris/allowed_origins/
+        // post_logout_redirect_uris at all, so create() applies zero request-level validation to them -
+        // any value, of any PHP type, reaches ClientService::create() untouched. There,
+        // assertNativeCustomSchemesAllowed() calls explode(',', $payload[$field]); explode() requires a
+        // string and throws a TypeError (not an Exception) on an array, which escapes every catch block in
+        // APICRUDController::create() and surfaces as a generic 500 instead of the intended 412.
+        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
+
+        $response = $this->action("POST", "Api\\ClientApiController@create",
+            array(
+                'user_id'           => $user->id,
+                'app_name'          => 'native_array_redirect_uri_app',
+                'app_description'   => 'native app sending a non-string redirect_uris value',
+                'application_type'  => IClient::ApplicationType_Native,
+                'redirect_uris'     => ['myapp://callback', 'otherapp://callback'],
+            ),
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(412);
+    }
+
 }
