@@ -252,4 +252,21 @@ PPK;
         $this->assertFalse($client->isUriAllowed('mailto:foo@bar.com'));
         $this->assertFalse($client->isUriAllowed('file:///etc/passwd'));
     }
+
+    public function testIsUriAllowedNativeClientRejectsPathSuffixOnRegisteredRedirectUri()
+    {
+        // isUriAllowed() previously matched via str_contains($uri, $redirect_uri) - a substring/prefix
+        // check, not an exact match. Registering "myapp://callback/safe" therefore also permitted
+        // "myapp://callback/other" and "myapp://callback/safe/extra": any path appended after the
+        // registered value passed. redirect_uris carries the OAuth2 authorization code, so an exact
+        // match is required here (query strings remain tolerated - canonicalUrl() strips them from
+        // both sides before comparison).
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setRedirectUris('myapp://callback/safe');
+
+        $this->assertTrue($client->isUriAllowed('myapp://callback/safe'));
+        $this->assertFalse($client->isUriAllowed('myapp://callback/other'));
+        $this->assertFalse($client->isUriAllowed('myapp://callback/safe/extra'));
+    }
 }

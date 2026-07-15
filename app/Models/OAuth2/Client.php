@@ -687,13 +687,23 @@ class Client extends BaseEntity implements IClient
             return false;
         }
 
-        $redirect_uris = explode(',',strtolower($this->redirect_uris));
+        $redirect_uris = explode(',', $this->redirect_uris);
         $uri = URLUtils::normalizeUrl($uri);
         if(empty($uri)) return false;
         foreach($redirect_uris as $redirect_uri){
+            $redirect_uri = trim($redirect_uri);
             if(empty($redirect_uri)) continue;
-            Log::debug(sprintf("Client::isUriAllowed url %s client %s redirect_uri %s", $uri, $this->client_id, $redirect_uri));
-            if(str_contains($uri, $redirect_uri))
+
+            // symmetric normalization: compare both sides through the same canonicalize+normalize
+            // pipeline, then require an exact match - a registered value must no longer be accepted
+            // merely as a *prefix* of the requested URI (e.g. "myapp://callback" matching any
+            // "myapp://callback/<anything>").
+            $canonical_redirect_uri = URLUtils::canonicalUrl($redirect_uri);
+            if(empty($canonical_redirect_uri)) continue;
+            $canonical_redirect_uri = URLUtils::normalizeUrl($canonical_redirect_uri);
+
+            Log::debug(sprintf("Client::isUriAllowed url %s client %s redirect_uri %s", $uri, $this->client_id, $canonical_redirect_uri));
+            if($uri === $canonical_redirect_uri)
                 return true;
         }
 

@@ -62,6 +62,18 @@ interface IClient extends IEntity
     const array NATIVE_LOOPBACK_HOSTS = ['127.0.0.1', '::1', '[::1]', 'localhost'];
 
     /**
+     * Single source of truth for "is this scheme disallowed for a Native client's URI fields", per
+     * DISALLOWED_NATIVE_URI_SCHEMES / NATIVE_LOOPBACK_HOSTS above. Declared here (contract) and
+     * implemented on Client (body) like every other predicate on this interface; kept static because
+     * ClientService::create() must validate a scheme before a Client entity exists to call it on.
+     *
+     * @param string $scheme
+     * @param string|null $host enables the RFC 8252 http-loopback carve-out (see NATIVE_LOOPBACK_HOSTS)
+     * @return bool
+     */
+    public static function isDisallowedNativeUriScheme(string $scheme, ?string $host = null): bool;
+
+    /**
      * @return int
      */
     public function getId();
