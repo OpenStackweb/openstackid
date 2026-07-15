@@ -1,0 +1,66 @@
+# 1. Native OAuth2 clients: custom URI schemes in redirect_uris, allowed_origins, post_logout_redirect_uris
+
+Date: 2026-07-14
+
+## Status
+
+Accepted
+
+## Context
+
+`ApplicationType_Native` OAuth2 clients (mobile/desktop apps) authenticate end users via the system browser and receive control back through a registered redirect URI. Mobile/desktop platforms commonly use a private-use URI scheme for this (e.g. `myapp://callback`), following [RFC 8252 (OAuth 2.0 for Native Apps)](https://www.rfc-editor.org/rfc/rfc8252).
+
+Before this change:
+
+- `redirect_uris` already accepted arbitrary custom schemes for Native clients (`custom_url_set:application_type` validation, `Client::isUriAllowed()` skipping the https requirement for `ApplicationType_Native`).
+- `allowed_origins` and `post_logout_redirect_uris` did **not**: both fields used the `ssl_url_set` rule (https-only) for every application type, including Native. A Native client could not register `myapp://` as a post-logout redirect target or as an allowed origin, and the OIDC end-session flow (`OAuth2Protocol::endSession`) would reject a custom-scheme `post_logout_redirect_uri` outright.
+
+The request was to bring `allowed_origins` and `post_logout_redirect_uris` to parity with the existing `redirect_uris` behavior for Native clients.
+
+### Security findings during implementation
+
+Four consecutive adversarial code-review passes (xhigh-effort, multi-agent) surfaced that naively mirroring `redirect_uris`' existing "any scheme with a valid URI" behavior was itself unsafe, and that extending validation always to more fields exposed both new and **pre-existing** issues:
+
+1. **Dangerous/launch pseudo-schemes.** A field that becomes a live `302` redirect target at the public `/oauth2/end-session` endpoint must not accept schemes like `javascript:`, `data:`, `intent:`, `itms-services:`, etc. — on Android, `intent://` can launch arbitrary app activities; on iOS/Safari, `itms-services://` can trigger a silent app-install prompt; `javascript:`/`data:` are stored open-redirect/script vectors. This applied equally to the pre-existing `redirect_uris` behavior once traced (not merely the two new fields), since `redirect_uris` is the field that actually carries the OAuth2 authorization code — the more security-critical of the three.
+2. **RFC 8252 loopback interface redirection.** Native clients commonly use `http://127.0.0.1:{port}/callback` (or `localhost`) — TLS is meaningless here since the redirect never leaves the device. A blanket "reject `http`" rule breaks this standard, already-deployed pattern.
+3. **Cross-client scheme collision.** Two different OAuth2 clients registered with the same IDP claiming the identical custom scheme creates an OS-level interception ambiguity (whichever installed app claims the scheme at the OS level receives the redirect). `redirect_uris` already had a uniqueness check for this (`hasCustomSchemeRegisteredForRedirectUrisOnAnotherClientThan`); the two new fields did not.
+4. **Defense-in-depth.** A row can reach storage via `ClientFactory::build()` directly (e.g. seeders, future write paths) without ever passing through `ClientService`'s write-time validation. The runtime allow-gates (`Client::isUriAllowed`, `Client::isPostLogoutUriAllowed`) must not depend solely on write-time validation having run.
+5. **Latent crash bug.** `URLUtils::canonicalUrl()` / `Client::isPostLogoutUriAllowed()` concatenated `$parts['host']` without checking it was set. A host-less but otherwise valid URI (`mailto:foo@bar.com`, `file:///etc/passwd`) passes `FILTER_VALIDATE_URL` but has no `host` component — this raised an uncaught `ErrorException` (HTTP 500 with a leaked internal message) on the public end-session endpoint once Native clients were allowed non-https schemes there.
+6. **Substring false-positive.** The original cross-client scheme-uniqueness query (`LIKE '%scheme://%'`) matched a shorter scheme as a substring of an unrelated longer one already registered elsewhere (e.g. `roipapp://` matching inside `androipapp://oidc_endpoint_callback`), a pre-existing bug whose blast radius widened once the check was generalized across three fields and reachable from `create()`.
+
+## Decision
+
+1. **Allow custom app URI schemes in all three URI-bearing Native-client fields** (`redirect_uris`, `allowed_origins`, `post_logout_redirect_uris`), gated by a **deny-list**, not an allow-list — any scheme is treated as a legitimate custom app scheme unless it appears on `IClient::DISALLOWED_NATIVE_URI_SCHEMES`.
+2. **Single source of truth for the deny-list policy, owned by the OAuth2 domain layer, not a generic HTTP helper.** The deny-list and loopback-host list are `const` arrays on `IClient` (domain policy for Native OAuth2 clients — the same interface already holding `ApplicationType_Native`, `ClientType_Confidential`, etc.). Since PHP interfaces can't hold method bodies, the predicate that interprets them (`isDisallowedNativeUriScheme(string $scheme, ?string $host = null): bool`) is a `public static` method on `Client`, the concrete entity. Both the write-time validator (`ClientService::assertNativeCustomSchemesAllowed()`, and the `redirect_uris` validation branch in `ClientService::update()`) and the runtime allow-gates (`Client::isUriAllowed()`, `Client::isPostLogoutUriAllowed()`, via a shared `Client::isNativeDangerousScheme()` helper) call this one method. The admin UI reads the same two lists at runtime instead of hand-duplicating them in JavaScript: `AdminController` passes `IClient::DISALLOWED_NATIVE_URI_SCHEMES`/`IClient::NATIVE_LOOPBACK_HOSTS` to the edit-client view, which injects them as `window.DISALLOWED_NATIVE_URI_SCHEMES`/`window.NATIVE_LOOPBACK_HOSTS` (the same mechanism already used for `window.APP_TYPES`); `logout_options.js`'s inline validator reads from `window.*` rather than maintaining its own copy. *(This constant/method placement was revised once, after initial review placed the deny-list on the generic `Utils\Http\HttpUtils` class — see Consequences.)*
+3. **`http` is a special case with an RFC 8252 loopback carve-out**: disallowed everywhere except `127.0.0.1` / `::1` / `localhost` (`IClient::NATIVE_LOOPBACK_HOSTS`).
+4. **Cross-client scheme uniqueness** (`IClientRepository::hasCustomSchemeRegisteredOnAnotherClientThan`) checks all three URI columns together — a scheme claimed by another client in *any* of the three fields blocks re-registration in any of the three, since the OS-level interception risk is identical regardless of which field either client used. The query anchors matches to real list-item boundaries (start-of-field or immediately after a comma) rather than an unanchored substring `LIKE`.
+5. **Defense-in-depth**: the runtime allow-gates independently re-check the scheme deny-list; write-time validation is not the sole enforcement point.
+6. **Enforced on both write paths** (`create()` and `update()`) for `allowed_origins`/`post_logout_redirect_uris`. `redirect_uris` scheme validation remains `update()`-only, matching its pre-existing (unchanged) behavior — `create()` never validated `redirect_uris` at all, before or after this change (see Consequences).
+7. **The `allowed_origins` admin UI input stays hidden for Native clients.** No runtime path enforces `allowed_origins` for Native today — both the IDP's own `OAuth2BearerAccessTokenRequestValidator` middleware and summit-api's equivalent gate the origin check to `application_type === JS_Client`. The field remains settable via the admin API only (the value ships in token-introspection responses and may be enforced by a resource server in the future), but exposing a UI control for a value nothing currently checks was judged not worth the surface.
+
+### Alternatives considered
+
+- **Exact parity with `redirect_uris`'s pre-existing behavior** (any scheme, no deny-list) — rejected: this is what the first adversarial review pass demonstrated was unsafe once the field becomes a live redirect target for two more fields.
+- **Allow-list instead of deny-list** (only permit a known-safe pattern, e.g. reverse-DNS custom schemes + https + loopback http) — rejected for this change as materially larger in scope than requested; the deny-list's non-exhaustiveness is accepted as a structural trade-off (see Consequences).
+- **Leave `redirect_uris` untouched, harden only the two new fields** — initially chosen, then reversed once review showed `redirect_uris` (the field carrying the actual authorization code) had the identical, more consequential gap.
+
+## Consequences
+
+**Enabled:**
+- Native clients can complete RP-initiated logout with a custom-scheme `post_logout_redirect_uri` end-to-end (verified live: registered scheme → `302` redirect; unregistered/dangerous scheme → clean `400`).
+- Native clients can register `allowed_origins` values via the admin API (inert today — no runtime consumer for Native — but available for a future resource-server enforcement path without another migration).
+- `redirect_uris`, `allowed_origins`, and `post_logout_redirect_uris` share one scheme-safety policy instead of three divergent ones.
+- The admin UI has zero hardcoded scheme knowledge — the deny-list and loopback-host list are backend-authoritative and injected at render time, so a future policy change (e.g. adding a scheme to the deny-list) automatically applies client-side with no JS edit required.
+
+**Corrected during review (not a trade-off — fixed before merge):**
+- The deny-list/loopback-host constants were initially placed on `Utils\Http\HttpUtils` (a generic scheme-classification helper) and hand-duplicated as a second literal array in `logout_options.js`. Both were flagged in PR review: the frontend duplication as an unmaintained "keep in sync" liability, and the `HttpUtils` placement as the wrong dependency direction (a generic utility class encoding OAuth2-Native-client domain policy). Relocated to `IClient` (data) + `Client` (predicate logic) and wired the admin UI to read the values from the backend at render time instead of maintaining its own copy.
+
+**Accepted trade-offs (not fixed in this change, documented for a future pass if warranted):**
+- `ClientService::create()` still never validates `redirect_uris` scheme or cross-client uniqueness at all (a pre-existing gap, unrelated to the deny-list itself) — mitigated by the runtime allow-gate rejecting a dangerous scheme regardless of how it reached storage, but write-time hygiene on that one path remains weaker than `update()`.
+- The deny-list can never be exhaustive against every OS/browser/app-launcher scheme that might exist now or in the future (a structural property of any blocklist). A `search-ms://`-style scheme not yet on the list would be accepted. Closing this fully requires an allow-list architecture, a larger change than this ADR's scope.
+
+## References
+
+- Implementation plan: `docs/plans/2026-07-14-native-clients-custom-schemes.md`
+- Commit: `844328c6` on branch `hotfix/native-app-custom-schemas`
+- [RFC 8252 — OAuth 2.0 for Native Apps](https://www.rfc-editor.org/rfc/rfc8252)
