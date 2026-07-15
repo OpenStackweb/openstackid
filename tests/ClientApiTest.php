@@ -445,4 +445,33 @@ class ClientApiTest extends BrowserKitTestCase {
         }
     }
 
+    public function testUpdateNativeClientNotTouchingUriFieldsIgnoresLockContention(){
+
+        // The TOCTOU lock only protects hasCustomSchemeRegisteredOnAnotherClientThan(), which only runs
+        // when the payload touches redirect_uris/allowed_origins/post_logout_redirect_uris. A Native
+        // client update that doesn't touch any of those (e.g. renaming app_name) must not contend with
+        // an unrelated tenant's in-progress scheme registration - unlike the sibling test above, this
+        // must succeed even while the lock is held.
+        $lock_manager = App::make(ILockManagerService::class);
+        $lock_manager->acquireLock(ClientService::NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK, 5);
+
+        try {
+            $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+
+            $response = $this->action("PUT", "Api\\ClientApiController@update",
+                array(
+                    'id'                => $client->id,
+                    'application_type'  => IClient::ApplicationType_Native,
+                    'app_description'   => 'updated description while another registration is in progress',
+                ),
+                [],
+                [],
+                []);
+
+            $this->assertResponseStatus(201);
+        } finally {
+            $lock_manager->releaseLock(ClientService::NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK);
+        }
+    }
+
 }

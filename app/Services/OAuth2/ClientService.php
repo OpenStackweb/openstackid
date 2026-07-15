@@ -66,6 +66,14 @@ final class ClientService extends AbstractService implements IClientService
     const NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK_LIFETIME = 30;
 
     /**
+     * Single source of truth for which payload fields carry Native-client custom URI schemes - shared by
+     * assertNativeCustomSchemesAllowed() (what to validate) and payloadTouchesNativeCustomSchemeFields()
+     * (whether the TOCTOU lock is worth taking). Keeping both reads from one list means they can't drift:
+     * a field that stops needing validation automatically stops needing the lock too.
+     */
+    const NATIVE_CUSTOM_SCHEME_URI_FIELDS = ['redirect_uris', 'allowed_origins', 'post_logout_redirect_uris'];
+
+    /**
      * @var IAuthService
      */
     private $auth_service;
@@ -152,6 +160,23 @@ final class ClientService extends AbstractService implements IClientService
         } catch (UnacquiredLockException $ex) {
             throw new ValidationException('another native client custom URI scheme registration is in progress, please retry.');
         }
+    }
+
+    /**
+     * Gates the TOCTOU lock to payloads that actually register a custom URI scheme. A Native client
+     * write that doesn't touch redirect_uris/allowed_origins/post_logout_redirect_uris (e.g. renaming
+     * app_name) never calls hasCustomSchemeRegisteredOnAnotherClientThan(), so there is no race to close
+     * and no reason to serialize it behind every other tenant's scheme registration.
+     *
+     * @param array $payload
+     * @return bool
+     */
+    private function payloadTouchesNativeCustomSchemeFields(array $payload): bool
+    {
+        foreach (self::NATIVE_CUSTOM_SCHEME_URI_FIELDS as $field) {
+            if (!empty($payload[$field])) return true;
+        }
+        return false;
     }
 
 
@@ -286,7 +311,7 @@ final class ClientService extends AbstractService implements IClientService
      */
     private function assertNativeCustomSchemesAllowed(array $payload, int $exclude_client_id = -1): void
     {
-        foreach (['redirect_uris', 'allowed_origins', 'post_logout_redirect_uris'] as $field) {
+        foreach (self::NATIVE_CUSTOM_SCHEME_URI_FIELDS as $field) {
             if (empty($payload[$field])) continue;
             foreach (explode(',', $payload[$field]) as $uri) {
                 $parts = @parse_url(trim($uri));
@@ -351,7 +376,8 @@ final class ClientService extends AbstractService implements IClientService
             });
         };
 
-        if (($payload['application_type'] ?? null) === IClient::ApplicationType_Native) {
+        if (($payload['application_type'] ?? null) === IClient::ApplicationType_Native
+            && $this->payloadTouchesNativeCustomSchemeFields($payload)) {
             return $this->withNativeCustomSchemeLock($do_create);
         }
 
@@ -450,7 +476,8 @@ final class ClientService extends AbstractService implements IClientService
             });
         };
 
-        if (($payload['application_type'] ?? null) === IClient::ApplicationType_Native) {
+        if (($payload['application_type'] ?? null) === IClient::ApplicationType_Native
+            && $this->payloadTouchesNativeCustomSchemeFields($payload)) {
             return $this->withNativeCustomSchemeLock($do_update);
         }
 
