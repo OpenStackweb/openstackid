@@ -54,7 +54,11 @@ class OAuth2LoginStrategyTest extends TestCase
 
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
-        // Set up a minimal facade root
+        // Set up a minimal facade root. Facades cache resolved instances statically, so any
+        // previously-run test that booted the full Laravel app (BrowserKitTestCase) leaves stale
+        // instances behind that would shadow the mocks bound on this minimal container - clear
+        // them BEFORE swapping the facade application, or this test breaks depending on suite order.
+        Facade::clearResolvedInstances();
         $this->app = new Container();
 
         $logger = Mockery::mock(LoggerInterface::class);
