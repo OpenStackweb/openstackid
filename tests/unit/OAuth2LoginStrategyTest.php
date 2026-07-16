@@ -25,6 +25,7 @@ use OAuth2\Services\IMementoOAuth2SerializerService;
 use OAuth2\Services\ISecurityContextService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 use Services\IUserActionService;
 use Strategies\OAuth2LoginStrategy;
 use Utils\Services\IAuthService;
@@ -92,10 +93,15 @@ class OAuth2LoginStrategyTest extends TestCase
 
     protected function tearDown(): void
     {
-        Mockery::close();
-        Facade::clearResolvedInstances();
-        Facade::setFacadeApplication(null);
-        parent::tearDown();
+        // facade cleanup must run even if Mockery::close() throws (unmet expectation) - otherwise
+        // this test's facade root leaks into whatever test runs next in the same PHP process.
+        try {
+            Mockery::close();
+        } finally {
+            Facade::clearResolvedInstances();
+            Facade::setFacadeApplication(null);
+            parent::tearDown();
+        }
     }
 
     /**
@@ -216,5 +222,32 @@ class OAuth2LoginStrategyTest extends TestCase
 
         $this->assertTrue($reachedMemento,
             'Guest path must proceed past Auth::guest() check into memento loading');
+    }
+
+    /**
+     * Regression: tearDown() called Mockery::close() first with no try/finally, so when it
+     * threw on an unmet expectation, the Facade::clearResolvedInstances()/setFacadeApplication(null)
+     * cleanup below it never ran - leaking this test's facade root to whatever test runs next in
+     * the same PHP process. Same bug class this class's setUp() now guards against, but from the
+     * opposite direction (leaking outward instead of receiving a leak from a prior test).
+     */
+    public function testTearDownClearsFacadeStateEvenWhenMockeryCloseThrows(): void
+    {
+        // deliberately unmet expectation so Mockery::close() throws inside tearDown()
+        Mockery::mock(IAuthService::class)->shouldReceive('getCurrentUser')->once();
+
+        $tearDown = new ReflectionMethod($this, 'tearDown');
+        $tearDown->setAccessible(true);
+
+        $thrown = false;
+        try {
+            $tearDown->invoke($this);
+        } catch (\Throwable $ex) {
+            $thrown = true;
+        }
+
+        $this->assertTrue($thrown, 'Mockery::close() should throw on the unmet expectation above');
+        $this->assertNull(Facade::getFacadeApplication(),
+            'facade root must be cleared even when Mockery::close() throws');
     }
 }
