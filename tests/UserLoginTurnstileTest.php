@@ -35,8 +35,8 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
     // Matches ServerConfigurationService::DefaultMaxFailedLoginAttempts2ShowCaptcha
     private const CAPTCHA_THRESHOLD = 3;
 
-    private string $testEmail;
-    private string $testPassword;
+    private ?string $testEmail = null;
+    private ?string $testPassword = null;
 
     protected function prepareForTests(): void
     {

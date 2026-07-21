@@ -46,6 +46,10 @@ final class PublicUserSerializer extends BaseUserSerializer
 final class PrivateUserSerializer extends BaseUserSerializer
 {
 
+    protected static $allowed_relations = [
+        'groups',
+    ];
+
     protected static $array_mappings = [
         'Email' => 'email:json_string',
         'Identifier' => 'identifier:json_string',
@@ -96,15 +100,19 @@ final class PrivateUserSerializer extends BaseUserSerializer
         $user = $this->object;
         if (!$user instanceof User) return [];
 
+        if (!count($relations)) $relations = $this->getAllowedRelations();
+
         $values = parent::serialize($expand, $fields, $relations, $params);
 
-        $groups = [];
-        foreach ($user->getGroups() as $group) {
-            if (!$group instanceof Group) continue;
-            $groups[] = $group->getSlug();
-        }
+        if (in_array('groups', $relations)) {
+            $groups = [];
+            foreach ($user->getGroups() as $group) {
+                if (!$group instanceof Group) continue;
+                $groups[] = $group->getSlug();
+            }
 
-        $values['groups'] = $groups;
+            $values['groups'] = $groups;
+        }
 
         if (!empty($expand)) {
             $exp_expand = explode(',', $expand);
