@@ -511,6 +511,15 @@
                         }
                     },
                     {
+                        "name": "expand",
+                        "in": "query",
+                        "description": "Expand relations: groups",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
                         "name": "fields",
                         "in": "query",
                         "description": "Comma-separated list of scalar fields to return, e.g. first_name,last_name,pic,public_profile_allow_chat_with_me",
