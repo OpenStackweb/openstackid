@@ -490,10 +490,20 @@ final class UserController extends OpenIdController
                                 IPHelper::getUserIp()
                             );
 
-                            return Response::json(
-                                array_merge(['error_code' => 'mfa_required'], $payload),
-                                HttpResponse::HTTP_OK
-                            );
+                            // Restore-on-refresh: a subsequent GET /login can rehydrate
+                            // the 2FA screen from session instead of dropping back to the
+                            // password form (mirrors what a redirect-based flow gets for
+                            // free via session-flashed params).
+                            Session::put('flow', '2fa');
+                            Session::put('mfa_method', $method);
+                            if (isset($payload['otp_length'])) {
+                                Session::put('otp_length', $payload['otp_length']);
+                            }
+                            if (isset($payload['otp_lifetime'])) {
+                                Session::put('otp_lifetime', $payload['otp_lifetime']);
+                            }
+
+                            return $this->login_strategy->challengeRequired($payload);
                         }
 
                         // No challenge required: establish the session and continue.
@@ -710,6 +720,7 @@ final class UserController extends OpenIdController
             }
 
             $strategy->clearPendingState();
+            $this->clearMFAUISessionState();
 
             try {
                 $this->two_factor_audit_service->log(
@@ -784,6 +795,7 @@ final class UserController extends OpenIdController
 
             $this->auth_service->loginUser($user, (bool) $pending['remember']);
             $strategy->clearPendingState();
+            $this->clearMFAUISessionState();
 
             $this->two_factor_audit_service->log(
                 $user,
@@ -835,6 +847,17 @@ final class UserController extends OpenIdController
 
             $payload = $this->auth_service->resendMFAChallenge($user, $strategy, $this->resolveClientFromMemento(), (bool) $pending['remember']);
 
+            // Keep the refresh-restorable session state in sync with the
+            // fresh challenge (e.g. otp_lifetime countdown resets on resend,
+            // mfa_method changes if this resend is actually a method switch).
+            Session::put('mfa_method', $method);
+            if (isset($payload['otp_length'])) {
+                Session::put('otp_length', $payload['otp_length']);
+            }
+            if (isset($payload['otp_lifetime'])) {
+                Session::put('otp_lifetime', $payload['otp_lifetime']);
+            }
+
             $this->two_factor_audit_service->log(
                 $user,
                 TwoFactorAuditLog::EventChallengeIssued,
@@ -857,7 +880,24 @@ final class UserController extends OpenIdController
      */
     private function mfaSessionExpired()
     {
+        $this->clearMFAUISessionState();
         return Response::json(['error_code' => 'mfa_session_expired'], HttpResponse::HTTP_UNAUTHORIZED);
+    }
+
+    /**
+     * Clears the UI-restoration session keys written when a challenge is
+     * issued (see postLogin()'s mfa_required branch). Companion to
+     * IMFAChallengeStrategy::clearPendingState(), which only owns the
+     * 2fa_* pending-state keys.
+     *
+     * @return void
+     */
+    private function clearMFAUISessionState(): void
+    {
+        Session::forget('flow');
+        Session::forget('mfa_method');
+        Session::forget('otp_length');
+        Session::forget('otp_lifetime');
     }
 
     /**

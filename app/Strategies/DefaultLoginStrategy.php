@@ -21,8 +21,10 @@ use Services\IUserActionService;
 use Utils\Services\IAuthService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\URL;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Class DefaultLoginStrategy
  * @package Strategies
@@ -112,5 +114,17 @@ class DefaultLoginStrategy implements ILoginStrategy
         foreach ($params as $key => $val)
             $response = $response->with($key, $val);
         return $response;
+    }
+
+    /**
+     * @param array $params
+     * @return mixed
+     */
+    public function challengeRequired(array $params)
+    {
+        return Response::json(
+            array_merge(['error_code' => ILoginStrategy::MFA_REQUIRED], $params),
+            HttpResponse::HTTP_OK
+        );
     }
 }

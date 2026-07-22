@@ -80,6 +80,29 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertGreaterThan(0, $this->countAudit($admin->getId(), TwoFactorAuditLog::EventChallengeIssued));
     }
 
+    public function testAdminLoginPersistsUIStateForRefreshResilience(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $this->assertSame('2fa', Session::get('flow'), 'a refresh mid-challenge must restore the 2FA screen, not the password form');
+        $this->assertNotNull(Session::get('otp_length'));
+        $this->assertNotNull(Session::get('otp_lifetime'));
+        $this->assertSame(User::MFAMethod_OTP, Session::get('mfa_method'), 'a refresh must restore the screen for the method actually challenged, not a hardcoded default');
+    }
+
+    public function testSuccessfulVerificationClearsUIState(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $this->verify($code);
+
+        $this->assertNull(Session::get('flow'), 'completed challenge must not leave the 2FA screen re-derivable from a stale refresh');
+        $this->assertNull(Session::get('otp_length'));
+        $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('mfa_method'));
+    }
+
     public function testNonAdminWithoutMFALogsInNormally(): void
     {
         $email = $this->createPlainUser();

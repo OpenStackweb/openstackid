@@ -72,4 +72,17 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
 
         return $response;
     }
+
+    /**
+     * Same live-JSON, no-reload contract as DefaultLoginStrategy: OAuth2
+     * page/popup/touch flows render the same login.js SPA, so the MFA
+     * challenge transitions in-place rather than doing a full page reload.
+     *
+     * @param array $data
+     * @return SymfonyResponse
+     */
+    public function getChallengeRequiredResponse(array $data = [])
+    {
+        return Response::json(array_merge(['error_code' => ILoginStrategy::MFA_REQUIRED], $data), 200);
+    }
 }
