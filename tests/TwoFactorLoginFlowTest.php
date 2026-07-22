@@ -114,6 +114,32 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     }
 
     // -------------------------------------------------------------------------
+    // cancelLogin
+    // -------------------------------------------------------------------------
+
+    public function testCancelClearsUIStateAndPendingChallenge(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $this->cancelLogin();
+
+        $this->assertNull(Session::get('flow'), 'cancel must not leave a stale 2FA screen restorable on refresh');
+        $this->assertNull(Session::get('mfa_method'));
+        $this->assertNull(Session::get('otp_length'));
+        $this->assertNull(Session::get('otp_lifetime'));
+
+        // The strongest proof: the OTP issued before cancel must no longer
+        // complete a login. If pending state survived cancel, this would
+        // succeed with a 302 despite the user having explicitly cancelled.
+        $response = $this->verify($code);
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertFalse(Auth::check(), 'a cancelled challenge must never establish a session');
+    }
+
+    // -------------------------------------------------------------------------
     // verify2FA
     // -------------------------------------------------------------------------
 
@@ -429,6 +455,11 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
             'flow'     => 'password',
             '_token'   => Session::token(),
         ], [], $cookies);
+    }
+
+    private function cancelLogin()
+    {
+        return $this->action('GET', 'UserController@cancelLogin');
     }
 
     private function verify(string $otp, bool $trustDevice = false)
