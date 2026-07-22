@@ -39,6 +39,7 @@ interface IAuthService
 
     const AuthenticationFlowPassword = "password";
     const AuthenticationFlowPasswordless = "otp";
+    const AuthenticationFlowMFA = "2fa";
     /**
      * @return bool
      */

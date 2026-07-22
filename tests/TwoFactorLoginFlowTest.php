@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Strategies\ILoginStrategy;
 
 /**
  * Integration tests for the MFA-gated password login flow wired into UserController.
@@ -71,9 +72,12 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     {
         $response = $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
 
-        $this->assertResponseStatus(200);
-        $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_required', $payload['error_code']);
+        // The password flow submits as a native form POST, so the challenge
+        // is delivered via the same redirect+session-flash mechanism as every
+        // other login outcome (errorLogin()), not a live JSON response -
+        // see testAdminLoginPersistsUIStateForRefreshResilience for the
+        // session-state assertions the redirected page relies on.
+        $this->assertResponseStatus(302, 'must redirect back to the login screen, same as errorLogin(), not return JSON');
         $this->assertFalse(Auth::check(), 'no session must be established when a challenge is required');
 
         $admin = $this->user(self::ADMIN_EMAIL);
@@ -88,6 +92,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNotNull(Session::get('otp_length'));
         $this->assertNotNull(Session::get('otp_lifetime'));
         $this->assertSame(User::MFAMethod_OTP, Session::get('mfa_method'), 'a refresh must restore the screen for the method actually challenged, not a hardcoded default');
+        $this->assertSame(ILoginStrategy::MFA_REQUIRED, Session::get('error_code'), 'must match what DisplayResponseJsonStrategy sends native clients in its JSON body');
     }
 
     public function testSuccessfulVerificationClearsUIState(): void
@@ -101,6 +106,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('otp_length'));
         $this->assertNull(Session::get('otp_lifetime'));
         $this->assertNull(Session::get('mfa_method'));
+        $this->assertNull(Session::get('error_code'));
     }
 
     public function testNonAdminWithoutMFALogsInNormally(): void
@@ -111,6 +117,43 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(302);
         $this->assertTrue(Auth::check(), 'a non-MFA user must get an authenticated session');
+    }
+
+    // -------------------------------------------------------------------------
+    // passwordless (flow=otp) login must not bypass the MFA gate
+    // -------------------------------------------------------------------------
+
+    public function testEnforcedUserCannotBypassMFAViaPasswordlessLogin(): void
+    {
+        $this->emitOTP(self::ADMIN_EMAIL);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $response = $this->postLoginOTP(self::ADMIN_EMAIL, $code);
+
+        $this->assertFalse(Auth::check(), 'passwordless login must not authenticate an enforced-2FA user');
+
+        // The OTP flow still submits as a native form POST (PR #142 only
+        // converted the password flow to AJAX), so the rejection must go
+        // through the pre-existing errorLogin() redirect+flash mechanism,
+        // not the JSON contract built for the password flow's MFA gate.
+        $this->assertResponseStatus(302, 'must reuse errorLogin(), not a JSON response');
+        $this->assertStringContainsString(
+            'two-factor authentication',
+            Session::get('flash_notice'),
+            'the flashed message must explain why passwordless login was rejected'
+        );
+        $this->assertSame('otp', Session::get('flow'), 'a reload must land back on the OTP screen, not silently fall back to password');
+    }
+
+    public function testNonEnforcedUserStillLogsInViaPasswordlessLogin(): void
+    {
+        $email = $this->createPlainUser();
+        $this->emitOTP($email);
+        $code = $this->latestOtpCode($email);
+
+        $this->postLoginOTP($email, $code);
+
+        $this->assertTrue(Auth::check(), 'passwordless login must keep working unchanged for non-enforced users');
     }
 
     // -------------------------------------------------------------------------
@@ -460,6 +503,27 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     private function cancelLogin()
     {
         return $this->action('GET', 'UserController@cancelLogin');
+    }
+
+    private function emitOTP(string $username)
+    {
+        return $this->action('POST', 'UserController@emitOTP', [
+            'username'   => $username,
+            'connection' => 'email',
+            'send'       => 'code',
+            '_token'     => Session::token(),
+        ]);
+    }
+
+    private function postLoginOTP(string $username, string $code)
+    {
+        return $this->action('POST', 'UserController@postLogin', [
+            'username'   => $username,
+            'password'   => $code,
+            'connection' => 'email',
+            'flow'       => 'otp',
+            '_token'     => Session::token(),
+        ]);
     }
 
     private function verify(string $otp, bool $trustDevice = false)

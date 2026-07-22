@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Session;
 
 /**
  * Class DisplayResponseUserAgentStrategy
@@ -74,15 +75,23 @@ class DisplayResponseUserAgentStrategy implements IDisplayResponseStrategy
     }
 
     /**
-     * Same live-JSON, no-reload contract as DefaultLoginStrategy: OAuth2
-     * page/popup/touch flows render the same login.js SPA, so the MFA
-     * challenge transitions in-place rather than doing a full page reload.
+     * Same redirect+session-flash contract as getLoginErrorResponse(): OAuth2
+     * page/popup/touch flows render the same login.js SPA via a native form
+     * POST, so the MFA challenge is delivered the same way every other login
+     * outcome is. Persistent (not one-shot flash) so the state survives
+     * repeated refreshes while the challenge is still pending.
      *
      * @param array $data
      * @return SymfonyResponse
      */
     public function getChallengeRequiredResponse(array $data = [])
     {
-        return Response::json(array_merge(['error_code' => ILoginStrategy::MFA_REQUIRED], $data), 200);
+        // error_code mirrors what DisplayResponseJsonStrategy sends native
+        // clients in JSON.
+        Session::put('error_code', ILoginStrategy::MFA_REQUIRED);
+        foreach ($data as $key => $val) {
+            Session::put($key, $val);
+        }
+        return Redirect::action('UserController@getLogin');
     }
 }

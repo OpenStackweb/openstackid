@@ -16,9 +16,12 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 
 /**
- * Verifies that an OAuth2 native client (display=native) requesting login
- * against an enforced-2FA account gets the SAME JSON+412 contract as every
- * other login error for that client, rather than the plain-flow's JSON+200.
+ * Verifies that an MFA challenge issued mid-OAuth2-authorization-flow gets
+ * the response shape appropriate to the request's display mode: JSON+412
+ * for native clients (matching every other login error for that mode),
+ * redirect+session-flash for page/popup/touch (matching DefaultLoginStrategy
+ * and errorLogin(), since both render the same login.js SPA via a native
+ * form POST).
  *
  * @package Tests
  */
@@ -36,28 +39,58 @@ final class OAuth2NativeMFALoginFlowTest extends OpenStackIDBaseTestCase
 
     public function testNativeClientReceives412OnMFARequired(): void
     {
-        // Step 1: unauthenticated authorize request with display=native - the
-        // grant serializes the OAuth2 memento and hands off to the login flow.
-        $this->action('POST', 'OAuth2\OAuth2ProviderController@auth', [
+        $this->authorize('native');
+
+        $response = $this->postLoginPassword();
+
+        $this->assertResponseStatus(412);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_required', $payload['error_code']);
+    }
+
+    public function testNonNativeClientReceives302RedirectOnMFARequired(): void
+    {
+        // No display param -> defaults to the non-native (page/popup/touch)
+        // display strategy.
+        $this->authorize();
+
+        $response = $this->postLoginPassword();
+
+        $this->assertResponseStatus(302, 'must redirect like every other login outcome, not return JSON');
+        $this->assertSame('2fa', Session::get('flow'), 'the redirected page must be able to restore the 2FA screen');
+    }
+
+    /**
+     * Unauthenticated authorize request - the grant serializes the OAuth2
+     * memento and hands off to the login flow.
+     */
+    private function authorize(?string $display = null)
+    {
+        $params = [
             'client_id'     => self::CLIENT_ID,
             'redirect_uri'  => 'https://www.test.com:443/oauth2?param=1&BackUrl=123344',
             'response_type' => 'code',
             'scope'         => sprintf('%s/resource-server/read', Config::get('app.url')),
-            'display'       => 'native',
-        ]);
+        ];
+        if (!is_null($display)) {
+            $params['display'] = $display;
+        }
 
-        // Step 2: submit the enforced-2FA admin's password within the same
-        // session - this is what postLogin() sees as an OAuth2-originated
-        // login attempt via the persisted memento.
-        $response = $this->action('POST', 'UserController@postLogin', [
+        return $this->action('POST', 'OAuth2\OAuth2ProviderController@auth', $params);
+    }
+
+    /**
+     * Submits the enforced-2FA admin's password within the same session -
+     * this is what postLogin() sees as an OAuth2-originated login attempt
+     * via the persisted memento.
+     */
+    private function postLoginPassword()
+    {
+        return $this->action('POST', 'UserController@postLogin', [
             'username' => self::ADMIN_EMAIL,
             'password' => self::SEED_PASSWORD,
             'flow'     => 'password',
             '_token'   => Session::token(),
         ]);
-
-        $this->assertResponseStatus(412);
-        $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_required', $payload['error_code']);
     }
 }
