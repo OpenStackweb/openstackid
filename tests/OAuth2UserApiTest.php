@@ -174,6 +174,49 @@ final class OAuth2UserApiTest extends OAuth2ProtectedServiceAppApiTestCase {
         $this->assertArrayHasKey('message', $payload);
     }
 
+    public function testGetUserByIdV1WithNoParamsReturnsSameShapeAsBefore(){
+        $repo = EntityManager::getRepository(User::class);
+        $user = $repo->getAll()[0];
+
+        // No 'fields', 'relations', or 'expand' at all -- proves the fields/relations
+        // passthrough is purely additive and does not change the v1 response for a
+        // caller that sends none of the new params.
+        $params = [
+            'id' => $user->getId(),
+        ];
+
+        $response = $this->action(
+            "GET",
+            "Api\OAuth2\OAuth2UserApiController@get",
+            $params,
+            [],
+            [],
+            [],
+            array("HTTP_Authorization" => " Bearer " .$this->access_token));
+
+        $content = $response->getContent();
+        $this->assertResponseStatus(200);
+        $payload = json_decode($content, true);
+        $this->assertNotNull($payload);
+        // Full private field set, unchanged from before this PR -- id/timestamps/PII/groups all present.
+        $this->assertEqualsCanonicalizing(
+            [
+                'active', 'address1', 'address2', 'bio', 'birthday', 'city', 'company',
+                'country_iso_code', 'created_at', 'email', 'email_verified', 'first_name',
+                'gender', 'gender_specify', 'github_user', 'groups', 'id', 'identifier',
+                'irc', 'job_title', 'language', 'last_login_date', 'last_name',
+                'linked_in_profile', 'phone_number', 'pic', 'post_code',
+                'public_profile_allow_chat_with_me', 'public_profile_show_bio',
+                'public_profile_show_email', 'public_profile_show_fullname',
+                'public_profile_show_photo', 'public_profile_show_social_media_info',
+                'public_profile_show_telephone_number', 'second_email', 'spam_type',
+                'state', 'statement_of_interest', 'third_email', 'twitter_name',
+                'updated_at', 'wechat_user',
+            ],
+            array_keys($payload)
+        );
+    }
+
      public function testGetUserByIdV2(){
         $repo = EntityManager::getRepository(User::class);
         $user = $repo->getAll()[0];

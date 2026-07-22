@@ -642,6 +642,13 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
                 schema: new OA\Schema(type: 'integer')
             ),
             new OA\Parameter(
+                name: 'expand',
+                description: 'Expand relations: groups',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
                 name: 'fields',
                 description: 'Comma-separated list of scalar fields to return, e.g. first_name,last_name,pic,public_profile_allow_chat_with_me',
                 in: 'query',
