@@ -501,16 +501,11 @@ final class UserController extends OpenIdController
 
                             // Restore-on-refresh: a subsequent GET /login can rehydrate
                             // the 2FA screen from session instead of dropping back to the
-                            // password form (mirrors what a redirect-based flow gets for
-                            // free via session-flashed params).
-                            Session::put('flow', '2fa');
+                            // password form. otp_length/otp_lifetime (part of $payload)
+                            // are flashed by challengeRequired() itself; flow/mfa_method
+                            // aren't part of the challenge payload, so they're set here.
+                            Session::put('flow', IAuthService::AuthenticationFlowMFA);
                             Session::put('mfa_method', $method);
-                            if (isset($payload['otp_length'])) {
-                                Session::put('otp_length', $payload['otp_length']);
-                            }
-                            if (isset($payload['otp_lifetime'])) {
-                                Session::put('otp_lifetime', $payload['otp_lifetime']);
-                            }
 
                             return $this->login_strategy->challengeRequired($payload);
                         }
@@ -521,6 +516,16 @@ final class UserController extends OpenIdController
                     }
 
                     if ($flow == IAuthService::AuthenticationFlowPasswordless) {
+
+                        // Passwordless login is single-factor (email access only) and
+                        // must not be usable to satisfy MFA enforcement (SDS idp-mfa.md
+                        // §7.4 / Open Question #3).
+                        $existing_user = $this->auth_service->getUserByUsername($username);
+                        if (!is_null($existing_user) && $existing_user->shouldRequire2FA()) {
+                            throw new AuthenticationException(
+                                "This account requires password and two-factor authentication. Please use the password login option."
+                            );
+                        }
 
                         $client = $this->resolveClientFromMemento();
 
@@ -907,6 +912,7 @@ final class UserController extends OpenIdController
         Session::forget('mfa_method');
         Session::forget('otp_length');
         Session::forget('otp_lifetime');
+        Session::forget('error_code');
     }
 
     /**

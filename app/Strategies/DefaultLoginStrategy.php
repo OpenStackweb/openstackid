@@ -21,10 +21,8 @@ use Services\IUserActionService;
 use Utils\Services\IAuthService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\URL;
-use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Class DefaultLoginStrategy
  * @package Strategies
@@ -122,9 +120,15 @@ class DefaultLoginStrategy implements ILoginStrategy
      */
     public function challengeRequired(array $params)
     {
-        return Response::json(
-            array_merge(['error_code' => ILoginStrategy::MFA_REQUIRED], $params),
-            HttpResponse::HTTP_OK
-        );
+        // The login form submits as a native form POST, so this must redirect
+        // like every other outcome (errorLogin()) rather than return JSON.
+        // Persistent (not one-shot flash) so the state survives repeated
+        // refreshes while the challenge is still pending. error_code mirrors
+        // what DisplayResponseJsonStrategy sends native clients in JSON.
+        Session::put('error_code', ILoginStrategy::MFA_REQUIRED);
+        foreach ($params as $key => $val) {
+            Session::put($key, $val);
+        }
+        return Redirect::action('UserController@getLogin');
     }
 }
