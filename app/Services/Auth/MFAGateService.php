@@ -30,6 +30,9 @@ final class MFAGateService implements ITwoFactorGateService
 
     public function requiresChallenge(User $user, ?string $cookieToken): bool
     {
+        if (!config('two_factor.enabled', true)) {
+            return false;
+        }
         if (!$user->shouldRequire2FA()) {
             return false;
         }

@@ -18,6 +18,7 @@ namespace Tests\Unit;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\MFAGateService;
 use Auth\User;
+use Illuminate\Support\Facades\Config;
 use Mockery;
 use Tests\TestCase;
 use Mockery\MockInterface;
@@ -109,5 +110,21 @@ final class MFAGateServiceTest extends TestCase
         $this->deviceTrustService->shouldReceive('isDeviceTrusted')->once()->with($user, '')->andReturn(false);
 
         $this->assertTrue($this->service->requiresChallenge($user, ''));
+    }
+
+    // -------------------------------------------------------------------------
+    // Global kill-switch (SDS idp-mfa.md §10.1): TWO_FACTOR_ENABLED=false must
+    // short-circuit the gate before any per-user or device-trust evaluation.
+    // -------------------------------------------------------------------------
+
+    public function testRequiresChallengeReturnsFalseWhenTwoFactorGloballyDisabled(): void
+    {
+        Config::set('two_factor.enabled', false);
+
+        $user = Mockery::mock(User::class);
+        $user->shouldNotReceive('shouldRequire2FA');
+        $this->deviceTrustService->shouldNotReceive('isDeviceTrusted');
+
+        $this->assertFalse($this->service->requiresChallenge($user, null));
     }
 }

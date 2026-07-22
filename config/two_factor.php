@@ -17,6 +17,18 @@ use App\libs\Auth\Models\IGroupSlugs;
 return [
     /*
     |--------------------------------------------------------------------------
+    | Global Kill-Switch
+    |--------------------------------------------------------------------------
+    |
+    | Master switch for the whole 2FA gate (SDS idp-mfa.md §10.1 rollout plan).
+    | Defaults on; set TWO_FACTOR_ENABLED=false in a specific environment to
+    | instantly revert to password-only login with no code rollback needed.
+    |
+    */
+    'enabled' => env('TWO_FACTOR_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Enforced Groups
     |--------------------------------------------------------------------------
     |
