@@ -280,6 +280,15 @@ final class UserController extends OpenIdController
 
     public function cancelLogin()
     {
+        // A cancelled login must invalidate any pending MFA challenge server-side,
+        // not just reset the client's view of things - otherwise an OTP issued
+        // before cancel can still complete a login the user explicitly abandoned.
+        $method = Session::get('mfa_method');
+        if (!is_null($method)) {
+            MFAChallengeStrategyFactory::create($method)->clearPendingState();
+        }
+        $this->clearMFAUISessionState();
+
         return $this->login_strategy->cancelLogin();
     }
 
