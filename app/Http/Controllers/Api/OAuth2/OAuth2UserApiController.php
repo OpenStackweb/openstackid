@@ -19,6 +19,7 @@ use App\Http\Controllers\UserValidationRulesFactory;
 use App\Http\Exceptions\HTTP403ForbiddenException;
 use App\Http\Utils\HTMLCleaner;
 use App\ModelSerializers\SerializerRegistry;
+use App\ModelSerializers\SerializerUtils;
 use Auth\Repositories\IUserRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request as LaravelRequest;
@@ -315,24 +316,83 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
      * @param $id
      * @return \Illuminate\Http\JsonResponse|mixed
      */
+    #[OA\Get(
+        path: '/api/v1/users/{id}',
+        summary: 'Get a user by ID',
+        operationId: 'getUserById',
+        tags: ['Users'],
+        security: [
+            [
+                'OAuth2UserSecurity' => [
+                    IUserScopes::ReadAll,
+                ]
+            ],
+        ],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'User ID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+            new OA\Parameter(
+                name: 'expand',
+                description: 'Expand relations: groups',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'fields',
+                description: 'Comma-separated list of scalar fields to return, e.g. first_name,last_name,pic,public_profile_allow_chat_with_me',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'relations',
+                description: 'Comma-separated list of relations to include (supported: groups)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: HttpResponse::HTTP_OK,
+                description: 'OK',
+                content: new OA\JsonContent(ref: '#/components/schemas/User')
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_NOT_FOUND,
+                description: 'Not Found'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_PRECONDITION_FAILED,
+                description: 'Validation Failed'
+            ),
+            new OA\Response(
+                response: HttpResponse::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server Error'
+            ),
+        ]
+    )]
     public function get($id)
     {
-        try {
+        return $this->processRequest(function () use ($id) {
             $user = $this->repository->getById(intval($id));
             if (is_null($user)) {
                 throw new EntityNotFoundException();
             }
-            return $this->ok(SerializerRegistry::getInstance()->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize());
-        } catch (ValidationException $ex1) {
-            Log::warning($ex1);
-            return $this->error412($ex1->getMessages());
-        } catch (EntityNotFoundException $ex2) {
-            Log::warning($ex2);
-            return $this->error404(['message' => $ex2->getMessage()]);
-        } catch (Exception $ex) {
-            Log::error($ex);
-            return $this->error500($ex);
-        }
+            return $this->ok(SerializerRegistry::getInstance()
+                ->getSerializer($user, SerializerRegistry::SerializerType_Private)
+                ->serialize(
+                    SerializerUtils::getExpand(),
+                    SerializerUtils::getFields(),
+                    SerializerUtils::getRelations()
+                ));
+        });
     }
 
     /**
@@ -368,6 +428,20 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
                 required: false,
                 schema: new OA\Schema(type: 'string')
             ),
+            new OA\Parameter(
+                name: 'fields',
+                description: 'Comma-separated list of scalar fields to return, e.g. first_name,last_name,pic,public_profile_allow_chat_with_me',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'relations',
+                description: 'Comma-separated list of relations to include (supported: groups)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
         ],
         responses: [
             new OA\Response(
@@ -399,7 +473,9 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
             return $this->ok(SerializerRegistry::getInstance()
                 ->getSerializer($user, SerializerRegistry::SerializerType_Private)
                 ->serialize(
-                    Request::input("expand", '')
+                    SerializerUtils::getExpand(),
+                    SerializerUtils::getFields(),
+                    SerializerUtils::getRelations()
                 ));
         });
     }
