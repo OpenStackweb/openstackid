@@ -13,60 +13,57 @@
  **/
 
 use App\Http\Controllers\OpenId\DiscoveryController;
-use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
-use App\Jobs\RevokeUserGrantsOnExplicitLogout;
 use App\Http\Controllers\OpenId\OpenIdController;
 use App\Http\Controllers\Traits\JsonResponses;
 use App\Http\Controllers\Traits\MFACookieManager;
 use App\Http\Utils\CountryList;
 use App\libs\Auth\Models\TwoFactorAuditLog;
+use App\libs\OAuth2\Strategies\LoginHintProcessStrategy;
+use App\ModelSerializers\SerializerRegistry;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\ITwoFactorAuditService;
 use App\Services\Auth\ITwoFactorGateService;
 use App\Services\Auth\ITwoFactorRateLimitService;
-use Auth\User;
-use Models\OAuth2\Client;
-use Strategies\MFA\MFAChallengeStrategyFactory;
-use Symfony\Component\HttpFoundation\Response as HttpResponse;
-use Utils\IPHelper;
-use App\libs\OAuth2\Strategies\LoginHintProcessStrategy;
-use App\ModelSerializers\SerializerRegistry;
+use App\Services\Auth\IUserService as AuthUserService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
-use App\Services\Auth\IUserService as AuthUserService;
+use Auth\User;
 use Exception;
 use Illuminate\Http\Request as LaravelRequest;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
+use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Repositories\IClientRepository;
-use OpenId\Services\IUserService;
 use OAuth2\Services\IMementoOAuth2SerializerService;
 use OAuth2\Services\IResourceServerService;
 use OAuth2\Services\ISecurityContextService;
 use OAuth2\Services\ITokenService;
 use OpenId\Services\IMementoOpenIdSerializerService;
 use OpenId\Services\ITrustedSitesService;
+use OpenId\Services\IUserService;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 use Services\IUserActionService;
 use Sokil\IsoCodes\IsoCodesFactory;
 use Strategies\DefaultLoginStrategy;
 use Strategies\IConsentStrategy;
+use Strategies\MFA\MFAChallengeStrategyFactory;
 use Strategies\OAuth2ConsentStrategy;
 use Strategies\OAuth2LoginStrategy;
 use Strategies\OpenIdConsentStrategy;
 use Strategies\OpenIdLoginStrategy;
+use Utils\IPHelper;
 use Utils\Services\IAuthService;
 use Utils\Services\IServerConfigurationService;
 use Utils\Services\IServerConfigurationService as IUtilsServerConfigurationService;
@@ -749,7 +746,7 @@ final class UserController extends OpenIdController
                 } catch (\Throwable $auditEx) {
                     Log::warning($auditEx);
                 }
-                return Response::json(['error_code' => 'mfa_verification_failed'], HttpResponse::HTTP_UNAUTHORIZED);
+                return $this->unauthorized(['error_code' => 'mfa_verification_failed']);
             }
 
             // Second factor verified: establish the session.
@@ -781,7 +778,17 @@ final class UserController extends OpenIdController
                 Log::warning($ex);
             }
 
-            return $this->login_strategy->postLogin();
+            // Return the same-origin post-login destination as data instead of a raw
+            // redirect for this XHR to follow: postLogin() can chain into a cross-origin
+            // hop (authorization code delivery to an already-consented OAuth2 client),
+            // which no XHR/fetch can read past - and per InteractiveGrantType::handle()'s
+            // consent-bypass branch, that hop also consumes the OAuth2 memento as a side
+            // effect, so a silently-failed XHR follow-through burns the authorization
+            // code with no way to recover it client-side. A real top-level navigation to
+            // this URL lets the browser complete that chain natively instead - CORS never
+            // applies to page navigations, only to XHR/fetch.
+            $redirect = $this->login_strategy->postLogin();
+            return $this->ok(['redirect_url' => $redirect->getTargetUrl()]);
         } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412($ex->getMessages());
@@ -843,7 +850,7 @@ final class UserController extends OpenIdController
                 } catch (\Throwable $auditEx) {
                     Log::warning($auditEx);
                 }
-                return Response::json(['error_code' => 'mfa_invalid_recovery'], HttpResponse::HTTP_UNAUTHORIZED);
+                return $this->unauthorized(['error_code' => 'mfa_invalid_recovery']);
             }
 
             $this->auth_service->loginUser($user, (bool) $pending['remember']);
@@ -864,7 +871,10 @@ final class UserController extends OpenIdController
                 Log::warning($ex);
             }
 
-            return $this->login_strategy->postLogin();
+            // See verify2FA() for rationale: return the destination as data so a real
+            // top-level navigation (not this XHR) performs any cross-origin hop.
+            $redirect = $this->login_strategy->postLogin();
+            return $this->ok(['redirect_url' => $redirect->getTargetUrl()]);
         } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412($ex->getMessages());
@@ -948,7 +958,7 @@ final class UserController extends OpenIdController
     private function mfaSessionExpired()
     {
         $this->clearMFAUISessionState();
-        return Response::json(['error_code' => 'mfa_session_expired'], HttpResponse::HTTP_UNAUTHORIZED);
+        return $this->unauthorized(['error_code' => 'mfa_session_expired']);
     }
 
     /**

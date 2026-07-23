@@ -92,40 +92,6 @@ export const postRawRequest = (endpoint) => (params, headers = {}) => {
     })
 }
 
-// Like postRawRequest, but also surfaces the final URL the browser landed on after the
-// XHR transparently followed any 3xx redirects (res.xhr.responseURL) and the HTTP status.
-// Used by flows that complete via a server-side redirect (e.g. 2FA verify) so the SPA can
-// navigate the top window to the post-login destination.
-export const postRawRequestFull = (endpoint) => (params, headers = {}, queryParams = {}) => {
-    let url = URI(endpoint);
-
-    if (!isObjectEmpty(queryParams))
-        url = url.query(queryParams);
-
-    let key = url.toString();
-
-    cancel(key);
-
-    let req = http.post(url.toString());
-
-    schedule(key, req);
-
-    return req.set(headers).send(params).timeout({
-        response: 60000,
-        deadline: 60000,
-    }).then((res) => {
-        end(key);
-        return Promise.resolve({
-            response: res.body,
-            status: res.status,
-            finalUrl: (res.xhr && res.xhr.responseURL) ? res.xhr.responseURL : null,
-        });
-    }).catch((error) => {
-        end(key);
-        return Promise.reject(error);
-    })
-}
-
 export const putRawRequest = (endpoint) => (payload = null, params={}, headers = {}) => {
     let url = URI(endpoint);
 

@@ -1,4 +1,4 @@
-import {postRawRequest, postRawRequestFull } from '../base_actions'
+import {postRawRequest} from '../base_actions'
 
 export const verifyAccount = (email, token) => {
 
@@ -28,8 +28,6 @@ export const resendVerificationEmail = (email, token) => {
     return postRawRequest(window.RESEND_VERIFICATION_EMAIL_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 }
 
-// verify / recovery complete login via a server-side redirect, so use the *Full helper to
-// recover the final URL for top-window navigation.
 export const verify2FA = (otpValue, method, trustDevice, token) => {
     const params = {
         otp_value: otpValue,
@@ -37,7 +35,7 @@ export const verify2FA = (otpValue, method, trustDevice, token) => {
         trust_device: trustDevice ? 1 : 0
     };
 
-    return postRawRequestFull(window.VERIFY_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
+    return postRawRequest(window.VERIFY_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 }
 
 export const resend2FA = (method, token) => {
@@ -45,7 +43,7 @@ export const resend2FA = (method, token) => {
         method: method
     };
 
-    return postRawRequestFull(window.RESEND_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
+    return postRawRequest(window.RESEND_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 }
 
 export const verifyRecoveryCode = (recoveryCode, token) => {
@@ -53,7 +51,7 @@ export const verifyRecoveryCode = (recoveryCode, token) => {
         recovery_code: recoveryCode
     };
 
-    return postRawRequestFull(window.RECOVERY_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
+    return postRawRequest(window.RECOVERY_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 }
 
 export const cancelLogin = (token) => {

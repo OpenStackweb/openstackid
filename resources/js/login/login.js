@@ -408,9 +408,13 @@ class LoginPage extends React.Component {
 
     verify2FA(twoFactorCode, mfaMethod, trustDevice, this.props.token).then(
       (payload) => {
-        // Success: the backend redirected (302) and the XHR followed it; navigate the top
-        // window to the final destination to resume the normal redirect / OIDC flow.
-        window.location.href = payload.finalUrl || window.location.href;
+        // Success: the backend returns the same-origin post-login destination as JSON
+        // data (never a redirect for this XHR to follow) - a real top-level navigation
+        // to it lets the browser complete any further hop natively, cross-origin
+        // included, which this XHR never could.
+        const { response } = payload;
+        window.location.href =
+          (response && response.redirect_url) || window.location.href;
       },
       (error) => {
         this.handleMfaError(error, "twofactor");
@@ -495,7 +499,10 @@ class LoginPage extends React.Component {
 
     verifyRecoveryCode(recoveryCode, this.props.token).then(
       (payload) => {
-        window.location.href = payload.finalUrl || window.location.href;
+        // See onVerify2FA() for rationale.
+        const { response } = payload;
+        window.location.href =
+          (response && response.redirect_url) || window.location.href;
       },
       (error) => {
         this.handleMfaError(error, "recovery");

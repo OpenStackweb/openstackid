@@ -220,7 +220,13 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $response = $this->verify($code);
 
-        $this->assertResponseStatus(302);
+        // verify2FA returns the post-login destination as JSON data (not a raw redirect)
+        // so the caller's XHR never has to follow it itself - a real top-level navigation
+        // to redirect_url is what actually completes any further hop, cross-origin included.
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertIsString($payload['redirect_url'] ?? null);
+        $this->assertStringStartsWith('http', $payload['redirect_url']);
         $this->assertTrue(Auth::check());
 
         $admin = $this->user(self::ADMIN_EMAIL);
@@ -532,7 +538,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $code  = $this->latestOtpCode(self::ADMIN_EMAIL);
 
         $response = $this->verify($code, true);
-        $this->assertResponseStatus(302);
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertIsString($payload['redirect_url'] ?? null);
 
         EntityManager::clear();
         $devices = EntityManager::getRepository(UserTrustedDevice::class)->findBy(['user' => $admin->getId()]);
@@ -583,7 +591,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $response = $this->verify($code);
 
-        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
+        $this->assertEquals(200, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
         $this->assertTrue(Auth::check(), 'session must be established despite the audit failure');
     }
 
@@ -610,7 +618,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $response = $this->recovery($plain);
 
-        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
+        $this->assertEquals(200, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
         $this->assertTrue(Auth::check(), 'session must be established despite the audit failure');
     }
 
@@ -633,7 +641,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $response = $this->verify($code, true); // trust_device = true
 
-        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort device-trust failure must not fail the login');
+        $this->assertEquals(200, $response->getStatusCode(), 'a best-effort device-trust failure must not fail the login');
         $this->assertTrue(Auth::check(), 'session must be established despite the device-trust failure');
         $this->assertNull(Session::get('2fa_pending_user_id'), 'pending MFA state must be cleared even when device-trust enrollment fails');
     }
@@ -651,7 +659,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
         $response = $this->recovery($plain);
 
-        $this->assertResponseStatus(302);
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertIsString($payload['redirect_url'] ?? null);
         $this->assertTrue(Auth::check());
 
         EntityManager::clear();
