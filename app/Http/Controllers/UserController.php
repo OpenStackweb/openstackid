@@ -831,12 +831,19 @@ final class UserController extends OpenIdController
             $strategy->clearPendingState();
             $this->clearMFAUISessionState();
 
-            $this->two_factor_audit_service->log(
-                $user,
-                TwoFactorAuditLog::EventRecoveryUsed,
-                TwoFactorAuditLog::MethodRecovery,
-                IPHelper::getUserIp()
-            );
+            // Best-effort: the recovery code is already redeemed and the session
+            // established, so an audit-logging failure must not 500 the user
+            // (which would strand them after burning their last-resort code).
+            try {
+                $this->two_factor_audit_service->log(
+                    $user,
+                    TwoFactorAuditLog::EventRecoveryUsed,
+                    TwoFactorAuditLog::MethodRecovery,
+                    IPHelper::getUserIp()
+                );
+            } catch (Exception $ex) {
+                Log::warning($ex);
+            }
 
             return $this->login_strategy->postLogin();
         } catch (ValidationException $ex) {
