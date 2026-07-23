@@ -446,13 +446,20 @@ final class AuthService extends AbstractService implements IAuthService
         if (!$user->canLogin())
             throw new AuthenticationException("User is not active or cannot login.");
 
+        // Auth::login() first: Laravel's SessionGuard::login() already
+        // regenerates the session ID internally (session->migrate(true)),
+        // closing the pre-auth session-fixation window. Principal bookkeeping
+        // runs AFTER so register()'s op_browser_state hash (used for OIDC
+        // Session Management) is derived from the FINAL id, not one that
+        // Auth::login() is about to invalidate.
+        Auth::login($user, $remember);
+
         $this->principal_service->clear();
         $this->principal_service->register
         (
             $user->getId(),
             time()
         );
-        Auth::login($user, $remember);
     }
 
     /**

@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Services\OAuth2\PrincipalService;
 use Strategies\ILoginStrategy;
 
 /**
@@ -292,6 +293,35 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_session_expired', $payload['error_code']);
+    }
+
+    // -------------------------------------------------------------------------
+    // session security (SDS idp-mfa.md §9.3: session fixation)
+    //
+    // Session-fixation protection itself is already provided by Laravel's
+    // SessionGuard::login() (session->migrate(true), called via Auth::login()
+    // inside loginUser()) - not something this branch needs to add. What
+    // AuthServiceLoginUserTest and the test below actually cover is the
+    // ordering bug this investigation found: PrincipalService::register()
+    // must run AFTER Auth::login(), not before, or its op_browser_state hash
+    // is computed from a session ID Auth::login() is about to invalidate.
+    // -------------------------------------------------------------------------
+
+    public function testCompletedMFALoginKeepsOPBrowserStateConsistentWithSessionId(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+        $this->verify($code);
+
+        // PrincipalService::register() hashes the session ID into
+        // op_browser_state (OIDC Session Management). If it ran BEFORE
+        // Auth::login()'s internal session->migrate(true), this would be a
+        // hash of the id Auth::login() was about to invalidate instead.
+        $this->assertSame(
+            hash('sha256', Session::getId()),
+            Session::get(PrincipalService::OPBrowserState),
+            'op_browser_state must be derived from the post-regeneration session ID'
+        );
     }
 
     // -------------------------------------------------------------------------
