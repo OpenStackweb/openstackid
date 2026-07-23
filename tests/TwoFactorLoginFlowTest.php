@@ -24,9 +24,11 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
+use Auth\Repositories\IUserRecoveryCodeRepository;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Models\OAuth2\Client;
 use Services\OAuth2\PrincipalService;
@@ -358,6 +360,106 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
             $otp->isRedeemed(),
             'a failure inside the verify transaction must roll back the OTP redeem, not persist it'
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // concurrency: pessimistic-lock proof for OTP / recovery-code redemption
+    //
+    // refreshExclusiveLock() (EmailOTPMFAChallengeStrategy::verifyChallenge,
+    // AbstractMFAChallengeStrategy::verifyRecoveryCode) exists specifically to
+    // close a check-then-redeem TOCTOU race between two concurrent requests.
+    // testOTPCodeRejectsReuseAfterSuccessfulVerification / testRecoveryCodeRejects
+    // ReuseAfterTransactionCommit above only prove SEQUENTIAL reuse is rejected.
+    // These tests prove the row lock the production code acquires actually
+    // blocks a second, independent physical DB connection while held.
+    // -------------------------------------------------------------------------
+
+    public function testOTPRedeemRowLockBlocksConcurrentConnection(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        /** @var IOAuth2OTPRepository $otpRepo */
+        $otpRepo = App::make(IOAuth2OTPRepository::class);
+        $otp = $otpRepo->getByValue($code);
+        $this->assertNotNull($otp);
+
+        $this->assertLockBlocksSecondConnection(
+            'oauth2_otp',
+            $otp->getId(),
+            fn() => $otpRepo->refreshExclusiveLock($otp)
+        );
+    }
+
+    public function testRecoveryCodeRowLockBlocksConcurrentConnection(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $plain = 'RECOVERY-LOCK-' . uniqid();
+        $codeId = $this->createRecoveryCode($admin, $plain, false);
+
+        /** @var IUserRecoveryCodeRepository $recoveryRepo */
+        $recoveryRepo = App::make(IUserRecoveryCodeRepository::class);
+        $recoveryCode = EntityManager::find(UserRecoveryCode::class, $codeId);
+        $this->assertNotNull($recoveryCode);
+
+        $this->assertLockBlocksSecondConnection(
+            'user_recovery_codes',
+            $codeId,
+            fn() => $recoveryRepo->refreshExclusiveLock($recoveryCode)
+        );
+    }
+
+    /**
+     * Proves that a PESSIMISTIC_WRITE lock acquired via $acquireLock (the same
+     * production method the MFA strategies call before redeeming) blocks a
+     * genuinely separate, concurrent physical DB connection from also locking
+     * that row - i.e. the fix actually closes the TOCTOU redemption race, not
+     * just rejects a sequential re-submission.
+     *
+     * $table is always an internal literal supplied by this test file, never
+     * external input, so interpolating it into the probe SQL below is safe.
+     */
+    private function assertLockBlocksSecondConnection(string $table, int $id, \Closure $acquireLock): void
+    {
+        $primary = EntityManager::getConnection();
+        $primary->beginTransaction();
+
+        try {
+            $acquireLock();
+
+            // Register a second connection under a distinct name so Laravel's
+            // DatabaseManager opens an independent physical connection instead
+            // of returning the already-cached primary one.
+            Config::set('database.connections.mfa_lock_test_secondary', Config::get('database.connections.openstackid'));
+            $secondary = DB::connection('mfa_lock_test_secondary');
+
+            $primaryConnId   = (int) $primary->executeQuery('SELECT CONNECTION_ID()')->fetchOne();
+            $secondaryConnId = (int) $secondary->selectOne('SELECT CONNECTION_ID() AS id')->id;
+            $this->assertNotSame(
+                $primaryConnId,
+                $secondaryConnId,
+                'test requires two independent physical DB connections to prove real lock contention'
+            );
+
+            $secondary->statement('SET SESSION innodb_lock_wait_timeout = 1');
+            $secondary->beginTransaction();
+
+            try {
+                $secondary->selectOne("SELECT id FROM {$table} WHERE id = ? FOR UPDATE", [$id]);
+                $this->fail('a second connection must not be able to lock a row already held by refreshExclusiveLock()');
+            } catch (\Illuminate\Database\QueryException $ex) {
+                $this->assertStringContainsStringIgnoringCase(
+                    'lock wait timeout',
+                    $ex->getMessage(),
+                    'the second connection must be blocked by the row lock, not fail for an unrelated reason'
+                );
+            } finally {
+                $secondary->rollBack();
+                DB::purge('mfa_lock_test_secondary');
+            }
+        } finally {
+            $primary->rollBack();
+        }
     }
 
     public function testExpiredMFASessionFails(): void
