@@ -49,6 +49,7 @@ const TwoFactorForm = ({
 
     const handleSubmit = (ev) => {
         ev.preventDefault();
+        if (expired) return;
         onVerify();
     };
 
@@ -116,7 +117,7 @@ const TwoFactorForm = ({
             </div>
             <div>
                 <Button variant="contained"
-                        disabled={disableInput || otpCode === ''}
+                        disabled={disableInput || otpCode === '' || expired}
                         color="primary"
                         type="submit"
                         target="_self">
