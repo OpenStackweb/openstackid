@@ -28,8 +28,12 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Models\OAuth2\Client;
 use Services\OAuth2\PrincipalService;
 use Strategies\ILoginStrategy;
+use Strategies\MFA\IMFAChallengeStrategy;
+use Strategies\MFA\MFAChallengeStrategyFactory;
+use Utils\Services\IAuthService;
 
 /**
  * Integration tests for the MFA-gated password login flow wired into UserController.
@@ -283,6 +287,77 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_invalid_recovery', $payload['error_code'],
             'recovery code reuse must be rejected because used_at was committed via the AuthService transaction');
+    }
+
+    public function testOTPRedeemRollsBackOnMidTransactionFailure(): void
+    {
+        // Ticket CU-86ba2zc6p TESTS list: "OTP redeem is persisted only on
+        // commit; a failure inside the verify transaction rolls back the
+        // redeem." Wraps the REAL strategy so the OTP genuinely gets redeemed
+        // mid-transaction, then injects a failure before the transaction
+        // (AuthService::verifyMFAChallenge) can commit.
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+        $admin = $this->user(self::ADMIN_EMAIL);
+
+        $realStrategy = MFAChallengeStrategyFactory::create(User::MFAMethod_OTP);
+        $faultyStrategy = new class($realStrategy) implements IMFAChallengeStrategy {
+            public function __construct(private IMFAChallengeStrategy $inner)
+            {
+            }
+
+            public function issueChallenge(User $user, ?Client $client, bool $remember): array
+            {
+                return $this->inner->issueChallenge($user, $client, $remember);
+            }
+
+            public function verifyChallenge(User $user, string $code, ?Client $client = null): void
+            {
+                $this->inner->verifyChallenge($user, $code, $client);
+                throw new \RuntimeException('Simulated mid-transaction failure after redeem');
+            }
+
+            public function resendChallenge(User $user, ?Client $client, bool $remember): array
+            {
+                return $this->inner->resendChallenge($user, $client, $remember);
+            }
+
+            public function getPendingState(): ?array
+            {
+                return $this->inner->getPendingState();
+            }
+
+            public function clearPendingState(): void
+            {
+                $this->inner->clearPendingState();
+            }
+
+            public function verifyRecoveryCode(User $user, string $code): void
+            {
+                $this->inner->verifyRecoveryCode($user, $code);
+            }
+        };
+
+        /** @var IAuthService $authService */
+        $authService = App::make(IAuthService::class);
+
+        try {
+            $authService->verifyMFAChallenge($admin, $faultyStrategy, $code);
+            $this->fail('Expected the simulated mid-transaction failure to propagate');
+        } catch (\RuntimeException $ex) {
+            $this->assertSame('Simulated mid-transaction failure after redeem', $ex->getMessage());
+        }
+
+        EntityManager::clear();
+        /** @var IOAuth2OTPRepository $otpRepo */
+        $otpRepo = App::make(IOAuth2OTPRepository::class);
+        $otp = $otpRepo->getByValue($code);
+
+        $this->assertNotNull($otp, 'the OTP row itself must still exist - only the redeem must roll back');
+        $this->assertFalse(
+            $otp->isRedeemed(),
+            'a failure inside the verify transaction must roll back the OTP redeem, not persist it'
+        );
     }
 
     public function testExpiredMFASessionFails(): void
