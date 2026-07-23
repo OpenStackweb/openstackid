@@ -126,6 +126,22 @@ class LoginPage extends React.Component {
     this.onUseRecovery = this.onUseRecovery.bind(this);
     this.onBackToOtp = this.onBackToOtp.bind(this);
     this.resetToPasswordFlow = this.resetToPasswordFlow.bind(this);
+    this.cancelPendingLogin = this.cancelPendingLogin.bind(this);
+  }
+
+  /**
+   * Best-effort server-side invalidation of the pending MFA challenge.
+   * The UI resets optimistically; if the request fails the user is told the
+   * pending verification will only die by its own TTL.
+   */
+  cancelPendingLogin() {
+    cancelLogin(this.props.token).catch((error) => {
+      console.error("cancelLogin failed", error);
+      this.showAlert(
+        "We couldn't cancel the pending verification on the server. It will expire on its own in a few minutes.",
+        "warning",
+      );
+    });
   }
 
   showAlert(message, severity) {
@@ -315,9 +331,7 @@ class LoginPage extends React.Component {
         password: "",
       },
     });
-    cancelLogin(this.props.token).catch((error) => {
-      console.error("cancelLogin failed", error);
-    });
+    this.cancelPendingLogin();
   }
 
   /**
@@ -643,9 +657,7 @@ class LoginPage extends React.Component {
       // A pending 2FA/recovery challenge was issued server-side (session
       // 2fa_pending_user_id + an unredeemed OTP); invalidate it the same
       // way "Cancel" does instead of leaving it live until its TTL.
-      cancelLogin(this.props.token).catch((error) => {
-        console.error("cancelLogin failed", error);
-      });
+      this.cancelPendingLogin();
     }
     this.setState({
       ...this.state,
