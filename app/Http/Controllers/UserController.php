@@ -531,6 +531,21 @@ final class UserController extends OpenIdController
                             Session::put('flow', IAuthService::AuthenticationFlowMFA);
                             Session::put('mfa_method', $method);
 
+                            // The password step now submits as a native form POST, so this
+                            // response is a fresh page load, not a client-side transition -
+                            // without these, the React app remounts with no identity state
+                            // at all (no chip, and Cancel/session-expiry can't return to the
+                            // password screen because it looks like the user was never
+                            // verified). Same fields/getters as the AuthenticationException
+                            // errorLogin() branch below.
+                            $payload = array_merge($payload, [
+                                'username'       => $username,
+                                'user_fullname'  => $user->getFullName(),
+                                'user_pic'       => $user->getPic(),
+                                'user_verified'  => true,
+                                'user_is_active' => $user->isActive() ? 1 : 0,
+                            ]);
+
                             return $this->login_strategy->challengeRequired($payload);
                         }
 

@@ -295,11 +295,7 @@ class LoginPage extends React.Component {
       authFlow: FLOW.PASSWORD,
       disableInput: false,
       twoFactorCode: "",
-      user_name: "",
       user_password: "",
-      user_pic: "",
-      user_fullname: "",
-      user_verified: false,
       recoveryCode: "",
       trustDevice: false,
       errors: {
