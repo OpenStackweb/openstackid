@@ -55,7 +55,7 @@ Route::group(array('middleware' => ['ssl']), function () {
                 Route::post('resend',   ['middleware' => ['csrf', '2fa.rate:resend'],   'uses' => 'UserController@resend2FA']);
             });
             Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
-            Route::get('cancel', "UserController@cancelLogin");
+            Route::post('cancel', ['middleware' => 'csrf', 'uses' => 'UserController@cancelLogin']);
             Route::group(array('prefix' => '{provider}'), function () {
                 Route::get('', 'SocialLoginController@redirect')->name("social_login");
                 Route::any('callback','SocialLoginController@callback')->name("social_login_callback");

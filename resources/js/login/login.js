@@ -311,7 +311,9 @@ class LoginPage extends React.Component {
         password: "",
       },
     });
-    cancelLogin(this.props.token);
+    cancelLogin(this.props.token).catch((error) => {
+      console.error("cancelLogin failed", error);
+    });
   }
 
   /**

@@ -778,7 +778,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
     private function cancelLogin()
     {
-        return $this->action('GET', 'UserController@cancelLogin');
+        return $this->action('POST', 'UserController@cancelLogin', [
+            '_token' => Session::token(),
+        ]);
     }
 
     private function emitOTP(string $username)
