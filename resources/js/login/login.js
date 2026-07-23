@@ -631,6 +631,14 @@ class LoginPage extends React.Component {
 
   handleDelete(ev) {
     ev.preventDefault();
+    if (this.isMfaFlow()) {
+      // A pending 2FA/recovery challenge was issued server-side (session
+      // 2fa_pending_user_id + an unredeemed OTP); invalidate it the same
+      // way "Cancel" does instead of leaving it live until its TTL.
+      cancelLogin(this.props.token).catch((error) => {
+        console.error("cancelLogin failed", error);
+      });
+    }
     this.setState({
       ...this.state,
       user_name: null,
