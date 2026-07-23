@@ -93,7 +93,10 @@
             config.otpLength = {{Session::get("otp_length")}};
         @endif
         @if(Session::has('otp_lifetime'))
-            config.otpLifetime = {{Session::get("otp_lifetime")}};
+            {{-- Seed the countdown with the REMAINING lifetime: on a mid-challenge
+                 refresh the full TTL would overstate how long the code is valid and
+                 let the user burn rate-limited attempts on a server-expired code. --}}
+            config.otpLifetime = {{ max(0, intval(Session::get("otp_lifetime")) - (Session::has("otp_issued_at") ? time() - intval(Session::get("otp_issued_at")) : 0)) }};
         @endif
 
         window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;

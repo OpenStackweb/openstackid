@@ -98,8 +98,36 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertSame('2fa', Session::get('flow'), 'a refresh mid-challenge must restore the 2FA screen, not the password form');
         $this->assertNotNull(Session::get('otp_length'));
         $this->assertNotNull(Session::get('otp_lifetime'));
+        $this->assertNotNull(Session::get('otp_issued_at'), 'the issuance timestamp must be restorable so a refresh can seed the countdown with the REMAINING lifetime');
         $this->assertSame(User::MFAMethod_OTP, Session::get('mfa_method'), 'a refresh must restore the screen for the method actually challenged, not a hardcoded default');
         $this->assertSame(ILoginStrategy::MFA_REQUIRED, Session::get('error_code'), 'must match what DisplayResponseJsonStrategy sends native clients in its JSON body');
+    }
+
+    public function testRefreshMidChallengeSeedsCountdownWithRemainingLifetime(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $lifetime = intval(Session::get('otp_lifetime'));
+        $this->assertGreaterThan(0, $lifetime);
+
+        // Simulate a refresh 100 seconds into the challenge.
+        Session::put('otp_issued_at', time() - 100);
+
+        $response = $this->action('GET', 'UserController@getLogin');
+        $this->assertResponseOk();
+
+        $this->assertSame(
+            1,
+            preg_match('/config\.otpLifetime = (\d+);/', $response->getContent(), $matches),
+            'the login page must seed the countdown from session state'
+        );
+        $remaining = intval($matches[1]);
+        // The countdown must be seeded with the REMAINING lifetime (~lifetime - 100),
+        // not restart at the full TTL - otherwise the UI overstates how long the
+        // code is valid and lets the user burn rate-limited attempts on a
+        // server-expired code. +/-2s tolerance for clock ticks between requests.
+        $this->assertLessThanOrEqual($lifetime - 98, $remaining);
+        $this->assertGreaterThanOrEqual($lifetime - 102, $remaining);
     }
 
     public function testSuccessfulVerificationClearsUIState(): void
@@ -112,6 +140,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('flow'), 'completed challenge must not leave the 2FA screen re-derivable from a stale refresh');
         $this->assertNull(Session::get('otp_length'));
         $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('otp_issued_at'));
         $this->assertNull(Session::get('mfa_method'));
         $this->assertNull(Session::get('error_code'));
         // Identity/display fields written by postLogin()'s challengeRequired()
@@ -206,6 +235,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('mfa_method'));
         $this->assertNull(Session::get('otp_length'));
         $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('otp_issued_at'));
         // Identity/display fields written by postLogin()'s challengeRequired()
         // payload must not survive cancel either - otherwise a later visitor
         // on the same browser session inherits the cancelled attempt's identity.

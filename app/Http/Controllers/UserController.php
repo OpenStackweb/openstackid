@@ -942,6 +942,9 @@ final class UserController extends OpenIdController
             if (isset($payload['otp_lifetime'])) {
                 Session::put('otp_lifetime', $payload['otp_lifetime']);
             }
+            if (isset($payload['otp_issued_at'])) {
+                Session::put('otp_issued_at', $payload['otp_issued_at']);
+            }
 
             // Best-effort: the challenge was already re-issued and the OTP
             // sent, so an audit-logging failure must not 500 the user out of
@@ -990,6 +993,7 @@ final class UserController extends OpenIdController
         Session::forget('mfa_method');
         Session::forget('otp_length');
         Session::forget('otp_lifetime');
+        Session::forget('otp_issued_at');
         Session::forget('error_code');
         // Identity/display fields written by postLogin()'s challengeRequired()
         // payload (needed only to hydrate the React app on the initial

@@ -29,8 +29,11 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
         ], $client);
 
         return [
-            'otp_length'   => $otp->getLength(),
-            'otp_lifetime' => $otp->getLifetime(),
+            'otp_length'    => $otp->getLength(),
+            'otp_lifetime'  => $otp->getLifetime(),
+            // Same source isAlive()/getRemainingLifetime() use server-side, so a
+            // UI countdown seeded from it can never drift from the actual expiry check.
+            'otp_issued_at' => $otp->getCreatedAt()?->getTimestamp() ?? time(),
         ];
     }
 
