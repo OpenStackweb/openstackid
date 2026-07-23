@@ -30,9 +30,10 @@ final class MFAGateService implements ITwoFactorGateService
 
     public function requiresChallenge(User $user, ?string $cookieToken): bool
     {
-        if (!config('two_factor.enabled', true)) {
-            return false;
-        }
+        // shouldRequire2FA() is the single source of truth for enforcement,
+        // including the global kill-switch (config('two_factor.enabled'),
+        // SDS idp-mfa.md §10.1) - so the passwordless-login guard, which also
+        // calls shouldRequire2FA(), stays consistent with this gate.
         if (!$user->shouldRequire2FA()) {
             return false;
         }

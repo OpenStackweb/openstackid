@@ -163,6 +163,26 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertTrue(Auth::check(), 'passwordless login must keep working unchanged for non-enforced users');
     }
 
+    public function testEnforcedUserCanUsePasswordlessWhenTwoFactorGloballyDisabled(): void
+    {
+        // Kill-switch (SDS idp-mfa.md §10.1): with 2FA globally disabled, the
+        // passwordless-login enforcement block must NOT fire - an enforced admin
+        // can log in passwordless again, matching "revert to password-only login".
+        // Regression guard for the gap where the block called shouldRequire2FA()
+        // without honoring config('two_factor.enabled').
+        Config::set('two_factor.enabled', false);
+
+        $this->emitOTP(self::ADMIN_EMAIL);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $this->postLoginOTP(self::ADMIN_EMAIL, $code);
+
+        $this->assertTrue(
+            Auth::check(),
+            'with the kill-switch off, passwordless login must not be blocked for an enforced admin'
+        );
+    }
+
     // -------------------------------------------------------------------------
     // cancelLogin
     // -------------------------------------------------------------------------

@@ -2428,11 +2428,17 @@ SQL;
     /**
      * Whether this user is required to complete 2FA to sign in.
      *
-     * A user is required when they belong to any of the groups listed in
-     * config('two_factor.enforced_groups'); otherwise the stored flag applies.
+     * The global kill-switch is honored first: when config('two_factor.enabled')
+     * is false the whole 2FA gate is inactive (SDS idp-mfa.md §10.1), so no user
+     * is required regardless of role or preference. Otherwise a user is required
+     * when they belong to any of the groups listed in
+     * config('two_factor.enforced_groups'); failing that, the stored flag applies.
      */
     public function shouldRequire2FA(): bool
     {
+        if (!config('two_factor.enabled', true)) {
+            return false;
+        }
         $enforcedGroups = config('two_factor.enforced_groups', []);
         foreach ($enforcedGroups as $slug) {
             if($this->belongToGroup($slug)) {
