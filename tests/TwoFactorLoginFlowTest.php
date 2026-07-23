@@ -114,6 +114,14 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('otp_lifetime'));
         $this->assertNull(Session::get('mfa_method'));
         $this->assertNull(Session::get('error_code'));
+        // Identity/display fields written by postLogin()'s challengeRequired()
+        // payload must not survive a completed login either - otherwise a
+        // later visitor on the same browser session inherits this identity.
+        $this->assertNull(Session::get('username'));
+        $this->assertNull(Session::get('user_fullname'));
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_verified'));
+        $this->assertNull(Session::get('user_is_active'));
     }
 
     public function testNonAdminWithoutMFALogsInNormally(): void
@@ -198,6 +206,14 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('mfa_method'));
         $this->assertNull(Session::get('otp_length'));
         $this->assertNull(Session::get('otp_lifetime'));
+        // Identity/display fields written by postLogin()'s challengeRequired()
+        // payload must not survive cancel either - otherwise a later visitor
+        // on the same browser session inherits the cancelled attempt's identity.
+        $this->assertNull(Session::get('username'));
+        $this->assertNull(Session::get('user_fullname'));
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_verified'));
+        $this->assertNull(Session::get('user_is_active'));
 
         // The strongest proof: the OTP issued before cancel must no longer
         // complete a login. If pending state survived cancel, this would

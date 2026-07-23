@@ -991,6 +991,16 @@ final class UserController extends OpenIdController
         Session::forget('otp_length');
         Session::forget('otp_lifetime');
         Session::forget('error_code');
+        // Identity/display fields written by postLogin()'s challengeRequired()
+        // payload (needed only to hydrate the React app on the initial
+        // post-redirect GET /login mount) - must not survive cancel/verify
+        // success/session-expiry, or a later visitor on the same browser
+        // session inherits the previous attempt's identity.
+        Session::forget('username');
+        Session::forget('user_fullname');
+        Session::forget('user_pic');
+        Session::forget('user_verified');
+        Session::forget('user_is_active');
     }
 
     /**
