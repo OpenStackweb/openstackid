@@ -12,9 +12,8 @@
  * limitations under the License.
  **/
 
+use App\Services\Auth\ITwoFactorRateLimitService;
 use Closure;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
@@ -23,9 +22,10 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Class TwoFactorRateLimitMiddleware
  *
- * Throttles the MFA verify / recovery / resend endpoints. Counters are stored in
- * the cache (NOT the session) so they survive session cleanup and keep an
- * independent, fixed-window TTL.
+ * Throttles the MFA verify / recovery / resend endpoints. Counter state and
+ * window logic live in ITwoFactorRateLimitService (shared with
+ * UserController::postLogin(), whose initial challenge issuance counts
+ * against the same resend window - SDS idp-mfa.md §4.12).
  *
  *  - verify / recovery: increment ONLY on a failed response.
  *  - resend:            increment on EVERY request.
@@ -34,10 +34,6 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
  */
 final class TwoFactorRateLimitMiddleware
 {
-    public const ActionVerify   = 'verify';
-    public const ActionRecovery = 'recovery';
-    public const ActionResend   = 'resend';
-
     private const PENDING_USER_KEY = '2fa_pending_user_id';
 
     /**
@@ -48,13 +44,17 @@ final class TwoFactorRateLimitMiddleware
         'mfa_invalid_recovery',
     ];
 
+    public function __construct(private readonly ITwoFactorRateLimitService $rate_limit_service)
+    {
+    }
+
     /**
      * @param \Illuminate\Http\Request $request
      * @param Closure $next
      * @param string $action one of verify|recovery|resend
      * @return mixed
      */
-    public function handle($request, Closure $next, string $action = self::ActionVerify)
+    public function handle($request, Closure $next, string $action = ITwoFactorRateLimitService::ActionVerify)
     {
         $userId = Session::get(self::PENDING_USER_KEY);
 
@@ -64,15 +64,14 @@ final class TwoFactorRateLimitMiddleware
             return $next($request);
         }
 
-        [$maxAttempts, $windowSeconds] = $this->limitsFor($action);
-        $key = $this->cacheKey($action, $userId);
+        $userId = (int) $userId;
 
-        if ((int) Cache::get($key, 0) >= $maxAttempts) {
+        if ($this->rate_limit_service->isRateLimited($action, $userId)) {
             Log::debug(sprintf("TwoFactorRateLimitMiddleware: action %s user %s rate limited", $action, $userId));
             return Response::json(
                 [
-                    'error_code'    => 'mfa_rate_limit',
-                    'error_message' => 'Too many attempts. Please try again later.',
+                    'error_code'    => ITwoFactorRateLimitService::RATE_LIMIT_ERROR_CODE,
+                    'error_message' => ITwoFactorRateLimitService::RATE_LIMIT_MESSAGE,
                 ],
                 HttpResponse::HTTP_TOO_MANY_REQUESTS
             );
@@ -80,48 +79,13 @@ final class TwoFactorRateLimitMiddleware
 
         $response = $next($request);
 
-        if ($action === self::ActionResend) {
-            $this->increment($key, $windowSeconds);
+        if ($action === ITwoFactorRateLimitService::ActionResend) {
+            $this->rate_limit_service->increment($action, $userId);
         } else if ($this->isFailure($response)) {
-            $this->increment($key, $windowSeconds);
+            $this->rate_limit_service->increment($action, $userId);
         }
 
         return $response;
-    }
-
-    /**
-     * @param string $action
-     * @return array{0:int,1:int} [maxAttempts, windowSeconds]
-     */
-    private function limitsFor(string $action): array
-    {
-        if ($action === self::ActionResend) {
-            return [
-                (int) Config::get('two_factor.rate_limit.max_otp_requests', 5),
-                (int) Config::get('two_factor.rate_limit.otp_window_minutes', 15) * 60,
-            ];
-        }
-
-        return [
-            (int) Config::get('two_factor.rate_limit.max_attempts', 3),
-            (int) Config::get('two_factor.rate_limit.window_seconds', 900),
-        ];
-    }
-
-    private function cacheKey(string $action, $userId): string
-    {
-        return sprintf('2fa_rate:%s:%s', $action, $userId);
-    }
-
-    /**
-     * Increment within a fixed window: add() sets the TTL once (only if the key
-     * is absent), increment() bumps the value while preserving that TTL, so the
-     * window starts at the first hit and does not slide.
-     */
-    private function increment(string $key, int $windowSeconds): void
-    {
-        Cache::add($key, 0, $windowSeconds);
-        Cache::increment($key);
     }
 
     /**

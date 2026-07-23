@@ -486,6 +486,28 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertSame('mfa_rate_limit', $payload['error_code']);
     }
 
+    public function testInitialChallengeIssuanceCountsAgainstResendRateLimitWindow(): void
+    {
+        // SDS idp-mfa.md §4.12: "The initial OTP issuance during postLogin()
+        // shares the 2fa_rate:resend:{user_id} cache key, ensuring the first
+        // challenge counts against the same 5-request issuance window as
+        // subsequent resends." Each postLogin() call re-issues a challenge and
+        // must count against that SAME window.
+        $max = (int) Config::get('two_factor.rate_limit.max_otp_requests');
+        for ($i = 0; $i < $max; $i++) {
+            $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        }
+
+        $response = $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        // Rate-limited postLogin() must reuse errorLogin(), not the JSON
+        // contract resend()/verify() use - the password form still submits
+        // as a native form POST.
+        $this->assertResponseStatus(302, 'must redirect like every other login outcome, not return JSON');
+        $this->assertStringContainsString('Too many attempts', Session::get('flash_notice'));
+        $this->assertFalse(Auth::check());
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------

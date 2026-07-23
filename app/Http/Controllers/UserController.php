@@ -23,6 +23,7 @@ use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\ITwoFactorAuditService;
 use App\Services\Auth\ITwoFactorGateService;
+use App\Services\Auth\ITwoFactorRateLimitService;
 use Auth\User;
 use Models\OAuth2\Client;
 use Strategies\MFA\MFAChallengeStrategyFactory;
@@ -158,6 +159,11 @@ final class UserController extends OpenIdController
     private $mfa_gate_service;
 
     /**
+     * @var ITwoFactorRateLimitService
+     */
+    private $two_factor_rate_limit_service;
+
+    /**
      * @param IMementoOpenIdSerializerService $openid_memento_service
      * @param IMementoOAuth2SerializerService $oauth2_memento_service
      * @param IAuthService $auth_service
@@ -196,6 +202,7 @@ final class UserController extends OpenIdController
         IDeviceTrustService $device_trust_service,
         ITwoFactorAuditService $two_factor_audit_service,
         ITwoFactorGateService $mfa_gate_service,
+        ITwoFactorRateLimitService $two_factor_rate_limit_service,
     )
     {
         $this->openid_memento_service = $openid_memento_service;
@@ -216,6 +223,7 @@ final class UserController extends OpenIdController
         $this->device_trust_service = $device_trust_service;
         $this->two_factor_audit_service = $two_factor_audit_service;
         $this->mfa_gate_service = $mfa_gate_service;
+        $this->two_factor_rate_limit_service = $two_factor_rate_limit_service;
 
         $this->middleware(function ($request, $next) use($login_hint_process_strategy){
 
@@ -486,11 +494,23 @@ final class UserController extends OpenIdController
                         $cookieToken = $this->getCookieToken();
 
                         if ($this->mfa_gate_service->requiresChallenge($user, $cookieToken)) {
+                            // Initial issuance shares the resend rate-limit window
+                            // (SDS idp-mfa.md §4.12) - without this, this route
+                            // would be an unthrottled way to mail-bomb the account
+                            // owner with OTP codes.
+                            if ($this->two_factor_rate_limit_service->isRateLimited(
+                                ITwoFactorRateLimitService::ActionResend,
+                                $user->getId()
+                            )) {
+                                throw new AuthenticationException(ITwoFactorRateLimitService::RATE_LIMIT_MESSAGE);
+                            }
+
                             // Issue a challenge and stop short of session creation.
                             $client   = $this->resolveClientFromMemento();
                             $method   = $user->getTwoFactorMethod();
                             $strategy = MFAChallengeStrategyFactory::create($method);
                             $payload = $this->auth_service->issueMFAChallenge($user, $strategy, $client, $remember);
+                            $this->two_factor_rate_limit_service->increment(ITwoFactorRateLimitService::ActionResend, $user->getId());
 
                             $this->two_factor_audit_service->log(
                                 $user,
