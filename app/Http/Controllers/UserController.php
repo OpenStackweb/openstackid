@@ -512,12 +512,19 @@ final class UserController extends OpenIdController
                             $payload = $this->auth_service->issueMFAChallenge($user, $strategy, $client, $remember);
                             $this->two_factor_rate_limit_service->increment(ITwoFactorRateLimitService::ActionResend, $user->getId());
 
-                            $this->two_factor_audit_service->log(
-                                $user,
-                                TwoFactorAuditLog::EventChallengeIssued,
-                                $method,
-                                IPHelper::getUserIp()
-                            );
+                            // Best-effort: the challenge was already issued and the OTP
+                            // sent, so an audit-logging failure must not 500 the user
+                            // out of the mfa_required response they need to proceed.
+                            try {
+                                $this->two_factor_audit_service->log(
+                                    $user,
+                                    TwoFactorAuditLog::EventChallengeIssued,
+                                    $method,
+                                    IPHelper::getUserIp()
+                                );
+                            } catch (\Throwable $ex) {
+                                Log::warning($ex);
+                            }
 
                             // Restore-on-refresh: a subsequent GET /login can rehydrate
                             // the 2FA screen from session instead of dropping back to the
@@ -729,12 +736,19 @@ final class UserController extends OpenIdController
                 // Re-fetch user: the tx wrapper closed/reset the EM on failure, detaching the entity.
                 $userId = (int) $pending['user_id'];
                 $user = $this->auth_service->getUserById($userId) ?? $user;
-                $this->two_factor_audit_service->log(
-                    $user,
-                    TwoFactorAuditLog::EventChallengeFailed,
-                    $method,
-                    IPHelper::getUserIp()
-                );
+                // Best-effort: an audit-logging failure here must not turn a
+                // clean 401 into a 500 (which would also drop the error_code
+                // the rate-limit middleware keys its failure count on).
+                try {
+                    $this->two_factor_audit_service->log(
+                        $user,
+                        TwoFactorAuditLog::EventChallengeFailed,
+                        $method,
+                        IPHelper::getUserIp()
+                    );
+                } catch (\Throwable $auditEx) {
+                    Log::warning($auditEx);
+                }
                 return Response::json(['error_code' => 'mfa_verification_failed'], HttpResponse::HTTP_UNAUTHORIZED);
             }
 
@@ -748,7 +762,7 @@ final class UserController extends OpenIdController
                 // burned OTP). Log and continue; the device just isn't remembered.
                 try {
                     $this->queueDeviceTrustCookie($user);
-                } catch (Exception $ex) {
+                } catch (\Throwable $ex) {
                     Log::warning($ex);
                 }
             }
@@ -763,7 +777,7 @@ final class UserController extends OpenIdController
                     $method,
                     IPHelper::getUserIp()
                 );
-            } catch (Exception $ex) {
+            } catch (\Throwable $ex) {
                 Log::warning($ex);
             }
 
@@ -818,12 +832,17 @@ final class UserController extends OpenIdController
                 // Re-fetch user: the tx wrapper closed/reset the EM on failure, detaching the entity.
                 $userId = (int) $pending['user_id'];
                 $user = $this->auth_service->getUserById($userId) ?? $user;
-                $this->two_factor_audit_service->log(
-                    $user,
-                    TwoFactorAuditLog::EventChallengeFailed,
-                    TwoFactorAuditLog::MethodRecovery,
-                    IPHelper::getUserIp()
-                );
+                // Best-effort: see verify2FA() for rationale.
+                try {
+                    $this->two_factor_audit_service->log(
+                        $user,
+                        TwoFactorAuditLog::EventChallengeFailed,
+                        TwoFactorAuditLog::MethodRecovery,
+                        IPHelper::getUserIp()
+                    );
+                } catch (\Throwable $auditEx) {
+                    Log::warning($auditEx);
+                }
                 return Response::json(['error_code' => 'mfa_invalid_recovery'], HttpResponse::HTTP_UNAUTHORIZED);
             }
 
@@ -841,7 +860,7 @@ final class UserController extends OpenIdController
                     TwoFactorAuditLog::MethodRecovery,
                     IPHelper::getUserIp()
                 );
-            } catch (Exception $ex) {
+            } catch (\Throwable $ex) {
                 Log::warning($ex);
             }
 
@@ -899,12 +918,19 @@ final class UserController extends OpenIdController
                 Session::put('otp_lifetime', $payload['otp_lifetime']);
             }
 
-            $this->two_factor_audit_service->log(
-                $user,
-                TwoFactorAuditLog::EventChallengeIssued,
-                $method,
-                IPHelper::getUserIp()
-            );
+            // Best-effort: the challenge was already re-issued and the OTP
+            // sent, so an audit-logging failure must not 500 the user out of
+            // the payload they need to complete verification.
+            try {
+                $this->two_factor_audit_service->log(
+                    $user,
+                    TwoFactorAuditLog::EventChallengeIssued,
+                    $method,
+                    IPHelper::getUserIp()
+                );
+            } catch (\Throwable $ex) {
+                Log::warning($ex);
+            }
 
             return $this->ok($payload);
         } catch (ValidationException $ex) {
