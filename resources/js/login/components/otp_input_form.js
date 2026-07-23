@@ -1,10 +1,10 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import Button from "@material-ui/core/Button";
 import Link from "@material-ui/core/Link";
-import OtpInput from "react-otp-input";
+import OtpCodeInput from "./otp_code_input";
+import useOtpCountdown from "./use_otp_countdown";
 import styles from "../login.module.scss";
-import HTMLRender from "../../shared/HTMLRender";
 
 const OTPInputForm = ({
   disableInput,
@@ -13,6 +13,8 @@ const OTPInputForm = ({
   otpCode,
   otpError,
   otpLength,
+  otpLifetime,
+  codeVersion,
   onCodeChange,
   userNameValue,
   csrfToken,
@@ -25,8 +27,16 @@ const OTPInputForm = ({
   loginAttempts,
 }) => {
   const showCaptcha = shouldShowCaptcha();
+  const { secondsLeft, expired } = useOtpCountdown(otpLifetime ?? 0, codeVersion);
+  // The countdown only renders when this page view knows when the code was
+  // issued (a fresh emitOTP in this session). After a failed-submit page
+  // reload the issuance time is unknown - showing a fresh full countdown
+  // would overstate the code's validity, so none is shown.
+  const countdownActive = otpLifetime != null && otpLifetime > 0;
+  const blockExpired = countdownActive && expired;
+
   const handleSubmit = (ev) => {
-    if (!onAuthenticate(ev.target))
+    if (blockExpired || !onAuthenticate(ev.target))
     {
       ev.preventDefault();
     }
@@ -40,32 +50,20 @@ const OTPInputForm = ({
       target="_self"
       className={styles.otp_form}
     >
-      <div className={styles.subtitle}>
-        Enter the single-use code sent to your email:
-      </div>
-      <div className={styles.code_input}>
-        <OtpInput
-          id="otp_code"
-          value={otpCode}
-          onChange={onCodeChange}
-          numInputs={otpLength}
-          inputType="tel"
-          renderInput={(props) => <input {...props} />}
-          shouldAutoFocus={true}
-          hasErrored={!!otpError}
-          errorStyle={{ border: "1px solid #e5424d" }}
-          data-testid="otp_code"
-        />
-      </div>
-      {otpError && (
-        <HTMLRender component="p" className={styles.error_label}>
-          {otpError}
-        </HTMLRender>
-      )}
+      <OtpCodeInput
+        id="otp_code"
+        otpCode={otpCode}
+        otpError={otpError}
+        otpLength={otpLength}
+        onCodeChange={onCodeChange}
+        countdownActive={countdownActive}
+        secondsLeft={secondsLeft}
+        expired={expired}
+      />
       <div>
         <Button
           variant="contained"
-          disabled={disableInput}
+          disabled={disableInput || blockExpired}
           color="primary"
           type="submit"
           target="_self"

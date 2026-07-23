@@ -81,6 +81,11 @@ class LoginPage extends React.Component {
       twoFactorCode: "",
       recoveryCode: "",
       codeVersion: 0,
+      // Lifetime of the passwordless OTP emitted in THIS page view (from the
+      // emitOTP response). Stays null on a restored view (e.g. failed-submit
+      // reload) where the issuance time is unknown - the form then renders no
+      // countdown rather than a misleading fresh one.
+      passwordlessLifetime: null,
     };
 
     if (props.authError != "" && !this.state.user_fullname) {
@@ -151,6 +156,9 @@ class LoginPage extends React.Component {
           },
           user_verified: true,
           user_fullname: user_fullname,
+          // A fresh code was just issued: seed/reset its expiry countdown.
+          passwordlessLifetime: response?.otp_lifetime ?? null,
+          codeVersion: this.state.codeVersion + 1,
         });
       },
       (error) => {
@@ -846,6 +854,8 @@ class LoginPage extends React.Component {
                   otpCode={this.state.otpCode}
                   otpError={this.state.errors.otp}
                   otpLength={this.props.otpLength}
+                  otpLifetime={this.state.passwordlessLifetime}
+                  codeVersion={this.state.codeVersion}
                   userNameValue={this.state.user_name}
                   csrfToken={this.props.token}
                   captchaPublicKey={this.props.captchaPublicKey}

@@ -3,10 +3,9 @@ import Button from '@material-ui/core/Button';
 import Link from '@material-ui/core/Link';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
-import OtpInput from 'react-otp-input';
-import {formatTime} from '../../utils';
+import OtpCodeInput from './otp_code_input';
+import useOtpCountdown from './use_otp_countdown';
 import styles from '../login.module.scss';
-import HTMLRender from '../../shared/HTMLRender';
 
 // Cooldown applied to the resend action to avoid hammering the resend endpoint
 // (the backend also rate-limits server-side).
@@ -28,24 +27,16 @@ const TwoFactorForm = ({
                            disableInput
                        }) => {
 
-    const [secondsLeft, setSecondsLeft] = useState(otpLifetime || 0);
+    const {secondsLeft, expired} = useOtpCountdown(otpLifetime, codeVersion);
     const [cooldown, setCooldown] = useState(0);
 
-    // Reset the expiry countdown whenever a fresh code is issued (initial render or resend).
-    useEffect(() => {
-        setSecondsLeft(otpLifetime || 0);
-    }, [otpLifetime, codeVersion]);
-
-    // Single 1s ticker drives both the code-expiry countdown and the resend cooldown.
+    // 1s ticker for the resend cooldown (the expiry countdown lives in the hook).
     useEffect(() => {
         const timer = setInterval(() => {
-            setSecondsLeft(prev => (prev > 0 ? prev - 1 : 0));
             setCooldown(prev => (prev > 0 ? prev - 1 : 0));
         }, 1000);
         return () => clearInterval(timer);
     }, []);
-
-    const expired = secondsLeft <= 0;
 
     const handleSubmit = (ev) => {
         ev.preventDefault();
@@ -57,9 +48,11 @@ const TwoFactorForm = ({
         ev.preventDefault();
         if (cooldown > 0 || disableInput) return;
         setCooldown(RESEND_COOLDOWN_SECONDS);
+        // A successful resend resets the expiry countdown through the parent's
+        // codeVersion bump; failures are surfaced by the parent as well.
         const result = onResend();
-        if (result && typeof result.then === 'function') {
-            result.then(() => setSecondsLeft(otpLifetime || 0)).catch(() => {});
+        if (result && typeof result.catch === 'function') {
+            result.catch(() => {});
         }
     };
 
@@ -75,31 +68,16 @@ const TwoFactorForm = ({
 
     return (
         <form onSubmit={handleSubmit} target="_self" className={styles.otp_form}>
-            <div className={styles.subtitle}>Enter the single-use code sent to your email:</div>
-            <div className={styles.code_input}>
-                <OtpInput
-                    id="two_factor_code"
-                    value={otpCode}
-                    onChange={onCodeChange}
-                    numInputs={otpLength}
-                    inputType="tel"
-                    renderInput={(props) => <input {...props} />}
-                    shouldAutoFocus={true}
-                    hasErrored={!!otpError}
-                    errorStyle={{border: '1px solid #e5424d'}}
-                    data-testid="two_factor_code"
-                />
-            </div>
-            {otpError &&
-                <HTMLRender component="p" className={styles.error_label}>
-                    {otpError}
-                </HTMLRender>
-            }
-            <p className={styles.countdown}>
-                {expired
-                    ? 'Your verification code has expired. Please request a new one.'
-                    : `Code expires in ${formatTime(secondsLeft)}.`}
-            </p>
+            <OtpCodeInput
+                id="two_factor_code"
+                otpCode={otpCode}
+                otpError={otpError}
+                otpLength={otpLength}
+                onCodeChange={onCodeChange}
+                countdownActive={true}
+                secondsLeft={secondsLeft}
+                expired={expired}
+            />
             <div className={styles.trust_device_row}>
                 <FormControlLabel
                     disabled={disableInput}
