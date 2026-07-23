@@ -465,6 +465,33 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertTrue(Auth::check(), 'session must be established despite the audit failure');
     }
 
+    public function testRecoveryAuditFailureDoesNotBlockLogin(): void
+    {
+        // Audit is best-effort: a failure emitting recovery_used must NOT 500 a
+        // user whose recovery code is already burned and session established.
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $plain = 'RECOVERY-AUDIT-FAIL-' . uniqid();
+        $this->createRecoveryCode($admin, $plain, false);
+
+        $auditMock = \Mockery::mock(ITwoFactorAuditService::class);
+        $auditMock->shouldReceive('log')
+            ->andReturnUsing(function (User $user, string $eventType) {
+                // Allow challenge_issued (postLogin) so the challenge is created;
+                // blow up only on the post-success event.
+                if ($eventType === TwoFactorAuditLog::EventRecoveryUsed) {
+                    throw new \Exception('audit sink unavailable');
+                }
+            });
+        $this->app->instance(ITwoFactorAuditService::class, $auditMock);
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $response = $this->recovery($plain);
+
+        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
+        $this->assertTrue(Auth::check(), 'session must be established despite the audit failure');
+    }
+
     public function testDeviceTrustFailureDoesNotBlockLogin(): void
     {
         // Device-trust enrollment is best-effort: by the time it runs the OTP is
