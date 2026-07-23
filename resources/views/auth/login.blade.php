@@ -103,7 +103,6 @@
         window.RESEND_2FA_ENDPOINT = config.resend2faAction;
         window.CANCEL_LOGIN_ENDPOINT = config.cancelLogin;
         window.RECOVERY_2FA_ENDPOINT = config.recovery2faAction;
-        window.FORM_ACTION_ENDPOINT = config.formAction;
     </script>
     {!! script_to('assets/login.js') !!}
 @append

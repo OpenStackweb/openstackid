@@ -56,11 +56,6 @@ export const verifyRecoveryCode = (recoveryCode, token) => {
     return postRawRequestFull(window.RECOVERY_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 }
 
-export const authenticateWithPassword = (formData, token) => {
-    const params = Object.fromEntries(formData.entries());
-    return postRawRequestFull(window.FORM_ACTION_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
-}
-
 export const cancelLogin = (token) => {
     return postRawRequest(window.CANCEL_LOGIN_ENDPOINT)({}, {'X-CSRF-TOKEN': token});
 }

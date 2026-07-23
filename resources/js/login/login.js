@@ -15,7 +15,6 @@ import {
   verify2FA,
   resend2FA,
   verifyRecoveryCode,
-  authenticateWithPassword,
   cancelLogin,
 } from "./actions";
 import { emailValidator } from "../validator";
@@ -216,71 +215,18 @@ class LoginPage extends React.Component {
     return true;
   }
 
-  handleAuthenticatePasswordOk(payload) {
-    const { response, status, finalUrl } = payload || {};
-    const { error_code, otp_length, otp_lifetime } = response || {};
-
-    switch (error_code) {
-      case MFA_ERROR_CODE.MFA_CHALLENGE_REQUIRED:
-        this.setState((prevState) => ({
-          ...prevState,
-          authFlow: FLOW.MFA,
-          disableInput: false,
-          otpLength: otp_length ?? prevState.otpLength,
-          otpLifetime: otp_lifetime ?? prevState.otpLifetime,
-        }));
-        break;
-      default:
-      {
-        const redirect = finalUrl && status === HTTP_CODES.OK;
-        if (redirect) {
-          window.location.href = finalUrl;
-        } else {
-          this.showAlert("Oops... Something went wrong!", "error");
-          this.setState((prevState) => ({
-            ...prevState,
-            disableInput: false,
-          }));
-        }
-      }
-    }
-  }
-
-  handleAuthenticatePasswordError(error) {
-    let { response, status, message } = error;
-    this.setState((prevState) => ({ ...prevState, disableInput: false }));
-    if (status === HTTP_CODES.UNAUTHORIZED) {
-      this.showAlert("Invalid username or password.", "error");
-    } else {
-      this.showAlert("Oops... Something went wrong!", "error");
-    }
-  }
-
-  handleAuthenticatePasswordFlow(form) {
-    const formData = new FormData(form);
-
-    authenticateWithPassword(formData, this.props.token)
-      .then(
-        (payload) => {
-          this.handleAuthenticatePasswordOk(payload);
-        },
-        (error) => this.handleAuthenticatePasswordError(error)
-      );
-  }
-
-  onAuthenticate(form) {
+  // Password and OTP flows submit as a native form POST: the backend login
+  // strategies answer with a redirect plus flashed/persisted session state
+  // (auth errors, login_attempts, the mfa_required '2fa' flow), which only a
+  // top-level navigation renders correctly. The 2FA screen is rehydrated from
+  // session by the blade on the post-redirect GET.
+  onAuthenticate() {
 
     if (!this.handleAuthenticateValidation()) {
       return false;
     }
 
     this.setState({ ...this.state, disableInput: true });
-
-
-    if (this.state.authFlow === FLOW.PASSWORD) {
-      this.handleAuthenticatePasswordFlow(form);
-      return false;
-    }
 
     return true;
   }

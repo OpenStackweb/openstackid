@@ -28,5 +28,4 @@ export const CAPTCHA_FIELD = 'cf-turnstile-response';
 
 export const MFA_ERROR_CODE = {
   MFA_SESSION_EXPIRED: "mfa_session_expired",
-  MFA_CHALLENGE_REQUIRED: "mfa_required",
 };

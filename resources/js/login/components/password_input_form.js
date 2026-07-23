@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
@@ -37,14 +37,15 @@ const PasswordInputForm = ({
   userIsActive,
   helpAction,
 }) => {
-  const formRef = useRef(null);
-  const handleContinue = () => onAuthenticate(formRef.current);
-  const onEnterSubmit = (ev) => {
-    if (ev.key === "Enter") {
+  // Native form submission (same adapter as OTPInputForm): password managers key
+  // their save/update prompt off the browser's real submit event, and the backend
+  // login strategies respond with a redirect + flashed session state that only a
+  // top-level navigation consumes correctly.
+  const handleSubmit = (ev) => {
+    if (!onAuthenticate(ev.target)) {
       ev.preventDefault();
-      handleContinue();
     }
-  }
+  };
 
   const ErrorMessage = () => {
     const attempts = parseInt(loginAttempts, 10);
@@ -93,8 +94,7 @@ const PasswordInputForm = ({
     <form
       method="post"
       action={formAction}
-      ref={formRef}
-      onSubmit={(ev) => ev.preventDefault()}
+      onSubmit={handleSubmit}
       target="_self"
     >
       <TextField
@@ -110,8 +110,6 @@ const PasswordInputForm = ({
         label="Enter Your Password"
         autoComplete="current-password"
         onChange={onUserPasswordChange}
-        onKeyDown={onEnterSubmit}
-        disabled={disableInput}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -133,8 +131,7 @@ const PasswordInputForm = ({
           <Button
             variant="contained"
             disabled={disableInput}
-            onClick={handleContinue}
-            type="button"
+            type="submit"
             color="primary"
           >
             Continue
@@ -142,7 +139,6 @@ const PasswordInputForm = ({
         </Grid>
         <Grid item xs={12}>
           <FormControlLabel
-            disabled={disableInput}
             control={
               <Checkbox
                 value="remember"
