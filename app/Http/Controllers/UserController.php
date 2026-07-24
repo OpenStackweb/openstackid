@@ -392,6 +392,27 @@ final class UserController extends OpenIdController
                 OAuth2Protocol::OAuth2PasswordlessPhoneNumber => ($connection == OAuth2Protocol::OAuth2PasswordlessConnectionSMS) ? $username : null
             ], $client);
 
+            // Restore-on-refresh: a subsequent GET /login can rehydrate the OTP
+            // screen from session instead of dropping back to the email form -
+            // same mechanism postLogin()'s MFA challengeRequired() branch already
+            // uses. user_verified is set unconditionally (not inside the
+            // existing-user lookup below) because loginWithOTP() auto-registers
+            // brand-new emails at redemption time; gating it on an existing user
+            // would silently break refresh-restoration for first-time passwordless
+            // users.
+            $existing_user = $this->auth_service->getUserByUsername($username);
+            Session::put('flow', IAuthService::AuthenticationFlowPasswordless);
+            Session::put('username', $username);
+            Session::put('user_verified', true);
+            Session::put('otp_length', $otp->getLength());
+            Session::put('otp_lifetime', $otp->getLifetime());
+            Session::put('otp_issued_at', $otp->getCreatedAt()?->getTimestamp() ?? time());
+            if (!is_null($existing_user)) {
+                Session::put('user_fullname', $existing_user->getFullName());
+                Session::put('user_pic', $existing_user->getPic());
+                Session::put('user_is_active', $existing_user->isActive() ? 1 : 0);
+            }
+
             return $this->created([
                 'otp_length' => $otp->getLength(),
                 'otp_lifetime' => $otp->getLifetime(),
@@ -570,6 +591,10 @@ final class UserController extends OpenIdController
 
                         $otpClaim = OAuth2OTP::fromParams($username, $connection, $password);
                         $this->auth_service->loginWithOTP($otpClaim, $client);
+                        // A completed login must not leave the OTP screen restorable
+                        // on a later refresh - same identity-leakage concern already
+                        // fixed for the MFA flow's verify2FA()/verify2FARecovery().
+                        $this->clearMFAUISessionState();
                         return $this->login_strategy->postLogin();
                     }
                 } catch (AuthenticationException $ex) {

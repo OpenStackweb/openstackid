@@ -228,6 +228,73 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     }
 
     // -------------------------------------------------------------------------
+    // passwordless (flow=otp) refresh-resilience
+    // -------------------------------------------------------------------------
+
+    public function testEmitOtpPersistsSessionStateForRefreshResilience(): void
+    {
+        $this->emitOTP(self::ADMIN_EMAIL);
+
+        $this->assertSame('otp', Session::get('flow'), 'a refresh mid-code-entry must restore the OTP screen, not the email form');
+        $this->assertTrue(Session::get('user_verified'));
+        $this->assertNotNull(Session::get('otp_length'));
+        $this->assertNotNull(Session::get('otp_lifetime'));
+        $this->assertNotNull(Session::get('otp_issued_at'), 'the issuance timestamp must be restorable so a refresh can seed the countdown with the REMAINING lifetime');
+        $this->assertSame(self::ADMIN_EMAIL, Session::get('username'));
+
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->assertSame($admin->getFullName(), Session::get('user_fullname'));
+        $this->assertSame($admin->getPic(), Session::get('user_pic'));
+        $this->assertSame(1, Session::get('user_is_active'));
+    }
+
+    public function testEmitOtpForNewUserStillPersistsRefreshState(): void
+    {
+        // No createPlainUser() call - this email has no existing User row.
+        // AuthService::loginWithOTP() auto-registers new users at redemption
+        // time, so emitOTP() must not silently skip the refresh-restoration
+        // state just because the identity lookup comes up empty.
+        $email = 'never.seen.' . uniqid() . '@test.invalid';
+
+        $this->emitOTP($email);
+
+        $this->assertSame('otp', Session::get('flow'));
+        $this->assertTrue(Session::get('user_verified'), 'user_verified must persist even when no User row exists yet');
+        $this->assertNotNull(Session::get('otp_length'));
+        $this->assertNotNull(Session::get('otp_lifetime'));
+        $this->assertNotNull(Session::get('otp_issued_at'));
+        $this->assertSame($email, Session::get('username'));
+
+        $this->assertNull(Session::get('user_fullname'), 'no identity to persist for a not-yet-registered user');
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_is_active'));
+    }
+
+    public function testSuccessfulPasswordlessLoginClearsOtpSessionState(): void
+    {
+        $email = $this->createPlainUser();
+        $this->emitOTP($email);
+        $code = $this->latestOtpCode($email);
+
+        $this->postLoginOTP($email, $code);
+
+        $this->assertTrue(Auth::check(), 'sanity check: the login itself must have succeeded');
+
+        // A completed passwordless login must not leave the OTP screen
+        // restorable on a later refresh - otherwise a subsequent unrelated
+        // visitor on the same browser session inherits this identity.
+        $this->assertNull(Session::get('flow'));
+        $this->assertNull(Session::get('user_verified'));
+        $this->assertNull(Session::get('otp_length'));
+        $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('otp_issued_at'));
+        $this->assertNull(Session::get('username'));
+        $this->assertNull(Session::get('user_fullname'));
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_is_active'));
+    }
+
+    // -------------------------------------------------------------------------
     // cancelLogin
     // -------------------------------------------------------------------------
 
@@ -260,6 +327,29 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_session_expired', $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a cancelled challenge must never establish a session');
+    }
+
+    public function testCancelClearsPasswordlessOtpSessionState(): void
+    {
+        // Server-side proof for the client fix in login.js's handleDelete()
+        // (widened to call cancelLogin() for the OTP flow, not just MFA):
+        // cancelLogin() already unconditionally clears the same key set
+        // emitOTP() writes, so a refresh after "sign in using a different
+        // e-mail" must not resurrect the abandoned OTP screen.
+        $email = $this->createPlainUser();
+        $this->emitOTP($email);
+
+        $this->cancelLogin();
+
+        $this->assertNull(Session::get('flow'), 'cancel must not leave a stale OTP screen restorable on refresh');
+        $this->assertNull(Session::get('user_verified'));
+        $this->assertNull(Session::get('otp_length'));
+        $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('otp_issued_at'));
+        $this->assertNull(Session::get('username'));
+        $this->assertNull(Session::get('user_fullname'));
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_is_active'));
     }
 
     // -------------------------------------------------------------------------

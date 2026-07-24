@@ -81,11 +81,17 @@ class LoginPage extends React.Component {
       twoFactorCode: "",
       recoveryCode: "",
       codeVersion: 0,
-      // Lifetime of the passwordless OTP emitted in THIS page view (from the
-      // emitOTP response). Stays null on a restored view (e.g. failed-submit
-      // reload) where the issuance time is unknown - the form then renders no
-      // countdown rather than a misleading fresh one.
-      passwordlessLifetime: null,
+      // Lifetime of the pending passwordless OTP. Seeded from props.otpLifetime
+      // on mount so a refresh restores the REMAINING countdown (props.otpLifetime
+      // is already the session-derived remaining time - see login.blade.php's
+      // otp_issued_at math, same mechanism the MFA challenge screen uses).
+      // emitOtpAction() overwrites this with the live response on a fresh
+      // send/resend. Unlike otpLifetime's OTP_TTL_DEFAULT fallback, null is the
+      // correct fallback here (not a stand-in default): passwordlessLifetime
+      // only has meaning while authFlow === FLOW.OTP, and Task 1's backend
+      // change writes otp_lifetime atomically with flow, so props.otpLifetime
+      // is only ever missing when there's no pending OTP to show a countdown for.
+      passwordlessLifetime: props.otpLifetime ?? null,
     };
 
     if (props.authError != "" && !this.state.user_fullname) {
@@ -661,10 +667,11 @@ class LoginPage extends React.Component {
 
   handleDelete(ev) {
     ev.preventDefault();
-    if (this.isMfaFlow()) {
-      // A pending 2FA/recovery challenge was issued server-side (session
-      // 2fa_pending_user_id + an unredeemed OTP); invalidate it the same
-      // way "Cancel" does instead of leaving it live until its TTL.
+    if (this.isMfaFlow() || this.isPasswordlessFlow()) {
+      // A pending 2FA/recovery challenge or passwordless OTP was issued
+      // server-side (session state + an unredeemed OTP); invalidate it the
+      // same way "Cancel" does instead of leaving it live/restorable until
+      // its TTL.
       this.cancelPendingLogin();
     }
     this.setState({
@@ -703,6 +710,10 @@ class LoginPage extends React.Component {
     return (
       this.state.authFlow === FLOW.MFA || this.state.authFlow === FLOW.RECOVERY
     );
+  }
+
+  isPasswordlessFlow() {
+    return this.state.authFlow === FLOW.OTP;
   }
 
   getSignUpSignInTitle() {
