@@ -271,9 +271,14 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNotNull(Session::get('otp_issued_at'));
         $this->assertSame($email, Session::get('username'));
 
-        $this->assertNull(Session::get('user_fullname'), 'no identity to persist for a not-yet-registered user');
-        $this->assertNull(Session::get('user_pic'));
-        $this->assertNull(Session::get('user_is_active'));
+        // login.js's emitOtpAction() falls back to the submitted email as the
+        // chip's display name when there's no real full name yet (login.js:165-167) -
+        // the persisted session state must match that same fallback, or the
+        // identity chip (visible right after opting into OTP) vanishes on refresh
+        // instead of being restored identically.
+        $this->assertSame($email, Session::get('user_fullname'), 'must fall back to the submitted email, matching emitOtpAction()\'s client-side fallback');
+        $this->assertNull(Session::get('user_pic'), 'no picture to persist for a not-yet-registered user');
+        $this->assertNull(Session::get('user_is_active'), 'no active-status to persist for a not-yet-registered user');
     }
 
     public function testSuccessfulPasswordlessLoginClearsOtpSessionState(): void

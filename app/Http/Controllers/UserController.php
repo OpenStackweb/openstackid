@@ -404,11 +404,16 @@ final class UserController extends OpenIdController
             Session::put('flow', IAuthService::AuthenticationFlowPasswordless);
             Session::put('username', $username);
             Session::put('user_verified', true);
+            // Mirrors login.js's emitOtpAction(), which falls back to the
+            // submitted email as the chip's display name when there's no real
+            // full name yet - persisting the same fallback here keeps the
+            // identity chip (visible right after opting into OTP) from
+            // vanishing on a refresh for a not-yet-registered email.
+            Session::put('user_fullname', !is_null($existing_user) ? $existing_user->getFullName() : $username);
             Session::put('otp_length', $otp->getLength());
             Session::put('otp_lifetime', $otp->getLifetime());
             Session::put('otp_issued_at', $otp->getCreatedAt()?->getTimestamp() ?? time());
             if (!is_null($existing_user)) {
-                Session::put('user_fullname', $existing_user->getFullName());
                 Session::put('user_pic', $existing_user->getPic());
                 Session::put('user_is_active', $existing_user->isActive() ? 1 : 0);
             }
