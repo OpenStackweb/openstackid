@@ -184,6 +184,14 @@ class LoginPage extends React.Component {
           this.showAlert(errors[0], "error");
           return;
         }
+        if (status === HTTP_CODES.TOO_MANY_REQUESTS) {
+          const msg =
+            response && response.body && response.body.error_message
+              ? response.body.error_message
+              : "Too many attempts. Please try again later.";
+          this.showAlert(msg, "warning");
+          return;
+        }
         this.showAlert("Oops... Something went wrong!", "error");
       },
     );

@@ -68,5 +68,12 @@ return [
         'window_seconds'     => env('TWO_FACTOR_RATE_WINDOW_SECONDS', 900),
         'max_otp_requests'   => env('TWO_FACTOR_MAX_OTP_REQUESTS', 5),
         'otp_window_minutes' => env('TWO_FACTOR_OTP_WINDOW_MINUTES', 15),
+
+        // Passwordless OTP issuance (POST /auth/login/otp) - anonymous, pre-auth
+        // endpoint, keyed by the submitted email rather than a session user id.
+        // Kept independent from the MFA resend keys above so ops can tune this
+        // budget separately.
+        'max_otp_email_requests'   => env('TWO_FACTOR_MAX_OTP_EMAIL_REQUESTS', 5),
+        'otp_email_window_minutes' => env('TWO_FACTOR_OTP_EMAIL_WINDOW_MINUTES', 15),
     ],
 ];

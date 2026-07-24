@@ -64,10 +64,17 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     private function flushRateLimitCounters(): void
     {
         $admin = EntityManager::getRepository(User::class)->getByEmailOrName(self::ADMIN_EMAIL);
-        if (!$admin) return;
-        $userId = $admin->getId();
-        foreach (['verify', 'recovery', 'resend'] as $action) {
-            Cache::forget("2fa_rate:{$action}:{$userId}");
+        if ($admin) {
+            $userId = $admin->getId();
+            foreach (['verify', 'recovery', 'resend'] as $action) {
+                Cache::forget("2fa_rate:{$action}:{$userId}");
+            }
+        }
+
+        // otp is keyed by the (lowercased) submitted email, not a user id -
+        // clear every literal email this test class submits to that action.
+        foreach ([self::ADMIN_EMAIL, 'someone-else@example.com'] as $email) {
+            Cache::forget('2fa_rate:otp:' . strtolower($email));
         }
     }
 
@@ -816,6 +823,45 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(302, 'must redirect like every other login outcome, not return JSON');
         $this->assertStringContainsString('Too many attempts', Session::get('flash_notice'));
         $this->assertFalse(Auth::check());
+    }
+
+    public function testOtpEmailRateLimitBlocksAfterThreshold(): void
+    {
+        $max = (int) Config::get('two_factor.rate_limit.max_otp_email_requests');
+        for ($i = 0; $i < $max; $i++) {
+            $this->emitOTP(self::ADMIN_EMAIL);
+        }
+
+        $response = $this->emitOTP(self::ADMIN_EMAIL);
+        $this->assertResponseStatus(429);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+
+        // A different email must be unaffected - the subject is per-email, not global.
+        // emitOTP() never looks up an existing user before creating the OTP, so a
+        // non-seeded literal email is a valid, distinct rate-limit subject here.
+        $otherResponse = $this->emitOTP('someone-else@example.com');
+        $this->assertNotEquals(429, $otherResponse->getStatusCode());
+    }
+
+    public function testOtpEmailRateLimitIsCaseInsensitive(): void
+    {
+        // users.email has a case-insensitive collation (utf8mb3_unicode_ci) and every
+        // session-keyed 2FA action resolves through a case-insensitive DB lookup before
+        // ever touching the rate limiter. The otp action has no such lookup - the raw
+        // submitted string IS the cache key - so casing must be canonicalized here or
+        // an attacker can reset the budget every request by cycling the target email's
+        // letter casing, defeating the limit entirely.
+        $max = (int) Config::get('two_factor.rate_limit.max_otp_email_requests');
+        $casings = ['sebastian@tipit.net', 'Sebastian@Tipit.net', 'SEBASTIAN@TIPIT.NET', 'sEbAsTiAn@tIpIt.NeT'];
+        for ($i = 0; $i < $max; $i++) {
+            $this->emitOTP($casings[$i % count($casings)]);
+        }
+
+        $response = $this->emitOTP('SEBASTIAN@TIPIT.NET');
+        $this->assertResponseStatus(429);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_rate_limit', $payload['error_code']);
     }
 
     // -------------------------------------------------------------------------

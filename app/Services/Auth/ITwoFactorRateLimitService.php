@@ -31,21 +31,24 @@ interface ITwoFactorRateLimitService
     public const ActionVerify   = 'verify';
     public const ActionRecovery = 'recovery';
     public const ActionResend   = 'resend';
+    public const ActionOtp      = 'otp';
 
     public const RATE_LIMIT_ERROR_CODE = 'mfa_rate_limit';
     public const RATE_LIMIT_MESSAGE    = 'Too many attempts. Please try again later.';
 
     /**
-     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend
-     * @param int $userId
+     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
+     * @param string|int $subject a user id for session-keyed actions, or a raw
+     *                            (already-canonicalized) subject string for ActionOtp
      * @return bool
      */
-    public function isRateLimited(string $action, int $userId): bool;
+    public function isRateLimited(string $action, string|int $subject): bool;
 
     /**
-     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend
-     * @param int $userId
+     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
+     * @param string|int $subject a user id for session-keyed actions, or a raw
+     *                            (already-canonicalized) subject string for ActionOtp
      * @return void
      */
-    public function increment(string $action, int $userId): void;
+    public function increment(string $action, string|int $subject): void;
 }

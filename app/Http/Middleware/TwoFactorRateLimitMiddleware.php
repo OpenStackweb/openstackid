@@ -56,18 +56,19 @@ final class TwoFactorRateLimitMiddleware
      */
     public function handle($request, Closure $next, string $action = ITwoFactorRateLimitService::ActionVerify)
     {
-        $userId = Session::get(self::PENDING_USER_KEY);
+        $subject = $action === ITwoFactorRateLimitService::ActionOtp
+            ? $this->resolveOtpSubject($request)
+            : $this->resolveSessionSubject();
 
-        // Without a pending user there is nothing to throttle; let the controller
-        // resolve the (missing) state and return mfa_session_expired.
-        if (is_null($userId)) {
+        // Without a resolvable subject there is nothing to throttle; let the
+        // controller resolve the (missing) state itself - mfa_session_expired
+        // for the session-keyed actions, or its own validator 412 for otp.
+        if (is_null($subject)) {
             return $next($request);
         }
 
-        $userId = (int) $userId;
-
-        if ($this->rate_limit_service->isRateLimited($action, $userId)) {
-            Log::debug(sprintf("TwoFactorRateLimitMiddleware: action %s user %s rate limited", $action, $userId));
+        if ($this->rate_limit_service->isRateLimited($action, $subject)) {
+            Log::debug(sprintf("TwoFactorRateLimitMiddleware: action %s subject %s rate limited", $action, $subject));
             return Response::json(
                 [
                     'error_code'    => ITwoFactorRateLimitService::RATE_LIMIT_ERROR_CODE,
@@ -79,13 +80,38 @@ final class TwoFactorRateLimitMiddleware
 
         $response = $next($request);
 
-        if ($action === ITwoFactorRateLimitService::ActionResend) {
-            $this->rate_limit_service->increment($action, $userId);
+        if ($action === ITwoFactorRateLimitService::ActionResend || $action === ITwoFactorRateLimitService::ActionOtp) {
+            $this->rate_limit_service->increment($action, $subject);
         } else if ($this->isFailure($response)) {
-            $this->rate_limit_service->increment($action, $userId);
+            $this->rate_limit_service->increment($action, $subject);
         }
 
         return $response;
+    }
+
+    /**
+     * Session-keyed subject for verify/recovery/resend - the user id of the
+     * pending MFA challenge.
+     * @return int|null
+     */
+    private function resolveSessionSubject(): ?int
+    {
+        $userId = Session::get(self::PENDING_USER_KEY);
+        return is_null($userId) ? null : (int) $userId;
+    }
+
+    /**
+     * Subject for the anonymous, pre-auth otp action - the submitted email,
+     * canonicalized the same way the case-insensitive users.email lookup
+     * (DoctrineUserRepository::getByEmailOrName()) already resolves it, so the
+     * rate-limit subject can't be reset by cycling the target email's casing.
+     * @param \Illuminate\Http\Request $request
+     * @return string|null
+     */
+    private function resolveOtpSubject($request): ?string
+    {
+        $username = strtolower(trim($request->input('username', '')));
+        return $username === '' ? null : $username;
     }
 
     /**

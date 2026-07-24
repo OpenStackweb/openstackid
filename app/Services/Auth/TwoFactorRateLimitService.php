@@ -24,16 +24,16 @@ use Illuminate\Support\Facades\Config;
  */
 final class TwoFactorRateLimitService implements ITwoFactorRateLimitService
 {
-    public function isRateLimited(string $action, int $userId): bool
+    public function isRateLimited(string $action, string|int $subject): bool
     {
         [$maxAttempts, ] = $this->limitsFor($action);
-        return (int) Cache::get($this->cacheKey($action, $userId), 0) >= $maxAttempts;
+        return (int) Cache::get($this->cacheKey($action, $subject), 0) >= $maxAttempts;
     }
 
-    public function increment(string $action, int $userId): void
+    public function increment(string $action, string|int $subject): void
     {
         [, $windowSeconds] = $this->limitsFor($action);
-        $key = $this->cacheKey($action, $userId);
+        $key = $this->cacheKey($action, $subject);
 
         // Fixed window: add() sets the TTL once (only if the key is absent),
         // increment() bumps the value while preserving that TTL, so the
@@ -55,14 +55,27 @@ final class TwoFactorRateLimitService implements ITwoFactorRateLimitService
             ];
         }
 
+        if ($action === self::ActionOtp) {
+            return [
+                (int) Config::get('two_factor.rate_limit.max_otp_email_requests', 5),
+                (int) Config::get('two_factor.rate_limit.otp_email_window_minutes', 15) * 60,
+            ];
+        }
+
         return [
             (int) Config::get('two_factor.rate_limit.max_attempts', 3),
             (int) Config::get('two_factor.rate_limit.window_seconds', 900),
         ];
     }
 
-    private function cacheKey(string $action, int $userId): string
+    /**
+     * @param string $action
+     * @param string|int $subject a user id for session-keyed actions, or a raw
+     *                            (already-canonicalized) subject string for ActionOtp
+     * @return string
+     */
+    private function cacheKey(string $action, string|int $subject): string
     {
-        return sprintf('2fa_rate:%s:%s', $action, $userId);
+        return sprintf('2fa_rate:%s:%s', $action, $subject);
     }
 }
