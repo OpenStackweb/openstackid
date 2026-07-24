@@ -50,9 +50,12 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
     {
         $user = $this->buildUser(42, 'user@example.com');
 
+        $issuedAt = new \DateTime('2026-01-01 00:00:00', new \DateTimeZone('UTC'));
+
         $otp = \Mockery::mock(OAuth2OTP::class);
         $otp->shouldReceive('getLength')->andReturn(6);
         $otp->shouldReceive('getLifetime')->andReturn(120);
+        $otp->shouldReceive('getCreatedAt')->andReturn($issuedAt);
 
         $this->tokenService
             ->shouldReceive('createOTPFromPayload')
@@ -67,7 +70,10 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
 
         $result = $this->strategy->issueChallenge($user, null, true);
 
-        $this->assertSame(['otp_length' => 6, 'otp_lifetime' => 120], $result);
+        $this->assertSame(
+            ['otp_length' => 6, 'otp_lifetime' => 120, 'otp_issued_at' => $issuedAt->getTimestamp()],
+            $result
+        );
         $this->assertSame(42, Session::get('2fa_pending_user_id'));
         $this->assertTrue(Session::get('2fa_remember'));
     }
@@ -78,9 +84,12 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
     {
         $user = $this->buildUser(7, 'resend@example.com');
 
+        $issuedAt = new \DateTime('2026-01-01 00:00:00', new \DateTimeZone('UTC'));
+
         $otp = \Mockery::mock(OAuth2OTP::class);
         $otp->shouldReceive('getLength')->andReturn(6);
         $otp->shouldReceive('getLifetime')->andReturn(120);
+        $otp->shouldReceive('getCreatedAt')->andReturn($issuedAt);
 
         $this->tokenService
             ->shouldReceive('createOTPFromPayload')
@@ -89,7 +98,10 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
 
         $result = $this->strategy->resendChallenge($user, null, false);
 
-        $this->assertSame(['otp_length' => 6, 'otp_lifetime' => 120], $result);
+        $this->assertSame(
+            ['otp_length' => 6, 'otp_lifetime' => 120, 'otp_issued_at' => $issuedAt->getTimestamp()],
+            $result
+        );
         $this->assertSame(7, Session::get('2fa_pending_user_id'));
     }
 
