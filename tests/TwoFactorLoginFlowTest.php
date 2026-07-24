@@ -68,6 +68,11 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
             $userId = $admin->getId();
             foreach (['verify', 'recovery', 'resend'] as $action) {
                 Cache::forget("2fa_rate:{$action}:{$userId}");
+                // RateLimiter::hit() also writes a companion ":timer" key holding
+                // the window's reset timestamp - must be cleared too, or a stale
+                // timer from an earlier test leaks into a later one for this
+                // same fixed subject (self::ADMIN_EMAIL's user id).
+                Cache::forget("2fa_rate:{$action}:{$userId}:timer");
             }
         }
 
@@ -75,6 +80,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         // clear every literal email this test class submits to that action.
         foreach ([self::ADMIN_EMAIL, 'someone-else@example.com'] as $email) {
             Cache::forget('2fa_rate:otp:' . strtolower($email));
+            Cache::forget('2fa_rate:otp:' . strtolower($email) . ':timer');
         }
     }
 
@@ -861,6 +867,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
+        $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
     }
 
     public function testRecoveryRateLimitBlocksAfterThreshold(): void
@@ -876,6 +885,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
+        $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
     }
 
     public function testResendRateLimitBlocksAfterThreshold(): void
@@ -891,6 +903,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
+        $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
     }
 
     public function testInitialChallengeIssuanceCountsAgainstResendRateLimitWindow(): void
@@ -926,6 +941,14 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_rate_limit', $payload['error_code']);
+
+        // A 429 must give the client a standard, machine-readable retry signal -
+        // without these, callers have no way to know how long to back off.
+        $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
+        $retryAfter = $response->headers->get('Retry-After');
+        $this->assertNotNull($retryAfter, 'Retry-After must be present on a 429');
+        $this->assertGreaterThan(0, (int) $retryAfter);
 
         // A different email must be unaffected - the subject is per-email, not global.
         // emitOTP() never looks up an existing user before creating the OTP, so a

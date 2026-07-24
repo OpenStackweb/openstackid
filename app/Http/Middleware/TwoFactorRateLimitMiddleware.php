@@ -75,7 +75,11 @@ final class TwoFactorRateLimitMiddleware
                     'error_message' => ITwoFactorRateLimitService::RATE_LIMIT_MESSAGE,
                 ],
                 HttpResponse::HTTP_TOO_MANY_REQUESTS
-            );
+            )->withHeaders([
+                'Retry-After'           => $this->rate_limit_service->getRetryAfterSeconds($action, $subject),
+                'X-RateLimit-Limit'     => $this->rate_limit_service->getLimit($action),
+                'X-RateLimit-Remaining' => 0,
+            ]);
         }
 
         $response = $next($request);

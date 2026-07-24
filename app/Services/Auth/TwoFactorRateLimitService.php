@@ -15,8 +15,8 @@ namespace App\Services\Auth;
  * limitations under the License.
  **/
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Class TwoFactorRateLimitService
@@ -27,19 +27,31 @@ final class TwoFactorRateLimitService implements ITwoFactorRateLimitService
     public function isRateLimited(string $action, string|int $subject): bool
     {
         [$maxAttempts, ] = $this->limitsFor($action);
-        return (int) Cache::get($this->cacheKey($action, $subject), 0) >= $maxAttempts;
+        return RateLimiter::tooManyAttempts($this->cacheKey($action, $subject), $maxAttempts);
     }
 
     public function increment(string $action, string|int $subject): void
     {
         [, $windowSeconds] = $this->limitsFor($action);
-        $key = $this->cacheKey($action, $subject);
 
-        // Fixed window: add() sets the TTL once (only if the key is absent),
-        // increment() bumps the value while preserving that TTL, so the
-        // window starts at the first hit and does not slide.
-        Cache::add($key, 0, $windowSeconds);
-        Cache::increment($key);
+        // Fixed window: RateLimiter::hit() sets a companion "resets at" timer
+        // key once (only if absent) and bumps the counter while preserving
+        // that timer, so the window starts at the first hit and does not
+        // slide - same semantics the previous hand-rolled Cache::add()+
+        // increment() had, but this also gives us availableIn() for
+        // Retry-After without a driver-specific TTL query.
+        RateLimiter::hit($this->cacheKey($action, $subject), $windowSeconds);
+    }
+
+    public function getLimit(string $action): int
+    {
+        [$maxAttempts, ] = $this->limitsFor($action);
+        return $maxAttempts;
+    }
+
+    public function getRetryAfterSeconds(string $action, string|int $subject): int
+    {
+        return RateLimiter::availableIn($this->cacheKey($action, $subject));
     }
 
     /**

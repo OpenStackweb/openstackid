@@ -51,4 +51,22 @@ interface ITwoFactorRateLimitService
      * @return void
      */
     public function increment(string $action, string|int $subject): void;
+
+    /**
+     * The configured max-attempts ceiling for this action, for the
+     * X-RateLimit-Limit response header.
+     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
+     * @return int
+     */
+    public function getLimit(string $action): int;
+
+    /**
+     * Seconds remaining until this subject's current window resets, for the
+     * Retry-After response header. Returns 0 if there is no active window.
+     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
+     * @param string|int $subject a user id for session-keyed actions, or a raw
+     *                            (already-canonicalized) subject string for ActionOtp
+     * @return int
+     */
+    public function getRetryAfterSeconds(string $action, string|int $subject): int;
 }
