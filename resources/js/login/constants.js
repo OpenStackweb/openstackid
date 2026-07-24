@@ -30,6 +30,11 @@ export const CAPTCHA_FIELD = 'cf-turnstile-response';
 // avoid hammering the resend endpoint (the backend also rate-limits server-side).
 export const RESEND_COOLDOWN_SECONDS = 30;
 
+// Success confirmation shown after a code is (re)sent - shared by MFA's
+// onResend2FA() and passwordless's emitOtpAction() so the two flows can't
+// silently diverge in wording.
+export const CODE_RESENT_MESSAGE = "A new verification code has been sent to your email.";
+
 export const MFA_ERROR_CODE = {
   MFA_SESSION_EXPIRED: "mfa_session_expired",
 };

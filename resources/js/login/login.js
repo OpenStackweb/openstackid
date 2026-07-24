@@ -41,6 +41,7 @@ import {
   OTP_LENGTH_DEFAULT,
   OTP_TTL_DEFAULT,
   MFA_METHOD_DEFAULT,
+  CODE_RESENT_MESSAGE,
 } from "./constants";
 
 class LoginPage extends React.Component {
@@ -182,6 +183,10 @@ class LoginPage extends React.Component {
           passwordlessLifetime: response?.otp_lifetime ?? null,
           codeVersion: this.state.codeVersion + 1,
         });
+        this.showAlert(
+          CODE_RESENT_MESSAGE,
+          "success",
+        );
       },
       (error) => {
         let { response, status, message } = error;
@@ -474,7 +479,7 @@ class LoginPage extends React.Component {
           errors: { ...this.state.errors, twofactor: "" },
         });
         this.showAlert(
-          "A new verification code has been sent to your email.",
+          CODE_RESENT_MESSAGE,
           "success",
         );
       },
