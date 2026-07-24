@@ -26,6 +26,10 @@ export const OTP_TTL_DEFAULT = 300;
 export const MFA_METHOD_DEFAULT = MFA_METHODS.EMAIL_OTP;
 export const CAPTCHA_FIELD = 'cf-turnstile-response';
 
+// Cooldown applied to any "resend code" action (MFA and passwordless OTP) to
+// avoid hammering the resend endpoint (the backend also rate-limits server-side).
+export const RESEND_COOLDOWN_SECONDS = 30;
+
 export const MFA_ERROR_CODE = {
   MFA_SESSION_EXPIRED: "mfa_session_expired",
 };

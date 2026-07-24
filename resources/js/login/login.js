@@ -880,7 +880,10 @@ class LoginPage extends React.Component {
                   onReset={this.handleDelete}
                   onAuthenticate={this.onAuthenticate}
                 />
-                <OTPHelpLinks emitOtpAction={this.handleEmitOtpAction} />
+                <OTPHelpLinks
+                  emitOtpAction={this.handleEmitOtpAction}
+                  disableInput={this.state.disableInput}
+                />
               </>
             )}
             {showDefaultFlow && (

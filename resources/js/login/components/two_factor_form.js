@@ -6,10 +6,7 @@ import Checkbox from '@material-ui/core/Checkbox';
 import OtpCodeInput from './otp_code_input';
 import useOtpCountdown from './use_otp_countdown';
 import styles from '../login.module.scss';
-
-// Cooldown applied to the resend action to avoid hammering the resend endpoint
-// (the backend also rate-limits server-side).
-const RESEND_COOLDOWN_SECONDS = 30;
+import {RESEND_COOLDOWN_SECONDS} from '../constants';
 
 const TwoFactorForm = ({
                            otpCode,
