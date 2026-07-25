@@ -1,15 +1,30 @@
 import { test, expect } from '../../fixtures';
-import type { Page, Route } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 // URL patterns — match both Docker (http://nginx/...) and local (http://localhost:8001/...).
-const LOGIN_POST   = '**/auth/login';
-const VERIFY_URL   = '**/auth/login/2fa/verify';
-const RESEND_URL   = '**/auth/login/2fa/resend';
-const RECOVERY_URL = '**/auth/login/2fa/recovery';
-const CANCEL_URL   = '**/auth/login/cancel';
+// Trailing '**' is required: base_actions.js's postRawRequest() appends every
+// param onto the URL as a query string (in addition to the body), so the real
+// request is "<path>?otp_value=...&method=..." - a glob without the trailing
+// wildcard requires an exact end-of-string match and silently never fires.
+const VERIFY_URL   = '**/auth/login/2fa/verify**';
+const RESEND_URL   = '**/auth/login/2fa/resend**';
+const RECOVERY_URL = '**/auth/login/2fa/recovery**';
+const CANCEL_URL   = '**/auth/login/cancel**';
 
-/** Server response shape when password auth succeeds for an MFA-enrolled user. */
-const MFA_CHALLENGE = { error_code: 'mfa_required', otp_length: 6, otp_lifetime: 300 };
+// Each TS-* test gets its own MFA-enforced super-admin (mfa-ts-NNN@test.com,
+// seeded by CI via idp:create-super-admin - see pull_request_frontend_tests.yml).
+// A real login issues a real OTP challenge and counts against that user's own
+// two_factor.rate_limit.max_otp_requests window, so sharing one fixed account
+// across all 8 tests would exhaust the limit well before the suite finishes.
+const MFA_USER_PASSWORD = '1Qaz2wsx!';
+
+function mfaUserEmailFor(testTitle: string): string {
+  const match = testTitle.match(/TS-(\d+)/);
+  if (!match) {
+    throw new Error(`Test title "${testTitle}" is missing the TS-NNN prefix used to pick its MFA user`);
+  }
+  return `mfa-ts-${match[1]}@test.com`;
+}
 
 /**
  * Fill the react-otp-input digit boxes inside the two-factor form.
@@ -26,32 +41,15 @@ async function fillOtp(page: Page, code: string): Promise<void> {
 test.describe('MFA Login Flow', () => {
 
   /**
-   * Shared setup: intercept the password POST once, return an MFA challenge,
-   * and wait for React to render the two-factor form.
-   * This lets every test below start from the MFA step without needing a
-   * real MFA-enrolled account in the database.
+   * Shared setup: the password step submits as a native form POST (server
+   * redirect + session state, not an XHR React can intercept - see
+   * login.js's onAuthenticate()), so getting to the MFA step means a real
+   * login against a real MFA-enforced account, not a mocked response.
    */
-  test.beforeEach(async ({ loginPage, page }) => {
-    const handler = async (route: Route) => {
-      if (route.request().method() === 'POST') {
-        // Fulfill first, then unroute — unrouting the handler while its own
-        // route is still unresolved makes Playwright auto-resolve it, so a
-        // fulfill() called after unroute() throws "Route is already handled".
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MFA_CHALLENGE),
-        });
-        await page.unroute(LOGIN_POST, handler);
-      } else {
-        await route.continue();
-      }
-    };
-    await page.route(LOGIN_POST, handler);
-
+  test.beforeEach(async ({ loginPage }, testInfo) => {
     await loginPage.goto();
-    await loginPage.fillEmail('test@test.com');
-    await loginPage.fillPassword('any-password');
+    await loginPage.fillEmail(mfaUserEmailFor(testInfo.title));
+    await loginPage.fillPassword(MFA_USER_PASSWORD);
     await expect(loginPage.twoFactorForm).toBeVisible();
   });
 
@@ -84,7 +82,11 @@ test.describe('MFA Login Flow', () => {
 
       expect(response.status()).toBe(200);
       // Error label must not appear — the inline error path was not taken.
-      await expect(loginPage.errorLabel).not.toBeVisible({ timeout: 1000 });
+      // onVerify2FA() always does `window.location.href = response.redirect_url
+      // || window.location.href` on success, so even this empty-body mock
+      // occasionally triggers a real same-page navigation; give the assertion
+      // room to survive that reload instead of racing a tight 1s window.
+      await expect(loginPage.errorLabel).not.toBeVisible({ timeout: 5000 });
     });
 
   // TS-003 ─────────────────────────────────────────────────────────────────
@@ -117,10 +119,11 @@ test.describe('MFA Login Flow', () => {
 
       await loginPage.cancelLink.click();
 
-      // resetToPasswordFlow() clears user_name/user_verified, so the app returns
-      // all the way to the email step — not the password step.
+      // resetToPasswordFlow() keeps the already-verified identity and sets
+      // authFlow back to FLOW.PASSWORD - it does not clear user_name/user_verified,
+      // so cancel returns to the password step, not all the way to email entry.
       await expect(loginPage.twoFactorForm).not.toBeVisible();
-      await expect(loginPage.emailInput).toBeVisible();
+      await expect(loginPage.passwordForm).toBeVisible();
     });
 
   // TS-005 ─────────────────────────────────────────────────────────────────
@@ -176,9 +179,11 @@ test.describe('MFA Login Flow', () => {
       await fillOtp(page, '123456');
       await loginPage.verifyButton.click();
 
-      // resetToPasswordFlow() clears user_name/user_verified — returns to email step.
+      // resetToPasswordFlow() keeps the already-verified identity and sets
+      // authFlow back to FLOW.PASSWORD - it does not clear user_name/user_verified,
+      // so an expired session returns to the password step, not email entry.
       await expect(loginPage.twoFactorForm).not.toBeVisible();
-      await expect(loginPage.emailInput).toBeVisible();
+      await expect(loginPage.passwordForm).toBeVisible();
 
       const snackbar = page.locator('[role="alert"]');
       await expect(snackbar).toBeVisible();

@@ -58,6 +58,7 @@ docs/plans
 
 # Playwright
 /tests/e2e/report/
+/test-results/
 
 # Jest
 /tests/js/coverage/

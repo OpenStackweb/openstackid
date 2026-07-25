@@ -102,6 +102,9 @@ jobs:
           php artisan db:seed --force
           php artisan idp:create-super-admin test@test.com '1Qaz2wsx!'
           php artisan idp:create-raw-user e2e@test.com '1Qaz2wsx!'
+          for i in 001 002 003 004 005 006 007 008; do
+            php artisan idp:create-super-admin "mfa-ts-$i@test.com" '1Qaz2wsx!'
+          done
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Start web server

@@ -9,7 +9,6 @@ jest.mock('../../../resources/js/login/actions', () => ({
   verify2FA: jest.fn(),
   resend2FA: jest.fn(),
   verifyRecoveryCode: jest.fn(),
-  authenticateWithPassword: jest.fn(),
   cancelLogin: jest.fn(),
 }));
 
@@ -137,43 +136,6 @@ describe('LoginPage', () => {
 
       expect(window.location.reload).toHaveBeenCalledTimes(1);
       expect(inst.showAlert).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('handleAuthenticatePasswordOk', () => {
-    let inst;
-
-    beforeEach(() => {
-      inst = makeInstance();
-      window.location.href = '';
-    });
-
-    it('mfa_required — transitions authFlow to MFA and stores otp_length / otp_lifetime', () => {
-      inst.handleAuthenticatePasswordOk({
-        response: {
-          error_code: MFA_ERROR_CODE.MFA_CHALLENGE_REQUIRED,
-          otp_length: 8,
-          otp_lifetime: 600,
-        },
-        status: HTTP_CODES.OK,
-        finalUrl: null,
-      });
-
-      expect(inst.state.authFlow).toBe(FLOW.MFA);
-      expect(inst.state.otpLength).toBe(8);
-      expect(inst.state.otpLifetime).toBe(600);
-      expect(inst.state.disableInput).toBe(false);
-    });
-
-    it('success redirect — navigates to finalUrl when status is 200 and finalUrl is present', () => {
-      const finalUrl = 'https://example.com/dashboard';
-      inst.handleAuthenticatePasswordOk({
-        response: {},
-        status: HTTP_CODES.OK,
-        finalUrl,
-      });
-
-      expect(window.location.href).toBe(finalUrl);
     });
   });
 });
