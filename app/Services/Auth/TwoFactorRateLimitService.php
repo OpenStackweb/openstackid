@@ -49,6 +49,12 @@ final class TwoFactorRateLimitService implements ITwoFactorRateLimitService
         return $maxAttempts;
     }
 
+    public function getWindowSeconds(string $action): int
+    {
+        [, $windowSeconds] = $this->limitsFor($action);
+        return $windowSeconds;
+    }
+
     public function getRetryAfterSeconds(string $action, string|int $subject): int
     {
         return RateLimiter::availableIn($this->cacheKey($action, $subject));

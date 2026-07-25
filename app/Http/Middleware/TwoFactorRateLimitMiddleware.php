@@ -14,10 +14,9 @@
 
 use App\Services\Auth\ITwoFactorRateLimitService;
 use Closure;
+use Illuminate\Cache\RateLimiting\Unlimited;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Session;
-use Symfony\Component\HttpFoundation\Response as HttpResponse;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Class TwoFactorRateLimitMiddleware
@@ -25,17 +24,19 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
  * Throttles the MFA verify / recovery / resend endpoints. Counter state and
  * window logic live in ITwoFactorRateLimitService (shared with
  * UserController::postLogin(), whose initial challenge issuance counts
- * against the same resend window - SDS idp-mfa.md §4.12).
+ * against the same resend window - SDS idp-mfa.md §4.12). The throttled
+ * subject and the 429 response shape are resolved via the named
+ * RateLimiter::for() limiters registered in TwoFactorServiceProvider - this
+ * middleware only decides *when* a hit counts, since the stock throttle
+ * pipeline has no hook for that:
  *
  *  - verify / recovery: increment ONLY on a failed response.
- *  - resend:            increment on EVERY request.
+ *  - resend / otp:      increment on EVERY request.
  *
  * @package App\Http\Middleware
  */
 final class TwoFactorRateLimitMiddleware
 {
-    private const PENDING_USER_KEY = '2fa_pending_user_id';
-
     /**
      * Response error_code values that count as a verification failure.
      */
@@ -51,31 +52,29 @@ final class TwoFactorRateLimitMiddleware
     /**
      * @param \Illuminate\Http\Request $request
      * @param Closure $next
-     * @param string $action one of verify|recovery|resend
+     * @param string $action one of verify|recovery|resend|otp
      * @return mixed
      */
     public function handle($request, Closure $next, string $action = ITwoFactorRateLimitService::ActionVerify)
     {
-        $subject = $action === ITwoFactorRateLimitService::ActionOtp
-            ? $this->resolveOtpSubject($request)
-            : $this->resolveSessionSubject();
+        $limiter = RateLimiter::limiter(ITwoFactorRateLimitService::RATE_LIMITER_NAME_PREFIX . $action);
+        $limit = $limiter ? $limiter($request) : null;
 
-        // Without a resolvable subject there is nothing to throttle; let the
-        // controller resolve the (missing) state itself - mfa_session_expired
-        // for the session-keyed actions, or its own validator 412 for otp.
-        if (is_null($subject)) {
+        // No named limiter resolved a subject (no pending session / no otp
+        // username submitted) - nothing to throttle; let the controller
+        // resolve the (missing) state itself - mfa_session_expired for the
+        // session-keyed actions, or its own validator 412 for otp.
+        if (is_null($limit) || $limit instanceof Unlimited) {
             return $next($request);
         }
 
+        $subject = $limit->key;
+
         if ($this->rate_limit_service->isRateLimited($action, $subject)) {
             Log::debug(sprintf("TwoFactorRateLimitMiddleware: action %s subject %s rate limited", $action, $subject));
-            return Response::json(
-                [
-                    'error_code'    => ITwoFactorRateLimitService::RATE_LIMIT_ERROR_CODE,
-                    'error_message' => ITwoFactorRateLimitService::RATE_LIMIT_MESSAGE,
-                ],
-                HttpResponse::HTTP_TOO_MANY_REQUESTS
-            )->withHeaders([
+
+            $responseCallback = $limit->responseCallback;
+            return $responseCallback($request, [
                 'Retry-After'           => $this->rate_limit_service->getRetryAfterSeconds($action, $subject),
                 'X-RateLimit-Limit'     => $this->rate_limit_service->getLimit($action),
                 'X-RateLimit-Remaining' => 0,
@@ -91,31 +90,6 @@ final class TwoFactorRateLimitMiddleware
         }
 
         return $response;
-    }
-
-    /**
-     * Session-keyed subject for verify/recovery/resend - the user id of the
-     * pending MFA challenge.
-     * @return int|null
-     */
-    private function resolveSessionSubject(): ?int
-    {
-        $userId = Session::get(self::PENDING_USER_KEY);
-        return is_null($userId) ? null : (int) $userId;
-    }
-
-    /**
-     * Subject for the anonymous, pre-auth otp action - the submitted email,
-     * canonicalized the same way the case-insensitive users.email lookup
-     * (DoctrineUserRepository::getByEmailOrName()) already resolves it, so the
-     * rate-limit subject can't be reset by cycling the target email's casing.
-     * @param \Illuminate\Http\Request $request
-     * @return string|null
-     */
-    private function resolveOtpSubject($request): ?string
-    {
-        $username = strtolower(trim($request->input('username', '')));
-        return $username === '' ? null : $username;
     }
 
     /**

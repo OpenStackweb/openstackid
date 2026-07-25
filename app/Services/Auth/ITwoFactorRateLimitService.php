@@ -24,6 +24,11 @@ namespace App\Services\Auth;
  * routes) and UserController::postLogin() (initial challenge issuance,
  * which shares the resend window per SDS idp-mfa.md §4.12).
  *
+ * Also the single source of truth for the pending-user session key, shared
+ * with the named RateLimiter::for() limiters registered in
+ * TwoFactorServiceProvider that resolve the subject (Limit::by()) and the
+ * 429 response shape (Limit::response()) for these actions.
+ *
  * @package App\Services\Auth
  */
 interface ITwoFactorRateLimitService
@@ -35,6 +40,22 @@ interface ITwoFactorRateLimitService
 
     public const RATE_LIMIT_ERROR_CODE = 'mfa_rate_limit';
     public const RATE_LIMIT_MESSAGE    = 'Too many attempts. Please try again later.';
+
+    /**
+     * Session key holding the user id of the pending MFA challenge - the
+     * subject the verify/recovery/resend named limiters throttle by.
+     */
+    public const PENDING_USER_SESSION_KEY = '2fa_pending_user_id';
+
+    /**
+     * Prefix applied to the Action* constants when registering/looking up
+     * the named RateLimiter::for() limiters (TwoFactorServiceProvider /
+     * TwoFactorRateLimitMiddleware). RateLimiter::for() names are a single
+     * global namespace shared with RouteServiceProvider - notably its own
+     * 'otp' limiter - so the bare action string ('otp') can't be reused
+     * directly as the limiter name without silently clobbering it.
+     */
+    public const RATE_LIMITER_NAME_PREFIX = '2fa-rate:';
 
     /**
      * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
@@ -59,6 +80,16 @@ interface ITwoFactorRateLimitService
      * @return int
      */
     public function getLimit(string $action): int;
+
+    /**
+     * The configured window length for this action, in seconds - used to
+     * build the matching RateLimiter::for() Limit definition in
+     * TwoFactorServiceProvider so its decaySeconds stays in sync with the
+     * value this service actually enforces.
+     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
+     * @return int
+     */
+    public function getWindowSeconds(string $action): int;
 
     /**
      * Seconds remaining until this subject's current window resets, for the
