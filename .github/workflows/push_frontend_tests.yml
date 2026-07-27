@@ -109,6 +109,7 @@ jobs:
           php artisan idp:create-super-admin mfa-oauth2@test.com '1Qaz2wsx!'
           php artisan idp:create-super-admin mfa-oauth2-consent@test.com '1Qaz2wsx!'
           php artisan idp:create-super-admin mfa-oauth2-trust@test.com '1Qaz2wsx!'
+          php artisan idp:create-oauth2-test-client
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Start web server
