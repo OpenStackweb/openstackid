@@ -866,6 +866,11 @@ class Client extends BaseEntity implements IClient
         $originWithoutPort = URLUtils::canonicalUrl($origin, false);
         if(empty($originWithoutPort)) return false;
         $originWithoutPort = URLUtils::normalizeUrl($originWithoutPort);
+        // defensive: no reproducible input reaches this with a null (canonicalUrl()'s
+        // filter_var/parse_url guard rejects everything malformed first), but the underlying
+        // Normalizer's mbParseUrl() can diverge from parse_url() and reset to an empty state -
+        // a null here comparing against a null registered-side normalization would false-match.
+        if(empty($originWithoutPort)) return false;
 
         $originWithPort = URLUtils::canonicalUrl($origin);
         $originWithPort = empty($originWithPort) ? null : URLUtils::normalizeUrl($originWithPort);
@@ -882,6 +887,7 @@ class Client extends BaseEntity implements IClient
             $canonical_allowed_origin = URLUtils::canonicalUrl($allowed_origin);
             if(empty($canonical_allowed_origin)) continue;
             $canonical_allowed_origin = URLUtils::normalizeUrl($canonical_allowed_origin);
+            if(empty($canonical_allowed_origin)) continue;
 
             if($originWithoutPort === $canonical_allowed_origin) return true;
             if($originWithPort !== null && $originWithPort === $canonical_allowed_origin) return true;
