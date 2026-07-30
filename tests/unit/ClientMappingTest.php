@@ -366,4 +366,28 @@ PPK;
 
         $this->assertTrue($client->isUriAllowed('myapp://callback/safe?unexpected=value&injected=1'));
     }
+
+    public function testIsUriAllowedNativeClientMatchesHttpLoopbackRegardlessOfPort()
+    {
+        // RFC 8252 SS7.3: native apps doing loopback interface redirection bind an EPHEMERAL port at
+        // request time, so "the authorization server MUST allow any port to be specified at the time
+        // of the request for loopback IP redirect URIs". Only the port is ignored in the comparison:
+        // scheme, host and path stay exact, non-loopback http stays rejected, and the loopback hosts
+        // are NOT cross-matched against each other (registering 127.0.0.1 does not allow localhost).
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setRedirectUris('http://127.0.0.1/callback,http://[::1]:8080/callback');
+
+        // registered without a port matches any requested port
+        $this->assertTrue($client->isUriAllowed('http://127.0.0.1:49152/callback'));
+        $this->assertTrue($client->isUriAllowed('http://127.0.0.1/callback'));
+        // registered WITH a port still matches any requested port (the RFC ignores the port entirely)
+        $this->assertTrue($client->isUriAllowed('http://[::1]:51204/callback'));
+        // path stays exact
+        $this->assertFalse($client->isUriAllowed('http://127.0.0.1:49152/other'));
+        // non-loopback http stays rejected by the deny-list carve-out
+        $this->assertFalse($client->isUriAllowed('http://insecure.example.com:49152/callback'));
+        // loopback hosts are distinct - no cross-match
+        $this->assertFalse($client->isUriAllowed('http://localhost:49152/callback'));
+    }
 }

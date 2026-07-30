@@ -672,7 +672,17 @@ class Client extends BaseEntity implements IClient
             return false;
         }
 
-        $uri = URLUtils::canonicalUrl($uri);
+        // RFC 8252 SS7.3: native apps doing http loopback redirection bind an EPHEMERAL port at
+        // request time - "the authorization server MUST allow any port to be specified at the time
+        // of the request for loopback IP redirect URIs". Only the port is ignored: scheme, host and
+        // path still require an exact match, and the loopback hosts are not cross-matched.
+        $use_port = !($this->application_type === IClient::ApplicationType_Native
+            && $original_parts !== false
+            && isset($original_parts['scheme'], $original_parts['host'])
+            && strtolower($original_parts['scheme']) === 'http'
+            && in_array(strtolower($original_parts['host']), IClient::NATIVE_LOOPBACK_HOSTS));
+
+        $uri = URLUtils::canonicalUrl($uri, $use_port);
         if(empty($uri)) {
             Log::debug(sprintf("Client::isUriAllowed url %s is not valid", $uri));
             return false;
@@ -698,7 +708,7 @@ class Client extends BaseEntity implements IClient
             // pipeline, then require an exact match - a registered value must no longer be accepted
             // merely as a *prefix* of the requested URI (e.g. "myapp://callback" matching any
             // "myapp://callback/<anything>").
-            $canonical_redirect_uri = URLUtils::canonicalUrl($redirect_uri);
+            $canonical_redirect_uri = URLUtils::canonicalUrl($redirect_uri, $use_port);
             if(empty($canonical_redirect_uri)) continue;
             $canonical_redirect_uri = URLUtils::normalizeUrl($canonical_redirect_uri);
 
