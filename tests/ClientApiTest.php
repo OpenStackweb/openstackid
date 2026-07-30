@@ -416,6 +416,35 @@ class ClientApiTest extends BrowserKitTestCase {
         $this->assertResponseStatus(412);
     }
 
+    public function testUpdateNativeClientRejectsSchemeAlreadyRegisteredInLegacySpaceSeparatedList(){
+
+        // Legacy rows: before the create()-validation hardening in this branch, POST create persisted
+        // URI lists verbatim (zero request-level validation), so a stored value can still contain
+        // ", scheme://" (comma + single space - the JSON/forms list artifact). The anchored uniqueness
+        // LIKE must tolerate exactly that artifact, or a second client can silently claim a scheme a
+        // legacy row already holds - defeating the OS-level interception protection for those rows.
+        // Simulate the legacy row via a direct entity write, bypassing service validation just like
+        // the pre-hardening create() did.
+        $client1 = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+        $client1->setPostLogoutRedirectUris('https://web.example.com/logout, legacyspaced://cb');
+        EntityManager::persist($client1);
+        EntityManager::flush();
+
+        $client2 = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app2']);
+
+        $response = $this->action("PUT", "Api\\ClientApiController@update",
+            array(
+                'id'               => $client2->id,
+                'application_type' => IClient::ApplicationType_Native,
+                'redirect_uris'    => 'legacyspaced://other',
+            ),
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(412);
+    }
+
     public function testUpdateNativeClientRejectsCustomSchemeRegistrationWhenAnotherIsInProgress(){
 
         // Closes the TOCTOU race in hasCustomSchemeRegisteredOnAnotherClientThan(): without a lock,

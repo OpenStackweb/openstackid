@@ -181,12 +181,18 @@ final class DoctrineOAuth2ClientRepository
         // match to a real list-item boundary: the scheme starts the field, or immediately follows a comma.
         $starts_with = $scheme . '://%';
         $after_comma = '%,' . $scheme . '://%';
+        // legacy rows: before the create()-validation hardening, POST create persisted lists verbatim,
+        // so an item can still sit after ", " (comma + single space - the JSON/forms list artifact).
+        // ClientFactory::populate now trims per item, so no NEW rows take this shape; N-space/other
+        // whitespace leftovers are for the pre-deploy audit (... LIKE '%, %'), not this query.
+        $after_comma_space = '%, ' . $scheme . '://%';
 
         $qb = $this->getEntityManager()->createQueryBuilder();
         $matches_field = function (string $field) use ($qb) {
             return $qb->expr()->orX(
                 $qb->expr()->like($field, ':starts_with'),
-                $qb->expr()->like($field, ':after_comma')
+                $qb->expr()->like($field, ':after_comma'),
+                $qb->expr()->like($field, ':after_comma_space')
             );
         };
 
@@ -201,6 +207,7 @@ final class DoctrineOAuth2ClientRepository
             ->andWhere("e.id <> :id")
             ->setParameter("starts_with", $starts_with)
             ->setParameter("after_comma", $after_comma)
+            ->setParameter("after_comma_space", $after_comma_space)
             ->setParameter("id", $id)
             ->setMaxResults(1)
             ->getQuery()
