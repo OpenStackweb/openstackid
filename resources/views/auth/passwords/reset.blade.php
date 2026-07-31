@@ -24,7 +24,7 @@
             max_length: {{ Config::get("auth.password_max_length") }},
             shape_pattern: '{{ Config::get("auth.password_shape_pattern") }}',
             allowed_special_characters: '{{ Config::get("auth.password_allowed_special_characters") }}',
-            allowed_special_characters_text: '{{ Config::get("auth.password_allowed_special_characters_text") }}',
+            allowed_special_characters_text: {{ Illuminate\Support\Js::from(Config::get("auth.password_allowed_special_characters_text")) }},
             shape_warning: '{{ Config::get("auth.password_shape_warning") }}',
             shape_list: '{{ Config::get("auth.password_shape_list") }}'
         }

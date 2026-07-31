@@ -152,6 +152,7 @@ const ResetPasswordPage = ({
                                     onClick={() => setShowPassword(!showPassword)}
                                     edge="end"
                                     size="small"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
                                 >
                                     {showPassword ? <VisibilityOff /> : <Visibility />}
                                 </IconButton>
@@ -195,6 +196,14 @@ const ResetPasswordPage = ({
                                         ? <CheckCircle style={{ color: '#2e7d32' }} />
                                         : <Cancel style={{ color: '#c62828', opacity: 0.6 }} />
                                 }
+                                <span className={styles.sr_only} aria-live="polite">
+                                    {!formik.values.password_confirmation
+                                        ? ""
+                                        : formik.values.password_confirmation === formik.values.password && formik.values.password
+                                            ? "Passwords match"
+                                            : "Passwords do not match"
+                                    }
+                                </span>
                             </InputAdornment>
                         )
                     }}
@@ -208,7 +217,7 @@ const ResetPasswordPage = ({
                     <li key={index}>{item}</li>
                   ))}
                 </ul>
-                <p className={styles.password_characters}>Allowed: <span dangerouslySetInnerHTML={{ __html: passwordPolicy.allowed_special_characters_text}} /></p>
+                <p className={styles.password_characters}>Allowed: <span>{passwordPolicy.allowed_special_characters_text}</span></p>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
                 <Grid container item justify='center'>

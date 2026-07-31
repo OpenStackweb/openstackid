@@ -100,7 +100,7 @@ return [
 
     // in seconds
     'password_reset_lifetime' => env('AUTH_PASSWORD_RESET_LIFETIME', 1800),
-    'password_min_length' => env('AUTH_PASSWORD_MIN_LENGTH', 8),
+    'password_min_length' => env('AUTH_PASSWORD_MIN_LENGTH', 10),
     'password_max_length' => env('AUTH_PASSWORD_MAX_LENGTH', 30),
     'password_allowed_special_characters' => env('AUTH_PASSWORD_ALLOWED_SPECIAL_CHARACTERS', '[A-Za-z0-9#?!@$%^&*+-]'),
     'password_allowed_special_characters_text' => env('AUTH_PASSWORD_ALLOWED_SPECIAL_CHARACTERS_TEXT', '#?!@$%^&*+-'),
