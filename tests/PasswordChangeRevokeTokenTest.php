@@ -93,7 +93,7 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
             'first_name'            => $this->test_user->getFirstName(),
             'last_name'             => $this->test_user->getLastName(),
             'email'                 => $this->test_user->getEmail(),
-            'current_password'      => '1Qaz2wsx!',
+            'current_password'      => '1Qaz2wsx!9',
             'password'              => 'NewP@ssw0rd!99',
             'password_confirmation' => 'NewP@ssw0rd!99',
         ];
@@ -147,7 +147,7 @@ final class PasswordChangeRevokeTokenTest extends OpenStackIDBaseTestCase
             'first_name'            => $this->test_user->getFirstName(),
             'last_name'             => $this->test_user->getLastName(),
             'email'                 => $this->test_user->getEmail(),
-            'current_password'      => '1Qaz2wsx!',
+            'current_password'      => '1Qaz2wsx!9',
             'password'              => 'Preserved@Sess10n!',
             'password_confirmation' => 'Preserved@Sess10n!',
         ];
