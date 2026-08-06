@@ -11,6 +11,7 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import Swal from "sweetalert2";
+import {isValidNativeUri} from "./native_uri_schemes";
 import {
     Box,
     Button,
@@ -56,10 +57,14 @@ const OauthPanel = ({
     }
 
     const validateRedirectURI = (value) => {
+        // native clients: custom app schemes / https / RFC 8252 http loopback, minus the backend
+        // deny-list - one shared implementation with the post-logout validator (native_uri_schemes.js).
+        if (application_type === appTypes.Native) {
+            return isValidNativeUri(value);
+        }
         try {
             const url = new URL(value);
-            return application_type === appTypes.Native ? true : url.protocol === 'https:'
-                && url.search === '';
+            return url.protocol === 'https:' && url.search === '';
         } catch (err) {
             return false;
         }
@@ -362,7 +367,6 @@ const OauthPanel = ({
                                 fullWidth
                                 size="small"
                                 variant="outlined"
-                                type="url"
                                 onChange={formik.handleChange}
                                 tags={getTags(formik.values.redirect_uris)}
                                 isValid={validateRedirectURI}

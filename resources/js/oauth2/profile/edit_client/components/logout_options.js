@@ -10,16 +10,7 @@ import TagsInput, {getTags} from "../../../../components/tags_input";
 
 import styles from "./common.module.scss";
 
-// mirrors Client::isDisallowedNativeUriScheme() on the backend: window.DISALLOWED_NATIVE_URI_SCHEMES and
-// window.NATIVE_LOOPBACK_HOSTS are injected server-side from IClient::DISALLOWED_NATIVE_URI_SCHEMES /
-// IClient::NATIVE_LOOPBACK_HOSTS (see edit-client.blade.php) - the deny-list has one owner, not two.
-const isDisallowedNativeUriScheme = (protocol, host) => {
-    const scheme = protocol.toLowerCase().replace(/:$/, '');
-    if (scheme === 'http') {
-        return !(window.NATIVE_LOOPBACK_HOSTS || []).includes((host || '').toLowerCase());
-    }
-    return (window.DISALLOWED_NATIVE_URI_SCHEMES || []).includes(scheme);
-}
+import {isValidNativeUri} from "./native_uri_schemes";
 
 const LogoutOptions = ({appTypes, initialValues, onSavePromise}) => {
     const [loading, setLoading] = useState(false);
@@ -27,14 +18,9 @@ const LogoutOptions = ({appTypes, initialValues, onSavePromise}) => {
     const validatePostLogoutRedirectURI = (value) => {
         // native clients may register genuine custom app schemes (myapp://...), https, or an RFC 8252
         // http loopback redirect, but not plain non-loopback http nor dangerous/launch pseudo-schemes
-        // (javascript:, data:, intent:, ...): matches the backend deny-list.
+        // (javascript:, data:, intent:, ...): matches the backend deny-list (see native_uri_schemes.js).
         if (initialValues.application_type === appTypes.Native) {
-            try {
-                const url = new URL(value);
-                return url.protocol === 'https:' || !isDisallowedNativeUriScheme(url.protocol, url.hostname);
-            } catch (err) {
-                return false;
-            }
+            return isValidNativeUri(value);
         }
         const regex = /^https:\/\/([\w@][\w.:@]+)\/?[\w\.?=%&=\-@/$,]*$/ig;
         return regex.test(value);
