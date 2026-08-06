@@ -503,4 +503,38 @@ class ClientApiTest extends BrowserKitTestCase {
         }
     }
 
+    public function testUpdateNativeClientRejectsSchemeAlreadyRegisteredInAuthorityLessForm(){
+
+        // RFC 8252 SS7.1 authority-less registrations (com.example.app:/oauth2redirect) store the scheme
+        // followed by ":/" instead of "://". The cross-client scheme-uniqueness LIKE must see that shape
+        // too: the OS-level interception risk is about the SCHEME, regardless of which URI form either
+        // client registered it in - so claiming "authlessscheme" via the authority-less form must block
+        // another client from claiming it via the authority form (and vice versa).
+        $client1 = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+
+        $response = $this->action("PUT", "Api\\ClientApiController@update",
+            array(
+                'id'               => $client1->id,
+                'application_type' => IClient::ApplicationType_Native,
+                'redirect_uris'    => 'authlessscheme:/callback',
+            ),
+            [],
+            [],
+            []);
+        $this->assertResponseStatus(201);
+
+        $client2 = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app2']);
+
+        $response = $this->action("PUT", "Api\\ClientApiController@update",
+            array(
+                'id'               => $client2->id,
+                'application_type' => IClient::ApplicationType_Native,
+                'redirect_uris'    => 'authlessscheme://other',
+            ),
+            [],
+            [],
+            []);
+        $this->assertResponseStatus(412);
+    }
+
 }

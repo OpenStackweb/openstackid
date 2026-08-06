@@ -179,13 +179,16 @@ final class DoctrineOAuth2ClientRepository
         // fields are comma-separated URI lists; a plain '%scheme://%' substring match false-positives on any
         // longer scheme ending in this one (e.g. 'roipapp' matching inside 'androipapp://...'). Anchor the
         // match to a real list-item boundary: the scheme starts the field, or immediately follows a comma.
-        $starts_with = $scheme . '://%';
-        $after_comma = '%,' . $scheme . '://%';
+        // The boundary is ':/' rather than '://' so BOTH registered forms are seen - the authority form
+        // (scheme://host/...) and the RFC 8252 SS7.1 authority-less form (scheme:/path): the OS-level
+        // interception risk is about the scheme, regardless of which URI form either client registered.
+        $starts_with = $scheme . ':/%';
+        $after_comma = '%,' . $scheme . ':/%';
         // legacy rows: before the create()-validation hardening, POST create persisted lists verbatim,
         // so an item can still sit after ", " (comma + single space - the JSON/forms list artifact).
         // ClientFactory::populate now trims per item, so no NEW rows take this shape; N-space/other
         // whitespace leftovers are for the pre-deploy audit (... LIKE '%, %'), not this query.
-        $after_comma_space = '%, ' . $scheme . '://%';
+        $after_comma_space = '%, ' . $scheme . ':/%';
 
         $qb = $this->getEntityManager()->createQueryBuilder();
         $matches_field = function (string $field) use ($qb) {

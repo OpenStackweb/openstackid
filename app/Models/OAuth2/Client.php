@@ -1170,13 +1170,13 @@ class Client extends BaseEntity implements IClient
         if(empty($this->post_logout_redirect_uris)) return false;
         if(empty($post_logout_uri)) return false;
 
-        if(!filter_var($post_logout_uri, FILTER_VALIDATE_URL)) return false;
-        if(is_null($this->post_logout_redirect_uris)) return false;
-        if(empty($this->post_logout_redirect_uris)) return false;
-
+        // no FILTER_VALIDATE_URL gate here: it rejects the RFC 8252 SS7.1 authority-less form
+        // (com.example.app:/logout) that native clients may register. Validity is enforced by the
+        // scheme checks below plus canonicalUrl() (which still applies FILTER_VALIDATE_URL to
+        // authority-bearing URIs and requires a rooted path for authority-less ones).
         $parts = @parse_url($post_logout_uri);
 
-        if ($parts == false) {
+        if ($parts == false || !isset($parts['scheme'])) {
             return false;
         }
         // native clients may register custom schemes (myapp://...); every other app type requires https
@@ -1190,10 +1190,9 @@ class Client extends BaseEntity implements IClient
         if($this->isNativeDangerousScheme($parts['scheme'], $parts['host'] ?? null))
             return false;
 
-        // host-less URIs (e.g. mailto:, file:///x, myapp:///cb) pass FILTER_VALIDATE_URL but have no
-        // authority to match against; without this guard the concatenation below raises an
-        // "Undefined array key host" warning (converted to ErrorException) on the public end-session endpoint.
-        if(!isset($parts['host'])) return false;
+        // NOTE: no isset($parts['host']) guard here - authority-less URIs go through canonicalUrl(),
+        // which either canonicalizes them (RFC 8252 SS7.1 rooted-path form) or returns null (opaque
+        // forms like mailto:foo@bar), so the host-less crash this gate used to have cannot recur.
 
         // exact match against each registered value, through the same canonicalize+normalize pipeline on
         // both sides (mirrors isUriAllowed()): a registered value's scheme+host[:port] must no longer match

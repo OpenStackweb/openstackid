@@ -390,4 +390,39 @@ PPK;
         // loopback hosts are distinct - no cross-match
         $this->assertFalse($client->isUriAllowed('http://localhost:49152/callback'));
     }
+
+    public function testIsUriAllowedNativeClientAcceptsAuthorityLessRfc8252Uri()
+    {
+        // RFC 8252 SS7.1 recommends the authority-less form for private-use scheme redirects -
+        // "com.example.app:/oauth2redirect/example-provider" is the RFC's own example, and it is the
+        // default shape AppAuth-based apps register. It has a scheme and a rooted path but no host,
+        // so canonicalUrl()'s FILTER_VALIDATE_URL/host requirements used to reject it unconditionally
+        // at match time even though every write-time validator accepts it.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setRedirectUris('com.example.app:/oauth2redirect/example-provider');
+
+        $this->assertTrue($client->isUriAllowed('com.example.app:/oauth2redirect/example-provider'));
+        // query strings stay tolerated, same as the authority form
+        $this->assertTrue($client->isUriAllowed('com.example.app:/oauth2redirect/example-provider?state=xyz'));
+        // path stays exact
+        $this->assertFalse($client->isUriAllowed('com.example.app:/other'));
+        // the authority form is a DIFFERENT uri (host "oauth2redirect" vs path "/oauth2redirect") - no cross-match
+        $this->assertFalse($client->isUriAllowed('com.example.app://oauth2redirect/example-provider'));
+        // opaque scheme-only uris (no authority AND no rooted path) stay rejected
+        $this->assertFalse($client->isUriAllowed('com.example.app:oauth2redirect'));
+    }
+
+    public function testIsPostLogoutUriAllowedNativeClientAcceptsAuthorityLessUri()
+    {
+        // same RFC 8252 SS7.1 authority-less form, at the end-session gate: this one was additionally
+        // blocked by isPostLogoutUriAllowed()'s own FILTER_VALIDATE_URL and isset(host) guards.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('com.example.app:/logout');
+
+        $this->assertTrue($client->isPostLogoutUriAllowed('com.example.app:/logout'));
+        $this->assertFalse($client->isPostLogoutUriAllowed('com.example.app:/other'));
+        $this->assertFalse($client->isPostLogoutUriAllowed('com.example.app://logout'));
+    }
 }

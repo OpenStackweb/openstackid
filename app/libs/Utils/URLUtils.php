@@ -34,17 +34,24 @@ final class URLUtils
      * @return string|null
      */
     public static function canonicalUrl(string $url, bool $usePort = true):?string{
-        if(!filter_var($url, FILTER_VALIDATE_URL)) return null;
         $parts = @parse_url($url);
-        if ($parts == false)
+        if ($parts == false || !isset($parts['scheme']))
         {
             return null;
         }
-        // host-less URIs (e.g. mailto:, file:///x) pass FILTER_VALIDATE_URL but have no authority to
-        // canonicalize; without this guard the concatenation below raises an "Undefined array key host" warning.
         if (!isset($parts['host'])) {
-            return null;
+            // RFC 8252 SS7.1: private-use scheme redirect URIs may omit the authority entirely -
+            // "com.example.app:/oauth2redirect/example-provider" is the RFC's own example form.
+            // FILTER_VALIDATE_URL rejects that shape, so it is canonicalized here from parse_url parts:
+            // scheme + rooted path (query/fragment dropped, path lowercased, same as the authority form).
+            // Opaque URIs (mailto:foo@bar - no authority AND no rooted path) keep returning null: there
+            // is no location to match a redirect against.
+            if (!isset($parts['path']) || !str_starts_with($parts['path'], '/') || isset($parts['user']) || isset($parts['port'])) {
+                return null;
+            }
+            return rtrim($parts['scheme'].':'.strtolower($parts['path']), '/');
         }
+        if(!filter_var($url, FILTER_VALIDATE_URL)) return null;
         $canonical_url = $parts['scheme'].'://'.strtolower($parts['host']);
         if(isset($parts['port']) && $usePort) {
             $canonical_url .= ':'.strtolower($parts['port']);
