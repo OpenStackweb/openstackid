@@ -413,6 +413,31 @@ PPK;
         $this->assertFalse($client->isUriAllowed('com.example.app:oauth2redirect'));
     }
 
+    public function testIsPostLogoutUriAllowedNativeClientMatchesHttpLoopbackRegardlessOfPort()
+    {
+        // same ephemeral-port reality as the authorization redirect (RFC 8252 SS7.3): a native app
+        // receiving its logout redirect on the loopback interface binds its port at request time, so
+        // the registered loopback post-logout URI cannot know it in advance. Port-agnostic matching
+        // applies to BOTH redirect gates via the same predicate (isRfc8252LoopbackRedirect): only the
+        // port is ignored - scheme, host and path stay exact, non-loopback http stays deny-listed,
+        // and loopback hosts are not cross-matched.
+        $client = new Client();
+        $client->setApplicationType(IClient::ApplicationType_Native);
+        $client->setPostLogoutRedirectUris('http://127.0.0.1/logout,http://[::1]:8080/logout');
+
+        // registered without a port matches any requested port
+        $this->assertTrue($client->isPostLogoutUriAllowed('http://127.0.0.1:49152/logout'));
+        $this->assertTrue($client->isPostLogoutUriAllowed('http://127.0.0.1/logout'));
+        // registered WITH a port still matches any requested port (the port is ignored entirely)
+        $this->assertTrue($client->isPostLogoutUriAllowed('http://[::1]:51204/logout'));
+        // path stays exact
+        $this->assertFalse($client->isPostLogoutUriAllowed('http://127.0.0.1:49152/other'));
+        // non-loopback http stays rejected by the deny-list carve-out
+        $this->assertFalse($client->isPostLogoutUriAllowed('http://insecure.example.com:49152/logout'));
+        // loopback hosts are distinct - no cross-match
+        $this->assertFalse($client->isPostLogoutUriAllowed('http://localhost:49152/logout'));
+    }
+
     public function testIsPostLogoutUriAllowedNativeClientAcceptsAuthorityLessUri()
     {
         // same RFC 8252 SS7.1 authority-less form, at the end-session gate: this one was additionally

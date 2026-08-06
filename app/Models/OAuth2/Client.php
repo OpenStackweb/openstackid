@@ -661,10 +661,10 @@ class Client extends BaseEntity implements IClient
     /**
      * RFC 8252 SS7.3: a Native client's http-loopback redirect binds an EPHEMERAL port at request
      * time - "the authorization server MUST allow any port to be specified at the time of the
-     * request for loopback IP redirect URIs". Single place this rule is decided; isUriAllowed()
-     * feeds it into the matching pipeline as "ignore the port on both sides". Deliberately NOT
-     * consulted by isPostLogoutUriAllowed() - no spec extends the carve-out to RP-initiated
-     * logout (see ADR-0001, decision 3).
+     * request for loopback IP redirect URIs". Single place this rule is decided; both redirect
+     * gates (isUriAllowed() per the RFC's mandate, isPostLogoutUriAllowed() by extension - the
+     * ephemeral-port reality is identical for a loopback logout redirect) feed it into the
+     * matching pipeline as "ignore the port on both sides" (see ADR-0001, decision 3).
      *
      * @param array|false $parts result of parse_url() on the requested URI
      * @return bool
@@ -1197,16 +1197,19 @@ class Client extends BaseEntity implements IClient
         // exact match against each registered value, both sides through the same canonicalize+normalize
         // pipeline (URLUtils::anyCanonicalMatchesList): the full path is part of the comparison,
         // scheme/host stay case-insensitive, and query strings remain tolerated (dropped from both
-        // sides), so a client's dynamic ?state=.../?session=... params never break the match. The
-        // registered port is matched exactly - the RFC 8252 SS7.3 port carve-out deliberately applies
-        // to isUriAllowed() only (see isRfc8252LoopbackRedirect / ADR-0001 decision 3).
-        $requested_uri = URLUtils::canonicalizeForMatch($post_logout_uri);
+        // sides), so a client's dynamic ?state=.../?session=... params never break the match. Native
+        // http-loopback logout redirects are compared port-agnostically, same as isUriAllowed() - the
+        // app binds its loopback port at request time (see isRfc8252LoopbackRedirect / ADR-0001
+        // decision 3); only the port is ignored, scheme/host/path stay exact.
+        $use_port = !$this->isRfc8252LoopbackRedirect($parts);
+
+        $requested_uri = URLUtils::canonicalizeForMatch($post_logout_uri, $use_port);
         if(is_null($requested_uri)) return false;
 
         return URLUtils::anyCanonicalMatchesList(
             [$requested_uri],
             $this->post_logout_redirect_uris,
-            true,
+            $use_port,
             sprintf("Client::isPostLogoutUriAllowed client %s", $this->client_id));
     }
 
