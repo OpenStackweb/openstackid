@@ -659,6 +659,26 @@ class Client extends BaseEntity implements IClient
     }
 
     /**
+     * RFC 8252 SS7.3: a Native client's http-loopback redirect binds an EPHEMERAL port at request
+     * time - "the authorization server MUST allow any port to be specified at the time of the
+     * request for loopback IP redirect URIs". Single place this rule is decided; isUriAllowed()
+     * feeds it into the matching pipeline as "ignore the port on both sides". Deliberately NOT
+     * consulted by isPostLogoutUriAllowed() - no spec extends the carve-out to RP-initiated
+     * logout (see ADR-0001, decision 3).
+     *
+     * @param array|false $parts result of parse_url() on the requested URI
+     * @return bool
+     */
+    private function isRfc8252LoopbackRedirect($parts): bool
+    {
+        return $this->application_type === IClient::ApplicationType_Native
+            && $parts !== false
+            && isset($parts['scheme'], $parts['host'])
+            && strtolower($parts['scheme']) === 'http'
+            && in_array(strtolower($parts['host']), IClient::NATIVE_LOOPBACK_HOSTS);
+    }
+
+    /**
      * @param string $uri
      * @return bool
      */
@@ -672,52 +692,42 @@ class Client extends BaseEntity implements IClient
             return false;
         }
 
-        // RFC 8252 SS7.3: native apps doing http loopback redirection bind an EPHEMERAL port at
-        // request time - "the authorization server MUST allow any port to be specified at the time
-        // of the request for loopback IP redirect URIs". Only the port is ignored: scheme, host and
-        // path still require an exact match, and the loopback hosts are not cross-matched.
-        $use_port = !($this->application_type === IClient::ApplicationType_Native
-            && $original_parts !== false
-            && isset($original_parts['scheme'], $original_parts['host'])
-            && strtolower($original_parts['scheme']) === 'http'
-            && in_array(strtolower($original_parts['host']), IClient::NATIVE_LOOPBACK_HOSTS));
+        // RFC 8252 SS7.3 loopback redirects are compared port-agnostically - only the port is
+        // ignored: scheme, host and path still require an exact match, and the loopback hosts are
+        // not cross-matched (see isRfc8252LoopbackRedirect).
+        $use_port = !$this->isRfc8252LoopbackRedirect($original_parts);
 
-        $uri = URLUtils::canonicalUrl($uri, $use_port);
-        if(empty($uri)) {
+        $canonical_uri = URLUtils::canonicalUrl($uri, $use_port);
+        if(empty($canonical_uri)) {
             Log::debug(sprintf("Client::isUriAllowed url %s is not valid", $uri));
             return false;
         }
+        // evaluated on the canonical (pre-normalization) form: normalizeUrl() lowercases the scheme,
+        // and this check has always been case-sensitive on it.
         if
         (
-            ($this->application_type !== IClient::ApplicationType_Native && !URLUtils::isHTTPS($uri))
+            ($this->application_type !== IClient::ApplicationType_Native && !URLUtils::isHTTPS($canonical_uri))
             && (ServerConfigurationService::getConfigValue("SSL.Enable"))
         )
         {
-            Log::debug(sprintf("Client::isUriAllowed url %s is not under ssl schema", $uri));
+            Log::debug(sprintf("Client::isUriAllowed url %s is not under ssl schema", $canonical_uri));
             return false;
         }
 
-        $redirect_uris = explode(',', $this->redirect_uris);
-        $uri = URLUtils::normalizeUrl($uri);
-        if(empty($uri)) return false;
-        foreach($redirect_uris as $redirect_uri){
-            $redirect_uri = trim($redirect_uri);
-            if(empty($redirect_uri)) continue;
+        $requested_uri = URLUtils::normalizeUrl($canonical_uri);
+        if(empty($requested_uri)) return false;
 
-            // symmetric normalization: compare both sides through the same canonicalize+normalize
-            // pipeline, then require an exact match - a registered value must no longer be accepted
-            // merely as a *prefix* of the requested URI (e.g. "myapp://callback" matching any
-            // "myapp://callback/<anything>").
-            $canonical_redirect_uri = URLUtils::canonicalUrl($redirect_uri, $use_port);
-            if(empty($canonical_redirect_uri)) continue;
-            $canonical_redirect_uri = URLUtils::normalizeUrl($canonical_redirect_uri);
+        // exact match against each registered value, both sides through the same canonicalize+normalize
+        // pipeline (URLUtils::anyCanonicalMatchesList) - a registered value must not be accepted merely
+        // as a *prefix* of the requested URI (e.g. "myapp://callback" matching "myapp://callback/<x>").
+        if(URLUtils::anyCanonicalMatchesList(
+            [$requested_uri],
+            $this->redirect_uris,
+            $use_port,
+            sprintf("Client::isUriAllowed client %s", $this->client_id)))
+            return true;
 
-            Log::debug(sprintf("Client::isUriAllowed url %s client %s redirect_uri %s", $uri, $this->client_id, $canonical_redirect_uri));
-            if($uri === $canonical_redirect_uri)
-                return true;
-        }
-
-        Log::debug(sprintf("Client::isUriAllowed url %s is not allowed as return url for client %s", $uri, $this->client_id));
+        Log::debug(sprintf("Client::isUriAllowed url %s is not allowed as return url for client %s", $requested_uri, $this->client_id));
         return false;
     }
 
@@ -863,37 +873,27 @@ class Client extends BaseEntity implements IClient
      */
     public function isOriginAllowed(string $origin):bool
     {
-        $originWithoutPort = URLUtils::canonicalUrl($origin, false);
-        if(empty($originWithoutPort)) return false;
-        $originWithoutPort = URLUtils::normalizeUrl($originWithoutPort);
-        // defensive: no reproducible input reaches this with a null (canonicalUrl()'s
-        // filter_var/parse_url guard rejects everything malformed first), but the underlying
-        // Normalizer's mbParseUrl() can diverge from parse_url() and reset to an empty state -
-        // a null here comparing against a null registered-side normalization would false-match.
-        if(empty($originWithoutPort)) return false;
+        // exact match against each registered value, both sides through the same canonicalize+normalize
+        // pipeline (URLUtils::anyCanonicalMatchesList) - a registered origin must not match merely
+        // because the requested origin is a string prefix of it. The requested origin is offered in
+        // TWO canonical forms: without its port (so a registered origin with no explicit port matches
+        // the request on any port) and with it (so a registered origin WITH a port only matches the
+        // request carrying that exact port). canonicalizeForMatch() yielding null on either side can
+        // never false-match - a null requested form is dropped, a null registered item is skipped.
+        $requested_origins = [];
 
-        $originWithPort = URLUtils::canonicalUrl($origin);
-        $originWithPort = empty($originWithPort) ? null : URLUtils::normalizeUrl($originWithPort);
+        $originWithoutPort = URLUtils::canonicalizeForMatch($origin, false);
+        if(is_null($originWithoutPort)) return false;
+        $requested_origins[] = $originWithoutPort;
 
-        // exact match against each registered value, through the same canonicalize+normalize pipeline on
-        // both sides (mirrors isUriAllowed()/isPostLogoutUriAllowed()) - a registered origin must no longer
-        // match merely because the requested origin is a string prefix of it (e.g. registered
-        // "https://my-app.example.com" incorrectly matching a requested "https://my-app.example.co" under
-        // the old str_contains($this->allowed_origins, $origin) check).
-        foreach(explode(',', $this->allowed_origins) as $allowed_origin){
-            $allowed_origin = trim($allowed_origin);
-            if(empty($allowed_origin)) continue;
+        $originWithPort = URLUtils::canonicalizeForMatch($origin);
+        if(!is_null($originWithPort)) $requested_origins[] = $originWithPort;
 
-            $canonical_allowed_origin = URLUtils::canonicalUrl($allowed_origin);
-            if(empty($canonical_allowed_origin)) continue;
-            $canonical_allowed_origin = URLUtils::normalizeUrl($canonical_allowed_origin);
-            if(empty($canonical_allowed_origin)) continue;
-
-            if($originWithoutPort === $canonical_allowed_origin) return true;
-            if($originWithPort !== null && $originWithPort === $canonical_allowed_origin) return true;
-        }
-
-        return false;
+        return URLUtils::anyCanonicalMatchesList(
+            $requested_origins,
+            $this->allowed_origins,
+            true,
+            sprintf("Client::isOriginAllowed client %s", $this->client_id));
     }
 
     public function getWebsite()
@@ -1190,33 +1190,24 @@ class Client extends BaseEntity implements IClient
         if($this->isNativeDangerousScheme($parts['scheme'], $parts['host'] ?? null))
             return false;
 
-        // NOTE: no isset($parts['host']) guard here - authority-less URIs go through canonicalUrl(),
-        // which either canonicalizes them (RFC 8252 SS7.1 rooted-path form) or returns null (opaque
-        // forms like mailto:foo@bar), so the host-less crash this gate used to have cannot recur.
+        // NOTE: no isset($parts['host']) guard here - authority-less URIs go through the matching
+        // pipeline, which either canonicalizes them (RFC 8252 SS7.1 rooted-path form) or yields null
+        // (opaque forms like mailto:foo@bar), so the host-less crash this gate used to have cannot recur.
 
-        // exact match against each registered value, through the same canonicalize+normalize pipeline on
-        // both sides (mirrors isUriAllowed()): a registered value's scheme+host[:port] must no longer match
-        // as a prefix of an unrelated path - the full path is now part of the comparison, and scheme/host
-        // are still matched case-insensitively since canonicalUrl()+normalizeUrl() lowercase both. Query
-        // strings remain tolerated - canonicalUrl() drops them from both sides, so a client's dynamic
-        // ?state=.../?session=... params never break the match.
-        $canonical_uri = URLUtils::canonicalUrl($post_logout_uri);
-        if(empty($canonical_uri)) return false;
-        $canonical_uri = URLUtils::normalizeUrl($canonical_uri);
-        if(empty($canonical_uri)) return false;
+        // exact match against each registered value, both sides through the same canonicalize+normalize
+        // pipeline (URLUtils::anyCanonicalMatchesList): the full path is part of the comparison,
+        // scheme/host stay case-insensitive, and query strings remain tolerated (dropped from both
+        // sides), so a client's dynamic ?state=.../?session=... params never break the match. The
+        // registered port is matched exactly - the RFC 8252 SS7.3 port carve-out deliberately applies
+        // to isUriAllowed() only (see isRfc8252LoopbackRedirect / ADR-0001 decision 3).
+        $requested_uri = URLUtils::canonicalizeForMatch($post_logout_uri);
+        if(is_null($requested_uri)) return false;
 
-        foreach(explode(',', $this->post_logout_redirect_uris) as $registered_uri){
-            $registered_uri = trim($registered_uri);
-            if(empty($registered_uri)) continue;
-
-            $canonical_registered_uri = URLUtils::canonicalUrl($registered_uri);
-            if(empty($canonical_registered_uri)) continue;
-            $canonical_registered_uri = URLUtils::normalizeUrl($canonical_registered_uri);
-
-            if($canonical_uri === $canonical_registered_uri) return true;
-        }
-
-        return false;
+        return URLUtils::anyCanonicalMatchesList(
+            [$requested_uri],
+            $this->post_logout_redirect_uris,
+            true,
+            sprintf("Client::isPostLogoutUriAllowed client %s", $this->client_id));
     }
 
     public function getAdminUsers(){
