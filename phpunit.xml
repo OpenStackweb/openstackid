@@ -25,5 +25,10 @@
   </testsuites>
   <php>
     <env name="APP_ENV" value="testing"/>
+    <!-- the resource-server IP allow-list check (ValidateBearerTokenResourceServerStrategy) no-ops
+         when this is off, silently passing introspection calls that must be rejected (see
+         OAuth2ProtocolTest::testResourceServerIntrospectionNotValidIP). Deterministic caller IP
+         comes from tests/bootstrap.php (REMOTE_ADDR=127.0.0.1). -->
+    <env name="OAUTH2_VALIDATE_RESOURCE_SERVER_IP" value="true"/>
   </php>
 </phpunit>

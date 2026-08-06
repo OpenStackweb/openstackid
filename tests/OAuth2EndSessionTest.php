@@ -17,9 +17,6 @@ use Models\OAuth2\Client;
 
 /**
  * Class OAuth2EndSessionTest
- * NOTE: deliberately NOT placed in OAuth2ProtocolTestCase.php - that file's *TestCase.php suffix
- * keeps it OUT of the Application Test Suite (PHPUnit only auto-discovers *Test.php), so a test
- * added there would never run in CI.
  * @package Tests
  */
 final class OAuth2EndSessionTest extends OpenStackIDBaseTestCase
