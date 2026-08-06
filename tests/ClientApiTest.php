@@ -503,6 +503,29 @@ class ClientApiTest extends BrowserKitTestCase {
         }
     }
 
+    public function testUpdateNativeClientRejectsOpaqueUriThatRuntimeCanNeverMatch(){
+
+        // "com.example.app:oauth2redirect" (opaque - no authority AND no rooted path, the one-character
+        // typo of the RFC 8252 SS7.1 form) used to pass every write-time check (scheme present, not
+        // deny-listed, invisible to the ":/"-anchored uniqueness LIKE) and get stored - but
+        // URLUtils::canonicalizeForMatch() returns null for it, so every runtime gate rejects it
+        // forever: a silently dead registration. Write-time now applies the SAME canonicalizable rule
+        // as the runtime matcher, turning the dead registration into a clean 412.
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+
+        $response = $this->action("PUT", "Api\\ClientApiController@update",
+            array(
+                'id'               => $client->id,
+                'application_type' => IClient::ApplicationType_Native,
+                'redirect_uris'    => 'com.example.app:oauth2redirect',
+            ),
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(412);
+    }
+
     public function testUpdateNativeClientRejectsSchemeAlreadyRegisteredInAuthorityLessForm(){
 
         // RFC 8252 SS7.1 authority-less registrations (com.example.app:/oauth2redirect) store the scheme

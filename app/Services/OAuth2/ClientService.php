@@ -13,6 +13,7 @@
  **/
 
 use App\Events\OAuth2ClientLocked;
+use App\libs\Utils\URLUtils;
 use App\Models\OAuth2\Factories\ClientFactory;
 use App\Services\AbstractService;
 use Auth\Repositories\IUserRepository;
@@ -321,6 +322,14 @@ final class ClientService extends AbstractService implements IClientService
                 $scheme = strtolower($parts['scheme']);
                 if (Client::isDisallowedNativeUriScheme($scheme, $parts['host'] ?? null)) {
                     throw new ValidationException(sprintf('scheme %s:// is not allowed.', $scheme));
+                }
+                // write/runtime symmetry: if the runtime matcher cannot canonicalize the value
+                // (URLUtils::canonicalizeForMatch - requires an authority or a rooted path), it can
+                // never match a redirect, so storing it would create a silently dead registration.
+                // Rejects opaque URIs like "com.example.app:oauth2redirect" (the one-character typo
+                // of the RFC 8252 SS7.1 form) with a clear 412 at registration time instead.
+                if (is_null(URLUtils::canonicalizeForMatch(trim($uri)))) {
+                    throw new ValidationException(sprintf('uri %s on %s is not an acceptable redirect location - use scheme://host/... or scheme:/path.', trim($uri), $field));
                 }
                 if (HttpUtils::isCustomSchema($scheme)
                     && $this->client_repository->hasCustomSchemeRegisteredOnAnotherClientThan($exclude_client_id, $scheme)) {

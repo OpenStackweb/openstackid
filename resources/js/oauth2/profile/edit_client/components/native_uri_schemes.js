@@ -23,7 +23,12 @@ export const isDisallowedNativeUriScheme = (protocol, host) => {
 export const isValidNativeUri = (value) => {
     try {
         const url = new URL(value);
-        return url.protocol === 'https:' || !isDisallowedNativeUriScheme(url.protocol, url.hostname);
+        if (url.protocol === 'https:') return true;
+        if (isDisallowedNativeUriScheme(url.protocol, url.hostname)) return false;
+        // opaque URIs (scheme:data - no authority AND no rooted path, e.g. the one-character typo
+        // "com.example.app:oauth2redirect") have no location to redirect to; the runtime matcher can
+        // never canonicalize them, and the backend rejects them at write time with a 412 - agree inline.
+        return url.hostname !== '' || url.pathname.startsWith('/');
     } catch (err) {
         return false;
     }

@@ -41,4 +41,10 @@ describe('isValidNativeUri', () => {
         expect(isValidNativeUri('http://evil.example.com/cb')).toBe(false);
         expect(isValidNativeUri('not a uri')).toBe(false);
     });
+
+    it('rejects opaque URIs (no authority and no rooted path) that the runtime can never match', () => {
+        // the one-character typo of the RFC 8252 SS7.1 form - backend write-time validation rejects
+        // it with a 412 (assertNativeCustomSchemesAllowed), the inline validator must agree
+        expect(isValidNativeUri('com.example.app:oauth2redirect')).toBe(false);
+    });
 });
