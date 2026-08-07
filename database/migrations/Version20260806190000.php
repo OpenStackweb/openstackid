@@ -37,7 +37,9 @@ class Version20260806190000 extends AbstractMigration
                 $table->string("external_id")->setNotnull(true);
                 $table->string("confirmation_code")->setNotnull(true);
                 $table->string("status")->setNotnull(true);
-                $table->integer("user_id")->setNotnull(false);
+                $table->bigInteger("user_id")->setUnsigned(true)->setNotnull(false);
+                $table->index("user_id", "user_id");
+                $table->foreign("users", "user_id", "id", ["onDelete" => "SET NULL"]);
                 $table->unique(["provider", "external_id"]);
                 $table->unique("confirmation_code");
             });
