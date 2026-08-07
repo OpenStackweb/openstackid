@@ -2191,9 +2191,9 @@ SQL;
     }
 
     /**
-     * @param string $external_provider
+     * @param string|null $external_provider
      */
-    public function setExternalProvider(string $external_provider): void
+    public function setExternalProvider(?string $external_provider): void
     {
         $this->external_provider = $external_provider;
     }
@@ -2207,25 +2207,25 @@ SQL;
     }
 
     /**
-     * @param string $external_pic
+     * @param string|null $external_pic
      */
-    public function setExternalPic(string $external_pic): void
+    public function setExternalPic(?string $external_pic): void
     {
         $this->external_pic = $external_pic;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getExternalId(): string
+    public function getExternalId(): ?string
     {
         return $this->external_id;
     }
 
     /**
-     * @param string $external_id
+     * @param string|null $external_id
      */
-    public function setExternalId(string $external_id): void
+    public function setExternalId(?string $external_id): void
     {
         $this->external_id = $external_id;
     }

@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use App\Http\Controllers\Api\FacebookDataDeletionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -48,3 +49,11 @@ Route::get('/version', function () {
 
     return response()->json($versionData, 200);
 });
+
+Route::post('/facebook/data-deletion', [FacebookDataDeletionController::class, 'handle'])
+    ->middleware('throttle:60,1')
+    ->name('facebook_data_deletion_callback');
+
+Route::get('/facebook/data-deletion/status/{confirmation_code}', [FacebookDataDeletionController::class, 'status'])
+    ->middleware('throttle:60,1')
+    ->name('facebook_data_deletion_status');
