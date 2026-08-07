@@ -126,6 +126,7 @@ const ResetPasswordPage = ({
                     hiddenLabel
                     value={formik.values.email}
                     disabled={true}
+                    inputProps={{ 'aria-label': 'Email address' }}
                     InputProps={{ disableUnderline: true }}
                 />
               </Grid>
