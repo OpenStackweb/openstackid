@@ -123,6 +123,13 @@ final class FacebookDataDeletionApiTest extends BrowserKitTestCase
         $status_response->see($confirmation_code);
     }
 
+    public function testArraySignedRequestReturns400InsteadOf500(): void
+    {
+        $response = $this->post(self::CallbackUri, ['signed_request' => ['a', 'b']]);
+
+        $this->assertResponseStatus(400);
+    }
+
     public function testStatusPageForUnknownCodeReturns404(): void
     {
         $this->get(self::CallbackUri . '/status/does-not-exist');

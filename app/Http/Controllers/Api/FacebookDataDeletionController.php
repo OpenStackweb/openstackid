@@ -48,7 +48,7 @@ final class FacebookDataDeletionController extends Controller
     {
         $signed_request = $request->input('signed_request');
 
-        if (empty($signed_request)) {
+        if (!is_string($signed_request) || $signed_request === '') {
             Log::warning("FacebookDataDeletionController::handle missing signed_request");
             return response()->json([
                 'error' => ['code' => 'invalid_request', 'message' => 'signed_request is required.']
