@@ -108,4 +108,40 @@ final class FacebookDataDeletionBackfillCommandTest extends BrowserKitTestCase
 
         $this->assertNotSame(0, $exit_code);
     }
+
+    public function testFopenFailureAfterReadableCheckReturnsNonZeroExitCode(): void
+    {
+        stream_wrapper_register('fbfailtest', FacebookDataDeletionBackfillFailingStreamWrapper::class);
+
+        try {
+            $exit_code = Artisan::call(self::Command, ['path' => 'fbfailtest://fake.csv']);
+            $this->assertNotSame(0, $exit_code);
+        } finally {
+            stream_wrapper_unregister('fbfailtest');
+        }
+    }
+}
+
+/**
+ * Reports the path as readable (url_stat succeeds) but fails to open it
+ * (stream_open returns false) - reproduces the fopen()-fails-after-
+ * is_readable()-passes gap without depending on real filesystem races.
+ */
+final class FacebookDataDeletionBackfillFailingStreamWrapper
+{
+    public $context;
+
+    public function url_stat(string $path, int $flags)
+    {
+        return [
+            'dev' => 0, 'ino' => 0, 'mode' => 0100644, 'nlink' => 1,
+            'uid' => 0, 'gid' => 0, 'rdev' => 0, 'size' => 0,
+            'atime' => 0, 'mtime' => 0, 'ctime' => 0, 'blksize' => -1, 'blocks' => -1,
+        ];
+    }
+
+    public function stream_open(string $path, string $mode, int $options, ?string &$opened_path): bool
+    {
+        return false;
+    }
 }

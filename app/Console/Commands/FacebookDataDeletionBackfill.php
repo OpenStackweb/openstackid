@@ -76,7 +76,12 @@ final class FacebookDataDeletionBackfill extends Command
         $not_found = 0;
         $skipped = 0;
 
-        $handle = fopen($path, 'r');
+        $handle = @fopen($path, 'r');
+        if ($handle === false) {
+            $this->error(sprintf("Unable to open file %s.", $path));
+            return 1;
+        }
+
         while (($line = fgets($handle)) !== false) {
             $external_id = trim($line, " \t\n\r\0\x0B\"'");
 
