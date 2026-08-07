@@ -65,10 +65,6 @@ final class FacebookDataDeletionApiTest extends BrowserKitTestCase
 
         $response = $this->post(self::CallbackUri, ['signed_request' => $sr]);
 
-        if ($response->response->getStatusCode() !== 200) {
-            fwrite(STDERR, "\n===DEBUG RESPONSE BODY===\n" . $response->response->getContent() . "\n===END DEBUG===\n");
-        }
-
         $this->assertResponseStatus(200);
         $json = json_decode($response->response->getContent(), true);
         $this->assertNotEmpty($json['confirmation_code']);

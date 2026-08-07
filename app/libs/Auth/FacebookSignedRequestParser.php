@@ -23,11 +23,13 @@ final class FacebookSignedRequestParser
 {
     /**
      * @param string $signed_request
-     * @param string $secret
+     * @param string|null $secret
      * @return array|null
      */
-    public static function parse(string $signed_request, string $secret): ?array
+    public static function parse(string $signed_request, ?string $secret): ?array
     {
+        if ($secret === null || $secret === '') return null;
+
         $parts = explode('.', $signed_request, 2);
         if (count($parts) !== 2) return null;
 

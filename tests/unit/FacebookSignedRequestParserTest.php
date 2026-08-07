@@ -92,4 +92,18 @@ final class FacebookSignedRequestParserTest extends TestCase
 
         $this->assertNull(FacebookSignedRequestParser::parse($sr, self::Secret));
     }
+
+    public function testNullSecretReturnsNullInsteadOfThrowing(): void
+    {
+        $sr = $this->buildSignedRequest(['user_id' => '218471'], self::Secret);
+
+        $this->assertNull(FacebookSignedRequestParser::parse($sr, null));
+    }
+
+    public function testEmptySecretReturnsNullInsteadOfThrowing(): void
+    {
+        $sr = $this->buildSignedRequest(['user_id' => '218471'], self::Secret);
+
+        $this->assertNull(FacebookSignedRequestParser::parse($sr, ''));
+    }
 }
