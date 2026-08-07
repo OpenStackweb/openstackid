@@ -14,6 +14,7 @@
 use Auth\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 
 /**
@@ -82,6 +83,21 @@ final class FacebookDataDeletionBackfillCommandTest extends BrowserKitTestCase
 
         $count = DB::table('facebook_deletion_requests')->where('external_id', $asid)->count();
         $this->assertSame(1, $count);
+
+        unlink($csv_path);
+    }
+
+    public function testDoesNotLogExternalId(): void
+    {
+        Log::spy();
+        $asid = '555000444';
+        $csv_path = $this->writeCsvFixture([$asid]);
+
+        Artisan::call(self::Command, ['path' => $csv_path]);
+
+        Log::shouldNotHaveReceived('debug', function (string $message) use ($asid) {
+            return str_contains($message, $asid);
+        });
 
         unlink($csv_path);
     }

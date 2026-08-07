@@ -93,7 +93,7 @@ final class FacebookDataDeletionBackfill extends Command
                 $not_found++;
             }
 
-            Log::debug(sprintf("FacebookDataDeletionBackfill::handle processed %s -> %s", $external_id, $result['confirmation_code']));
+            Log::debug(sprintf("FacebookDataDeletionBackfill::handle processed request with status %s", $result['status']));
         }
         fclose($handle);
 
