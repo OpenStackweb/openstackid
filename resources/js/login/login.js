@@ -31,8 +31,13 @@ import EmailErrorActions from "./components/email_error_actions";
 import ThirdPartyIdentityProviders from "./components/third_party_identity_providers";
 import TwoFactorForm from "./components/two_factor_form";
 import RecoveryCodeForm from "./components/recovery_code_form";
+import {
+  RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY,
+  DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
+} from "../shared/recovery_codes";
 
 import styles from "./login.module.scss";
+import recoveryCodesStyles from "../components/recovery_codes.module.scss";
 import "./third_party_identity_providers.scss";
 import {
   FLOW,
@@ -93,6 +98,11 @@ class LoginPage extends React.Component {
       // change writes otp_lifetime atomically with flow, so props.otpLifetime
       // is only ever missing when there's no pending OTP to show a countdown for.
       passwordlessLifetime: props.otpLifetime ?? null,
+      // Set once a recovery-code login succeeds with a low remaining count, so
+      // the redirect can be held until the user acknowledges the warning -
+      // this is the only point where the SPA still controls the page (see
+      // onVerifyRecovery()/onContinueAfterLowRecoveryCodes() below).
+      lowRecoveryCodesWarning: null,
     };
 
     if (props.authError != "" && !this.state.user_fullname) {
@@ -130,6 +140,7 @@ class LoginPage extends React.Component {
     this.onVerify2FA = this.onVerify2FA.bind(this);
     this.onResend2FA = this.onResend2FA.bind(this);
     this.onVerifyRecovery = this.onVerifyRecovery.bind(this);
+    this.onContinueAfterLowRecoveryCodes = this.onContinueAfterLowRecoveryCodes.bind(this);
     this.onUseRecovery = this.onUseRecovery.bind(this);
     this.onBackToOtp = this.onBackToOtp.bind(this);
     this.resetToPasswordFlow = this.resetToPasswordFlow.bind(this);
@@ -318,9 +329,13 @@ class LoginPage extends React.Component {
 
   onRecoveryCodeChange(ev) {
     let { value } = ev.target;
+    // Recovery codes are generated and hashed without the "-" separator; it is
+    // added only for on-screen readability (XXXX-XXXX). Strip any non-alphanumeric
+    // characters here so a code typed or pasted exactly as displayed still matches.
+    const normalized = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     this.setState({
       ...this.state,
-      recoveryCode: value,
+      recoveryCode: normalized,
       errors: { ...this.state.errors, recovery: "" },
     });
   }
@@ -536,15 +551,36 @@ class LoginPage extends React.Component {
 
     verifyRecoveryCode(recoveryCode, this.props.token).then(
       (payload) => {
-        // See onVerify2FA() for rationale.
         const { response } = payload;
-        window.location.href =
+        const redirectUrl =
           (response && response.redirect_url) || window.location.href;
+        const remaining = response && response.recovery_codes_remaining;
+        const threshold =
+          (response && response.recovery_codes_low_threshold) ??
+          DEFAULT_RECOVERY_CODES_LOW_THRESHOLD;
+        const alreadyDismissed =
+          sessionStorage.getItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY) === "1";
+
+        if (typeof remaining === "number" && remaining < threshold && !alreadyDismissed) {
+          this.setState({
+            ...this.state,
+            lowRecoveryCodesWarning: { remaining, redirectUrl },
+          });
+          return;
+        }
+
+        // See onVerify2FA() for rationale on using a real top-level navigation.
+        window.location.href = redirectUrl;
       },
       (error) => {
         this.handleMfaError(error, "recovery");
       },
     );
+  }
+
+  onContinueAfterLowRecoveryCodes() {
+    sessionStorage.setItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY, "1");
+    window.location.href = this.state.lowRecoveryCodesWarning.redirectUrl;
   }
 
   onUseRecovery() {
@@ -829,7 +865,7 @@ class LoginPage extends React.Component {
                 onVerify={this.onVerify2FA}
               />
             )}
-            {showRecoveryForm && (
+            {showRecoveryForm && !this.state.lowRecoveryCodesWarning && (
               <RecoveryCodeForm
                 recoveryCode={this.state.recoveryCode}
                 recoveryError={this.state.errors.recovery}
@@ -839,6 +875,27 @@ class LoginPage extends React.Component {
                 onBackToOtp={this.onBackToOtp}
                 onCancel={this.resetToPasswordFlow}
               />
+            )}
+            {showRecoveryForm && this.state.lowRecoveryCodesWarning && (
+              <div
+                className={recoveryCodesStyles.low_code_warning}
+                data-testid="low-recovery-codes-warning"
+              >
+                <Typography variant="body2">
+                  You have {this.state.lowRecoveryCodesWarning.remaining} recovery
+                  code{this.state.lowRecoveryCodesWarning.remaining === 1 ? "" : "s"} left.
+                  Regenerate them from your profile after signing in to avoid getting
+                  locked out.
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={this.onContinueAfterLowRecoveryCodes}
+                  data-testid="continue-after-low-recovery-codes"
+                >
+                  Continue
+                </Button>
+              </div>
             )}
             {isPasswordFlow && (
               // proceed to ask for password ( 2nd step )
