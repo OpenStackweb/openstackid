@@ -459,6 +459,13 @@ final class OAuth2ProtocolTestCase extends OpenStackIDBaseTestCase
     {
         $access_token = $this->testValidateToken();
 
+        // The resource-server IP check became opt-in in #98
+        // (oauth2.validate_resource_server_ip, default off) - this test is
+        // about the rejection itself, so turn the flag on. Set AFTER
+        // testValidateToken(): that helper introspects from resource server 1,
+        // whose registered IPs do include the test-request IP.
+        Config::set('oauth2.validate_resource_server_ip', true);
+
         $client_id = 'resource.server.2.openstack.client';
         $client_secret = '123456789123456789123456789123456789123456789';
         //do token validation ....
