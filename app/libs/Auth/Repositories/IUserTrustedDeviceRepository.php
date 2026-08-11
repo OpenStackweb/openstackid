@@ -18,7 +18,17 @@ use models\utils\IBaseRepository;
 interface IUserTrustedDeviceRepository extends IBaseRepository
 {
     /**
-     * Look up an active (non-revoked) trusted device for a user by its hashed identifier.
+     * Look up a trusted device record by user and hashed identifier (no revoked/expiry filter).
+     */
+    public function getByUserAndDeviceIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice;
+
+    /**
+     * Revoke all trusted devices for the given user (sets is_revoked = true).
+     */
+    public function revokeAllForUser(User $user): void;
+
+    /**
+     * Look up an active (non-revoked, non-expired) trusted device for a user by its hashed identifier.
      */
     public function getActiveByUserAndIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice;
 

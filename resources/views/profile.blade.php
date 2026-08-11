@@ -103,7 +103,11 @@
             initialValues: initialValues,
             languages: languages,
             menuConfig: menuConfig,
-            passwordPolicy: passwordPolicy
+            passwordPolicy: passwordPolicy,
+            twoFactorEnabled: {{ $two_factor_enabled ? 'true' : 'false' }},
+            recoveryCodesRemaining: {{ (int) $recovery_codes_remaining }},
+            recoveryCodesTotal: {{ (int) $recovery_codes_total }},
+            recoveryCodesLowThreshold: {{ (int) $recovery_codes_low_threshold }}
         }
 
         window.GET_USER_ACTIONS_ENDPOINT = '{{URL::action("Api\UserActionApiController@getActionsByCurrentUser")}}';
@@ -112,6 +116,8 @@
         window.REVOKE_ALL_TOKENS_ENDPOINT = '{{URL::action("Api\UserApiController@revokeAllMyTokens")}}';
         window.SAVE_PROFILE_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMe")!!}';
         window.SAVE_PIC_ENDPOINT = '{!!URL::action("Api\UserApiController@updateMyPic")!!}';
+        window.REGENERATE_RECOVERY_CODES_ENDPOINT = '{!!URL::action("Api\UserApiController@regenerateRecoveryCodes")!!}';
+        window.ENABLE_TWO_FACTOR_ENDPOINT = '{!!URL::action("Api\UserApiController@enableTwoFactor")!!}';
         window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;
     </script>
     {!! script_to('assets/profile.js') !!}

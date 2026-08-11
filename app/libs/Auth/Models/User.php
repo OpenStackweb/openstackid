@@ -76,6 +76,15 @@ class User extends BaseEntity
         self::SpamTypeHam
     ];
 
+    public const MFAMethod_OTP = 'email_otp';
+    public const MFAMethod_SMS = 'sms_otp';
+    public const MFAMethod_TOTP = 'totp';
+    public const MFAMethod_PASSKEY = 'passkey';
+
+    public const ValidMFAMethods = [
+        self::MFAMethod_OTP
+    ];
+
     /**
      * @var string
      */
@@ -303,6 +312,25 @@ class User extends BaseEntity
      */
     #[ORM\Column(name: 'email_verified_date', nullable: true, type: 'datetime')]
     private $email_verified_date;
+
+    /**
+     * @var bool
+     */
+    #[ORM\Column(name: 'two_factor_enabled', type: 'boolean', options: ['default' => false])]
+    private $two_factor_enabled;
+
+    /**
+     * @var string
+     */
+    #[ORM\Column(name: 'two_factor_method', type: 'string', length: 32, options: ['default' => self::MFAMethod_OTP])]
+    private $two_factor_method;
+
+    /**
+     * @var \DateTime|null
+     */
+    #[ORM\Column(name: 'two_factor_enforced_at', nullable: true, type: 'datetime')]
+    private $two_factor_enforced_at;
+
     /**
      * @var string
      */
@@ -457,6 +485,9 @@ class User extends BaseEntity
         parent::__construct();
         $this->active = true;
         $this->email_verified = false;
+        $this->two_factor_enabled = false;
+        $this->two_factor_method = self::MFAMethod_OTP;
+        $this->two_factor_enforced_at = null;
         // user profile settings
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
@@ -2357,6 +2388,150 @@ SQL;
     public function getAuthPasswordName()
     {
         return 'password';
+    }
+
+    // --- Two-factor authentication ---------------------------------------
+
+    public function isTwoFactorEnabled(): bool
+    {
+        return (bool) $this->two_factor_enabled;
+    }
+
+    public function setTwoFactorEnabled(bool $enabled): void
+    {
+        $this->two_factor_enabled = $enabled;
+    }
+
+    public function getTwoFactorMethod(): string
+    {
+        return $this->two_factor_method;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function setTwoFactorMethod(string $method): void
+    {
+        $this->two_factor_method = $method;
+    }
+
+    public function getTwoFactorEnforcedAt(): ?\DateTime
+    {
+        return $this->two_factor_enforced_at;
+    }
+
+    public function setTwoFactorEnforcedAt(?\DateTime $at): void
+    {
+        $this->two_factor_enforced_at = $at;
+    }
+
+    /**
+     * Whether this user is required to complete 2FA to sign in.
+     *
+     * The global kill-switch is honored first: when config('two_factor.enabled')
+     * is false the whole 2FA gate is inactive (SDS idp-mfa.md §10.1), so no user
+     * is required regardless of role or preference. Otherwise a user is required
+     * when they belong to any of the groups listed in
+     * config('two_factor.enforced_groups'); failing that, the stored flag applies.
+     */
+    public function shouldRequire2FA(): bool
+    {
+        if (!config('two_factor.enabled', true)) {
+            return false;
+        }
+        $enforcedGroups = config('two_factor.enforced_groups', []);
+        foreach ($enforcedGroups as $slug) {
+            if($this->belongToGroup($slug)) {
+                return true;
+            }
+        }
+        return (bool) $this->two_factor_enabled;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function enable2FA(string $method): void
+    {
+        $availableMethods = $this->getAvailableTwoFactorMethods();
+        if(!in_array($method, self::ValidMFAMethods, true)) {
+            throw new ValidationException(
+                sprintf(
+                    "Invalid 2FA method '%s'. Allowed methods: %s. Enabled methods: %s",
+                    $method,
+                    implode(', ', self::ValidMFAMethods),
+                    implode(', ', $availableMethods)
+                )
+            );
+        }
+
+        if(!in_array($method, $availableMethods, true)) {
+            throw new ValidationException(
+                sprintf(
+                    "Disabled 2FA method '%s'. Enabled methods: %s",
+                    $method,
+                    implode(', ', $availableMethods)
+                )
+            );
+        }
+
+        $this->setTwoFactorMethod($method);
+        $this->setTwoFactorEnabled(true);
+        $this->setTwoFactorEnforcedAt(new \DateTime('now', new \DateTimeZone('UTC')));
+    }
+
+    public function disable2FA(): void
+    {
+        $this->setTwoFactorEnabled(false);
+        $this->setTwoFactorEnforcedAt(null);
+    }
+
+    /**
+     * Returns the set of 2FA methods currently available to this user.
+     * Phase I only supports email_otp; other methods are stubs that will
+     * light up in Phase II/III once the backing verifications exist.
+     *
+     * @return string[]
+     */
+    public function getAvailableTwoFactorMethods(): array
+    {
+        $methods = [];
+        if($this->isEmailVerified() && in_array(self::MFAMethod_OTP, self::ValidMFAMethods, true)) {
+            $methods[] = self::MFAMethod_OTP;
+        }
+        if($this->isPhoneNumberVerified() && in_array(self::MFAMethod_SMS, self::ValidMFAMethods, true)) {
+            $methods[] = self::MFAMethod_SMS;
+        }
+        if($this->isTOTPConfirmed() && in_array(self::MFAMethod_TOTP, self::ValidMFAMethods, true)) {
+            $methods[] = self::MFAMethod_TOTP;
+        }
+        if($this->isPassKeyEnabled() && in_array(self::MFAMethod_PASSKEY, self::ValidMFAMethods, true)) {
+            $methods[] = self::MFAMethod_PASSKEY;
+        }
+        return $methods;
+    }
+
+    public function isTwoFactorMethodEnabled(string $method): bool
+    {
+        return in_array($method, $this->getAvailableTwoFactorMethods(), true);
+    }
+
+    // Phase II stub
+    public function isPhoneNumberVerified(): bool
+    {
+        return false;
+    }
+
+    // Phase III stub
+    public function isTOTPConfirmed(): bool
+    {
+        return false;
+    }
+
+    // Phase III stub
+    public function isPassKeyEnabled(): bool
+    {
+        return false;
     }
 
 }
