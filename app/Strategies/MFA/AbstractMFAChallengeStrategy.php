@@ -1,6 +1,7 @@
 <?php namespace Strategies\MFA;
 
 use Auth\Exceptions\AuthenticationException;
+use Auth\MFAConstants;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
@@ -10,10 +11,10 @@ use Models\OAuth2\Client;
 abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
 {
     private const SESSION_TTL           = 300;
-    private const KEY_USER_ID           = '2fa_pending_user_id';
-    private const KEY_PENDING_AT        = '2fa_pending_at';
-    private const KEY_REMEMBER          = '2fa_remember';
-    private const KEY_RECOVERY_ATTEMPTS = '2fa_recovery_attempts';
+    private const KEY_USER_ID           = MFAConstants::SESSION_KEY_PENDING_USER_ID;
+    private const KEY_PENDING_AT        = MFAConstants::SESSION_KEY_PENDING_AT;
+    private const KEY_REMEMBER          = MFAConstants::SESSION_KEY_REMEMBER;
+    private const KEY_RECOVERY_ATTEMPTS = MFAConstants::SESSION_KEY_RECOVERY_ATTEMPTS;
 
     public function __construct(protected IUserRecoveryCodeRepository $recovery_code_repository) {}
 

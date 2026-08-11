@@ -19,7 +19,9 @@ use App\libs\Auth\Models\UserTrustedDevice;
 use App\Mail\OAuth2PasswordlessOTPMail;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\ITwoFactorAuditService;
+use App\Services\Auth\ITwoFactorRateLimitService;
 use Auth\AuthHelper;
+use Auth\MFAConstants;
 use Auth\User;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
@@ -73,21 +75,23 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $admin = EntityManager::getRepository(User::class)->getByEmailOrName(self::ADMIN_EMAIL);
         if ($admin) {
             $userId = $admin->getId();
+            $prefix = ITwoFactorRateLimitService::RATE_LIMIT_CACHE_KEY_PREFIX;
             foreach (['verify', 'recovery', 'resend'] as $action) {
-                Cache::forget("2fa_rate:{$action}:{$userId}");
+                Cache::forget("{$prefix}{$action}:{$userId}");
                 // RateLimiter::hit() also writes a companion ":timer" key holding
                 // the window's reset timestamp - must be cleared too, or a stale
                 // timer from an earlier test leaks into a later one for this
                 // same fixed subject (self::ADMIN_EMAIL's user id).
-                Cache::forget("2fa_rate:{$action}:{$userId}:timer");
+                Cache::forget("{$prefix}{$action}:{$userId}:timer");
             }
         }
 
         // otp is keyed by the (lowercased) submitted email, not a user id -
         // clear every literal email this test class submits to that action.
+        $otpPrefix = ITwoFactorRateLimitService::RATE_LIMIT_CACHE_KEY_PREFIX . ITwoFactorRateLimitService::ActionOtp . ':';
         foreach ([self::ADMIN_EMAIL, 'someone-else@example.com'] as $email) {
-            Cache::forget('2fa_rate:otp:' . strtolower($email));
-            Cache::forget('2fa_rate:otp:' . strtolower($email) . ':timer');
+            Cache::forget($otpPrefix . strtolower($email));
+            Cache::forget($otpPrefix . strtolower($email) . ':timer');
         }
     }
 
@@ -343,7 +347,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->verify($code);
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_SESSION_EXPIRED, $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a cancelled challenge must never establish a session');
     }
 
@@ -431,7 +435,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_verification_failed', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_VERIFICATION_FAILED, $payload['error_code']);
         $this->assertFalse(Auth::check());
 
         $this->assertSame(1, (int) Cache::get('2fa_rate:verify:' . $userId, 0), 'verify counter must increment on failure');
@@ -460,7 +464,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_verification_failed', $payload['error_code'],
+        $this->assertSame(MFAConstants::ERROR_CODE_VERIFICATION_FAILED, $payload['error_code'],
             'verifyChallenge must load the stored OTP and reject a non-matching value');
         $this->assertFalse(Auth::check());
     }
@@ -480,7 +484,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_verification_failed', $payload['error_code'],
+        $this->assertSame(MFAConstants::ERROR_CODE_VERIFICATION_FAILED, $payload['error_code'],
             'a reused OTP must be rejected because the redemption was committed by the AuthService transaction');
     }
 
@@ -506,7 +510,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_invalid_recovery', $payload['error_code'],
+        $this->assertSame(MFAConstants::ERROR_CODE_INVALID_RECOVERY, $payload['error_code'],
             'recovery code reuse must be rejected because used_at was committed via the AuthService transaction');
     }
 
@@ -688,7 +692,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_SESSION_EXPIRED, $payload['error_code']);
     }
 
     // -------------------------------------------------------------------------
@@ -836,7 +840,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertEquals(200, $response->getStatusCode(), 'a best-effort device-trust failure must not fail the login');
         $this->assertTrue(Auth::check(), 'session must be established despite the device-trust failure');
-        $this->assertNull(Session::get('2fa_pending_user_id'), 'pending MFA state must be cleared even when device-trust enrollment fails');
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID), 'pending MFA state must be cleared even when device-trust enrollment fails');
     }
 
     // -------------------------------------------------------------------------
@@ -881,7 +885,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_INVALID_RECOVERY, $payload['error_code']);
         $this->assertFalse(Auth::check());
     }
 
@@ -948,15 +952,15 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         // The pending user disappeared between challenge and verification
         // (e.g. deleted account) - must clear the pending state, not 500.
-        Session::put('2fa_pending_user_id', PHP_INT_MAX);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, PHP_INT_MAX);
 
         $response = $this->verify('123456');
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_SESSION_EXPIRED, $payload['error_code']);
         $this->assertFalse(Auth::check());
-        $this->assertNull(Session::get('2fa_pending_user_id'), 'the orphaned pending state must be cleared');
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID), 'the orphaned pending state must be cleared');
     }
 
     public function testRecoveryWithoutPendingChallengeFailsAsExpiredSession(): void
@@ -966,7 +970,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_SESSION_EXPIRED, $payload['error_code']);
         $this->assertFalse(Auth::check());
     }
 
@@ -974,15 +978,15 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     {
         $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
 
-        Session::put('2fa_pending_user_id', PHP_INT_MAX);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, PHP_INT_MAX);
 
         $response = $this->recovery('ANYCODE123');
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_SESSION_EXPIRED, $payload['error_code']);
         $this->assertFalse(Auth::check());
-        $this->assertNull(Session::get('2fa_pending_user_id'), 'the orphaned pending state must be cleared');
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID), 'the orphaned pending state must be cleared');
     }
 
     public function testVerifyWithStaleOAuth2ClientFailsBeforeRedeemingOTP(): void
@@ -1033,7 +1037,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_verification_failed', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_VERIFICATION_FAILED, $payload['error_code']);
         $this->assertFalse(Auth::check());
     }
 
@@ -1054,7 +1058,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_INVALID_RECOVERY, $payload['error_code']);
         $this->assertFalse(Auth::check());
     }
 
@@ -1118,7 +1122,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->recovery('WRONGCODE000');
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_INVALID_RECOVERY, $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a rejected recovery code must not establish a session');
 
         // Correct code on the retry: the same OIDC flow completes end to end.
@@ -1144,7 +1148,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
             $response = $this->recovery('WRONGCODE' . $i);
             $this->assertResponseStatus(401);
             $payload = json_decode($response->getContent(), true);
-            $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+            $this->assertSame(MFAConstants::ERROR_CODE_INVALID_RECOVERY, $payload['error_code']);
             $this->assertFalse(Auth::check());
         }
 
@@ -1154,7 +1158,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->recovery($plain);
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_RATE_LIMIT, $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a rate-limited attempt must not establish a session even with a valid code');
     }
 
@@ -1173,7 +1177,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->recovery($burned);
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_INVALID_RECOVERY, $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a burned recovery code must not establish a session');
 
         // A fresh code still completes the same OIDC flow afterwards.
@@ -1198,7 +1202,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->verify('000000');
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_verification_failed', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_VERIFICATION_FAILED, $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a rejected OTP must not establish a session');
 
         // Correct OTP on the retry: the same OIDC flow completes end to end.
@@ -1221,7 +1225,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
             $response = $this->verify('00000' . $i);
             $this->assertResponseStatus(401);
             $payload = json_decode($response->getContent(), true);
-            $this->assertSame('mfa_verification_failed', $payload['error_code']);
+            $this->assertSame(MFAConstants::ERROR_CODE_VERIFICATION_FAILED, $payload['error_code']);
             $this->assertFalse(Auth::check());
         }
 
@@ -1231,7 +1235,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->verify($code);
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_RATE_LIMIT, $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a rate-limited attempt must not establish a session even with a valid code');
     }
 
@@ -1253,7 +1257,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->verify($burned);
         $this->assertResponseStatus(401);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_verification_failed', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_VERIFICATION_FAILED, $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a redeemed OTP must not establish a session');
 
         // Resend issues a fresh code; the same OIDC flow completes with it.
@@ -1365,7 +1369,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->verify('bad-code-final');
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_RATE_LIMIT, $payload['error_code']);
         $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
         $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
         $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
@@ -1383,7 +1387,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->recovery('bad-recovery-final');
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_RATE_LIMIT, $payload['error_code']);
         $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
         $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
         $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
@@ -1401,7 +1405,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->resend();
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_RATE_LIMIT, $payload['error_code']);
         $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
         $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
         $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
@@ -1439,7 +1443,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->emitOTP(self::ADMIN_EMAIL);
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_RATE_LIMIT, $payload['error_code']);
 
         // A 429 must give the client a standard, machine-readable retry signal -
         // without these, callers have no way to know how long to back off.
@@ -1473,7 +1477,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $response = $this->emitOTP('SEBASTIAN@TIPIT.NET');
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
-        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame(MFAConstants::ERROR_CODE_RATE_LIMIT, $payload['error_code']);
     }
 
     // -------------------------------------------------------------------------
