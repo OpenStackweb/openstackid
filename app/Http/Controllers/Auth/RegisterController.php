@@ -173,15 +173,18 @@ final class RegisterController extends Controller
     protected function validator(array $data)
     {
         $rules = [
-            'first_name'               => 'required|string|max:100',
-            'last_name'                => 'required|string|max:100',
-            'country_iso_code'         => 'required|string|country_iso_alpha2_code',
-            'email'                    => 'required|string|email|max:255',
-            'password'                 => 'required|string|confirmed|password_policy',
-            'cf-turnstile-response'    => ['required', new Turnstile()],
+            'first_name'       => 'required|string|max:100',
+            'last_name'        => 'required|string|max:100',
+            'country_iso_code' => 'required|string|country_iso_alpha2_code',
+            'email'            => 'required|string|email|max:255',
+            'password'         => 'required|string|confirmed|password_policy',
         ];
 
-        if(!empty(Config::get("app.code_of_conduct_link", null))){
+        if (!empty(Config::get("services.turnstile.secret", null))) {
+            $rules['cf-turnstile-response'] = ['required', new Turnstile()];
+        }
+
+        if (!empty(Config::get("app.code_of_conduct_link", null))) {
             $rules['agree_code_of_conduct'] = 'required|string|in:true';
         }
 
