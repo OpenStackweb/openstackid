@@ -45,6 +45,18 @@ interface IRecoveryCodeService
     public function generateRecoveryCodes(User $user): array;
 
     /**
+     * Enrolls the user into the given 2FA method and generates the first batch
+     * of recovery codes for them, without requiring password confirmation.
+     * Intended for enrollment via an already-authenticated session.
+     *
+     * @param User $user
+     * @param string $method
+     * @return string[] plaintext codes formatted as XXXX-XXXX
+     * @throws ValidationException if $method is not a valid/enabled 2FA method
+     */
+    public function enableTwoFactorAndGenerateCodes(User $user, string $method): array;
+
+    /**
      * @param User $user
      * @return int count of unused recovery codes
      */

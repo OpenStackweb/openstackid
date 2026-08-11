@@ -16,6 +16,7 @@ namespace App\Services\Auth;
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserRecoveryCode;
 use Auth\Repositories\IUserRecoveryCodeRepository;
+use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
 use Laminas\Math\Rand;
@@ -33,6 +34,7 @@ final class RecoveryCodeService implements IRecoveryCodeService
 
     public function __construct(
         private readonly IUserRecoveryCodeRepository $repository,
+        private readonly IUserRepository $user_repository,
         private readonly ITransactionService $tx_service,
         private readonly ITwoFactorAuditService $audit_service,
     ) {
@@ -82,6 +84,28 @@ final class RecoveryCodeService implements IRecoveryCodeService
         );
 
         return array_map(static fn(string $code) => implode('-', str_split($code, 4)), $plaintext_codes);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function enableTwoFactorAndGenerateCodes(User $user, string $method): array
+    {
+        $codes = $this->tx_service->transaction(function () use ($user, $method) {
+            $user->enable2FA($method);
+            $this->user_repository->add($user, false);
+
+            return $this->generateRecoveryCodes($user);
+        });
+
+        $this->audit_service->log(
+            $user,
+            TwoFactorAuditLog::EventEnrollmentChanged,
+            $method,
+            IPHelper::getUserIp()
+        );
+
+        return $codes;
     }
 
     /**
