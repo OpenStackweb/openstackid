@@ -18,6 +18,7 @@ use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Models\IClient;
 use OpenId\Models\IOpenIdUser;
+use Strategies\MFA\IMFAChallengeStrategy;
 /**
  * Interface IAuthService
  */
@@ -38,6 +39,7 @@ interface IAuthService
 
     const AuthenticationFlowPassword = "password";
     const AuthenticationFlowPasswordless = "otp";
+    const AuthenticationFlowMFA = "2fa";
     /**
      * @return bool
      */
@@ -66,6 +68,7 @@ interface IAuthService
      * @param string $password
      * @return User
      * @throws AuthenticationException on invalid credentials, missing user, or locked account.
+     * @throws \Auth\Exceptions\UnverifiedEmailMemberException when the user's email is not verified
      */
     public function validateCredentials(string $username, string $password): User;
 
@@ -192,5 +195,32 @@ interface IAuthService
         User $sessionUser,
         ?Client $client = null
     ): OAuth2OTP;
+
+    public function issueMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        ?Client $client = null,
+        bool $remember = false
+    ): array;
+
+    public function verifyMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        string $value,
+        ?Client $client = null
+    ): void;
+
+    public function verifyMFARecoveryCode(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        string $inputCode
+    ): void;
+
+    public function resendMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        ?Client $client = null,
+        bool $remember = false
+    ): array;
 
 }

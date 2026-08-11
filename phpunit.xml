@@ -25,9 +25,12 @@
     <testsuite name="Two Factor Authentication Test Suite">
       <file>./tests/TwoFactorRepositoriesTest.php</file>
       <file>./tests/unit/UserTwoFactorTest.php</file>
-      <file>./tests/Unit/MFA/AbstractMFAChallengeStrategyTest.php</file>
-      <file>./tests/Unit/MFA/EmailOTPMFAChallengeStrategyTest.php</file>
-      <file>./tests/Unit/MFA/MFAChallengeStrategyFactoryTest.php</file>
+      <file>./tests/unit/MFA/AbstractMFAChallengeStrategyTest.php</file>
+      <file>./tests/unit/MFA/EmailOTPMFAChallengeStrategyTest.php</file>
+      <file>./tests/unit/MFA/MFAChallengeStrategyFactoryTest.php</file>
+      <file>./tests/unit/TwoFactorAuditServiceTest.php</file>
+      <file>./tests/unit/MFAGateServiceTest.php</file>
+      <file>./tests/TwoFactorLoginFlowTest.php</file>
     </testsuite>
   </testsuites>
   <php>

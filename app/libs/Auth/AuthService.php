@@ -19,7 +19,6 @@ use App\Services\AbstractService;
 use App\Services\Auth\IUserService as IAuthUserService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\AuthenticationLockedUserLoginAttempt;
-use Auth\Exceptions\UnverifiedEmailMemberException;
 use Auth\Repositories\IUserRepository;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -39,6 +38,7 @@ use OAuth2\Services\IPrincipalService;
 use OAuth2\Services\ISecurityContextService;
 use OpenId\Services\IUserService;
 use Services\IUserActionService;
+use Strategies\MFA\IMFAChallengeStrategy;
 use utils\Base64UrlRepresentation;
 use Utils\Db\ITransactionService;
 use Utils\IPHelper;
@@ -392,7 +392,6 @@ final class AuthService extends AbstractService implements IAuthService
     {
         Log::debug("AuthService::login");
 
-        $this->last_login_error = "";
         if (!Auth::attempt(['username' => $username, 'password' => $password], $remember_me)) {
             throw new AuthenticationException
             (
@@ -426,15 +425,10 @@ final class AuthService extends AbstractService implements IAuthService
     {
         Log::debug("AuthService::validateCredentials");
 
-        try {
-            /**
-             * @var User|null $user
-             */
-            $user = Auth::getProvider()->retrieveByCredentials(['username' => $username, 'password' => $password]);
-        } catch (UnverifiedEmailMemberException $ex) {
-            throw new AuthenticationException($ex->getMessage());
-        }
-
+        /**
+         * @var User|null $user
+         */
+        $user = Auth::getProvider()->retrieveByCredentials(['username' => $username, 'password' => $password]);
         if (is_null($user) || !$user instanceof User || !$user->canLogin()) {
             throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
         }
@@ -451,7 +445,21 @@ final class AuthService extends AbstractService implements IAuthService
         Log::debug("AuthService::loginUser");
         if (!$user->canLogin())
             throw new AuthenticationException("User is not active or cannot login.");
+
+        // Auth::login() first: Laravel's SessionGuard::login() already
+        // regenerates the session ID internally (session->migrate(true)),
+        // closing the pre-auth session-fixation window. Principal bookkeeping
+        // runs AFTER so register()'s op_browser_state hash (used for OIDC
+        // Session Management) is derived from the FINAL id, not one that
+        // Auth::login() is about to invalidate.
         Auth::login($user, $remember);
+
+        $this->principal_service->clear();
+        $this->principal_service->register
+        (
+            $user->getId(),
+            time()
+        );
     }
 
     /**
@@ -776,6 +784,49 @@ final class AuthService extends AbstractService implements IAuthService
             $user->activate();
             $user->clearResetPasswordRequests();
 
+        });
+    }
+
+    public function issueMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        ?Client $client = null,
+        bool $remember = false
+    ): array {
+        return $this->tx_service->transaction(function () use ($user, $strategy, $client, $remember) {
+            return $strategy->issueChallenge($user, $client, $remember);
+        });
+    }
+
+    public function verifyMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        string $value,
+        ?Client $client = null
+    ): void {
+        $this->tx_service->transaction(function () use ($user, $strategy, $value, $client) {
+            $strategy->verifyChallenge($user, $value, $client);
+        });
+    }
+
+    public function verifyMFARecoveryCode(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        string $inputCode
+    ): void {
+        $this->tx_service->transaction(function () use ($user, $strategy, $inputCode) {
+            $strategy->verifyRecoveryCode($user, $inputCode);
+        });
+    }
+
+    public function resendMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        ?Client $client = null,
+        bool $remember = false
+    ): array {
+        return $this->tx_service->transaction(function () use ($user, $strategy, $client, $remember) {
+            return $strategy->resendChallenge($user, $client, $remember);
         });
     }
 }

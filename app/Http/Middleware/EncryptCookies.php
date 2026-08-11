@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use Illuminate\Contracts\Encryption\Encrypter;
 use Illuminate\Cookie\Middleware\EncryptCookies as Middleware;
 use OAuth2\Services\IPrincipalService;
 /**
@@ -22,10 +23,20 @@ class EncryptCookies extends Middleware
     /**
      * The names of the cookies that should not be encrypted.
      *
+     * The trusted-device token is a high-entropy random secret only ever compared
+     * against a server-side SHA-256 hash, so cookie-layer encryption adds no
+     * meaningful protection - exclude it so the value round-trips verbatim.
+     *
      * @var array
      */
     protected $except = [
-        IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME
+        IPrincipalService::OP_BROWSER_STATE_COOKIE_NAME,
     ];
+
+    public function __construct(Encrypter $encrypter)
+    {
+        parent::__construct($encrypter);
+        $this->except[] = config('two_factor.cookie_name', 'device_trust_token');
+    }
 
 }

@@ -92,6 +92,30 @@ export const postRawRequest = (endpoint) => (params, headers = {}) => {
     })
 }
 
+export const postRawRequestFull = (endpoint) => (params, headers = {}) => {
+    let url = URI(endpoint);
+
+    let key = url.toString();
+
+    cancel(key);
+
+    let req = http.post(url.toString());
+
+    schedule(key, req);
+
+    return req.set(headers).send(params).timeout({
+        response: 60000,
+        deadline: 60000,
+    }).then((res) => {
+        let json = res.body;
+        end(key);
+        return Promise.resolve({response: json});
+    }).catch((error) => {
+        end(key);
+        return Promise.reject(error);
+    })
+}
+
 export const putRawRequest = (endpoint) => (payload = null, params={}, headers = {}) => {
     let url = URI(endpoint);
 
