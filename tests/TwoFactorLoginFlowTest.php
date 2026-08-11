@@ -41,6 +41,7 @@ use Strategies\ILoginStrategy;
 use Strategies\MFA\IMFAChallengeStrategy;
 use Strategies\MFA\MFAChallengeStrategyFactory;
 use Strategies\MFA\MFAPendingState;
+use Illuminate\Support\Facades\URL;
 use Utils\Services\IAuthService;
 
 /**
@@ -913,6 +914,117 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         EntityManager::clear();
         $code = EntityManager::find(UserRecoveryCode::class, $codeId);
         $this->assertFalse($code->isUsed(), 'the recovery code must NOT be burned when the pending OAuth2 request points at a non-existent client');
+    }
+
+    // -------------------------------------------------------------------------
+    // full OIDC circuit: authorize -> login -> MFA -> consent -> auth code
+    // -------------------------------------------------------------------------
+
+    private const OIDC_CLIENT_ID    = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+    private const OIDC_REDIRECT_URI = 'https://www.test.com/oauth2';
+
+    public function testFullOIDCFlowWithMFAChallengeAndConsentDeliversAuthCode(): void
+    {
+        $this->startOIDCFlowUpToChallenge();
+
+        $response = $this->verify($this->latestOtpCode(self::ADMIN_EMAIL));
+
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertTrue(Auth::check(), 'second factor verified - session must be established');
+        $this->assertSame(
+            URL::action('OAuth2\OAuth2ProviderController@auth'),
+            $payload['redirect_url'] ?? null,
+            'the XHR must be told to navigate back to the authorization endpoint so the pending OIDC request resumes'
+        );
+
+        $this->completeConsentAndGetAuthCode();
+    }
+
+    public function testFullOIDCFlowWithRecoveryCodeAndConsentDeliversAuthCode(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $plain = 'RECOVERYOIDC321';
+        $this->createRecoveryCode($admin, $plain, false);
+
+        $this->startOIDCFlowUpToChallenge();
+
+        $response = $this->recovery($plain);
+
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertTrue(Auth::check(), 'recovery code verified - session must be established');
+        $this->assertSame(
+            URL::action('OAuth2\OAuth2ProviderController@auth'),
+            $payload['redirect_url'] ?? null,
+            'the XHR must be told to navigate back to the authorization endpoint so the pending OIDC request resumes'
+        );
+
+        $this->completeConsentAndGetAuthCode();
+    }
+
+    /**
+     * Starts an OIDC authorization-code request and walks it up to the MFA
+     * challenge: authorize -> redirected to login -> password accepted ->
+     * challenge issued, no session yet. The OAuth2 memento is serialized by
+     * the authorize endpoint, so the whole login leg runs under the
+     * OAuth2LoginStrategy, client-scoped OTP included.
+     */
+    private function startOIDCFlowUpToChallenge(): void
+    {
+        $response = $this->action('POST', 'OAuth2\OAuth2ProviderController@auth', [
+            'client_id'     => self::OIDC_CLIENT_ID,
+            'redirect_uri'  => self::OIDC_REDIRECT_URI,
+            'response_type' => 'code',
+            'scope'         => 'openid profile email',
+        ]);
+        $this->assertResponseStatus(302);
+        $this->assertTrue(
+            str_contains($response->getTargetUrl(), '/login'),
+            'an unauthenticated OIDC request must bounce to the login screen'
+        );
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $this->assertResponseStatus(302);
+        $this->assertFalse(Auth::check(), 'password alone must not establish a session while MFA is pending');
+    }
+
+    /**
+     * Walks the consent leg (first authorization for this client, so consent is
+     * required) and asserts the authorization code is delivered to the client's
+     * redirect_uri.
+     */
+    private function completeConsentAndGetAuthCode(): void
+    {
+        // The top-level navigation the SPA performs with redirect_url: the auth
+        // endpoint rebuilds the authorization request from the session memento.
+        $response = $this->action('GET', 'OAuth2\OAuth2ProviderController@auth');
+        $this->assertResponseStatus(302);
+        $this->assertSame(
+            URL::action('UserController@getConsent'),
+            $response->getTargetUrl(),
+            'first authorization for this client must land on the consent screen'
+        );
+
+        $this->action('GET', 'UserController@getConsent');
+        $this->assertResponseStatus(200);
+
+        $this->action('POST', 'UserController@postConsent', [
+            'trust'  => IAuthService::AuthorizationResponse_AllowOnce,
+            '_token' => Session::token(),
+        ]);
+        $this->assertResponseStatus(302);
+
+        $response = $this->action('GET', 'OAuth2\OAuth2ProviderController@auth');
+        $this->assertResponseStatus(302);
+
+        $url = $response->getTargetUrl();
+        $this->assertTrue(
+            str_starts_with($url, self::OIDC_REDIRECT_URI),
+            "the final hop must deliver to the client redirect_uri, got: {$url}"
+        );
+        parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $query);
+        $this->assertNotEmpty($query['code'] ?? null, 'an authorization code must be delivered to the client');
     }
 
     // -------------------------------------------------------------------------
