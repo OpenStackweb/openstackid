@@ -14,10 +14,9 @@
 
 use App\Services\Auth\ITwoFactorRateLimitService;
 use Closure;
+use Illuminate\Cache\RateLimiting\Unlimited;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Session;
-use Symfony\Component\HttpFoundation\Response as HttpResponse;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Class TwoFactorRateLimitMiddleware
@@ -25,17 +24,19 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
  * Throttles the MFA verify / recovery / resend endpoints. Counter state and
  * window logic live in ITwoFactorRateLimitService (shared with
  * UserController::postLogin(), whose initial challenge issuance counts
- * against the same resend window - SDS idp-mfa.md §4.12).
+ * against the same resend window - SDS idp-mfa.md §4.12). The throttled
+ * subject and the 429 response shape are resolved via the named
+ * RateLimiter::for() limiters registered in TwoFactorServiceProvider - this
+ * middleware only decides *when* a hit counts, since the stock throttle
+ * pipeline has no hook for that:
  *
  *  - verify / recovery: increment ONLY on a failed response.
- *  - resend:            increment on EVERY request.
+ *  - resend / otp:      increment on EVERY request.
  *
  * @package App\Http\Middleware
  */
 final class TwoFactorRateLimitMiddleware
 {
-    private const PENDING_USER_KEY = '2fa_pending_user_id';
-
     /**
      * Response error_code values that count as a verification failure.
      */
@@ -51,38 +52,41 @@ final class TwoFactorRateLimitMiddleware
     /**
      * @param \Illuminate\Http\Request $request
      * @param Closure $next
-     * @param string $action one of verify|recovery|resend
+     * @param string $action one of verify|recovery|resend|otp
      * @return mixed
      */
     public function handle($request, Closure $next, string $action = ITwoFactorRateLimitService::ActionVerify)
     {
-        $userId = Session::get(self::PENDING_USER_KEY);
+        $limiter = RateLimiter::limiter(ITwoFactorRateLimitService::RATE_LIMITER_NAME_PREFIX . $action);
+        $limit = $limiter ? $limiter($request) : null;
 
-        // Without a pending user there is nothing to throttle; let the controller
-        // resolve the (missing) state and return mfa_session_expired.
-        if (is_null($userId)) {
+        // No named limiter resolved a subject (no pending session / no otp
+        // username submitted) - nothing to throttle; let the controller
+        // resolve the (missing) state itself - mfa_session_expired for the
+        // session-keyed actions, or its own validator 412 for otp.
+        if (is_null($limit) || $limit instanceof Unlimited) {
             return $next($request);
         }
 
-        $userId = (int) $userId;
+        $subject = $limit->key;
 
-        if ($this->rate_limit_service->isRateLimited($action, $userId)) {
-            Log::debug(sprintf("TwoFactorRateLimitMiddleware: action %s user %s rate limited", $action, $userId));
-            return Response::json(
-                [
-                    'error_code'    => ITwoFactorRateLimitService::RATE_LIMIT_ERROR_CODE,
-                    'error_message' => ITwoFactorRateLimitService::RATE_LIMIT_MESSAGE,
-                ],
-                HttpResponse::HTTP_TOO_MANY_REQUESTS
-            );
+        if ($this->rate_limit_service->isRateLimited($action, $subject)) {
+            Log::debug(sprintf("TwoFactorRateLimitMiddleware: action %s subject %s rate limited", $action, $subject));
+
+            $responseCallback = $limit->responseCallback;
+            return $responseCallback($request, [
+                'Retry-After'           => $this->rate_limit_service->getRetryAfterSeconds($action, $subject),
+                'X-RateLimit-Limit'     => $this->rate_limit_service->getLimit($action),
+                'X-RateLimit-Remaining' => 0,
+            ]);
         }
 
         $response = $next($request);
 
-        if ($action === ITwoFactorRateLimitService::ActionResend) {
-            $this->rate_limit_service->increment($action, $userId);
+        if ($action === ITwoFactorRateLimitService::ActionResend || $action === ITwoFactorRateLimitService::ActionOtp) {
+            $this->rate_limit_service->increment($action, $subject);
         } else if ($this->isFailure($response)) {
-            $this->rate_limit_service->increment($action, $userId);
+            $this->rate_limit_service->increment($action, $subject);
         }
 
         return $response;

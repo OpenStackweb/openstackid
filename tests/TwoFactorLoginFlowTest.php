@@ -16,6 +16,7 @@ use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserRecoveryCode;
 use App\libs\Auth\Models\UserTrustedDevice;
+use App\Mail\OAuth2PasswordlessOTPMail;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\ITwoFactorAuditService;
 use Auth\AuthHelper;
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\Repositories\IUserRecoveryCodeRepository;
@@ -64,10 +66,23 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     private function flushRateLimitCounters(): void
     {
         $admin = EntityManager::getRepository(User::class)->getByEmailOrName(self::ADMIN_EMAIL);
-        if (!$admin) return;
-        $userId = $admin->getId();
-        foreach (['verify', 'recovery', 'resend'] as $action) {
-            Cache::forget("2fa_rate:{$action}:{$userId}");
+        if ($admin) {
+            $userId = $admin->getId();
+            foreach (['verify', 'recovery', 'resend'] as $action) {
+                Cache::forget("2fa_rate:{$action}:{$userId}");
+                // RateLimiter::hit() also writes a companion ":timer" key holding
+                // the window's reset timestamp - must be cleared too, or a stale
+                // timer from an earlier test leaks into a later one for this
+                // same fixed subject (self::ADMIN_EMAIL's user id).
+                Cache::forget("2fa_rate:{$action}:{$userId}:timer");
+            }
+        }
+
+        // otp is keyed by the (lowercased) submitted email, not a user id -
+        // clear every literal email this test class submits to that action.
+        foreach ([self::ADMIN_EMAIL, 'someone-else@example.com'] as $email) {
+            Cache::forget('2fa_rate:otp:' . strtolower($email));
+            Cache::forget('2fa_rate:otp:' . strtolower($email) . ':timer');
         }
     }
 
@@ -98,8 +113,36 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertSame('2fa', Session::get('flow'), 'a refresh mid-challenge must restore the 2FA screen, not the password form');
         $this->assertNotNull(Session::get('otp_length'));
         $this->assertNotNull(Session::get('otp_lifetime'));
+        $this->assertNotNull(Session::get('otp_issued_at'), 'the issuance timestamp must be restorable so a refresh can seed the countdown with the REMAINING lifetime');
         $this->assertSame(User::MFAMethod_OTP, Session::get('mfa_method'), 'a refresh must restore the screen for the method actually challenged, not a hardcoded default');
         $this->assertSame(ILoginStrategy::MFA_REQUIRED, Session::get('error_code'), 'must match what DisplayResponseJsonStrategy sends native clients in its JSON body');
+    }
+
+    public function testRefreshMidChallengeSeedsCountdownWithRemainingLifetime(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $lifetime = intval(Session::get('otp_lifetime'));
+        $this->assertGreaterThan(0, $lifetime);
+
+        // Simulate a refresh 100 seconds into the challenge.
+        Session::put('otp_issued_at', time() - 100);
+
+        $response = $this->action('GET', 'UserController@getLogin');
+        $this->assertResponseOk();
+
+        $this->assertSame(
+            1,
+            preg_match('/config\.otpLifetime = (\d+);/', $response->getContent(), $matches),
+            'the login page must seed the countdown from session state'
+        );
+        $remaining = intval($matches[1]);
+        // The countdown must be seeded with the REMAINING lifetime (~lifetime - 100),
+        // not restart at the full TTL - otherwise the UI overstates how long the
+        // code is valid and lets the user burn rate-limited attempts on a
+        // server-expired code. +/-2s tolerance for clock ticks between requests.
+        $this->assertLessThanOrEqual($lifetime - 98, $remaining);
+        $this->assertGreaterThanOrEqual($lifetime - 102, $remaining);
     }
 
     public function testSuccessfulVerificationClearsUIState(): void
@@ -112,8 +155,17 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('flow'), 'completed challenge must not leave the 2FA screen re-derivable from a stale refresh');
         $this->assertNull(Session::get('otp_length'));
         $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('otp_issued_at'));
         $this->assertNull(Session::get('mfa_method'));
         $this->assertNull(Session::get('error_code'));
+        // Identity/display fields written by postLogin()'s challengeRequired()
+        // payload must not survive a completed login either - otherwise a
+        // later visitor on the same browser session inherits this identity.
+        $this->assertNull(Session::get('username'));
+        $this->assertNull(Session::get('user_fullname'));
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_verified'));
+        $this->assertNull(Session::get('user_is_active'));
     }
 
     public function testNonAdminWithoutMFALogsInNormally(): void
@@ -184,6 +236,78 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     }
 
     // -------------------------------------------------------------------------
+    // passwordless (flow=otp) refresh-resilience
+    // -------------------------------------------------------------------------
+
+    public function testEmitOtpPersistsSessionStateForRefreshResilience(): void
+    {
+        $this->emitOTP(self::ADMIN_EMAIL);
+
+        $this->assertSame('otp', Session::get('flow'), 'a refresh mid-code-entry must restore the OTP screen, not the email form');
+        $this->assertTrue(Session::get('user_verified'));
+        $this->assertNotNull(Session::get('otp_length'));
+        $this->assertNotNull(Session::get('otp_lifetime'));
+        $this->assertNotNull(Session::get('otp_issued_at'), 'the issuance timestamp must be restorable so a refresh can seed the countdown with the REMAINING lifetime');
+        $this->assertSame(self::ADMIN_EMAIL, Session::get('username'));
+
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->assertSame($admin->getFullName(), Session::get('user_fullname'));
+        $this->assertSame($admin->getPic(), Session::get('user_pic'));
+        $this->assertSame(1, Session::get('user_is_active'));
+    }
+
+    public function testEmitOtpForNewUserStillPersistsRefreshState(): void
+    {
+        // No createPlainUser() call - this email has no existing User row.
+        // AuthService::loginWithOTP() auto-registers new users at redemption
+        // time, so emitOTP() must not silently skip the refresh-restoration
+        // state just because the identity lookup comes up empty.
+        $email = 'never.seen.' . uniqid() . '@test.invalid';
+
+        $this->emitOTP($email);
+
+        $this->assertSame('otp', Session::get('flow'));
+        $this->assertTrue(Session::get('user_verified'), 'user_verified must persist even when no User row exists yet');
+        $this->assertNotNull(Session::get('otp_length'));
+        $this->assertNotNull(Session::get('otp_lifetime'));
+        $this->assertNotNull(Session::get('otp_issued_at'));
+        $this->assertSame($email, Session::get('username'));
+
+        // login.js's emitOtpAction() falls back to the submitted email as the
+        // chip's display name when there's no real full name yet (login.js:165-167) -
+        // the persisted session state must match that same fallback, or the
+        // identity chip (visible right after opting into OTP) vanishes on refresh
+        // instead of being restored identically.
+        $this->assertSame($email, Session::get('user_fullname'), 'must fall back to the submitted email, matching emitOtpAction()\'s client-side fallback');
+        $this->assertNull(Session::get('user_pic'), 'no picture to persist for a not-yet-registered user');
+        $this->assertNull(Session::get('user_is_active'), 'no active-status to persist for a not-yet-registered user');
+    }
+
+    public function testSuccessfulPasswordlessLoginClearsOtpSessionState(): void
+    {
+        $email = $this->createPlainUser();
+        $this->emitOTP($email);
+        $code = $this->latestOtpCode($email);
+
+        $this->postLoginOTP($email, $code);
+
+        $this->assertTrue(Auth::check(), 'sanity check: the login itself must have succeeded');
+
+        // A completed passwordless login must not leave the OTP screen
+        // restorable on a later refresh - otherwise a subsequent unrelated
+        // visitor on the same browser session inherits this identity.
+        $this->assertNull(Session::get('flow'));
+        $this->assertNull(Session::get('user_verified'));
+        $this->assertNull(Session::get('otp_length'));
+        $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('otp_issued_at'));
+        $this->assertNull(Session::get('username'));
+        $this->assertNull(Session::get('user_fullname'));
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_is_active'));
+    }
+
+    // -------------------------------------------------------------------------
     // cancelLogin
     // -------------------------------------------------------------------------
 
@@ -198,6 +322,15 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('mfa_method'));
         $this->assertNull(Session::get('otp_length'));
         $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('otp_issued_at'));
+        // Identity/display fields written by postLogin()'s challengeRequired()
+        // payload must not survive cancel either - otherwise a later visitor
+        // on the same browser session inherits the cancelled attempt's identity.
+        $this->assertNull(Session::get('username'));
+        $this->assertNull(Session::get('user_fullname'));
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_verified'));
+        $this->assertNull(Session::get('user_is_active'));
 
         // The strongest proof: the OTP issued before cancel must no longer
         // complete a login. If pending state survived cancel, this would
@@ -207,6 +340,56 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_session_expired', $payload['error_code']);
         $this->assertFalse(Auth::check(), 'a cancelled challenge must never establish a session');
+    }
+
+    public function testCancelClearsPasswordlessOtpSessionState(): void
+    {
+        // Server-side proof for the client fix in login.js's handleDelete()
+        // (widened to call cancelLogin() for the OTP flow, not just MFA):
+        // cancelLogin() already unconditionally clears the same key set
+        // emitOTP() writes, so a refresh after "sign in using a different
+        // e-mail" must not resurrect the abandoned OTP screen.
+        $email = $this->createPlainUser();
+        $this->emitOTP($email);
+
+        $this->cancelLogin();
+
+        $this->assertNull(Session::get('flow'), 'cancel must not leave a stale OTP screen restorable on refresh');
+        $this->assertNull(Session::get('user_verified'));
+        $this->assertNull(Session::get('otp_length'));
+        $this->assertNull(Session::get('otp_lifetime'));
+        $this->assertNull(Session::get('otp_issued_at'));
+        $this->assertNull(Session::get('username'));
+        $this->assertNull(Session::get('user_fullname'));
+        $this->assertNull(Session::get('user_pic'));
+        $this->assertNull(Session::get('user_is_active'));
+    }
+
+    // -------------------------------------------------------------------------
+    // email delivery
+    // -------------------------------------------------------------------------
+
+    public function testMFAChallengeQueuesEmailWithCorrectOTPCode(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $dbCode = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        Mail::assertQueued(
+            OAuth2PasswordlessOTPMail::class,
+            function (OAuth2PasswordlessOTPMail $mail) use ($dbCode): bool {
+                return $mail->email === self::ADMIN_EMAIL
+                    && $mail->otp === $dbCode;
+            }
+        );
+    }
+
+    public function testResendMFAChallengeQueuesAdditionalEmail(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $this->resend();
+
+        Mail::assertQueued(OAuth2PasswordlessOTPMail::class, 2);
     }
 
     // -------------------------------------------------------------------------
@@ -220,7 +403,13 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $response = $this->verify($code);
 
-        $this->assertResponseStatus(302);
+        // verify2FA returns the post-login destination as JSON data (not a raw redirect)
+        // so the caller's XHR never has to follow it itself - a real top-level navigation
+        // to redirect_url is what actually completes any further hop, cross-origin included.
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertIsString($payload['redirect_url'] ?? null);
+        $this->assertStringStartsWith('http', $payload['redirect_url']);
         $this->assertTrue(Auth::check());
 
         $admin = $this->user(self::ADMIN_EMAIL);
@@ -293,7 +482,12 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testRecoveryCodeRejectsReuseAfterTransactionCommit(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-REUSE-TX-' . uniqid();
+        // No "-" and all-uppercase: verifyRecoveryCode() now strips separators
+        // and uppercases the submitted code before Hash::check() (real codes are
+        // hashed dash-less and all-uppercase; the dash/case are display-only),
+        // so a fixture hashed with lowercase uniqid() hex would never match its
+        // own (normalized) submission.
+        $plain = 'RECOVERYREUSETX' . strtoupper(uniqid());
         $this->createRecoveryCode($admin, $plain, false);
 
         // First use — must succeed.
@@ -414,7 +608,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testRecoveryCodeRowLockBlocksConcurrentConnection(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-LOCK-' . uniqid();
+        $plain = 'RECOVERYLOCK' . strtoupper(uniqid());
         $codeId = $this->createRecoveryCode($admin, $plain, false);
 
         /** @var IUserRecoveryCodeRepository $recoveryRepo */
@@ -532,7 +726,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $code  = $this->latestOtpCode(self::ADMIN_EMAIL);
 
         $response = $this->verify($code, true);
-        $this->assertResponseStatus(302);
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertIsString($payload['redirect_url'] ?? null);
 
         EntityManager::clear();
         $devices = EntityManager::getRepository(UserTrustedDevice::class)->findBy(['user' => $admin->getId()]);
@@ -583,7 +779,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $response = $this->verify($code);
 
-        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
+        $this->assertEquals(200, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
         $this->assertTrue(Auth::check(), 'session must be established despite the audit failure');
     }
 
@@ -592,7 +788,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         // Audit is best-effort: a failure emitting recovery_used must NOT 500 a
         // user whose recovery code is already burned and session established.
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-AUDIT-FAIL-' . uniqid();
+        $plain = 'RECOVERYAUDITFAIL' . strtoupper(uniqid());
         $this->createRecoveryCode($admin, $plain, false);
 
         $auditMock = \Mockery::mock(ITwoFactorAuditService::class);
@@ -610,7 +806,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $response = $this->recovery($plain);
 
-        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
+        $this->assertEquals(200, $response->getStatusCode(), 'a best-effort audit failure must not fail the login');
         $this->assertTrue(Auth::check(), 'session must be established despite the audit failure');
     }
 
@@ -633,7 +829,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $response = $this->verify($code, true); // trust_device = true
 
-        $this->assertEquals(302, $response->getStatusCode(), 'a best-effort device-trust failure must not fail the login');
+        $this->assertEquals(200, $response->getStatusCode(), 'a best-effort device-trust failure must not fail the login');
         $this->assertTrue(Auth::check(), 'session must be established despite the device-trust failure');
         $this->assertNull(Session::get('2fa_pending_user_id'), 'pending MFA state must be cleared even when device-trust enrollment fails');
     }
@@ -645,13 +841,15 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testRecoveryCodeLoginSucceeds(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-PLAIN-123';
+        $plain = 'RECOVERYPLAIN123';
         $codeId = $this->createRecoveryCode($admin, $plain, false);
 
         $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
         $response = $this->recovery($plain);
 
-        $this->assertResponseStatus(302);
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertIsString($payload['redirect_url'] ?? null);
         $this->assertTrue(Auth::check());
 
         EntityManager::clear();
@@ -663,7 +861,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testUsedRecoveryCodeFails(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-USED-456';
+        $plain = 'RECOVERYUSED456';
         $this->createRecoveryCode($admin, $plain, true); // already used
 
         $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
@@ -708,6 +906,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
+        $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
     }
 
     public function testRecoveryRateLimitBlocksAfterThreshold(): void
@@ -723,6 +924,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
+        $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
     }
 
     public function testResendRateLimitBlocksAfterThreshold(): void
@@ -738,6 +942,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertResponseStatus(429);
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
+        $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
     }
 
     public function testInitialChallengeIssuanceCountsAgainstResendRateLimitWindow(): void
@@ -762,6 +969,53 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertFalse(Auth::check());
     }
 
+    public function testOtpEmailRateLimitBlocksAfterThreshold(): void
+    {
+        $max = (int) Config::get('two_factor.rate_limit.max_otp_email_requests');
+        for ($i = 0; $i < $max; $i++) {
+            $this->emitOTP(self::ADMIN_EMAIL);
+        }
+
+        $response = $this->emitOTP(self::ADMIN_EMAIL);
+        $this->assertResponseStatus(429);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+
+        // A 429 must give the client a standard, machine-readable retry signal -
+        // without these, callers have no way to know how long to back off.
+        $this->assertSame((string) $max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
+        $retryAfter = $response->headers->get('Retry-After');
+        $this->assertNotNull($retryAfter, 'Retry-After must be present on a 429');
+        $this->assertGreaterThan(0, (int) $retryAfter);
+
+        // A different email must be unaffected - the subject is per-email, not global.
+        // emitOTP() never looks up an existing user before creating the OTP, so a
+        // non-seeded literal email is a valid, distinct rate-limit subject here.
+        $otherResponse = $this->emitOTP('someone-else@example.com');
+        $this->assertNotEquals(429, $otherResponse->getStatusCode());
+    }
+
+    public function testOtpEmailRateLimitIsCaseInsensitive(): void
+    {
+        // users.email has a case-insensitive collation (utf8mb3_unicode_ci) and every
+        // session-keyed 2FA action resolves through a case-insensitive DB lookup before
+        // ever touching the rate limiter. The otp action has no such lookup - the raw
+        // submitted string IS the cache key - so casing must be canonicalized here or
+        // an attacker can reset the budget every request by cycling the target email's
+        // letter casing, defeating the limit entirely.
+        $max = (int) Config::get('two_factor.rate_limit.max_otp_email_requests');
+        $casings = ['sebastian@tipit.net', 'Sebastian@Tipit.net', 'SEBASTIAN@TIPIT.NET', 'sEbAsTiAn@tIpIt.NeT'];
+        for ($i = 0; $i < $max; $i++) {
+            $this->emitOTP($casings[$i % count($casings)]);
+        }
+
+        $response = $this->emitOTP('SEBASTIAN@TIPIT.NET');
+        $this->assertResponseStatus(429);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -778,7 +1032,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
     private function cancelLogin()
     {
-        return $this->action('GET', 'UserController@cancelLogin');
+        return $this->action('POST', 'UserController@cancelLogin', [
+            '_token' => Session::token(),
+        ]);
     }
 
     private function emitOTP(string $username)

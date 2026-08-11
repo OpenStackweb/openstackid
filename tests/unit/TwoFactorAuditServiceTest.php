@@ -1,5 +1,5 @@
 <?php
-namespace Tests\Unit;
+namespace Tests\unit;
 /**
  * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,7 @@ use Utils\Db\ITransactionService;
 
 /**
  * Class TwoFactorAuditServiceTest
- * @package Tests\Unit
+ * @package Tests\unit
  */
 final class TwoFactorAuditServiceTest extends TestCase
 {
