@@ -302,6 +302,10 @@ final class UserApiController extends APICRUDController
             $user = Auth::user();
             $method = $data['method'];
 
+            if ($user->isTwoFactorEnabled()) {
+                return $this->error412(['method' => ['Two-factor authentication is already enabled. Use the regenerate recovery codes endpoint to rotate your codes.']]);
+            }
+
             $codes = $this->tx_service->transaction(function () use ($user, $method) {
                 $user->enable2FA($method);
                 $this->repository->add($user, false);
