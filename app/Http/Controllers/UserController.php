@@ -28,6 +28,7 @@ use App\Services\Auth\ITwoFactorRateLimitService;
 use App\Services\Auth\IUserService as AuthUserService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
+use Auth\MFAConstants;
 use Auth\User;
 use Exception;
 use Illuminate\Http\Request as LaravelRequest;
@@ -799,7 +800,7 @@ final class UserController extends OpenIdController
                 } catch (\Throwable $auditEx) {
                     Log::warning($auditEx);
                 }
-                return $this->unauthorized(['error_code' => 'mfa_verification_failed']);
+                return $this->unauthorized(['error_code' => MFAConstants::ERROR_CODE_VERIFICATION_FAILED]);
             }
 
             // Second factor verified: establish the session.
@@ -911,7 +912,7 @@ final class UserController extends OpenIdController
                 } catch (\Throwable $auditEx) {
                     Log::warning($auditEx);
                 }
-                return $this->unauthorized(['error_code' => 'mfa_invalid_recovery']);
+                return $this->unauthorized(['error_code' => MFAConstants::ERROR_CODE_INVALID_RECOVERY]);
             }
 
             $this->auth_service->loginUser($user, (bool) $pending['remember']);
@@ -1029,7 +1030,7 @@ final class UserController extends OpenIdController
     private function mfaSessionExpired()
     {
         $this->clearMFAUISessionState();
-        return $this->unauthorized(['error_code' => 'mfa_session_expired']);
+        return $this->unauthorized(['error_code' => MFAConstants::ERROR_CODE_SESSION_EXPIRED]);
     }
 
     /**
