@@ -33,6 +33,9 @@ use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Models\OAuth2\Client;
+use OAuth2\OAuth2Protocol;
+use OAuth2\Requests\OAuth2RequestMemento;
+use OAuth2\Services\IMementoOAuth2SerializerService;
 use Services\OAuth2\PrincipalService;
 use Strategies\ILoginStrategy;
 use Strategies\MFA\IMFAChallengeStrategy;
@@ -871,6 +874,37 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $payload = json_decode($response->getContent(), true);
         $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
         $this->assertFalse(Auth::check());
+    }
+
+    public function testRecoveryWithStaleOAuth2ClientFailsBeforeBurningCode(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $plain = 'RECOVERYSTALE789';
+        $codeId = $this->createRecoveryCode($admin, $plain, false);
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        // A pending OAuth2 authorization request whose client no longer exists
+        // (e.g. deleted mid-login). verify2FA() fails this via
+        // resolveClientFromMemento() BEFORE redeeming the OTP; recovery must
+        // apply the same guard instead of burning the single-use code and
+        // establishing a session for a doomed authorization request.
+        App::make(IMementoOAuth2SerializerService::class)->serialize(
+            OAuth2RequestMemento::buildFromState([
+                OAuth2Protocol::OAuth2Protocol_ResponseType => OAuth2Protocol::OAuth2Protocol_ResponseType_Code,
+                OAuth2Protocol::OAuth2Protocol_ClientId     => 'stale-client-' . uniqid(),
+                OAuth2Protocol::OAuth2Protocol_RedirectUri  => 'https://client.invalid/callback',
+            ])
+        );
+
+        $response = $this->recovery($plain);
+
+        $this->assertResponseStatus(412);
+        $this->assertFalse(Auth::check(), 'no session must be established when the pending OAuth2 client cannot be resolved');
+
+        EntityManager::clear();
+        $code = EntityManager::find(UserRecoveryCode::class, $codeId);
+        $this->assertFalse($code->isUsed(), 'the recovery code must NOT be burned when the pending OAuth2 request points at a non-existent client');
     }
 
     // -------------------------------------------------------------------------

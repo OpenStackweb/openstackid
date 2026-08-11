@@ -885,6 +885,14 @@ final class UserController extends OpenIdController
                 return $this->mfaSessionExpired();
             }
 
+            // Same guard verify2FA() applies before redeeming: a pending OAuth2
+            // authorization request must still resolve to an existing client,
+            // or the single-use recovery code would be burned (and a session
+            // established) for an authorization request that can only fail at
+            // the /oauth2/auth hop. Recovery-code checking itself is
+            // client-agnostic, so the resolved client is not passed down.
+            $this->resolveClientFromMemento();
+
             try {
                 $this->auth_service->verifyMFARecoveryCode($user, $strategy, $recovery_code);
             } catch (AuthenticationException $ex) {
