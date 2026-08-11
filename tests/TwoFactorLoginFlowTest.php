@@ -917,6 +917,148 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     }
 
     // -------------------------------------------------------------------------
+    // branch coverage: validator 412s, vanished pending user, expired session,
+    // stale OAuth2 client on verify2FA, audit failure on the FAILED-verify path
+    // -------------------------------------------------------------------------
+
+    public function testVerifyValidatorRejectsMalformedRequest(): void
+    {
+        $response = $this->action('POST', 'UserController@verify2FA', [
+            'method' => 'bogus-method',
+            '_token' => Session::token(),
+        ]);
+
+        $this->assertResponseStatus(412);
+        $this->assertFalse(Auth::check());
+    }
+
+    public function testRecoveryValidatorRejectsMalformedRequest(): void
+    {
+        $response = $this->action('POST', 'UserController@verify2FARecovery', [
+            '_token' => Session::token(),
+        ]);
+
+        $this->assertResponseStatus(412);
+        $this->assertFalse(Auth::check());
+    }
+
+    public function testVerifyWithVanishedPendingUserFailsAsExpiredSession(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        // The pending user disappeared between challenge and verification
+        // (e.g. deleted account) - must clear the pending state, not 500.
+        Session::put('2fa_pending_user_id', PHP_INT_MAX);
+
+        $response = $this->verify('123456');
+
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertFalse(Auth::check());
+        $this->assertNull(Session::get('2fa_pending_user_id'), 'the orphaned pending state must be cleared');
+    }
+
+    public function testRecoveryWithoutPendingChallengeFailsAsExpiredSession(): void
+    {
+        // No prior postLogin -> no pending state.
+        $response = $this->recovery('ANYCODE123');
+
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertFalse(Auth::check());
+    }
+
+    public function testRecoveryWithVanishedPendingUserFailsAsExpiredSession(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        Session::put('2fa_pending_user_id', PHP_INT_MAX);
+
+        $response = $this->recovery('ANYCODE123');
+
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_session_expired', $payload['error_code']);
+        $this->assertFalse(Auth::check());
+        $this->assertNull(Session::get('2fa_pending_user_id'), 'the orphaned pending state must be cleared');
+    }
+
+    public function testVerifyWithStaleOAuth2ClientFailsBeforeRedeemingOTP(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        // Same guard already proven for recovery: a pending OAuth2 request
+        // whose client no longer exists must fail BEFORE the OTP is redeemed.
+        App::make(IMementoOAuth2SerializerService::class)->serialize(
+            OAuth2RequestMemento::buildFromState([
+                OAuth2Protocol::OAuth2Protocol_ResponseType => OAuth2Protocol::OAuth2Protocol_ResponseType_Code,
+                OAuth2Protocol::OAuth2Protocol_ClientId     => 'stale-client-' . uniqid(),
+                OAuth2Protocol::OAuth2Protocol_RedirectUri  => 'https://client.invalid/callback',
+            ])
+        );
+
+        $response = $this->verify($code);
+
+        $this->assertResponseStatus(412);
+        $this->assertFalse(Auth::check(), 'no session must be established when the pending OAuth2 client cannot be resolved');
+
+        /** @var IOAuth2OTPRepository $otpRepo */
+        $otpRepo = App::make(IOAuth2OTPRepository::class);
+        EntityManager::clear();
+        $otp = $otpRepo->getByValue($code);
+        $this->assertNotNull($otp);
+        $this->assertFalse($otp->isRedeemed(), 'the OTP must NOT be redeemed when the pending OAuth2 request points at a non-existent client');
+    }
+
+    public function testFailedVerifyAuditFailureStillReturnsClean401(): void
+    {
+        // Audit is best-effort on the FAILED path too: a failure emitting
+        // challenge_failed must not turn the clean 401 (whose error_code the
+        // rate-limit middleware keys on) into a 500.
+        $auditMock = \Mockery::mock(ITwoFactorAuditService::class);
+        $auditMock->shouldReceive('log')
+            ->andReturnUsing(function (User $user, string $eventType) {
+                if ($eventType === TwoFactorAuditLog::EventChallengeFailed) {
+                    throw new \Exception('audit sink unavailable');
+                }
+            });
+        $this->app->instance(ITwoFactorAuditService::class, $auditMock);
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $response = $this->verify('000000');
+
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_verification_failed', $payload['error_code']);
+        $this->assertFalse(Auth::check());
+    }
+
+    public function testFailedRecoveryAuditFailureStillReturnsClean401(): void
+    {
+        $auditMock = \Mockery::mock(ITwoFactorAuditService::class);
+        $auditMock->shouldReceive('log')
+            ->andReturnUsing(function (User $user, string $eventType) {
+                if ($eventType === TwoFactorAuditLog::EventChallengeFailed) {
+                    throw new \Exception('audit sink unavailable');
+                }
+            });
+        $this->app->instance(ITwoFactorAuditService::class, $auditMock);
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $response = $this->recovery('WRONGCODE999');
+
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+        $this->assertFalse(Auth::check());
+    }
+
+    // -------------------------------------------------------------------------
     // full OIDC circuit: authorize -> login -> MFA -> consent -> auth code
     // -------------------------------------------------------------------------
 
