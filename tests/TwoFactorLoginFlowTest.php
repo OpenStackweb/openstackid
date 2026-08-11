@@ -856,6 +856,13 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertIsString($payload['redirect_url'] ?? null);
         $this->assertTrue(Auth::check());
 
+        // Wire contract consumed by login.js's low-recovery-codes warning
+        // (RecoveryCodesStatus::toArray()) - expected values come from config,
+        // not from re-deriving the service's own math.
+        $this->assertIsInt($payload['recovery_codes_remaining'] ?? null);
+        $this->assertSame((int) Config::get('auth.recovery_codes.count'), $payload['recovery_codes_total'] ?? null);
+        $this->assertSame((int) Config::get('auth.recovery_codes.low_threshold'), $payload['recovery_codes_low_threshold'] ?? null);
+
         EntityManager::clear();
         $code = EntityManager::find(UserRecoveryCode::class, $codeId);
         $this->assertTrue($code->isUsed(), 'the recovery code must be marked used');

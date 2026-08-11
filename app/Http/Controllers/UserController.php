@@ -934,16 +934,14 @@ final class UserController extends OpenIdController
             }
 
             // See verify2FA() for rationale: return the destination as data so a real
-            // top-level navigation (not this XHR) performs any cross-origin hop.
+            // top-level navigation (not this XHR) performs any cross-origin hop. The
+            // recovery-codes standing rides along so the login page can warn the user
+            // when they've just burned into their last few codes (see RecoveryCodesStatus).
             $redirect = $this->login_strategy->postLogin();
-            return $this->ok([
-                'redirect_url' => $redirect->getTargetUrl(),
-                // CU-86ba2zp66 / sds/idp-mfa.md §4.10.3, §4.11 step 5: the login page
-                // must be able to warn the user when they've just burned into their
-                // last few recovery codes, since it may be their only way back in.
-                'recovery_codes_remaining' => $this->recovery_code_service->countUnusedRecoveryCodes($user),
-                'recovery_codes_low_threshold' => (int) config('auth.recovery_codes.low_threshold', 3),
-            ]);
+            return $this->ok(array_merge(
+                ['redirect_url' => $redirect->getTargetUrl()],
+                $this->recovery_code_service->getStatus($user)->toArray()
+            ));
         } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412($ex->getMessages());
@@ -1200,7 +1198,7 @@ final class UserController extends OpenIdController
                 $lang2Code[] = $lang;
         }
 
-        return View::make("profile", [
+        return View::make("profile", array_merge([
             'user' => json_encode(SerializerRegistry::getInstance()->getSerializer(
                 $user, SerializerRegistry::SerializerType_Private)->serialize()),
             "openid_url" => $this->server_configuration_service->getUserIdentityEndpointURL($user->getIdentifier()),
@@ -1209,10 +1207,7 @@ final class UserController extends OpenIdController
             'countries' => CountryList::getCountries(),
             'languages' => $lang2Code,
             'two_factor_enabled' => $user->shouldRequire2FA(),
-            'recovery_codes_remaining' => $this->recovery_code_service->countUnusedRecoveryCodes($user),
-            'recovery_codes_total' => (int)config('auth.recovery_codes.count', 10),
-            'recovery_codes_low_threshold' => (int)config('auth.recovery_codes.low_threshold', 3),
-        ]);
+        ], $this->recovery_code_service->getStatus($user)->toArray()));
     }
 
     public function deleteTrustedSite($id)
