@@ -963,6 +963,170 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->completeConsentAndGetAuthCode();
     }
 
+    public function testOIDCFlowWrongRecoveryCodeThenCorrectCompletesCircuit(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $plain = 'RECOVERYRETRY111';
+        $this->createRecoveryCode($admin, $plain, false);
+
+        $this->startOIDCFlowUpToChallenge();
+
+        // Wrong code: rejected without killing the pending challenge or the
+        // OAuth2 memento - the user must be able to retry within the same flow.
+        $response = $this->recovery('WRONGCODE000');
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+        $this->assertFalse(Auth::check(), 'a rejected recovery code must not establish a session');
+
+        // Correct code on the retry: the same OIDC flow completes end to end.
+        $response = $this->recovery($plain);
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertTrue(Auth::check());
+        $this->assertSame(URL::action('OAuth2\OAuth2ProviderController@auth'), $payload['redirect_url'] ?? null);
+
+        $this->completeConsentAndGetAuthCode();
+    }
+
+    public function testOIDCFlowConsecutiveWrongRecoveryCodesHitRateLimit(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $plain = 'RECOVERYLIMIT222';
+        $this->createRecoveryCode($admin, $plain, false);
+
+        $this->startOIDCFlowUpToChallenge();
+
+        $max = (int) Config::get('two_factor.rate_limit.max_attempts');
+        for ($i = 0; $i < $max; $i++) {
+            $response = $this->recovery('WRONGCODE' . $i);
+            $this->assertResponseStatus(401);
+            $payload = json_decode($response->getContent(), true);
+            $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+            $this->assertFalse(Auth::check());
+        }
+
+        // Threshold reached: even the CORRECT code is rejected while the
+        // window lasts, still without a session - brute-forcing recovery codes
+        // inside a pending OIDC flow cannot buy extra attempts.
+        $response = $this->recovery($plain);
+        $this->assertResponseStatus(429);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertFalse(Auth::check(), 'a rate-limited attempt must not establish a session even with a valid code');
+    }
+
+    public function testOIDCFlowBurnedRecoveryCodeFailsThenFreshCodeCompletesCircuit(): void
+    {
+        $admin  = $this->user(self::ADMIN_EMAIL);
+        $burned = 'RECOVERYBURNED33';
+        $fresh  = 'RECOVERYFRESH444';
+        $this->createRecoveryCode($admin, $burned, true); // already used
+        $freshId = $this->createRecoveryCode($admin, $fresh, false);
+
+        $this->startOIDCFlowUpToChallenge();
+
+        // A burned (single-use, already redeemed) code is rejected like any
+        // other invalid code.
+        $response = $this->recovery($burned);
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_invalid_recovery', $payload['error_code']);
+        $this->assertFalse(Auth::check(), 'a burned recovery code must not establish a session');
+
+        // A fresh code still completes the same OIDC flow afterwards.
+        $response = $this->recovery($fresh);
+        $this->assertResponseStatus(200);
+        $this->assertTrue(Auth::check());
+
+        EntityManager::clear();
+        $code = EntityManager::find(UserRecoveryCode::class, $freshId);
+        $this->assertTrue($code->isUsed(), 'the fresh recovery code must be marked used');
+
+        $this->completeConsentAndGetAuthCode();
+    }
+
+    public function testOIDCFlowWrongOTPThenCorrectCompletesCircuit(): void
+    {
+        $this->startOIDCFlowUpToChallenge();
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        // Wrong OTP: rejected without killing the pending challenge or the
+        // OAuth2 memento - the user must be able to retry within the same flow.
+        $response = $this->verify('000000');
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_verification_failed', $payload['error_code']);
+        $this->assertFalse(Auth::check(), 'a rejected OTP must not establish a session');
+
+        // Correct OTP on the retry: the same OIDC flow completes end to end.
+        $response = $this->verify($code);
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertTrue(Auth::check());
+        $this->assertSame(URL::action('OAuth2\OAuth2ProviderController@auth'), $payload['redirect_url'] ?? null);
+
+        $this->completeConsentAndGetAuthCode();
+    }
+
+    public function testOIDCFlowConsecutiveWrongOTPsHitRateLimit(): void
+    {
+        $this->startOIDCFlowUpToChallenge();
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $max = (int) Config::get('two_factor.rate_limit.max_attempts');
+        for ($i = 0; $i < $max; $i++) {
+            $response = $this->verify('00000' . $i);
+            $this->assertResponseStatus(401);
+            $payload = json_decode($response->getContent(), true);
+            $this->assertSame('mfa_verification_failed', $payload['error_code']);
+            $this->assertFalse(Auth::check());
+        }
+
+        // Threshold reached: even the CORRECT code is rejected while the
+        // window lasts, still without a session - brute-forcing the OTP inside
+        // a pending OIDC flow cannot buy extra attempts.
+        $response = $this->verify($code);
+        $this->assertResponseStatus(429);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_rate_limit', $payload['error_code']);
+        $this->assertFalse(Auth::check(), 'a rate-limited attempt must not establish a session even with a valid code');
+    }
+
+    public function testOIDCFlowRedeemedOTPFailsThenResendCompletesCircuit(): void
+    {
+        $this->startOIDCFlowUpToChallenge();
+        $burned = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        // Burn the issued OTP directly (single-use, already redeemed) - the
+        // OTP analog of an already-used recovery code.
+        /** @var IOAuth2OTPRepository $otpRepo */
+        $otpRepo = App::make(IOAuth2OTPRepository::class);
+        $otp = $otpRepo->getByValue($burned);
+        $this->assertNotNull($otp);
+        $otp->redeem();
+        EntityManager::persist($otp);
+        EntityManager::flush();
+
+        $response = $this->verify($burned);
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame('mfa_verification_failed', $payload['error_code']);
+        $this->assertFalse(Auth::check(), 'a redeemed OTP must not establish a session');
+
+        // Resend issues a fresh code; the same OIDC flow completes with it.
+        $this->resend();
+        $this->assertResponseStatus(200);
+        $fresh = $this->latestOtpCode(self::ADMIN_EMAIL);
+        $this->assertNotSame($burned, $fresh);
+
+        $response = $this->verify($fresh);
+        $this->assertResponseStatus(200);
+        $this->assertTrue(Auth::check());
+
+        $this->completeConsentAndGetAuthCode();
+    }
+
     /**
      * Starts an OIDC authorization-code request and walks it up to the MFA
      * challenge: authorize -> redirected to login -> password accepted ->
