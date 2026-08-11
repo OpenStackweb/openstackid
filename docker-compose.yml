@@ -57,6 +57,28 @@ services:
     networks:
       - idp-local-net
     env_file: ./.env
+  playwright:
+    build:
+      context: ./docker-compose/playwright
+    container_name: idp-playwright
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - playwright_cache:/root/.cache/ms-playwright
+      # Lets the e2e suite `docker exec idp-app php artisan idp:get-latest-otp
+      # <email>` to read a real OTP value (see tests/e2e/utils/otp.ts) -
+      # grants this container full control of the host's Docker daemon, not
+      # just idp-app, so keep this service dev/e2e-only (profiles: [e2e]).
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - idp-local-net
+    depends_on:
+      - nginx
+    profiles:
+      - e2e
+    environment:
+      - APP_URL=http://nginx
+
   nginx:
     image: nginx:alpine
     container_name: nginx-idp
@@ -119,3 +141,4 @@ networks:
 volumes:
   mysql_idp:
   elasticsearch_data:
+  playwright_cache:
