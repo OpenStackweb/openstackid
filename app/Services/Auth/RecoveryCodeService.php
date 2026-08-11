@@ -57,23 +57,34 @@ final class RecoveryCodeService implements IRecoveryCodeService
      */
     public function generateRecoveryCodes(User $user): array
     {
-        $count = (int)config('auth.recovery_codes.count', 10);
-        $length = (int)config('auth.recovery_codes.length', 8);
+        $codes = $this->tx_service->transaction(fn() => $this->regenerateCodesForUser($user));
 
-        $plaintext_codes = [];
+        $this->audit_service->log(
+            $user,
+            TwoFactorAuditLog::EventRecoveryCodesGenerated,
+            TwoFactorAuditLog::MethodRecovery,
+            IPHelper::getUserIp()
+        );
 
-        $this->tx_service->transaction(function () use ($user, $count, $length, &$plaintext_codes) {
-            $this->repository->deleteAllForUser($user);
+        return $codes;
+    }
 
-            for ($i = 0; $i < $count; $i++) {
-                $plain = Rand::getString($length, self::CODE_CHARSET, true);
-                $plaintext_codes[] = $plain;
+    /**
+     * @inheritDoc
+     */
+    public function enableTwoFactorAndGenerateCodes(User $user, string $method): array
+    {
+        // Everything must live in a single transaction() call: it opens/commits
+        // its own connection-level transaction and closes the entity manager on
+        // failure (see DoctrineTransactionService::transaction()), so nesting a
+        // second call inside it (e.g. by calling generateRecoveryCodes() here)
+        // would let an inner failure tear down the EM out from under this
+        // still-running outer transaction.
+        $codes = $this->tx_service->transaction(function () use ($user, $method) {
+            $user->enable2FA($method);
+            $this->user_repository->add($user, false);
 
-                $code = new UserRecoveryCode();
-                $code->setUser($user);
-                $code->setCodeHash(Hash::make($plain));
-                $this->repository->add($code, false);
-            }
+            return $this->regenerateCodesForUser($user);
         });
 
         $this->audit_service->log(
@@ -83,21 +94,6 @@ final class RecoveryCodeService implements IRecoveryCodeService
             IPHelper::getUserIp()
         );
 
-        return array_map(static fn(string $code) => implode('-', str_split($code, 4)), $plaintext_codes);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function enableTwoFactorAndGenerateCodes(User $user, string $method): array
-    {
-        $codes = $this->tx_service->transaction(function () use ($user, $method) {
-            $user->enable2FA($method);
-            $this->user_repository->add($user, false);
-
-            return $this->generateRecoveryCodes($user);
-        });
-
         $this->audit_service->log(
             $user,
             TwoFactorAuditLog::EventEnrollmentChanged,
@@ -106,6 +102,34 @@ final class RecoveryCodeService implements IRecoveryCodeService
         );
 
         return $codes;
+    }
+
+    /**
+     * Invalidates every existing recovery code for the user and generates a
+     * fresh batch, within the caller's already-open transaction.
+     *
+     * @return string[] plaintext codes formatted as XXXX-XXXX
+     */
+    private function regenerateCodesForUser(User $user): array
+    {
+        $count = (int)config('auth.recovery_codes.count', 10);
+        $length = (int)config('auth.recovery_codes.length', 8);
+
+        $plaintext_codes = [];
+
+        $this->repository->deleteAllForUser($user);
+
+        for ($i = 0; $i < $count; $i++) {
+            $plain = Rand::getString($length, self::CODE_CHARSET, true);
+            $plaintext_codes[] = $plain;
+
+            $code = new UserRecoveryCode();
+            $code->setUser($user);
+            $code->setCodeHash(Hash::make($plain));
+            $this->repository->add($code, false);
+        }
+
+        return array_map(static fn(string $code) => implode('-', str_split($code, 4)), $plaintext_codes);
     }
 
     /**
