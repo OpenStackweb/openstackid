@@ -34,4 +34,13 @@ interface IDisplayResponseStrategy
      * @return SymfonyResponse
      */
     public function getLoginErrorResponse(array $data = []);
+
+    /**
+     * Factor 1 (password) passed but a 2FA challenge must be completed before
+     * a session is established.
+     *
+     * @param array $data
+     * @return SymfonyResponse
+     */
+    public function getChallengeRequiredResponse(array $data = []);
 }

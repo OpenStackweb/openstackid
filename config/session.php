@@ -186,5 +186,4 @@ return [
    */
 
     'same_site' => env('SESSION_COOKIE_SAME_SITE', 'none'),
-
 ];

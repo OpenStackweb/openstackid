@@ -29,6 +29,9 @@ class Kernel extends ConsoleKernel
         Commands\CleanOAuth2StaleData::class,
         Commands\CleanOpenIdStaleData::class,
         Commands\CreateSuperAdmin::class,
+        Commands\CreateRawUser::class,
+        Commands\CreateOAuth2TestClient::class,
+        Commands\GetLatestOtp::class,
         Commands\SpammerProcess\RebuildUserSpammerEstimator::class,
         Commands\SpammerProcess\UserSpammerProcessor::class,
     ];

@@ -23,6 +23,13 @@ interface IUserRecoveryCodeRepository extends IBaseRepository
     public function getUnusedByUser(User $user): array;
 
     /**
+     * Acquires a PESSIMISTIC_WRITE row lock on the given recovery code and
+     * re-hydrates its used_at state in the same round-trip. Required before
+     * redeeming a recovery code to close the check->markUsed double-spend race.
+     */
+    public function refreshExclusiveLock(UserRecoveryCode $code): void;
+
+    /**
      * Delete every recovery code for a user (used when regenerating).
      */
     public function deleteAllForUser(User $user): int;
