@@ -19,6 +19,7 @@ use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Laminas\Math\Rand;
 use models\exceptions\ValidationException;
 use Utils\Db\ITransactionService;
@@ -59,12 +60,20 @@ final class RecoveryCodeService implements IRecoveryCodeService
     {
         $codes = $this->tx_service->transaction(fn() => $this->regenerateCodesForUser($user));
 
-        $this->audit_service->log(
-            $user,
-            TwoFactorAuditLog::EventRecoveryCodesGenerated,
-            TwoFactorAuditLog::MethodRecovery,
-            IPHelper::getUserIp()
-        );
+        // Best-effort: the codes are already committed and about to be shown to
+        // the user, so an audit-logging failure must not 500 this response - a
+        // client retry on a 500 would regenerate and invalidate the codes it
+        // just received.
+        try {
+            $this->audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventRecoveryCodesGenerated,
+                TwoFactorAuditLog::MethodRecovery,
+                IPHelper::getUserIp()
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
 
         return $codes;
     }
@@ -87,19 +96,27 @@ final class RecoveryCodeService implements IRecoveryCodeService
             return $this->regenerateCodesForUser($user);
         });
 
-        $this->audit_service->log(
-            $user,
-            TwoFactorAuditLog::EventRecoveryCodesGenerated,
-            TwoFactorAuditLog::MethodRecovery,
-            IPHelper::getUserIp()
-        );
+        // Best-effort: 2FA is already enabled and the codes are already
+        // committed, so an audit-logging failure must not 500 this response - a
+        // client retry on a 500 would regenerate and invalidate the codes it
+        // just received.
+        try {
+            $this->audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventRecoveryCodesGenerated,
+                TwoFactorAuditLog::MethodRecovery,
+                IPHelper::getUserIp()
+            );
 
-        $this->audit_service->log(
-            $user,
-            TwoFactorAuditLog::EventEnrollmentChanged,
-            $method,
-            IPHelper::getUserIp()
-        );
+            $this->audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventEnrollmentChanged,
+                $method,
+                IPHelper::getUserIp()
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
 
         return $codes;
     }
