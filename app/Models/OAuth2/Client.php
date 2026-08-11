@@ -809,9 +809,9 @@ class Client extends BaseEntity implements IClient
     {
         $originWithoutPort = URLUtils::canonicalUrl($origin, false);
         if(empty($originWithoutPort)) return false;
-        if(str_contains($this->allowed_origins, URLUtils::normalizeUrl($originWithoutPort) )) return true;
+        if(str_contains($this->allowed_origins, rtrim(URLUtils::normalizeUrl($originWithoutPort), '/') )) return true;
         $originWithPort = URLUtils::canonicalUrl($origin);
-        return str_contains($this->allowed_origins, URLUtils::normalizeUrl($originWithPort));
+        return str_contains($this->allowed_origins, rtrim(URLUtils::normalizeUrl($originWithPort), '/'));
     }
 
     public function getWebsite()
@@ -1097,7 +1097,7 @@ class Client extends BaseEntity implements IClient
         if ($parts == false) {
             return false;
         }
-        if($parts['scheme']!=='https')
+        if($parts['scheme']!=='https' && ServerConfigurationService::getConfigValue("SSL.Enable"))
             return false;
 
         $logout_without_port = $parts['scheme'].'://'.$parts['host'];

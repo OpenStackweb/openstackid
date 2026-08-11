@@ -159,7 +159,7 @@ class ServerConfigurationService
         $this->default_config_params["OAuth2SecurityPolicy.MaxInvalidRedeemAuthCodeAttempts"]    = Config::get('server.OAuth2SecurityPolicy_MaxInvalidRedeemAuthCodeAttempts', 10);
         $this->default_config_params["OAuth2SecurityPolicy.MaxInvalidClientCredentialsAttempts"] = Config::get('server.OAuth2SecurityPolicy_MaxInvalidClientCredentialsAttempts', 5);
         //ssl
-        $this->default_config_params["SSL.Enable"] = Config::get('server.SSL_Enable', true);
+        $this->default_config_params["SSL.Enable"] = Config::get('server.ssl_enabled', true);
     }
 
     public function getUserIdentityEndpointURL($identifier)
@@ -250,7 +250,7 @@ class ServerConfigurationService
         $request = request();
         if(!is_null($request))
         {
-            return 'https://'.$request->getHttpHost();
+            return $request->getSchemeAndHttpHost();
         }
         return Config::get('app.url');
     }
