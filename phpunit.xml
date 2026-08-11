@@ -22,6 +22,16 @@
     <testsuite name="OTEL Custom Formatters Test Suite">
       <directory>./tests/OpenTelemetry/Formatters/</directory>
     </testsuite>
+    <testsuite name="Two Factor Authentication Test Suite">
+      <file>./tests/TwoFactorRepositoriesTest.php</file>
+      <file>./tests/unit/UserTwoFactorTest.php</file>
+      <file>./tests/unit/MFA/AbstractMFAChallengeStrategyTest.php</file>
+      <file>./tests/unit/MFA/EmailOTPMFAChallengeStrategyTest.php</file>
+      <file>./tests/unit/MFA/MFAChallengeStrategyFactoryTest.php</file>
+      <file>./tests/unit/TwoFactorAuditServiceTest.php</file>
+      <file>./tests/unit/MFAGateServiceTest.php</file>
+      <file>./tests/TwoFactorLoginFlowTest.php</file>
+    </testsuite>
   </testsuites>
   <php>
     <env name="APP_ENV" value="testing"/>

@@ -45,12 +45,17 @@ Route::group(array('middleware' => ['ssl']), function () {
         Route::group(array('prefix' => 'login'), function () {
             Route::get('', "UserController@getLogin");
             Route::post('account-verify', [ 'middleware' => ['csrf'], 'uses' => 'UserController@getAccount']);
-            Route::post('otp', ['middleware' => ['csrf'], 'uses' => 'UserController@emitOTP']);
+            Route::post('otp', ['middleware' => ['csrf', '2fa.rate:otp'], 'uses' => 'UserController@emitOTP']);
             Route::group(array('prefix' => 'verification'), function () {
                 Route::post('resend', ['middleware' => ['csrf'], 'uses' => 'UserController@resendVerificationEmail']);
             });
+            Route::group(array('prefix' => '2fa'), function () {
+                Route::post('verify',   ['middleware' => ['csrf', '2fa.rate:verify'],   'uses' => 'UserController@verify2FA']);
+                Route::post('recovery', ['middleware' => ['csrf', '2fa.rate:recovery'], 'uses' => 'UserController@verify2FARecovery']);
+                Route::post('resend',   ['middleware' => ['csrf', '2fa.rate:resend'],   'uses' => 'UserController@resend2FA']);
+            });
             Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
-            Route::get('cancel', "UserController@cancelLogin");
+            Route::post('cancel', ['middleware' => 'csrf', 'uses' => 'UserController@cancelLogin']);
             Route::group(array('prefix' => '{provider}'), function () {
                 Route::get('', 'SocialLoginController@redirect')->name("social_login");
                 Route::any('callback','SocialLoginController@callback')->name("social_login_callback");
@@ -192,6 +197,8 @@ Route::group([
             Route::put('', "UserApiController@updateMe");
             Route::put('pic',  "UserApiController@updateMyPic");
             Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
+            Route::post('recovery-codes/regenerate', "UserApiController@regenerateRecoveryCodes");
+            Route::post('2fa/enable', "UserApiController@enableTwoFactor");
         });
 
         Route::get('access-tokens', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);

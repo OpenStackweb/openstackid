@@ -1,4 +1,4 @@
-import {deleteRawRequest, getRawRequest, putFile, putRawRequest} from "../base_actions";
+import {deleteRawRequest, getRawRequest, postRawRequestFull, putFile, putRawRequest} from "../base_actions";
 import moment from "moment";
 
 export const PAGE_SIZE = 10;
@@ -85,6 +85,16 @@ export const revokeToken = async (value, hint) => {
 
 export const revokeAllTokens = async () => {
     return deleteRawRequest(window.REVOKE_ALL_TOKENS_ENDPOINT)({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+}
+
+export const regenerateRecoveryCodes = async (currentPassword) => {
+    const params = {current_password: currentPassword};
+    return postRawRequestFull(window.REGENERATE_RECOVERY_CODES_ENDPOINT)(params, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
+}
+
+export const enableTwoFactor = async (method) => {
+    const params = {method};
+    return postRawRequestFull(window.ENABLE_TWO_FACTOR_ENDPOINT)(params, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
 const normalizeEntity = (entity) => {
