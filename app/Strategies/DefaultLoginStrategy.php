@@ -113,4 +113,22 @@ class DefaultLoginStrategy implements ILoginStrategy
             $response = $response->with($key, $val);
         return $response;
     }
+
+    /**
+     * @param array $params
+     * @return mixed
+     */
+    public function challengeRequired(array $params)
+    {
+        // The login form submits as a native form POST, so this must redirect
+        // like every other outcome (errorLogin()) rather than return JSON.
+        // Persistent (not one-shot flash) so the state survives repeated
+        // refreshes while the challenge is still pending. error_code mirrors
+        // what DisplayResponseJsonStrategy sends native clients in JSON.
+        Session::put('error_code', ILoginStrategy::MFA_REQUIRED);
+        foreach ($params as $key => $val) {
+            Session::put($key, $val);
+        }
+        return Redirect::action('UserController@getLogin');
+    }
 }

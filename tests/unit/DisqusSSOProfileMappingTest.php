@@ -23,12 +23,36 @@ use Tests\BrowserKitTestCase;
  */
 class DisqusSSOProfileMappingTest extends BrowserKitTestCase
 {
+    private string $slug = 'poc_disqus_test';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Remove any leftover record from a previous run so the test is idempotent.
+        $repo = EntityManager::getRepository(DisqusSSOProfile::class);
+        $existing = $repo->findOneBy(['forum_slug' => $this->slug]);
+        if ($existing) {
+            EntityManager::remove($existing);
+            EntityManager::flush();
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        // Clean up the record created by the test so subsequent runs start fresh.
+        $repo = EntityManager::getRepository(DisqusSSOProfile::class);
+        $existing = $repo->findOneBy(['forum_slug' => $this->slug]);
+        if ($existing) {
+            EntityManager::remove($existing);
+            EntityManager::flush();
+        }
+        parent::tearDown();
+    }
+
     public function testDisqusSSOProfilePersistence()
     {
-        $slug = 'poc_disqus';
-
         $disqus_profile = new DisqusSSOProfile();
-        $disqus_profile->setForumSlug($slug);
+        $disqus_profile->setForumSlug($this->slug);
         $disqus_profile->setPublicKey("PUBLIC_KEY");
         $disqus_profile->setSecretKey("SECRET_KEY");
 
@@ -40,6 +64,6 @@ class DisqusSSOProfileMappingTest extends BrowserKitTestCase
         $found_disqus_profile = $repo->find($disqus_profile->getId());
 
         $this->assertInstanceOf(DisqusSSOProfile::class, $found_disqus_profile);
-        $this->assertEquals($slug, $found_disqus_profile->getForumSlug());
+        $this->assertEquals($this->slug, $found_disqus_profile->getForumSlug());
     }
 }
