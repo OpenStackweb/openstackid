@@ -18,6 +18,7 @@ use Auth\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use Strategies\MFA\MFAChallengeStrategyFactory;
 
 /**
  * Integration tests for regenerating recovery codes from the user profile
@@ -121,6 +122,51 @@ final class RecoveryCodeRegenerationTest extends BrowserKitTestCase
         $remaining = EntityManager::getRepository(UserRecoveryCode::class)
             ->findBy(['user' => $admin->getId(), 'used_at' => null]);
         $this->assertCount($expectedCount, $remaining);
+    }
+
+    public function testDisplayedRecoveryCodeRedeemsThroughVerifyRecoveryCode(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->regenerate(self::SEED_PASSWORD);
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $displayedCode = $payload['recovery_codes'][0];
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]+-[A-Z0-9]+$/', $displayedCode);
+
+        EntityManager::clear();
+        $admin = EntityManager::getRepository(User::class)->find($admin->getId());
+        $unusedBefore = EntityManager::getRepository(UserRecoveryCode::class)
+            ->findBy(['user' => $admin->getId(), 'used_at' => null]);
+
+        // The hash was generated over the dash-less string; redeeming the code
+        // exactly as it was displayed (with its "-" separator) must still work.
+        $strategy = MFAChallengeStrategyFactory::create(User::MFAMethod_OTP);
+        $strategy->verifyRecoveryCode($admin, $displayedCode);
+
+        EntityManager::clear();
+        $unusedAfter = EntityManager::getRepository(UserRecoveryCode::class)
+            ->findBy(['user' => $admin->getId(), 'used_at' => null]);
+
+        $this->assertCount(
+            count($unusedBefore) - 1,
+            $unusedAfter,
+            'the code redeemed exactly as displayed must be consumed exactly once'
+        );
+    }
+
+    public function testEnableTwoFactorRejectsWhenAlreadyEnabled(): void
+    {
+        $this->enableTwoFactor('email_otp');
+        $this->assertResponseStatus(200);
+
+        $response = $this->enableTwoFactor('email_otp');
+
+        $this->assertResponseStatus(412);
+
+        EntityManager::clear();
+        $admin = $this->admin();
+        $this->assertTrue($admin->isTwoFactorEnabled(), '2FA must remain enabled after the rejected second call');
     }
 
     public function testEnableTwoFactorRejectsUnavailableMethod(): void
