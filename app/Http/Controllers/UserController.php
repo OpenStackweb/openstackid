@@ -763,7 +763,7 @@ final class UserController extends OpenIdController
                 return $this->mfaSessionExpired();
             }
 
-            $user = $this->auth_service->getUserById((int) $pending['user_id']);
+            $user = $this->auth_service->getUserById($pending->getUserId());
             if (is_null($user) || !$user->isTwoFactorMethodEnabled($method)) {
                 $strategy->clearPendingState();
                 return $this->mfaSessionExpired();
@@ -785,7 +785,7 @@ final class UserController extends OpenIdController
             } catch (AuthenticationException $ex) {
                 Log::warning($ex);
                 // Re-fetch user: the tx wrapper closed/reset the EM on failure, detaching the entity.
-                $userId = (int) $pending['user_id'];
+                $userId = $pending->getUserId();
                 $user = $this->auth_service->getUserById($userId) ?? $user;
                 // Best-effort: an audit-logging failure here must not turn a
                 // clean 401 into a 500 (which would also drop the error_code
@@ -804,7 +804,7 @@ final class UserController extends OpenIdController
             }
 
             // Second factor verified: establish the session.
-            $this->auth_service->loginUser($user, (bool) $pending['remember']);
+            $this->auth_service->loginUser($user, $pending->shouldRemember());
 
             if ($trust_device) {
                 // Best-effort: the OTP is already redeemed and the session
@@ -880,7 +880,7 @@ final class UserController extends OpenIdController
                 return $this->mfaSessionExpired();
             }
 
-            $user = $this->auth_service->getUserById((int) $pending['user_id']);
+            $user = $this->auth_service->getUserById($pending->getUserId());
             if (is_null($user)) {
                 $strategy->clearPendingState();
                 return $this->mfaSessionExpired();
@@ -899,7 +899,7 @@ final class UserController extends OpenIdController
             } catch (AuthenticationException $ex) {
                 Log::warning($ex);
                 // Re-fetch user: the tx wrapper closed/reset the EM on failure, detaching the entity.
-                $userId = (int) $pending['user_id'];
+                $userId = $pending->getUserId();
                 $user = $this->auth_service->getUserById($userId) ?? $user;
                 // Best-effort: see verify2FA() for rationale.
                 try {
@@ -915,7 +915,7 @@ final class UserController extends OpenIdController
                 return $this->unauthorized(['error_code' => MFAConstants::ERROR_CODE_INVALID_RECOVERY]);
             }
 
-            $this->auth_service->loginUser($user, (bool) $pending['remember']);
+            $this->auth_service->loginUser($user, $pending->shouldRemember());
             $strategy->clearPendingState();
             $this->clearMFAUISessionState();
 
@@ -978,13 +978,13 @@ final class UserController extends OpenIdController
                 return $this->mfaSessionExpired();
             }
 
-            $user = $this->auth_service->getUserById((int) $pending['user_id']);
+            $user = $this->auth_service->getUserById($pending->getUserId());
             if (is_null($user) || !$user->isTwoFactorMethodEnabled($method)) {
                 $strategy->clearPendingState();
                 return $this->mfaSessionExpired();
             }
 
-            $payload = $this->auth_service->resendMFAChallenge($user, $strategy, $this->resolveClientFromMemento(), (bool) $pending['remember']);
+            $payload = $this->auth_service->resendMFAChallenge($user, $strategy, $this->resolveClientFromMemento(), $pending->shouldRemember());
 
             // Keep the refresh-restorable session state in sync with the
             // fresh challenge (e.g. otp_lifetime countdown resets on resend,

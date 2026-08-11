@@ -17,7 +17,7 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
 
     public function __construct(protected IUserRecoveryCodeRepository $recovery_code_repository) {}
 
-    public function getPendingState(): ?array
+    public function getPendingState(): ?MFAPendingState
     {
         $user_id    = Session::get(self::KEY_USER_ID);
         $pending_at = Session::get(self::KEY_PENDING_AT);
@@ -31,11 +31,11 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
             return null;
         }
 
-        return [
-            'user_id'    => $user_id,
-            'pending_at' => $pending_at,
-            'remember'   => Session::get(self::KEY_REMEMBER, false),
-        ];
+        return new MFAPendingState(
+            (int) $user_id,
+            (int) $pending_at,
+            (bool) Session::get(self::KEY_REMEMBER, false)
+        );
     }
 
     public function clearPendingState(): void

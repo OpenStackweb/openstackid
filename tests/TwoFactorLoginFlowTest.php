@@ -40,6 +40,7 @@ use Services\OAuth2\PrincipalService;
 use Strategies\ILoginStrategy;
 use Strategies\MFA\IMFAChallengeStrategy;
 use Strategies\MFA\MFAChallengeStrategyFactory;
+use Strategies\MFA\MFAPendingState;
 use Utils\Services\IAuthService;
 
 /**
@@ -541,7 +542,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
                 return $this->inner->resendChallenge($user, $client, $remember);
             }
 
-            public function getPendingState(): ?array
+            public function getPendingState(): ?MFAPendingState
             {
                 return $this->inner->getPendingState();
             }

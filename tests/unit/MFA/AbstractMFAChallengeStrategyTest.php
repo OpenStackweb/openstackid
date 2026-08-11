@@ -53,9 +53,9 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $state = $this->strategy->getPendingState();
 
         $this->assertNotNull($state);
-        $this->assertSame(42, $state['user_id']);
-        $this->assertTrue($state['remember']);
-        $this->assertArrayHasKey('pending_at', $state);
+        $this->assertSame(42, $state->getUserId());
+        $this->assertTrue($state->shouldRemember());
+        $this->assertGreaterThan(0, $state->getPendingAt());
     }
 
     public function testGetPendingState_withExpiredSession_returnsNull(): void
