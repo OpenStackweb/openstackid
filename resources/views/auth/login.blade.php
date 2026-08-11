@@ -34,6 +34,11 @@
             accountVerifyAction : '{{URL::action("UserController@getAccount")}}',
             emitOtpAction : '{{URL::action("UserController@emitOTP")}}',
             resendVerificationEmailAction: '{{ URL::action("UserController@resendVerificationEmail") }}',
+            verify2faAction: '{{ URL::action("UserController@verify2FA") }}',
+            resend2faAction: '{{ URL::action("UserController@resend2FA") }}',
+            cancelLogin: '{{ URL::action("UserController@cancelLogin") }}',
+            recovery2faAction: '{{ URL::action("UserController@verify2FARecovery") }}',
+            mfaMethod: '{{ Session::has("mfa_method") ? Session::get("mfa_method") : "email_otp" }}',
             authError: authError,
             captchaPublicKey: '{{ Config::get("services.turnstile.key") }}',
             flow: 'password',
@@ -84,9 +89,23 @@
             config.flow = '{{Session::get('flow')}}';
         @endif
 
+        @if(Session::has('otp_length'))
+            config.otpLength = {{Session::get("otp_length")}};
+        @endif
+        @if(Session::has('otp_lifetime'))
+            {{-- Seed the countdown with the REMAINING lifetime: on a mid-challenge
+                 refresh the full TTL would overstate how long the code is valid and
+                 let the user burn rate-limited attempts on a server-expired code. --}}
+            config.otpLifetime = {{ max(0, intval(Session::get("otp_lifetime")) - (Session::has("otp_issued_at") ? time() - intval(Session::get("otp_issued_at")) : 0)) }};
+        @endif
+
         window.VERIFY_ACCOUNT_ENDPOINT = config.accountVerifyAction;
         window.EMIT_OTP_ENDPOINT = config.emitOtpAction;
         window.RESEND_VERIFICATION_EMAIL_ENDPOINT = config.resendVerificationEmailAction;
+        window.VERIFY_2FA_ENDPOINT = config.verify2faAction;
+        window.RESEND_2FA_ENDPOINT = config.resend2faAction;
+        window.CANCEL_LOGIN_ENDPOINT = config.cancelLogin;
+        window.RECOVERY_2FA_ENDPOINT = config.recovery2faAction;
     </script>
     {!! script_to('assets/login.js') !!}
 @append

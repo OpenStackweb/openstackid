@@ -5,7 +5,6 @@ use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
 use Models\OAuth2\Client;
-use Models\OAuth2\OAuth2OTP;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Services\ITokenService;
 
@@ -30,14 +29,26 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
         ], $client);
 
         return [
-            'otp_length'   => $otp->getLength(),
-            'otp_lifetime' => $otp->getLifetime(),
+            'otp_length'    => $otp->getLength(),
+            'otp_lifetime'  => $otp->getLifetime(),
+            // Same source isAlive()/getRemainingLifetime() use server-side, so a
+            // UI countdown seeded from it can never drift from the actual expiry check.
+            'otp_issued_at' => $otp->getCreatedAt()?->getTimestamp() ?? time(),
         ];
     }
 
     public function verifyChallenge(User $user, string $code, ?Client $client = null): void
     {
-        $otp = OAuth2OTP::fromParams($user->getEmail(), OAuth2Protocol::OAuth2PasswordlessConnectionEmail, $code);
+        // Look up the STORED single-use code so the submitted value is actually
+        // validated against what was issued (a non-matching code resolves to null).
+        // Scope the lookup to the issuing client so an MFA OTP is only matched
+        // against the client it was issued for.
+        $otp = $this->otp_repository->getByValueConnectionAndUserName(
+            $code,
+            OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
+            $user->getEmail(),
+            $client
+        );
 
         if (is_null($otp)) {
             throw new AuthenticationException("Non existent single-use code.");
@@ -53,9 +64,22 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
             throw new AuthenticationException("Verification code is not valid.");
         }
 
+        // Concurrency: acquire a PESSIMISTIC_WRITE row lock and re-hydrate redemption
+        // state before redeeming, mirroring AuthService::finalizeRedemption(). This
+        // closes the validate->redeem race so two concurrent submissions of the same
+        // valid code cannot both succeed. Runs inside the verifyMFAChallenge tx.
+        if ($otp->getConnection() !== OAuth2Protocol::OAuth2PasswordlessConnectionInline) {
+            $this->otp_repository->refreshExclusiveLock($otp);
+            if ($otp->isRedeemed()) {
+                throw new AuthenticationException("Verification code is already redeemed.");
+            }
+        }
+
         $otp->redeem();
 
-        foreach ($this->otp_repository->getByUserNameNotRedeemed($user->getEmail()) as $otpToRevoke) {
+        // Revoke other pending OTPs for this user, scoped to the same client so we
+        // never burn unrelated OTPs (e.g. passwordless-login codes for other clients).
+        foreach ($this->otp_repository->getByUserNameNotRedeemed($user->getEmail(), $client) as $otpToRevoke) {
             if ($otpToRevoke->getValue() !== $otp->getValue()) {
                 $otpToRevoke->redeem();
             }

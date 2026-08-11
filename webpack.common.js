@@ -39,6 +39,7 @@ module.exports = {
         pathinfo: false
     },
     resolve: {
+        extensions: ['.js', '.jsx'],
         fallback: {
             "fs" : false,
             "crypto" : false,
