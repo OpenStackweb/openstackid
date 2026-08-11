@@ -482,10 +482,12 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testRecoveryCodeRejectsReuseAfterTransactionCommit(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        // No "-" in the fixture: verifyRecoveryCode() now strips separators before
-        // Hash::check() (real codes are hashed dash-less; the dash is display-only),
-        // so a fixture hashed with one baked in would never match its own submission.
-        $plain = 'RECOVERYREUSETX' . uniqid();
+        // No "-" and all-uppercase: verifyRecoveryCode() now strips separators
+        // and uppercases the submitted code before Hash::check() (real codes are
+        // hashed dash-less and all-uppercase; the dash/case are display-only),
+        // so a fixture hashed with lowercase uniqid() hex would never match its
+        // own (normalized) submission.
+        $plain = 'RECOVERYREUSETX' . strtoupper(uniqid());
         $this->createRecoveryCode($admin, $plain, false);
 
         // First use — must succeed.
@@ -606,7 +608,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testRecoveryCodeRowLockBlocksConcurrentConnection(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERYLOCK' . uniqid();
+        $plain = 'RECOVERYLOCK' . strtoupper(uniqid());
         $codeId = $this->createRecoveryCode($admin, $plain, false);
 
         /** @var IUserRecoveryCodeRepository $recoveryRepo */
@@ -786,7 +788,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         // Audit is best-effort: a failure emitting recovery_used must NOT 500 a
         // user whose recovery code is already burned and session established.
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERYAUDITFAIL' . uniqid();
+        $plain = 'RECOVERYAUDITFAIL' . strtoupper(uniqid());
         $this->createRecoveryCode($admin, $plain, false);
 
         $auditMock = \Mockery::mock(ITwoFactorAuditService::class);
