@@ -482,7 +482,10 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testRecoveryCodeRejectsReuseAfterTransactionCommit(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-REUSE-TX-' . uniqid();
+        // No "-" in the fixture: verifyRecoveryCode() now strips separators before
+        // Hash::check() (real codes are hashed dash-less; the dash is display-only),
+        // so a fixture hashed with one baked in would never match its own submission.
+        $plain = 'RECOVERYREUSETX' . uniqid();
         $this->createRecoveryCode($admin, $plain, false);
 
         // First use — must succeed.
@@ -603,7 +606,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testRecoveryCodeRowLockBlocksConcurrentConnection(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-LOCK-' . uniqid();
+        $plain = 'RECOVERYLOCK' . uniqid();
         $codeId = $this->createRecoveryCode($admin, $plain, false);
 
         /** @var IUserRecoveryCodeRepository $recoveryRepo */
@@ -783,7 +786,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         // Audit is best-effort: a failure emitting recovery_used must NOT 500 a
         // user whose recovery code is already burned and session established.
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-AUDIT-FAIL-' . uniqid();
+        $plain = 'RECOVERYAUDITFAIL' . uniqid();
         $this->createRecoveryCode($admin, $plain, false);
 
         $auditMock = \Mockery::mock(ITwoFactorAuditService::class);
@@ -836,7 +839,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testRecoveryCodeLoginSucceeds(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-PLAIN-123';
+        $plain = 'RECOVERYPLAIN123';
         $codeId = $this->createRecoveryCode($admin, $plain, false);
 
         $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
@@ -856,7 +859,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testUsedRecoveryCodeFails(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
-        $plain = 'RECOVERY-USED-456';
+        $plain = 'RECOVERYUSED456';
         $this->createRecoveryCode($admin, $plain, true); // already used
 
         $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);

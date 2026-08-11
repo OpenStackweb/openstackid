@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use Strategies\MFA\MFAChallengeStrategyFactory;
+use Utils\Services\IAuthService;
 
 /**
  * Integration tests for regenerating recovery codes from the user profile
@@ -141,8 +142,11 @@ final class RecoveryCodeRegenerationTest extends BrowserKitTestCase
 
         // The hash was generated over the dash-less string; redeeming the code
         // exactly as it was displayed (with its "-" separator) must still work.
+        // Goes through IAuthService, like the real login flow, because
+        // verifyRecoveryCode() takes a PESSIMISTIC_WRITE row lock that requires
+        // an open transaction.
         $strategy = MFAChallengeStrategyFactory::create(User::MFAMethod_OTP);
-        $strategy->verifyRecoveryCode($admin, $displayedCode);
+        app(IAuthService::class)->verifyMFARecoveryCode($admin, $strategy, $displayedCode);
 
         EntityManager::clear();
         $unusedAfter = EntityManager::getRepository(UserRecoveryCode::class)

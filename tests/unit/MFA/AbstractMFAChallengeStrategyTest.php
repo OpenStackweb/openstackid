@@ -95,7 +95,10 @@ class AbstractMFAChallengeStrategyTest extends TestCase
     public function testVerifyRecoveryCode_withMatchingCode_marksAsUsed(): void
     {
         $user = new User();
-        $code = 'VALID-CODE';
+        // No "-" in the fixture: verifyRecoveryCode() strips separators before
+        // Hash::check() (real codes are hashed dash-less), so a fixture hashed
+        // with one baked in would never match its own submission.
+        $code = 'VALIDCODE';
 
         $recoveryCode = \Mockery::mock(\App\libs\Auth\Models\UserRecoveryCode::class);
         $recoveryCode->shouldReceive('getCodeHash')->andReturn(Hash::make($code));
@@ -120,7 +123,10 @@ class AbstractMFAChallengeStrategyTest extends TestCase
     public function testVerifyRecoveryCode_locksAndRejects_whenUsedAfterLock(): void
     {
         $user = new User();
-        $code = 'VALID-CODE';
+        // No "-" in the fixture: verifyRecoveryCode() strips separators before
+        // Hash::check() (real codes are hashed dash-less), so a fixture hashed
+        // with one baked in would never match its own submission.
+        $code = 'VALIDCODE';
 
         // Hash matches, but a concurrent winner marked it used; the lock+recheck
         // must reject without double-spending (regression guard for 3357348455).
