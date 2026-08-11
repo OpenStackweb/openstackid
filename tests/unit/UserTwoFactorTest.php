@@ -83,6 +83,22 @@ class UserTwoFactorTest extends TestCase
         $this->assertTrue($user->shouldRequire2FA());
     }
 
+    public function testShouldRequire2FA_returnsFalse_whenGloballyDisabled(): void
+    {
+        // Global kill-switch (SDS idp-mfa.md §10.1): with 2FA globally disabled,
+        // even an enforced admin must not require 2FA - the whole gate is inert,
+        // which is what lets TWO_FACTOR_ENABLED=false revert to password-only login.
+        Config::set('two_factor.enabled', false);
+
+        $user = new User();
+        $this->assignGroups($user, [$this->buildGroup(IGroupSlugs::SuperAdminGroup)]);
+
+        $this->assertFalse(
+            $user->shouldRequire2FA(),
+            'the global kill-switch must override enforced-group membership'
+        );
+    }
+
     public function testShouldRequire2FA_BelongsToAnEnforcedGroup(): void
     {
         config(['two_factor.enforced_groups' => []]);

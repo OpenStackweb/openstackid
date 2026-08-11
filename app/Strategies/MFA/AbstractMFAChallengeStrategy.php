@@ -48,8 +48,21 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
 
     public function verifyRecoveryCode(User $user, string $code): void
     {
+        // Recovery codes are hashed without the "-" separator; it is added only
+        // for on-screen readability (XXXX-XXXX). Normalize here so a code typed
+        // or pasted exactly as displayed still matches the stored hash.
+        $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code));
+
         foreach ($this->recovery_code_repository->getUnusedByUser($user) as $recoveryCode) {
             if (Hash::check($code, $recoveryCode->getCodeHash())) {
+                // Concurrency: acquire a PESSIMISTIC_WRITE row lock and re-hydrate
+                // used_at before mutating. This closes the check->markUsed race
+                // window: a second concurrent submitter blocks on the lock and, on
+                // resume, sees the code already used instead of double-spending it.
+                $this->recovery_code_repository->refreshExclusiveLock($recoveryCode);
+                if ($recoveryCode->isUsed()) {
+                    throw new AuthenticationException("Invalid recovery code.");
+                }
                 $recoveryCode->markUsed();
                 return;
             }
