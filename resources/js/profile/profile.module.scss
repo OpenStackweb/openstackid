@@ -33,5 +33,15 @@
       font-size: 0.75rem;
       margin: 4px 0 4px 14px;
     }
+
+    .recovery_codes_section {
+      border: solid 1px $border-color;
+      border-radius: 4px;
+      padding: 12px 16px 16px;
+
+      .recovery_codes_section_title {
+        margin-bottom: 8px;
+      }
+    }
   }
 }

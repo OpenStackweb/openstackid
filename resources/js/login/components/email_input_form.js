@@ -50,7 +50,7 @@ const EmailInputForm = ({
         )}
       </Paper>
       {emailError != "" && (
-        <HTMLRender component="p" className={styles.error_label}>
+        <HTMLRender component="p" className={styles.error_label} data-testid="error-label">
           {emailError}
         </HTMLRender>
       )}

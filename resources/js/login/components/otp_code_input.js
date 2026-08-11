@@ -38,7 +38,7 @@ const OtpCodeInput = ({
                 />
             </div>
             {otpError &&
-                <HTMLRender component="p" className={styles.error_label}>
+                <HTMLRender component="p" className={styles.error_label} data-testid="error-label">
                     {otpError}
                 </HTMLRender>
             }

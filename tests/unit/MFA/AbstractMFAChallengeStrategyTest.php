@@ -1,4 +1,17 @@
-<?php namespace Tests\Unit\MFA;
+<?php namespace Tests\unit\MFA;
+
+/**
+ * Copyright 2026 OpenStack Foundation
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
 
 use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRecoveryCodeRepository;
@@ -82,7 +95,10 @@ class AbstractMFAChallengeStrategyTest extends TestCase
     public function testVerifyRecoveryCode_withMatchingCode_marksAsUsed(): void
     {
         $user = new User();
-        $code = 'VALID-CODE';
+        // No "-" in the fixture: verifyRecoveryCode() strips separators before
+        // Hash::check() (real codes are hashed dash-less), so a fixture hashed
+        // with one baked in would never match its own submission.
+        $code = 'VALIDCODE';
 
         $recoveryCode = \Mockery::mock(\App\libs\Auth\Models\UserRecoveryCode::class);
         $recoveryCode->shouldReceive('getCodeHash')->andReturn(Hash::make($code));
@@ -107,7 +123,10 @@ class AbstractMFAChallengeStrategyTest extends TestCase
     public function testVerifyRecoveryCode_locksAndRejects_whenUsedAfterLock(): void
     {
         $user = new User();
-        $code = 'VALID-CODE';
+        // No "-" in the fixture: verifyRecoveryCode() strips separators before
+        // Hash::check() (real codes are hashed dash-less), so a fixture hashed
+        // with one baked in would never match its own submission.
+        $code = 'VALIDCODE';
 
         // Hash matches, but a concurrent winner marked it used; the lock+recheck
         // must reject without double-spending (regression guard for 3357348455).

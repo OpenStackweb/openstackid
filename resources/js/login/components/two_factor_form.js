@@ -64,7 +64,7 @@ const TwoFactorForm = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} target="_self" className={styles.otp_form}>
+        <form onSubmit={handleSubmit} target="_self" className={styles.otp_form} data-testid="two-factor-form">
             <OtpCodeInput
                 id="two_factor_code"
                 otpCode={otpCode}
@@ -95,7 +95,8 @@ const TwoFactorForm = ({
                         disabled={disableInput || otpCode === '' || expired}
                         color="primary"
                         type="submit"
-                        target="_self">
+                        target="_self"
+                        data-testid="verify-button">
                     VERIFY
                 </Button>
             </div>
@@ -103,17 +104,18 @@ const TwoFactorForm = ({
                 <p className={styles.otp_p}>
                     Didn't receive it? Check your spam folder or{" "}
                     <Link href="#" onClick={handleResend} variant="body2" target="_self"
-                          className={(cooldown > 0 || disableInput) ? styles.disabled_link : ''}>
+                          className={(cooldown > 0 || disableInput) ? styles.disabled_link : ''}
+                          data-testid="resend-link">
                         {cooldown > 0 ? `resend code (${cooldown}s)` : 'resend code'}
                     </Link>.
                 </p>
                 {/* "Use a different method" is intentionally hidden in Phase I (email_otp only). */}
                 <hr className={styles.separator}/>
                 <div className={styles.box}>
-                    <Link href="#" onClick={handleCancel} variant="body2" target="_self">
+                    <Link href="#" onClick={handleCancel} variant="body2" target="_self" data-testid="cancel-link">
                         Cancel
                     </Link>
-                    <Link href="#" onClick={handleRecovery} variant="body2" target="_self">
+                    <Link href="#" onClick={handleRecovery} variant="body2" target="_self" data-testid="use-recovery-link">
                         Use a recovery code instead
                     </Link>
                 </div>
