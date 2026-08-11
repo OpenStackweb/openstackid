@@ -927,7 +927,14 @@ final class UserController extends OpenIdController
             // See verify2FA() for rationale: return the destination as data so a real
             // top-level navigation (not this XHR) performs any cross-origin hop.
             $redirect = $this->login_strategy->postLogin();
-            return $this->ok(['redirect_url' => $redirect->getTargetUrl()]);
+            return $this->ok([
+                'redirect_url' => $redirect->getTargetUrl(),
+                // CU-86ba2zp66 / sds/idp-mfa.md §4.10.3, §4.11 step 5: the login page
+                // must be able to warn the user when they've just burned into their
+                // last few recovery codes, since it may be their only way back in.
+                'recovery_codes_remaining' => $this->recovery_code_service->countUnusedRecoveryCodes($user),
+                'recovery_codes_low_threshold' => (int) config('auth.recovery_codes.low_threshold', 3),
+            ]);
         } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412($ex->getMessages());

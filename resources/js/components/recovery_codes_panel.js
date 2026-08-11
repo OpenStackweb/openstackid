@@ -10,16 +10,17 @@ import CloseIcon from "@material-ui/icons/Close";
 import {regenerateRecoveryCodes} from "../profile/actions";
 import {handleErrorResponse} from "../utils";
 import RecoveryCodeModal from "./recovery_code_modal";
+import {
+    RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY,
+    DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
+} from "../shared/recovery_codes";
 
 import styles from "./recovery_codes.module.scss";
-
-const DEFAULT_LOW_CODE_THRESHOLD = 3;
-const LOW_CODE_WARNING_DISMISSED_KEY = "recovery_codes_low_warning_dismissed";
 
 const RecoveryCodesPanel = ({
                                  recoveryCodesRemaining,
                                  recoveryCodesTotal,
-                                 lowCodeThreshold = DEFAULT_LOW_CODE_THRESHOLD,
+                                 lowCodeThreshold = DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
                                  email,
                                  initialCodes = null
                              }) => {
@@ -30,7 +31,7 @@ const RecoveryCodesPanel = ({
     const [total, setTotal] = useState(recoveryCodesTotal);
     const [codes, setCodes] = useState(initialCodes);
     const [warningDismissed, setWarningDismissed] = useState(
-        sessionStorage.getItem(LOW_CODE_WARNING_DISMISSED_KEY) === "1"
+        sessionStorage.getItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY) === "1"
     );
 
     const handleRegenerate = () => {
@@ -53,7 +54,7 @@ const RecoveryCodesPanel = ({
     };
 
     const dismissLowCodeWarning = () => {
-        sessionStorage.setItem(LOW_CODE_WARNING_DISMISSED_KEY, "1");
+        sessionStorage.setItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY, "1");
         setWarningDismissed(true);
     };
 
