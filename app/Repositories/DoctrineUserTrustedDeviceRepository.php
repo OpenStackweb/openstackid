@@ -31,6 +31,30 @@ final class DoctrineUserTrustedDeviceRepository
         return Criteria::expr()->gt('expires_at', $now);
     }
 
+    public function getByUserAndDeviceIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice
+    {
+        $criteria = Criteria::create()
+            ->where(Criteria::expr()->eq('user', $user))
+            ->andWhere(Criteria::expr()->eq('device_identifier', $deviceIdentifier))
+            ->setMaxResults(1);
+
+        $result = $this->matching($criteria)->first();
+        return $result instanceof UserTrustedDevice ? $result : null;
+    }
+
+    public function revokeAllForUser(User $user): void
+    {
+        $this->getEntityManager()
+            ->createQueryBuilder()
+            ->update($this->getBaseEntity(), 'd')
+            ->set('d.is_revoked', ':revoked')
+            ->where('d.user = :user')
+            ->setParameter('revoked', true)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->execute();
+    }
+
     public function getActiveByUserAndIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice
     {
         $criteria = Criteria::create()

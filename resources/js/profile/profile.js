@@ -1,5 +1,6 @@
 import React, {useState} from "react";
 import ReactDOM from "react-dom";
+import Box from "@material-ui/core/Box";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
@@ -27,6 +28,7 @@ import Navbar from "../components/navbar/navbar";
 import Divider from "@material-ui/core/Divider";
 import Link from "@material-ui/core/Link";
 import PasswordChangePanel from "../components/password_change_panel";
+import TwoFactorSection from "../components/two_factor_section";
 import LoadingIndicator from "../components/loading_indicator";
 import TopLogo from "../components/top_logo/top_logo";
 import {handleErrorResponse} from "../utils";
@@ -36,13 +38,18 @@ import styles from "./profile.module.scss";
 
 const ProfilePage = ({
                          appLogo,
+                         appName,
                          countries,
                          csrfToken,
                          initialValues,
                          languages,
                          menuConfig,
                          passwordPolicy,
-                         redirectUri
+                         redirectUri,
+                         twoFactorEnabled,
+                         recoveryCodesRemaining,
+                         recoveryCodesTotal,
+                         recoveryCodesLowThreshold
                      }) => {
     const [pic, setPic] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -755,12 +762,13 @@ const ProfilePage = ({
                                         )}
                                 </Grid>
                             </Grid>
-                            <PasswordChangePanel
-                                hasPasswordSet={initialValues.has_password_set}
-                                formik={formik}
-                                passwordPolicy={passwordPolicy}/>
-
-                            <Grid item>
+                            <Grid item xs={12}>
+                                <PasswordChangePanel
+                                    hasPasswordSet={initialValues.has_password_set}
+                                    formik={formik}
+                                    passwordPolicy={passwordPolicy}/>
+                            </Grid>
+                            <Grid item xs={12}>
                                 <div className={styles.privacy_note}>
                                     <InfoOutlinedIcon className={styles.privacy_note_icon}/>
                                     <Typography variant="body2" className={styles.privacy_note_text}>
@@ -771,6 +779,21 @@ const ProfilePage = ({
                                         separately, except for your email and phone number.
                                     </Typography>
                                 </div>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Box className={styles.recovery_codes_section}>
+                                    <Typography variant="subtitle1"
+                                                className={styles.recovery_codes_section_title}>
+                                        Two-Factor Authentication
+                                    </Typography>
+                                    <TwoFactorSection
+                                        twoFactorEnabled={twoFactorEnabled}
+                                        recoveryCodesRemaining={recoveryCodesRemaining}
+                                        recoveryCodesTotal={recoveryCodesTotal}
+                                        recoveryCodesLowThreshold={recoveryCodesLowThreshold}
+                                        email={initialValues.email}
+                                        appName={appName}/>
+                                </Box>
                             </Grid>
                             <Grid item spacing={2} container direction="row">
                                 <Grid item xs={6}>

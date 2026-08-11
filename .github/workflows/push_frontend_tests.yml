@@ -1,0 +1,139 @@
+name: Front End Tests On Push
+
+on: push
+
+jobs:
+
+  js-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+      - name: Run Jest unit tests
+        run: yarn test:unit:ci
+      - name: Upload Jest coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jest-coverage
+          path: tests/js/coverage
+          retention-days: 5
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: testing
+      APP_DEBUG: true
+      APP_KEY: base64:4vh0op/S1dAsXKQ2bbdCfWRyCI9r8NNIdPXyZWt9PX4=
+      APP_URL: http://localhost:8001
+      DEV_EMAIL_TO: smarcet@gmail.com
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: idp_test
+      DB_USERNAME: root
+      DB_PASSWORD: 1qaz2wsx
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_PASSWORD: 1qaz2wsx
+      REDIS_DATABASES: 16
+      SSL_ENABLED: false
+      SESSION_DRIVER: redis
+      SESSION_COOKIE_SECURE: false
+      PHP_VERSION: 8.3
+      OTEL_SDK_DISABLED: true
+      OTEL_SERVICE_ENABLED: false
+      TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+      # `php artisan serve` (below) is PHP's built-in single-threaded dev server —
+      # it can only handle one request at a time, so Playwright workers must stay
+      # at 1 here or concurrent page loads queue up and blow the 30s test timeout.
+      PLAYWRIGHT_WORKERS: 1
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: 1qaz2wsx
+          MYSQL_DATABASE: idp_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    steps:
+      - name: Create Redis
+        uses: supercharge/redis-github-action@1.8.1
+        with:
+          redis-port: 6379
+          redis-password: 1qaz2wsx
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_mysql, mbstring, exif, pcntl, bcmath, sockets, gettext, apcu
+      - name: Install PHP dependencies
+        uses: ramsey/composer-install@v3
+        env:
+          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.PAT }}"} }'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+      - name: Build frontend assets
+        run: yarn build
+      - name: Prepare application
+        run: |
+          ./update_doctrine.sh
+          php artisan doctrine:migrations:migrate --no-interaction
+          php artisan db:seed --force
+          php artisan idp:create-super-admin test@test.com '1Qaz2wsx!'
+          php artisan idp:create-raw-user e2e@test.com '1Qaz2wsx!'
+          for i in 001 002 003 004 005 006 007 008; do
+            php artisan idp:create-super-admin "mfa-ts-$i@test.com" '1Qaz2wsx!'
+          done
+          php artisan idp:create-super-admin mfa-oauth2@test.com '1Qaz2wsx!'
+          php artisan idp:create-super-admin mfa-oauth2-consent@test.com '1Qaz2wsx!'
+          php artisan idp:create-super-admin mfa-oauth2-trust@test.com '1Qaz2wsx!'
+          php artisan idp:create-oauth2-test-client
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start web server
+        run: php artisan serve --host=127.0.0.1 --port=8001 &
+      - name: Wait for server to be ready
+        run: |
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:8001 > /dev/null 2>&1 && echo "Server ready" && exit 0
+            sleep 2
+          done
+          echo "Server did not start in time" && exit 1
+      - name: Run E2E tests
+        run: yarn test:e2e --reporter=list
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: tests/e2e/report
+          retention-days: 7
+      - name: Upload Playwright traces
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

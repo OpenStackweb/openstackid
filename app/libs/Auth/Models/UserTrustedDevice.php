@@ -24,7 +24,7 @@ use Doctrine\ORM\Mapping as ORM;
 class UserTrustedDevice extends BaseEntity
 {
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
-    #[ORM\ManyToOne(targetEntity: \Auth\User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class)]
     private $user;
 
     #[ORM\Column(name: 'device_identifier', type: 'string', length: 255)]
@@ -54,6 +54,7 @@ class UserTrustedDevice extends BaseEntity
     public function __construct()
     {
         parent::__construct();
+        $this->last_seen_at = new \DateTime('now', new \DateTimeZone('UTC'));
         $this->is_revoked = false;
     }
 
@@ -136,5 +137,11 @@ class UserTrustedDevice extends BaseEntity
     public function setIsRevoked(bool $value): void
     {
         $this->is_revoked = $value;
+    }
+
+    public function isExpired(): bool
+    {
+        $now = new \DateTime('now', new \DateTimeZone('UTC'));
+        return $this->expires_at < $now;
     }
 }

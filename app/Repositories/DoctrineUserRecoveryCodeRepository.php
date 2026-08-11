@@ -31,6 +31,12 @@ final class DoctrineUserRecoveryCodeRepository
         ]);
     }
 
+    public function refreshExclusiveLock(UserRecoveryCode $code): void
+    {
+        // Single round-trip: SELECT ... FOR UPDATE that also re-hydrates the entity.
+        $this->getEntityManager()->refresh($code, \Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE);
+    }
+
     public function deleteAllForUser(User $user): int
     {
         $em = $this->getEntityManager();

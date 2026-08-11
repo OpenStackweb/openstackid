@@ -127,4 +127,21 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
 
         return $response_strategy->getLoginErrorResponse($params);
     }
+
+    /**
+     * @param array $params
+     * @return mixed
+     */
+    public function challengeRequired(array $params)
+    {
+        $auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build(
+            OAuth2Message::buildFromMemento(
+                $this->memento_service->load()
+            )
+        );
+
+        $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
+
+        return $response_strategy->getChallengeRequiredResponse($params);
+    }
 }
