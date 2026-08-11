@@ -54,6 +54,13 @@ class OAuth2LoginStrategyTest extends TestCase
 
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
+        // Clear any resolved facade instances left by earlier tests that boot
+        // the full Laravel Application (e.g. BrowserKitTestCase suites).
+        // Without this, Facade::$resolvedInstance['log'] may still hold a real
+        // LogManager that tries to resolve 'config' — which our minimal Container
+        // doesn't provide — causing a BindingResolutionException.
+        Facade::clearResolvedInstances();
+
         // Set up a minimal facade root
         $this->app = new Container();
 
@@ -212,5 +219,91 @@ class OAuth2LoginStrategyTest extends TestCase
 
         $this->assertTrue($reachedMemento,
             'Guest path must proceed past Auth::guest() check into memento loading');
+    }
+
+    // -----------------------------------------------------------------------
+    // postLogin: OIDC flow
+    // -----------------------------------------------------------------------
+
+    /**
+     * After a successful credential check UserController calls
+     * login_strategy->postLogin(). In the OIDC flow the strategy must:
+     *   1. Restore the original auth request from the session memento.
+     *   2. Log a LoginAction with the redirect_uri as the realm.
+     *   3. Redirect back to the OAuth2 authorization endpoint so the
+     *      OIDC grant can continue with the now-established session.
+     */
+    public function testPostLoginLogsLoginActionAndRedirectsToAuthEndpoint(): void
+    {
+        // Build a real memento from a minimal OIDC authorization request.
+        // OAuth2Message::buildFromMemento() copies the state array directly into
+        // the message container, so the factory can read response_type / redirect_uri.
+        $memento = \OAuth2\Requests\OAuth2RequestMemento::buildFromState([
+            'response_type' => 'code',
+            'redirect_uri'  => 'https://client.example.com/callback',
+            'scope'         => 'openid profile',
+            'client_id'     => 'test-client',
+        ]);
+
+        $this->memento_service->shouldReceive('load')->once()->andReturn($memento);
+
+        $user = Mockery::mock(\Auth\User::class);
+        $user->shouldReceive('getId')->andReturn(42);
+        $this->auth_service->shouldReceive('getCurrentUser')->andReturn($user);
+
+        // The realm is "From <redirect_uri>"; no provider in this case.
+        $this->user_action_service->shouldReceive('addUserAction')
+            ->with(42, '127.0.0.1', \Services\IUserActionService::LoginAction,
+                   'From https://client.example.com/callback')
+            ->once();
+
+        $expectedRedirect = Mockery::mock(\Illuminate\Http\RedirectResponse::class);
+        $redirector = $this->mockRedirect();
+        $redirector->shouldReceive('action')
+            ->with("OAuth2\OAuth2ProviderController@auth")
+            ->once()
+            ->andReturn($expectedRedirect);
+
+        $result = $this->strategy->postLogin();
+
+        $this->assertSame($expectedRedirect, $result);
+    }
+
+    /**
+     * When postLogin() receives a 'provider' key (set by third-party SSO paths),
+     * the realm is extended with the uppercased provider name so that the audit
+     * log carries the full authentication context.
+     */
+    public function testPostLoginIncludesProviderInRealm(): void
+    {
+        $memento = \OAuth2\Requests\OAuth2RequestMemento::buildFromState([
+            'response_type' => 'code',
+            'redirect_uri'  => 'https://client.example.com/callback',
+            'scope'         => 'openid profile',
+            'client_id'     => 'test-client',
+        ]);
+
+        $this->memento_service->shouldReceive('load')->once()->andReturn($memento);
+
+        $user = Mockery::mock(\Auth\User::class);
+        $user->shouldReceive('getId')->andReturn(42);
+        $this->auth_service->shouldReceive('getCurrentUser')->andReturn($user);
+
+        // Provider name must be uppercased and appended to the realm.
+        $this->user_action_service->shouldReceive('addUserAction')
+            ->with(42, '127.0.0.1', \Services\IUserActionService::LoginAction,
+                   'From https://client.example.com/callback using GOOGLE')
+            ->once();
+
+        $expectedRedirect = Mockery::mock(\Illuminate\Http\RedirectResponse::class);
+        $redirector = $this->mockRedirect();
+        $redirector->shouldReceive('action')
+            ->with("OAuth2\OAuth2ProviderController@auth")
+            ->once()
+            ->andReturn($expectedRedirect);
+
+        $result = $this->strategy->postLogin(['provider' => 'google']);
+
+        $this->assertSame($expectedRedirect, $result);
     }
 }
