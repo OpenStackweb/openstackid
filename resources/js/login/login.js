@@ -587,15 +587,20 @@ class LoginPage extends React.Component {
     this.setState({
       ...this.state,
       authFlow: FLOW.RECOVERY,
+      recoveryCode: "",
       errors: { ...this.state.errors, recovery: "" },
     });
   }
 
   onBackToOtp() {
+    // Drop the half-typed recovery code and its error along with the mode: the
+    // user is abandoning that attempt, and leaving them behind would re-show a
+    // stale code/error the next time "Use a recovery code instead" is clicked.
     this.setState({
       ...this.state,
       authFlow: FLOW.MFA,
-      errors: { ...this.state.errors, twofactor: "" },
+      recoveryCode: "",
+      errors: { ...this.state.errors, twofactor: "", recovery: "" },
     });
   }
 

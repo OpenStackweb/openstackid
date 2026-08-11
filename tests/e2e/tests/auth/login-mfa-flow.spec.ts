@@ -18,6 +18,11 @@ const CANCEL_URL   = '**/auth/login/cancel**';
 // across all 8 tests would exhaust the limit well before the suite finishes.
 const MFA_USER_PASSWORD = '1Qaz2wsx!';
 
+// Recovery codes are generated as 8 chars from [A-Z0-9] and shown as XXXX-XXXX
+// (RecoveryCodeService::regenerateCodesForUser), but hashed without the dash.
+const RECOVERY_CODE_AS_DISPLAYED = 'ABCD-1234';
+const RECOVERY_CODE_NORMALIZED   = 'ABCD1234';
+
 function mfaUserEmailFor(testTitle: string): string {
   const match = testTitle.match(/TS-(\d+)/);
   if (!match) {
@@ -127,7 +132,7 @@ test.describe('MFA Login Flow', () => {
     });
 
   // TS-005 ─────────────────────────────────────────────────────────────────
-  test('TS-005: use recovery code — recovery form shown and API called',
+  test('TS-005: use recovery code — recovery form shown and normalized code posted',
     async ({ loginPage, page }) => {
       await page.route(RECOVERY_URL, route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
@@ -137,13 +142,20 @@ test.describe('MFA Login Flow', () => {
       await expect(loginPage.recoveryForm).toBeVisible();
       await expect(loginPage.twoFactorForm).not.toBeVisible();
 
-      await page.locator('#recovery_code').fill('ABCD-1234-EFGH-5678');
+      // Typed exactly as the code is displayed to the user (XXXX-XXXX); the
+      // separator is presentational only and must never reach the endpoint.
+      await loginPage.recoveryCodeInput.fill(RECOVERY_CODE_AS_DISPLAYED);
+      await expect(loginPage.recoveryCodeInput).toHaveValue(RECOVERY_CODE_NORMALIZED);
 
-      const [response] = await Promise.all([
-        page.waitForResponse(RECOVERY_URL),
+      const [request] = await Promise.all([
+        page.waitForRequest(RECOVERY_URL),
         loginPage.verifyButton.click(),
       ]);
-      expect(response.status()).toBe(200);
+
+      // postRawRequest() mirrors every param onto the query string, so the
+      // normalized value is assertable straight off the request URL.
+      expect(new URL(request.url()).searchParams.get('recovery_code'))
+        .toBe(RECOVERY_CODE_NORMALIZED);
     });
 
   // TS-006 ─────────────────────────────────────────────────────────────────
@@ -209,5 +221,98 @@ test.describe('MFA Login Flow', () => {
 
       await expect(loginPage.errorLabel).toBeVisible();
       await expect(loginPage.errorLabel).toContainText('Too many attempts');
+    });
+
+  // TS-009 ─────────────────────────────────────────────────────────────────
+  test('TS-009: back to verification code — OTP mode restored with a clean recovery field',
+    async ({ loginPage }) => {
+      await loginPage.useRecoveryLink.click();
+      await expect(loginPage.recoveryForm).toBeVisible();
+
+      await loginPage.recoveryCodeInput.fill(RECOVERY_CODE_NORMALIZED);
+      await loginPage.backToOtpLink.click();
+
+      // The OTP flow must be intact — same form, still able to submit a code.
+      await expect(loginPage.twoFactorForm).toBeVisible();
+      await expect(loginPage.recoveryForm).not.toBeVisible();
+      await expect(loginPage.passwordForm).not.toBeVisible();
+
+      // Re-entering recovery mode must not resurrect the abandoned code.
+      await loginPage.useRecoveryLink.click();
+      await expect(loginPage.recoveryCodeInput).toHaveValue('');
+    });
+
+  // TS-010 ─────────────────────────────────────────────────────────────────
+  test('TS-010: invalid/used recovery code — inline error, still in the recovery form',
+    async ({ loginPage, page }) => {
+      // A used code fails exactly like an unknown one: the backend answers
+      // mfa_invalid_recovery for both (AbstractMFAChallengeStrategy).
+      await page.route(RECOVERY_URL, route =>
+        route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({ error_code: 'mfa_invalid_recovery' }),
+        })
+      );
+
+      await loginPage.useRecoveryLink.click();
+      await loginPage.recoveryCodeInput.fill(RECOVERY_CODE_NORMALIZED);
+      await loginPage.verifyButton.click();
+
+      await expect(loginPage.errorLabel).toBeVisible();
+      await expect(loginPage.errorLabel).toContainText('Invalid recovery code');
+      // The MFA flow must not be abandoned on a bad code.
+      await expect(loginPage.recoveryForm).toBeVisible();
+      await expect(loginPage.passwordForm).not.toBeVisible();
+    });
+
+  // TS-011 ─────────────────────────────────────────────────────────────────
+  test('TS-011: recovery rate limit — 429 inline error shown',
+    async ({ loginPage, page }) => {
+      await page.route(RECOVERY_URL, route =>
+        route.fulfill({
+          status: 429,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            error_code: 'mfa_rate_limit',
+            error_message: 'Too many attempts. Please try again later.',
+          }),
+        })
+      );
+
+      await loginPage.useRecoveryLink.click();
+      await loginPage.recoveryCodeInput.fill(RECOVERY_CODE_NORMALIZED);
+      await loginPage.verifyButton.click();
+
+      await expect(loginPage.errorLabel).toBeVisible();
+      await expect(loginPage.errorLabel).toContainText('Too many attempts');
+      await expect(loginPage.recoveryForm).toBeVisible();
+    });
+
+  // TS-012 ─────────────────────────────────────────────────────────────────
+  test('TS-012: recovery session expired — back to password form with warning snackbar',
+    async ({ loginPage, page }) => {
+      await page.route(RECOVERY_URL, route =>
+        route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({ error_code: 'mfa_session_expired' }),
+        })
+      );
+      // resetToPasswordFlow() fires cancelLogin() in the background; absorb it.
+      await page.route(CANCEL_URL, route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+      );
+
+      await loginPage.useRecoveryLink.click();
+      await loginPage.recoveryCodeInput.fill(RECOVERY_CODE_NORMALIZED);
+      await loginPage.verifyButton.click();
+
+      await expect(loginPage.recoveryForm).not.toBeVisible();
+      await expect(loginPage.passwordForm).toBeVisible();
+
+      const snackbar = page.locator('[role="alert"]');
+      await expect(snackbar).toBeVisible();
+      await expect(snackbar).toContainText('session has expired');
     });
 });
