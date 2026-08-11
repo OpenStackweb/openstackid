@@ -12,7 +12,8 @@ const TwoFactorSection = ({
                               recoveryCodesRemaining,
                               recoveryCodesTotal,
                               recoveryCodesLowThreshold,
-                              email
+                              email,
+                              appName
                           }) => {
     const [enabled, setEnabled] = useState(twoFactorEnabled);
     const [loading, setLoading] = useState(false);
@@ -59,6 +60,7 @@ const TwoFactorSection = ({
             recoveryCodesTotal={total}
             lowCodeThreshold={recoveryCodesLowThreshold}
             email={email}
+            appName={appName}
             initialCodes={enrollmentCodes}/>
     );
 };

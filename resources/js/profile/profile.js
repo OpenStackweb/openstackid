@@ -37,6 +37,7 @@ import styles from "./profile.module.scss";
 
 const ProfilePage = ({
                          appLogo,
+                         appName,
                          countries,
                          csrfToken,
                          initialValues,
@@ -777,7 +778,8 @@ const ProfilePage = ({
                                         recoveryCodesRemaining={recoveryCodesRemaining}
                                         recoveryCodesTotal={recoveryCodesTotal}
                                         recoveryCodesLowThreshold={recoveryCodesLowThreshold}
-                                        email={initialValues.email}/>
+                                        email={initialValues.email}
+                                        appName={appName}/>
                                 </Box>
                             </Grid>
                             <Grid item spacing={2} container direction="row">

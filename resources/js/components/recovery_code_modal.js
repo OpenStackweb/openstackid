@@ -13,7 +13,7 @@ import styles from "./recovery_codes.module.scss";
 
 const ACK_DELAY_SECONDS = 5;
 
-const RecoveryCodeModal = ({open, codes, email, onAcknowledge}) => {
+const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge}) => {
     const [secondsLeft, setSecondsLeft] = useState(ACK_DELAY_SECONDS);
 
     useEffect(() => {
@@ -44,7 +44,7 @@ const RecoveryCodeModal = ({open, codes, email, onAcknowledge}) => {
                         These codes will not be shown again. Copy or download them now and store them somewhere safe.
                     </Typography>
                 </Box>
-                {codes && <RecoveryCodeDisplay codes={codes} email={email}/>}
+                {codes && <RecoveryCodeDisplay codes={codes} email={email} appName={appName}/>}
             </DialogContent>
             <DialogActions>
                 <Button

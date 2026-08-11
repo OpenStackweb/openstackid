@@ -22,6 +22,7 @@ const RecoveryCodesPanel = ({
                                  recoveryCodesTotal,
                                  lowCodeThreshold = DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
                                  email,
+                                 appName,
                                  initialCodes = null
                              }) => {
     const [regenerating, setRegenerating] = useState(false);
@@ -135,7 +136,7 @@ const RecoveryCodesPanel = ({
                     </Box>
                 }
             </Grid>
-            <RecoveryCodeModal open={!!codes} codes={codes} email={email} onAcknowledge={handleAcknowledge}/>
+            <RecoveryCodeModal open={!!codes} codes={codes} email={email} appName={appName} onAcknowledge={handleAcknowledge}/>
         </>
     );
 };

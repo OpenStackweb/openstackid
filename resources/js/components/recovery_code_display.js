@@ -9,10 +9,12 @@ import {downloadTextFile} from "../utils";
 
 import styles from "./recovery_codes.module.scss";
 
-const buildFileContent = (codes, email) => {
+const DEFAULT_APP_NAME = "OpenStackID";
+
+const buildFileContent = (codes, email, appName) => {
     const date = new Date().toISOString().slice(0, 10);
     return [
-        "FNTECH Recovery Codes",
+        `${appName} Recovery Codes`,
         `Generated: ${date}`,
         `Account: ${email}`,
         "",
@@ -22,7 +24,7 @@ const buildFileContent = (codes, email) => {
     ].join("\n");
 };
 
-const RecoveryCodeDisplay = ({codes, email}) => {
+const RecoveryCodeDisplay = ({codes, email, appName = DEFAULT_APP_NAME}) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
@@ -34,7 +36,8 @@ const RecoveryCodeDisplay = ({codes, email}) => {
 
     const handleDownload = () => {
         const date = new Date().toISOString().slice(0, 10);
-        downloadTextFile(`fntech-recovery-codes-${date}.txt`, buildFileContent(codes, email));
+        const appSlug = appName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        downloadTextFile(`${appSlug}-recovery-codes-${date}.txt`, buildFileContent(codes, email, appName));
     };
 
     return (
