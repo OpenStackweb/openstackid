@@ -1437,7 +1437,11 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
                 OAuth2Protocol::OfflineAccess_Scope),
             OAuth2Protocol::OAuth2Protocol_LoginHint => 'sebastian@tipit.net',
             OAuth2Protocol::OAuth2Protocol_Prompt => OAuth2Protocol::OAuth2Protocol_Prompt_Consent,
-            OAuth2Protocol::OAuth2Protocol_MaxAge => 1,
+            // 3200 like the sibling circuits: this test exercises response_mode
+            // form_post, not max_age expiry (testMaxAge1AndWait2 owns that) - with
+            // max_age=1 the multi-request login+consent dance takes longer than 1s
+            // and the final authorize hop forces a re-login instead of the form post.
+            OAuth2Protocol::OAuth2Protocol_MaxAge => 3200,
             OAuth2Protocol::OAuth2Protocol_ResponseMode => OAuth2Protocol::OAuth2Protocol_ResponseMode_FormPost
         );
 
