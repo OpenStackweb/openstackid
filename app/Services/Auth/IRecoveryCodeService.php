@@ -61,4 +61,10 @@ interface IRecoveryCodeService
      * @return int count of unused recovery codes
      */
     public function countUnusedRecoveryCodes(User $user): int;
+
+    /**
+     * @param User $user
+     * @return RecoveryCodesStatus remaining/total/low-threshold standing for the user
+     */
+    public function getStatus(User $user): RecoveryCodesStatus;
 }

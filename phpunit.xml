@@ -3,7 +3,7 @@
          backupGlobals="false"
          colors="true"
          processIsolation="false"
-         stopOnFailure="true"
+         stopOnFailure="false"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.2/phpunit.xsd"
          cacheDirectory=".phpunit.cache"
          backupStaticProperties="false"
@@ -13,6 +13,14 @@
       <directory>./tests/</directory>
       <exclude>./tests/OpenTelemetry/</exclude>
       <exclude>./tests/TestCase.php</exclude>
+      <!-- The directory scan only picks up *Test.php (PHPUnit's default
+           suffix), so the concrete *TestCase.php protocol suites were never
+           executed by CI - they must be listed explicitly. Abstract bases
+           (OpenStackIDBaseTestCase, BrowserKitTestCase, etc.) need no entry. -->
+      <file>./tests/OAuth2ProtocolTestCase.php</file>
+      <file>./tests/OIDCProtocolTestCase.php</file>
+      <file>./tests/OIDCPasswordlessTestCase.php</file>
+      <file>./tests/OpenIdProtocolTestCase.php</file>
     </testsuite>
     <testsuite name="OTEL Functionality Test Suite">
       <directory>./tests/OpenTelemetry/</directory>
