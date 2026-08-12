@@ -13,6 +13,7 @@
  **/
 
 use App\Events\OAuth2ClientLocked;
+use App\libs\Utils\URLUtils;
 use App\Models\OAuth2\Factories\ClientFactory;
 use App\Services\AbstractService;
 use Auth\Repositories\IUserRepository;
@@ -39,14 +40,40 @@ use OAuth2\Services\IClientService;
 use models\exceptions\ValidationException;
 use Utils\Db\ITransactionService;
 use models\exceptions\EntityNotFoundException;
+use Utils\Exceptions\UnacquiredLockException;
 use Utils\Http\HttpUtils;
 use Utils\Services\IAuthService;
+use Utils\Services\ILockManagerService;
+use Closure;
 /**
  * Class ClientService
  * @package Services\OAuth2
  */
 final class ClientService extends AbstractService implements IClientService
 {
+    /**
+     * SHORTCUT: a single global lock name serializes ALL Native client create()/update() calls that
+     * touch a custom URI scheme, not just the ones that would actually collide on the same scheme -
+     * acceptable given self-service client registration is low-throughput. Upgrade trigger: move to
+     * per-scheme locks (sorted acquisition order to avoid deadlock) if native client registration
+     * volume makes this a bottleneck.
+     */
+    const NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK = 'client.native.custom_scheme.registration';
+
+    /**
+     * seconds - long enough to cover one create()/update() transaction, short enough that a crashed
+     * request doesn't block native client scheme registration for long.
+     */
+    const NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK_LIFETIME = 30;
+
+    /**
+     * Single source of truth for which payload fields carry Native-client custom URI schemes - shared by
+     * assertNativeCustomSchemesAllowed() (what to validate) and payloadTouchesNativeCustomSchemeFields()
+     * (whether the TOCTOU lock is worth taking). Keeping both reads from one list means they can't drift:
+     * a field that stops needing validation automatically stops needing the lock too.
+     */
+    const NATIVE_CUSTOM_SCHEME_URI_FIELDS = ['redirect_uris', 'allowed_origins', 'post_logout_redirect_uris'];
+
     /**
      * @var IAuthService
      */
@@ -75,6 +102,11 @@ final class ClientService extends AbstractService implements IClientService
     private $scope_repository;
 
     /**
+     * @var ILockManagerService
+     */
+    private $lock_manager_service;
+
+    /**
      * ClientService constructor.
      * @param IUserRepository $user_repository
      * @param IClientRepository $client_repository
@@ -83,6 +115,7 @@ final class ClientService extends AbstractService implements IClientService
      * @param IClientCredentialGenerator $client_credential_generator
      * @param IApiScopeRepository $scope_repository
      * @param ITransactionService $tx_service
+     * @param ILockManagerService $lock_manager_service
      */
     public function __construct
     (
@@ -92,7 +125,8 @@ final class ClientService extends AbstractService implements IClientService
         IApiScopeService            $scope_service,
         IClientCredentialGenerator  $client_credential_generator,
         IApiScopeRepository         $scope_repository,
-        ITransactionService         $tx_service
+        ITransactionService         $tx_service,
+        ILockManagerService         $lock_manager_service
     )
     {
         parent::__construct($tx_service);
@@ -102,6 +136,48 @@ final class ClientService extends AbstractService implements IClientService
         $this->client_credential_generator = $client_credential_generator;
         $this->client_repository           = $client_repository;
         $this->scope_repository            = $scope_repository;
+        $this->lock_manager_service        = $lock_manager_service;
+    }
+
+    /**
+     * Closes the TOCTOU race in IClientRepository::hasCustomSchemeRegisteredOnAnotherClientThan():
+     * without this, two concurrent create()/update() calls can both pass the "is this scheme already
+     * registered" uniqueness check before either transaction commits, letting two different clients
+     * claim the same custom scheme - defeating the OS-level interception-prevention guarantee the
+     * uniqueness check exists for.
+     *
+     * @param Closure $fn
+     * @return IEntity
+     * @throws ValidationException
+     */
+    private function withNativeCustomSchemeLock(Closure $fn): IEntity
+    {
+        try {
+            return $this->lock_manager_service->lock(
+                self::NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK,
+                $fn,
+                self::NATIVE_CUSTOM_SCHEME_REGISTRATION_LOCK_LIFETIME
+            );
+        } catch (UnacquiredLockException $ex) {
+            throw new ValidationException('another native client custom URI scheme registration is in progress, please retry.');
+        }
+    }
+
+    /**
+     * Gates the TOCTOU lock to payloads that actually register a custom URI scheme. A Native client
+     * write that doesn't touch redirect_uris/allowed_origins/post_logout_redirect_uris (e.g. renaming
+     * app_name) never calls hasCustomSchemeRegisteredOnAnotherClientThan(), so there is no race to close
+     * and no reason to serialize it behind every other tenant's scheme registration.
+     *
+     * @param array $payload
+     * @return bool
+     */
+    private function payloadTouchesNativeCustomSchemeFields(array $payload): bool
+    {
+        foreach (self::NATIVE_CUSTOM_SCHEME_URI_FIELDS as $field) {
+            if (!empty($payload[$field])) return true;
+        }
+        return false;
     }
 
 
@@ -221,43 +297,100 @@ final class ClientService extends AbstractService implements IClientService
     }
 
     /**
+     * Native clients may register genuine custom app URI schemes (e.g. myapp://, com.example.app://) in
+     * redirect_uris, allowed_origins, and post_logout_redirect_uris. They may NOT register plain http://
+     * outside the RFC 8252 loopback carve-out, nor dangerous/launch pseudo-schemes (javascript:, data:,
+     * intent:, ...): redirect_uris carries the authorization code, and the other two fields become live
+     * 302 redirect targets at end-session. See IClient::DISALLOWED_NATIVE_URI_SCHEMES for the deny-list
+     * (shared with the runtime allow-gates in Client::isUriAllowed/isPostLogoutUriAllowed). Also enforces
+     * cross-client scheme uniqueness: a scheme claimed by another client in any of these fields creates the
+     * same OS-level interception risk regardless of which field either client used it in.
+     *
+     * @param array $payload
+     * @param int $exclude_client_id the client being written; -1 (never a real id) when creating a new one
+     * @throws ValidationException
+     */
+    private function assertNativeCustomSchemesAllowed(array $payload, int $exclude_client_id = -1): void
+    {
+        foreach (self::NATIVE_CUSTOM_SCHEME_URI_FIELDS as $field) {
+            if (empty($payload[$field])) continue;
+            foreach (explode(',', $payload[$field]) as $uri) {
+                $parts = @parse_url(trim($uri));
+                if (!isset($parts['scheme'])) {
+                    throw new ValidationException(sprintf('invalid scheme on %s uri.', $field));
+                }
+                $scheme = strtolower($parts['scheme']);
+                if (Client::isDisallowedNativeUriScheme($scheme, $parts['host'] ?? null)) {
+                    throw new ValidationException(sprintf('scheme %s:// is not allowed.', $scheme));
+                }
+                // write/runtime symmetry: if the runtime matcher cannot canonicalize the value
+                // (URLUtils::canonicalizeForMatch - requires an authority or a rooted path), it can
+                // never match a redirect, so storing it would create a silently dead registration.
+                // Rejects opaque URIs like "com.example.app:oauth2redirect" (the one-character typo
+                // of the RFC 8252 SS7.1 form) with a clear 412 at registration time instead.
+                if (is_null(URLUtils::canonicalizeForMatch(trim($uri)))) {
+                    throw new ValidationException(sprintf('uri %s on %s is not an acceptable redirect location - use scheme://host/... or scheme:/path.', trim($uri), $field));
+                }
+                if (HttpUtils::isCustomSchema($scheme)
+                    && $this->client_repository->hasCustomSchemeRegisteredOnAnotherClientThan($exclude_client_id, $scheme)) {
+                    throw new ValidationException(sprintf('schema %s:// already registered for another client.', $scheme));
+                }
+            }
+        }
+    }
+
+    /**
      * @param array $payload
      * @return IEntity
      * @throws \Exception
      */
     public function create(array $payload):IEntity
     {
+        $do_create = function () use ($payload) {
+            return $this->tx_service->transaction(function () use ($payload) {
 
-        return $this->tx_service->transaction(function () use ($payload) {
+                $current_user  = $this->auth_service->getCurrentUser();
 
-            $current_user  = $this->auth_service->getCurrentUser();
+                $app_name =  trim($payload['app_name']);
 
-            $app_name =  trim($payload['app_name']);
-
-            if($this->client_repository->getByApplicationName($app_name) != null){
-                throw new ValidationException('there is already another application with that name, please choose another one.');
-            }
-
-            $client = ClientFactory::build($payload);
-            $client = $this->client_credential_generator->generate($client);
-
-            if(isset($payload['admin_users']) && is_array($payload['admin_users'])) {
-                $admin_users = $payload['admin_users'];
-                //add admin users
-                foreach ($admin_users as $user_id) {
-                    $user = $this->user_repository->getById(intval($user_id));
-                    if (is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.', $user_id));
-                    if(!$user instanceof User) continue;
-                    $client->addAdminUser($user);
+                if($this->client_repository->getByApplicationName($app_name) != null){
+                    throw new ValidationException('there is already another application with that name, please choose another one.');
                 }
-            }
 
-            $client->setOwner($current_user);
+                // same scheme deny-list + cross-client uniqueness rule update() enforces (only reachable
+                // for native clients, where the runtime https gate is relaxed) - now covers redirect_uris too.
+                if (($payload['application_type'] ?? null) === IClient::ApplicationType_Native) {
+                    $this->assertNativeCustomSchemesAllowed($payload);
+                }
 
-            $this->client_repository->add($client);
+                $client = ClientFactory::build($payload);
+                $client = $this->client_credential_generator->generate($client);
 
-            return $client;
-        });
+                if(isset($payload['admin_users']) && is_array($payload['admin_users'])) {
+                    $admin_users = $payload['admin_users'];
+                    //add admin users
+                    foreach ($admin_users as $user_id) {
+                        $user = $this->user_repository->getById(intval($user_id));
+                        if (is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.', $user_id));
+                        if(!$user instanceof User) continue;
+                        $client->addAdminUser($user);
+                    }
+                }
+
+                $client->setOwner($current_user);
+
+                $this->client_repository->add($client);
+
+                return $client;
+            });
+        };
+
+        if (($payload['application_type'] ?? null) === IClient::ApplicationType_Native
+            && $this->payloadTouchesNativeCustomSchemeFields($payload)) {
+            return $this->withNativeCustomSchemeLock($do_create);
+        }
+
+        return $do_create();
     }
 
 
@@ -270,68 +403,61 @@ final class ClientService extends AbstractService implements IClientService
      */
     public function update(int $id, array $payload):IEntity
     {
+        $do_update = function () use ($id, $payload) {
+            return $this->tx_service->transaction(function () use ($id, $payload) {
 
-        return $this->tx_service->transaction(function () use ($id, $payload) {
+                $editing_user = $this->auth_service->getCurrentUser();
 
-            $editing_user = $this->auth_service->getCurrentUser();
+                $client = $this->client_repository->getById($id);
 
-            $client = $this->client_repository->getById($id);
+                if (is_null($client) || !$client instanceof Client) {
+                    throw new EntityNotFoundException(sprintf('client id %s does not exists.', $id));
+                }
+                $app_name   = isset($payload['app_name']) ? trim($payload['app_name']) : null;
+                if(!empty($app_name)) {
+                    $old_client = $this->client_repository->getByApplicationName($app_name);
+                    if(!is_null($old_client) && $old_client->getId() !== $client->getId())
+                        throw new ValidationException('there is already another application with that name, please choose another one.');
+                }
+                $current_app_type = $client->getApplicationType();
+                if($current_app_type !== $payload['application_type'])
+                {
+                    throw new ValidationException('application type does not match.');
+                }
 
-            if (is_null($client) || !$client instanceof Client) {
-                throw new EntityNotFoundException(sprintf('client id %s does not exists.', $id));
-            }
-            $app_name   = isset($payload['app_name']) ? trim($payload['app_name']) : null;
-            if(!empty($app_name)) {
-                $old_client = $this->client_repository->getByApplicationName($app_name);
-                if(!is_null($old_client) && $old_client->getId() !== $client->getId())
-                    throw new ValidationException('there is already another application with that name, please choose another one.');
-            }
-            $current_app_type = $client->getApplicationType();
-            if($current_app_type !== $payload['application_type'])
-            {
-                throw new ValidationException('application type does not match.');
-            }
+                ClientFactory::populate($client, $payload);
 
-            ClientFactory::populate($client, $payload);
-
-            // validate uris
-            switch($client->getApplicationType()) {
-                case IClient::ApplicationType_Native: {
-
-                    if (isset($payload['redirect_uris'])) {
-                        $redirect_uris = explode(',', $payload['redirect_uris']);
-                        //check that custom schema does not already exists for another registerd app
-                        if (!empty($payload['redirect_uris'])) {
-                            foreach ($redirect_uris as $uri) {
-                                $uri = @parse_url($uri);
-                                if (!isset($uri['scheme'])) {
-                                    throw new ValidationException('invalid scheme on redirect uri.');
-                                }
-                                if (HttpUtils::isCustomSchema($uri['scheme'])) {
-                                    if ($this->client_repository->hasCustomSchemeRegisteredForRedirectUrisOnAnotherClientThan($id, $uri['scheme'])) {
-                                        throw new ValidationException(sprintf('schema %s:// already registered for another client.',
-                                            $uri['scheme']));
+                // validate uris
+                switch($client->getApplicationType()) {
+                    case IClient::ApplicationType_Native: {
+                        // redirect_uris, allowed_origins, and post_logout_redirect_uris all share the same
+                        // scheme deny-list + cross-client uniqueness rule; assertNativeCustomSchemesAllowed
+                        // validates whichever of the three are present in the payload.
+                        $this->assertNativeCustomSchemesAllowed($payload, $id);
+                    }
+                    break;
+                    case IClient::ApplicationType_Web_App:
+                    case IClient::ApplicationType_JS_Client: {
+                        if (isset($payload['redirect_uris'])){
+                            if (!empty($payload['redirect_uris'])) {
+                                $redirect_uris = explode(',', $payload['redirect_uris']);
+                                foreach ($redirect_uris as $uri) {
+                                    $uri = @parse_url($uri);
+                                    if (!isset($uri['scheme'])) {
+                                        throw new ValidationException('invalid scheme on redirect uri.');
                                     }
-                                } else {
-                                    if (!HttpUtils::isHttpSchema($uri['scheme'])) {
-                                        throw new ValidationException(sprintf('scheme %s:// is invalid.',
-                                            $uri['scheme']));
+                                    if (!HttpUtils::isHttpsSchema($uri['scheme'])) {
+                                        throw new ValidationException(sprintf('scheme %s:// is invalid.', $uri['scheme']));
                                     }
                                 }
                             }
                         }
-                    }
-                }
-                break;
-                case IClient::ApplicationType_Web_App:
-                case IClient::ApplicationType_JS_Client: {
-                    if (isset($payload['redirect_uris'])){
-                        if (!empty($payload['redirect_uris'])) {
-                            $redirect_uris = explode(',', $payload['redirect_uris']);
-                            foreach ($redirect_uris as $uri) {
+                        if($client->getApplicationType() === IClient::ApplicationType_JS_Client && isset($payload['allowed_origins']) &&!empty($payload['allowed_origins'])){
+                            $allowed_origins = explode(',', $payload['allowed_origins']);
+                            foreach ($allowed_origins as $uri) {
                                 $uri = @parse_url($uri);
                                 if (!isset($uri['scheme'])) {
-                                    throw new ValidationException('invalid scheme on redirect uri.');
+                                    throw new ValidationException('invalid scheme on allowed origin uri.');
                                 }
                                 if (!HttpUtils::isHttpsSchema($uri['scheme'])) {
                                     throw new ValidationException(sprintf('scheme %s:// is invalid.', $uri['scheme']));
@@ -339,37 +465,32 @@ final class ClientService extends AbstractService implements IClientService
                             }
                         }
                     }
-                    if($client->getApplicationType() === IClient::ApplicationType_JS_Client && isset($payload['allowed_origins']) &&!empty($payload['allowed_origins'])){
-                        $allowed_origins = explode(',', $payload['allowed_origins']);
-                        foreach ($allowed_origins as $uri) {
-                            $uri = @parse_url($uri);
-                            if (!isset($uri['scheme'])) {
-                                throw new ValidationException('invalid scheme on allowed origin uri.');
-                            }
-                            if (!HttpUtils::isHttpsSchema($uri['scheme'])) {
-                                throw new ValidationException(sprintf('scheme %s:// is invalid.', $uri['scheme']));
-                            }
-                        }
+                        break;
+                }
+
+                if(isset($payload['admin_users']) && is_array($payload['admin_users'])) {
+                    $admin_users = $payload['admin_users'];
+                    //add admin users
+                    $client->removeAllAdminUsers();
+                    foreach ($admin_users as $user_id) {
+                        $user = $this->user_repository->getById(intval($user_id));
+                        if (is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.', $user_id));
+                        if(!$user instanceof User) continue;
+                        $client->addAdminUser($user);
                     }
                 }
-                    break;
-            }
 
-            if(isset($payload['admin_users']) && is_array($payload['admin_users'])) {
-                $admin_users = $payload['admin_users'];
-                //add admin users
-                $client->removeAllAdminUsers();
-                foreach ($admin_users as $user_id) {
-                    $user = $this->user_repository->getById(intval($user_id));
-                    if (is_null($user)) throw new EntityNotFoundException(sprintf('user %s not found.', $user_id));
-                    if(!$user instanceof User) continue;
-                    $client->addAdminUser($user);
-                }
-            }
+                $client->setEditedBy($editing_user);
+                return $client;
+            });
+        };
 
-            $client->setEditedBy($editing_user);
-            return $client;
-        });
+        if (($payload['application_type'] ?? null) === IClient::ApplicationType_Native
+            && $this->payloadTouchesNativeCustomSchemeFields($payload)) {
+            return $this->withNativeCustomSchemeLock($do_update);
+        }
+
+        return $do_update();
    }
 
     /**

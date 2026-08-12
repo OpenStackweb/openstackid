@@ -41,11 +41,15 @@ final class UserLoginTurnstileTest extends BrowserKitTestCase
     protected function prepareForTests(): void
     {
         parent::prepareForTests();
-        $this->testEmail = env('TEST_USER_EMAIL');
-        $this->testPassword = env('TEST_USER_PASSWORD');
-        if (empty($this->testEmail) || empty($this->testPassword)) {
+        // read into locals first: assigning null to the typed string properties would
+        // throw a TypeError before the skip guard below can run
+        $testEmail = env('TEST_USER_EMAIL');
+        $testPassword = env('TEST_USER_PASSWORD');
+        if (empty($testEmail) || empty($testPassword)) {
             $this->markTestSkipped('TEST_USER_EMAIL and TEST_USER_PASSWORD env vars are required.');
         }
+        $this->testEmail = $testEmail;
+        $this->testPassword = $testPassword;
         Session::start();
     }
 

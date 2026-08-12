@@ -11,15 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\IHttpResponseStrategy;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response;
 /**
  * Class IndirectResponseQueryStringStrategy
  * Redirect and http response using a 302 adding params on query string
  * @package Strategies
  */
-class IndirectResponseQueryStringStrategy implements IHttpResponseStrategy
+class IndirectResponseQueryStringStrategy extends AbstractIndirectResponseStrategy
 {
 
     /**
@@ -36,8 +34,6 @@ class IndirectResponseQueryStringStrategy implements IHttpResponseStrategy
         }
         $return_to = (strpos($return_to, "?") == false) ? $return_to . "?" . $query_string : $return_to . "&" . $query_string;
 
-        return Redirect::to($return_to)
-            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
-            ->header('Pragma','no-cache');
+        return $this->redirectTo($return_to);
     }
 }

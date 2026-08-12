@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  * Class OAuth2ProtocolTest
  * Test Suite for OAuth2 Protocol
  */
-final class OAuth2ProtocolTestCase extends OpenStackIDBaseTestCase
+final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
 {
 
     private $current_realm;

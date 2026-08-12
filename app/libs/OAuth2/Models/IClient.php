@@ -38,6 +38,42 @@ interface IClient extends IEntity
     const SubjectType_Pairwise = 'pairwise';
 
     /**
+     * Schemes Native clients may NOT register in redirect_uris / allowed_origins / post_logout_redirect_uris,
+     * even though they are otherwise allowed to register arbitrary custom app schemes there. https is always
+     * allowed (checked separately); plain http is handled separately too (see NATIVE_LOOPBACK_HOSTS - RFC 8252
+     * loopback redirection is a carve-out). Every scheme below, once handed to an OS/browser as a live redirect
+     * target, can trigger an unintended action (script execution, app launch, install prompt, local file/content
+     * access). Single source of truth for this policy - both the backend write-time validator
+     * (ClientService::assertNativeCustomSchemesAllowed) / runtime allow-gates (Client::isUriAllowed,
+     * Client::isPostLogoutUriAllowed) and the admin UI (injected into the edit-client page as
+     * window.DISALLOWED_NATIVE_URI_SCHEMES - see AdminController::editRegisteredClient) read from here.
+     */
+    const array DISALLOWED_NATIVE_URI_SCHEMES = [
+        'javascript', 'data', 'vbscript', 'intent', 'file', 'ftp', 'blob', 'about', 'mailto', 'tel',
+        'itms-services', 'market', 'sms', 'content', 'chrome-extension', 'filesystem', 'view-source',
+        'ws', 'wss', 'googlechrome', 'applewebdata',
+    ];
+
+    /**
+     * Loopback hosts exempted from the "plain http is disallowed" rule (RFC 8252 SS7.3): a native app
+     * receiving its own redirect on 127.0.0.1/::1/localhost never sends the request over the network, so
+     * there is no TLS downgrade to protect against.
+     */
+    const array NATIVE_LOOPBACK_HOSTS = ['127.0.0.1', '::1', '[::1]', 'localhost'];
+
+    /**
+     * Single source of truth for "is this scheme disallowed for a Native client's URI fields", per
+     * DISALLOWED_NATIVE_URI_SCHEMES / NATIVE_LOOPBACK_HOSTS above. Declared here (contract) and
+     * implemented on Client (body) like every other predicate on this interface; kept static because
+     * ClientService::create() must validate a scheme before a Client entity exists to call it on.
+     *
+     * @param string $scheme
+     * @param string|null $host enables the RFC 8252 http-loopback carve-out (see NATIVE_LOOPBACK_HOSTS)
+     * @return bool
+     */
+    public static function isDisallowedNativeUriScheme(string $scheme, ?string $host = null): bool;
+
+    /**
      * @return int
      */
     public function getId();

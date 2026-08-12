@@ -68,7 +68,10 @@ final class ClientFactory
             $urls = explode(',', $value);
             $normalized_uris = '';
             foreach ($urls as $url) {
-                $url = URLUtils::normalizeUrl($url);
+                // trim BEFORE normalizing: URL\Normalizer preserves a leading space, and a stored
+                // ", scheme://" item breaks the anchored cross-client scheme-uniqueness LIKE
+                // (DoctrineOAuth2ClientRepository::hasCustomSchemeRegisteredOnAnotherClientThan)
+                $url = URLUtils::normalizeUrl(trim($url));
                 if (!empty($normalized_uris)) {
                     $normalized_uris .= ',';
                 }

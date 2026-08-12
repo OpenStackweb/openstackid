@@ -11,15 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-use Utils\IHttpResponseStrategy;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response;
 /**
  * Class IndirectResponseUrlFragmentStrategy
  * Redirect and http response using a 302 adding params on url fragment
  * @package Strategies
  */
-class IndirectResponseUrlFragmentStrategy implements IHttpResponseStrategy
+class IndirectResponseUrlFragmentStrategy extends AbstractIndirectResponseStrategy
 {
 
     /**
@@ -37,8 +35,6 @@ class IndirectResponseUrlFragmentStrategy implements IHttpResponseStrategy
 
         $return_to = (strpos($return_to, "#") == false) ? $return_to . "#" . $fragment : $return_to . "&" . $fragment;
 
-        return Redirect::to($return_to)
-            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
-            ->header('Pragma','no-cache');
+        return $this->redirectTo($return_to);
     }
 }

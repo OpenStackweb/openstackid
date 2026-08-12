@@ -163,19 +163,54 @@ final class DoctrineOAuth2ClientRepository
     }
 
     /**
+     * Interception-prevention rule checked across all three URI-bearing fields (redirect_uris,
+     * post_logout_redirect_uris, allowed_origins): whichever field a scheme was first claimed in, another
+     * client re-registering it in ANY of the three fields creates the same OS-level scheme-collision risk
+     * (the OS routes a custom-scheme redirect to whichever installed app claims it, regardless of which
+     * field of which client this server thinks it belongs to).
+     *
      * @param int $id
      * @param string $custom_scheme
      * @return bool
      */
-    public function hasCustomSchemeRegisteredForRedirectUrisOnAnotherClientThan(int $id, string $custom_scheme): bool
+    public function hasCustomSchemeRegisteredOnAnotherClientThan(int $id, string $custom_scheme): bool
     {
-        return $this->getEntityManager()
-            ->createQueryBuilder()
+        $scheme = trim($custom_scheme);
+        // fields are comma-separated URI lists; a plain '%scheme://%' substring match false-positives on any
+        // longer scheme ending in this one (e.g. 'roipapp' matching inside 'androipapp://...'). Anchor the
+        // match to a real list-item boundary: the scheme starts the field, or immediately follows a comma.
+        // The boundary is ':/' rather than '://' so BOTH registered forms are seen - the authority form
+        // (scheme://host/...) and the RFC 8252 SS7.1 authority-less form (scheme:/path): the OS-level
+        // interception risk is about the scheme, regardless of which URI form either client registered.
+        $starts_with = $scheme . ':/%';
+        $after_comma = '%,' . $scheme . ':/%';
+        // legacy rows: before the create()-validation hardening, POST create persisted lists verbatim,
+        // so an item can still sit after ", " (comma + single space - the JSON/forms list artifact).
+        // ClientFactory::populate now trims per item, so no NEW rows take this shape; N-space/other
+        // whitespace leftovers are for the pre-deploy audit (... LIKE '%, %'), not this query.
+        $after_comma_space = '%, ' . $scheme . ':/%';
+
+        $qb = $this->getEntityManager()->createQueryBuilder();
+        $matches_field = function (string $field) use ($qb) {
+            return $qb->expr()->orX(
+                $qb->expr()->like($field, ':starts_with'),
+                $qb->expr()->like($field, ':after_comma'),
+                $qb->expr()->like($field, ':after_comma_space')
+            );
+        };
+
+        return $qb
             ->select("count(e.id)")
             ->from($this->getBaseEntity(), "e")
-            ->where("e.redirect_uris like :custom_scheme")
+            ->where($qb->expr()->orX(
+                $matches_field("e.redirect_uris"),
+                $matches_field("e.post_logout_redirect_uris"),
+                $matches_field("e.allowed_origins")
+            ))
             ->andWhere("e.id <> :id")
-            ->setParameter("custom_scheme", '%' . trim($custom_scheme). '://%')
+            ->setParameter("starts_with", $starts_with)
+            ->setParameter("after_comma", $after_comma)
+            ->setParameter("after_comma_space", $after_comma_space)
             ->setParameter("id", $id)
             ->setMaxResults(1)
             ->getQuery()

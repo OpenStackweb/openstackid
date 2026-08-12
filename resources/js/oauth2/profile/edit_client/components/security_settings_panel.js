@@ -295,7 +295,7 @@ const SecuritySettingsPanel = (
                 </>
             </Grid>
             <Grid item container>
-                <LogoutOptions initialValues={initialValues} onSavePromise={onLogoutOptionsSavePromise}/>
+                <LogoutOptions appTypes={appTypes} initialValues={initialValues} onSavePromise={onLogoutOptionsSavePromise}/>
             </Grid>
         </Grid>
     );

@@ -699,8 +699,8 @@ final class ClientApiController extends APICRUDController
             'tos_uri'                         => 'nullable|url',
             'redirect_uris'                   => 'nullable|custom_url_set:application_type',
             'policy_uri'                      => 'nullable|url',
-            'post_logout_redirect_uris'       => 'nullable|ssl_url_set',
-            'allowed_origins'                 => 'nullable|ssl_url_set',
+            'post_logout_redirect_uris'       => 'nullable|custom_url_set:application_type',
+            'allowed_origins'                 => 'nullable|custom_url_set:application_type',
             'logout_uri'                      => 'nullable|url',
             'logout_session_required'         => 'sometimes|required|boolean',
             'logout_use_iframe'               => 'sometimes|required|boolean',
@@ -731,11 +731,14 @@ final class ClientApiController extends APICRUDController
     protected function getCreatePayloadValidationRules(): array
     {
         return [
-            'app_name'         => 'required|freetext|max:255',
-            'app_description'  => 'required|freetext|max:512',
-            'application_type' => 'required|applicationtype',
-            'website'          => 'nullable|url',
-            'admin_users'      => 'nullable|int_array',
+            'app_name'                   => 'required|freetext|max:255',
+            'app_description'            => 'required|freetext|max:512',
+            'application_type'           => 'required|applicationtype',
+            'website'                    => 'nullable|url',
+            'admin_users'                => 'nullable|int_array',
+            'redirect_uris'              => 'nullable|string|custom_url_set:application_type',
+            'post_logout_redirect_uris'  => 'nullable|string|custom_url_set:application_type',
+            'allowed_origins'            => 'nullable|string|custom_url_set:application_type',
         ];
     }
 

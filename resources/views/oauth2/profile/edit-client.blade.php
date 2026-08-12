@@ -35,6 +35,8 @@
 
         const appTypes = {!!$app_types!!};
         const clientTypes = {!!$client_types!!};
+        const disallowedNativeUriSchemes = {!!$disallowed_native_uri_schemes!!};
+        const nativeLoopbackHosts = {!!$native_loopback_hosts!!};
 
         const initialValues = {
             ...entity,
@@ -101,6 +103,8 @@
 
         window.APP_TYPES = appTypes;
         window.CLIENT_TYPES = clientTypes;
+        window.DISALLOWED_NATIVE_URI_SCHEMES = disallowedNativeUriSchemes;
+        window.NATIVE_LOOPBACK_HOSTS = nativeLoopbackHosts;
         window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;
 
         window.UPDATE_CLIENT_DATA_ENDPOINT = '{!!URL::action("Api\ClientApiController@update",array("id"=>"@client_id"))!!}';

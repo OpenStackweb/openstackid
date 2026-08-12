@@ -10,10 +10,18 @@ import TagsInput, {getTags} from "../../../../components/tags_input";
 
 import styles from "./common.module.scss";
 
-const LogoutOptions = ({initialValues, onSavePromise}) => {
+import {isValidNativeUri} from "./native_uri_schemes";
+
+const LogoutOptions = ({appTypes, initialValues, onSavePromise}) => {
     const [loading, setLoading] = useState(false);
 
     const validatePostLogoutRedirectURI = (value) => {
+        // native clients may register genuine custom app schemes (myapp://...), https, or an RFC 8252
+        // http loopback redirect, but not plain non-loopback http nor dangerous/launch pseudo-schemes
+        // (javascript:, data:, intent:, ...): matches the backend deny-list (see native_uri_schemes.js).
+        if (initialValues.application_type === appTypes.Native) {
+            return isValidNativeUri(value);
+        }
         const regex = /^https:\/\/([\w@][\w.:@]+)\/?[\w\.?=%&=\-@/$,]*$/ig;
         return regex.test(value);
     }
@@ -72,7 +80,6 @@ const LogoutOptions = ({initialValues, onSavePromise}) => {
                             fullWidth
                             size="small"
                             variant="outlined"
-                            type="url"
                             tags={getTags(formik.values.post_logout_redirect_uris)}
                             errors={formik.errors.post_logout_redirect_uris}
                             onChange={formik.handleChange}

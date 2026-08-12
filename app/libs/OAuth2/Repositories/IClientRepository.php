@@ -55,5 +55,5 @@ interface IClientRepository extends IBaseRepository
      * @param string $custom_scheme
      * @return bool
      */
-    public function hasCustomSchemeRegisteredForRedirectUrisOnAnotherClientThan(int $id, string $custom_scheme):bool;
+    public function hasCustomSchemeRegisteredOnAnotherClientThan(int $id, string $custom_scheme):bool;
 }
