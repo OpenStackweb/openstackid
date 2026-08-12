@@ -1,4 +1,7 @@
 <?php namespace Strategies;
+
+use Auth\MFAConstants;
+
 /**
  * Interface ILoginStrategy
  * @package Strategies
@@ -9,7 +12,7 @@ interface ILoginStrategy
      * error_code returned by challengeRequired() when factor 1 passed but a
      * 2FA challenge is pending.
      */
-    const MFA_REQUIRED = 'mfa_required';
+    const MFA_REQUIRED = MFAConstants::ERROR_CODE_MFA_REQUIRED;
 
     /**
      * @return mixed

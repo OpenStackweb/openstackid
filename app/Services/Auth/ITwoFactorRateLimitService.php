@@ -2,6 +2,8 @@
 
 namespace App\Services\Auth;
 
+use Auth\MFAConstants;
+
 /**
  * Copyright 2026 OpenStack Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,14 +40,14 @@ interface ITwoFactorRateLimitService
     public const ActionResend   = 'resend';
     public const ActionOtp      = 'otp';
 
-    public const RATE_LIMIT_ERROR_CODE = 'mfa_rate_limit';
+    public const RATE_LIMIT_ERROR_CODE = MFAConstants::ERROR_CODE_RATE_LIMIT;
     public const RATE_LIMIT_MESSAGE    = 'Too many attempts. Please try again later.';
 
     /**
      * Session key holding the user id of the pending MFA challenge - the
      * subject the verify/recovery/resend named limiters throttle by.
      */
-    public const PENDING_USER_SESSION_KEY = '2fa_pending_user_id';
+    public const PENDING_USER_SESSION_KEY = MFAConstants::SESSION_KEY_PENDING_USER_ID;
 
     /**
      * Prefix applied to the Action* constants when registering/looking up
@@ -56,6 +58,14 @@ interface ITwoFactorRateLimitService
      * directly as the limiter name without silently clobbering it.
      */
     public const RATE_LIMITER_NAME_PREFIX = '2fa-rate:';
+
+    /**
+     * Prefix of the cache keys holding the per-subject attempt counters
+     * (and their companion ":timer" keys) - see cacheKey() in the
+     * implementation. Distinct from RATE_LIMITER_NAME_PREFIX (dash), which
+     * names the limiters, not the storage.
+     */
+    public const RATE_LIMIT_CACHE_KEY_PREFIX = '2fa_rate:';
 
     /**
      * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
