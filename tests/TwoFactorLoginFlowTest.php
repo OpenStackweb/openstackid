@@ -213,6 +213,28 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertSame('otp', Session::get('flow'), 'a reload must land back on the OTP screen, not silently fall back to password');
     }
 
+    public function testInvalidOtpAgainstEnforcedUserDoesNotLeakMFAStatus(): void
+    {
+        // Regression guard: the enforcement check used to run BEFORE the OTP was
+        // validated, so an attacker submitting a garbage/guessed code against an
+        // MFA-enforced account's email got the distinguishing "requires password
+        // and two-factor authentication" message without ever proving control of
+        // the inbox - an account-enumeration oracle. The check must now only be
+        // reachable after loginWithOTPEnforcing2FA() has proven the code valid,
+        // so an invalid code gets the same generic rejection for any account.
+        $this->emitOTP(self::ADMIN_EMAIL);
+
+        $response = $this->postLoginOTP(self::ADMIN_EMAIL, 'not-the-real-code');
+
+        $this->assertFalse(Auth::check(), 'an invalid code must never authenticate');
+        $this->assertResponseStatus(302);
+        $this->assertStringNotContainsString(
+            'two-factor authentication',
+            Session::get('flash_notice'),
+            'an invalid code must not leak that the account is MFA-enforced'
+        );
+    }
+
     public function testNonEnforcedUserStillLogsInViaPasswordlessLogin(): void
     {
         $email = $this->createPlainUser();

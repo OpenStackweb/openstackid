@@ -591,20 +591,10 @@ final class UserController extends OpenIdController
 
                     if ($flow == IAuthService::AuthenticationFlowPasswordless) {
 
-                        // Passwordless login is single-factor (email access only) and
-                        // must not be usable to satisfy MFA enforcement (SDS idp-mfa.md
-                        // §7.4 / Open Question #3).
-                        $existing_user = $this->auth_service->getUserByUsername($username);
-                        if (!is_null($existing_user) && $existing_user->shouldRequire2FA()) {
-                            throw new AuthenticationException(
-                                "This account requires password and two-factor authentication. Please use the password login option."
-                            );
-                        }
-
                         $client = $this->resolveClientFromMemento();
 
                         $otpClaim = OAuth2OTP::fromParams($username, $connection, $password);
-                        $this->auth_service->loginWithOTP($otpClaim, $client);
+                        $this->auth_service->loginWithOTPEnforcing2FA($otpClaim, $client);
                         // A completed login must not leave the OTP screen restorable
                         // on a later refresh - same identity-leakage concern already
                         // fixed for the MFA flow's verify2FA()/verify2FARecovery().

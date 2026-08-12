@@ -271,36 +271,90 @@ final class AuthService extends AbstractService implements IAuthService
         );
 
         // TX-C: resolve or create user, finalize, login
-        return $this->tx_service->transaction(function () use ($otp, $otpClaim, $client, $remember) {
-
-            $user = $this->getUserByUsername($otp->getUserName());
-
-            if (is_null($user)) {
-                Log::debug(sprintf("AuthService::loginWithOTP user %s does not exist; auto-registering.", $otp->getUserName()));
-                $user = $this->auth_user_service->registerUser(
-                    [
-                        'email' => $otp->getUserName(),
-                        'email_verified' => true,
-                        'send_email_verified_notice' => false,
-                        'active' => true,
-                    ],
-                    $otp
-                );
-            } else if ($user->isActive()) {
-                $user->verifyEmail(false);
-            }
-
-            if (!$user->canLogin()) {
-                Log::warning(sprintf("AuthService::loginWithOTP user %s cannot login (not active).", $user->getId()));
-                throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
-            }
-
+        return $this->tx_service->transaction(function () use ($otp, $client, $remember) {
+            $user = $this->resolveOTPUser($otp);
             $this->finalizeRedemption($otp, $user, $client);
-
             Auth::login($user, $remember);
             Log::debug(sprintf("AuthService::loginWithOTP user %s logged in.", $user->getId()));
             return $otp;
         });
+    }
+
+    /**
+     * @param OAuth2OTP $otpClaim
+     * @param Client|null $client
+     * @param bool $remember
+     * @return OAuth2OTP|null
+     * @throws Exception
+     */
+    public function loginWithOTPEnforcing2FA(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP
+    {
+        Log::debug(sprintf("AuthService::loginWithOTPEnforcing2FA otp %s user %s", $otpClaim->getValue(), $otpClaim->getUserName()));
+
+        $otp = $this->findAndValidateOTP(
+            $otpClaim->getValue(),
+            $otpClaim->getUserName(),
+            $otpClaim->getConnection(),
+            $otpClaim->getScope(),
+            $client
+        );
+
+        // TX-C: resolve or create user, enforce 2FA, finalize, login
+        return $this->tx_service->transaction(function () use ($otp, $client, $remember) {
+            $user = $this->resolveOTPUser($otp);
+
+            // Passwordless login is single-factor (email access only) and must not
+            // be usable to satisfy MFA enforcement (SDS idp-mfa.md §7.4 / Open
+            // Question #3). Checked here - after the OTP is proven valid, before
+            // finalizeRedemption()/Auth::login() - so neither a guessed code nor a
+            // rejected valid code ever triggers a login side effect (redemption,
+            // Auth::login, the Login event / queued PostLoginUser job).
+            if ($user->shouldRequire2FA()) {
+                throw new AuthenticationException(
+                    "This account requires password and two-factor authentication. Please use the password login option."
+                );
+            }
+
+            $this->finalizeRedemption($otp, $user, $client);
+            Auth::login($user, $remember);
+            Log::debug(sprintf("AuthService::loginWithOTPEnforcing2FA user %s logged in.", $user->getId()));
+            return $otp;
+        });
+    }
+
+    /**
+     * Resolves the user for an already-validated passwordless OTP, auto-registering
+     * a brand-new email if needed. Does not finalize redemption or log in - callers
+     * decide that (and whether to enforce 2FA first).
+     * @param OAuth2OTP $otp
+     * @return User
+     * @throws AuthenticationException
+     */
+    private function resolveOTPUser(OAuth2OTP $otp): User
+    {
+        $user = $this->getUserByUsername($otp->getUserName());
+
+        if (is_null($user)) {
+            Log::debug(sprintf("AuthService::resolveOTPUser user %s does not exist; auto-registering.", $otp->getUserName()));
+            $user = $this->auth_user_service->registerUser(
+                [
+                    'email' => $otp->getUserName(),
+                    'email_verified' => true,
+                    'send_email_verified_notice' => false,
+                    'active' => true,
+                ],
+                $otp
+            );
+        } else if ($user->isActive()) {
+            $user->verifyEmail(false);
+        }
+
+        if (!$user->canLogin()) {
+            Log::warning(sprintf("AuthService::resolveOTPUser user %s cannot login (not active).", $user->getId()));
+            throw new AuthenticationException("We are sorry, your username or password does not match an existing record.");
+        }
+
+        return $user;
     }
 
     /**
