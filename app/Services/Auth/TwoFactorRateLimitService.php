@@ -94,6 +94,6 @@ final class TwoFactorRateLimitService implements ITwoFactorRateLimitService
      */
     private function cacheKey(string $action, string|int $subject): string
     {
-        return sprintf('2fa_rate:%s:%s', $action, $subject);
+        return sprintf('%s%s:%s', self::RATE_LIMIT_CACHE_KEY_PREFIX, $action, $subject);
     }
 }

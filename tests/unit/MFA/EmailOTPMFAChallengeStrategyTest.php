@@ -13,6 +13,7 @@
  * limitations under the License.
  **/
 
+use Auth\MFAConstants;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
@@ -87,8 +88,8 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
             ['otp_length' => 6, 'otp_lifetime' => 120, 'otp_issued_at' => $issuedAt->getTimestamp()],
             $result
         );
-        $this->assertSame(42, Session::get('2fa_pending_user_id'));
-        $this->assertTrue(Session::get('2fa_remember'));
+        $this->assertSame(42, Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID));
+        $this->assertTrue(Session::get(MFAConstants::SESSION_KEY_REMEMBER));
     }
 
     // ---------- resendChallenge ----------
@@ -115,7 +116,7 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
             ['otp_length' => 6, 'otp_lifetime' => 120, 'otp_issued_at' => $issuedAt->getTimestamp()],
             $result
         );
-        $this->assertSame(7, Session::get('2fa_pending_user_id'));
+        $this->assertSame(7, Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID));
     }
 
     // ---------- verifyChallenge ----------
