@@ -102,7 +102,7 @@ jobs:
           php artisan db:seed --force
           php artisan idp:create-super-admin test@test.com '1Qaz2wsx!'
           php artisan idp:create-raw-user e2e@test.com '1Qaz2wsx!'
-          for i in 001 002 003 004 005 006 007 008; do
+          for i in 001 002 003 004 005 006 007 008 009 010 011 012; do
             php artisan idp:create-super-admin "mfa-ts-$i@test.com" '1Qaz2wsx!'
           done
           php artisan idp:create-super-admin mfa-oauth2@test.com '1Qaz2wsx!'
