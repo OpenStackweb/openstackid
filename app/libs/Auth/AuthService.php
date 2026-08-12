@@ -504,8 +504,16 @@ final class AuthService extends AbstractService implements IAuthService
 
         // Flush all session data and regenerate the session ID to ensure no stale
         // data survives (OAuth2 memento, OpenID auth context, authorization responses, etc.)
+        // The flush also wipes the session-backed security context, so when the
+        // caller asked to keep it (clear_security_ctx = false - the prompt=login
+        // re-authentication path, which needs the requested-user id to show the
+        // login hint on the login screen) it is captured first and re-saved
+        // after the session ID is regenerated.
+        $preserved_security_ctx = $clear_security_ctx ? null : $this->security_context_service->get();
         Session::flush();
         Session::regenerate();
+        if (!is_null($preserved_security_ctx))
+            $this->security_context_service->save($preserved_security_ctx);
     }
 
     public function invalidateSession(): void
