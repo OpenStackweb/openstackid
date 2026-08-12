@@ -91,6 +91,18 @@ interface IAuthService
      */
     public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP;
 
+    /**
+     * Same as loginWithOTP(), but rejects the login when the resolved user has
+     * MFA enforced - passwordless (email-only) proof is not sufficient for an
+     * account that requires two-factor authentication.
+     * @param OAuth2OTP $otpClaim
+     * @param Client|null $client
+     * @param bool $remember
+     * @return OAuth2OTP|null
+     * @throws AuthenticationException
+     */
+    public function loginWithOTPEnforcing2FA(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP;
+
 
     /**
      * @param string $username
