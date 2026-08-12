@@ -6,16 +6,20 @@ import type { Page } from '@playwright/test';
 // param onto the URL as a query string (in addition to the body), so the real
 // request is "<path>?otp_value=...&method=..." - a glob without the trailing
 // wildcard requires an exact end-of-string match and silently never fires.
+// The recovery endpoint is the exception: it posts through postRawRequestFull(),
+// which is body-only, so its URL carries no query string ('**' still matches).
 const VERIFY_URL   = '**/auth/login/2fa/verify**';
 const RESEND_URL   = '**/auth/login/2fa/resend**';
 const RECOVERY_URL = '**/auth/login/2fa/recovery**';
 const CANCEL_URL   = '**/auth/login/cancel**';
 
-// Each TS-* test gets its own MFA-enforced super-admin (mfa-ts-NNN@test.com,
-// seeded by CI via idp:create-super-admin - see pull_request_frontend_tests.yml).
+// Each TS-* test gets its own MFA-enforced super-admin (mfa-ts-NNN@test.com),
+// seeded by CI via idp:create-super-admin in BOTH pull_request_frontend_tests.yml
+// and push_frontend_tests.yml - adding a TS-NNN here means widening the seed loop
+// in both, or the new test logs in as a user that does not exist.
 // A real login issues a real OTP challenge and counts against that user's own
 // two_factor.rate_limit.max_otp_requests window, so sharing one fixed account
-// across all 8 tests would exhaust the limit well before the suite finishes.
+// across the whole suite would exhaust the limit well before it finishes.
 const MFA_USER_PASSWORD = '1Qaz2wsx!';
 
 // Recovery codes are generated as 8 chars from [A-Z0-9] and shown as XXXX-XXXX
@@ -152,10 +156,11 @@ test.describe('MFA Login Flow', () => {
         loginPage.verifyButton.click(),
       ]);
 
-      // postRawRequest() mirrors every param onto the query string, so the
-      // normalized value is assertable straight off the request URL.
-      expect(new URL(request.url()).searchParams.get('recovery_code'))
-        .toBe(RECOVERY_CODE_NORMALIZED);
+      // The code travels in the body only. verifyRecoveryCode() posts through
+      // postRawRequestFull() precisely so it never reaches the query string,
+      // where access logs would capture it - assert both halves of that.
+      expect(request.postDataJSON()).toMatchObject({ recovery_code: RECOVERY_CODE_NORMALIZED });
+      expect(new URL(request.url()).searchParams.get('recovery_code')).toBeNull();
     });
 
   // TS-006 ─────────────────────────────────────────────────────────────────

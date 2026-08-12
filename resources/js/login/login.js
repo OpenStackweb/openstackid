@@ -593,9 +593,10 @@ class LoginPage extends React.Component {
   }
 
   onBackToOtp() {
-    // Drop the half-typed recovery code and its error along with the mode: the
-    // user is abandoning that attempt, and leaving them behind would re-show a
-    // stale code/error the next time "Use a recovery code instead" is clicked.
+    // Drop the abandoned recovery code as we leave the mode so a credential the
+    // user chose not to spend is not kept in component state for the rest of the
+    // session. A clean field on re-entry is already guaranteed by onUseRecovery();
+    // this is about not holding the value, not about what the next render shows.
     this.setState({
       ...this.state,
       authFlow: FLOW.MFA,
