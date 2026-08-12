@@ -156,4 +156,16 @@ final class RecoveryCodeService implements IRecoveryCodeService
     {
         return count($this->repository->getUnusedByUser($user));
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function getStatus(User $user): RecoveryCodesStatus
+    {
+        return new RecoveryCodesStatus(
+            $this->countUnusedRecoveryCodes($user),
+            (int) config('auth.recovery_codes.count', 10),
+            (int) config('auth.recovery_codes.low_threshold', 3)
+        );
+    }
 }

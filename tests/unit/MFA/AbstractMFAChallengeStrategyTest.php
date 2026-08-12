@@ -14,6 +14,7 @@
  **/
 
 use Auth\Exceptions\AuthenticationException;
+use Auth\MFAConstants;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
@@ -53,21 +54,21 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $state = $this->strategy->getPendingState();
 
         $this->assertNotNull($state);
-        $this->assertSame(42, $state['user_id']);
-        $this->assertTrue($state['remember']);
-        $this->assertArrayHasKey('pending_at', $state);
+        $this->assertSame(42, $state->getUserId());
+        $this->assertTrue($state->shouldRemember());
+        $this->assertGreaterThan(0, $state->getPendingAt());
     }
 
     public function testGetPendingState_withExpiredSession_returnsNull(): void
     {
-        Session::put('2fa_pending_user_id', 99);
-        Session::put('2fa_pending_at', time() - 301);
-        Session::put('2fa_remember', false);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, 99);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time() - 301);
+        Session::put(MFAConstants::SESSION_KEY_REMEMBER, false);
 
         $state = $this->strategy->getPendingState();
 
         $this->assertNull($state);
-        $this->assertNull(Session::get('2fa_pending_user_id'));
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID));
     }
 
     public function testGetPendingState_withMissingSession_returnsNull(): void
@@ -79,17 +80,17 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
     public function testClearPendingState_removesAllSessionKeys(): void
     {
-        Session::put('2fa_pending_user_id', 7);
-        Session::put('2fa_pending_at', time());
-        Session::put('2fa_remember', true);
-        Session::put('2fa_recovery_attempts', 1);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, 7);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time());
+        Session::put(MFAConstants::SESSION_KEY_REMEMBER, true);
+        Session::put(MFAConstants::SESSION_KEY_RECOVERY_ATTEMPTS, 1);
 
         $this->strategy->clearPendingState();
 
-        $this->assertNull(Session::get('2fa_pending_user_id'));
-        $this->assertNull(Session::get('2fa_pending_at'));
-        $this->assertNull(Session::get('2fa_remember'));
-        $this->assertNull(Session::get('2fa_recovery_attempts'));
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID));
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_AT));
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_REMEMBER));
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_RECOVERY_ATTEMPTS));
     }
 
     public function testVerifyRecoveryCode_withMatchingCode_marksAsUsed(): void

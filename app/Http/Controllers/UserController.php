@@ -28,6 +28,7 @@ use App\Services\Auth\ITwoFactorRateLimitService;
 use App\Services\Auth\IUserService as AuthUserService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
+use Auth\MFAConstants;
 use Auth\User;
 use Exception;
 use Illuminate\Http\Request as LaravelRequest;
@@ -762,7 +763,7 @@ final class UserController extends OpenIdController
                 return $this->mfaSessionExpired();
             }
 
-            $user = $this->auth_service->getUserById((int) $pending['user_id']);
+            $user = $this->auth_service->getUserById($pending->getUserId());
             if (is_null($user) || !$user->isTwoFactorMethodEnabled($method)) {
                 $strategy->clearPendingState();
                 return $this->mfaSessionExpired();
@@ -784,7 +785,7 @@ final class UserController extends OpenIdController
             } catch (AuthenticationException $ex) {
                 Log::warning($ex);
                 // Re-fetch user: the tx wrapper closed/reset the EM on failure, detaching the entity.
-                $userId = (int) $pending['user_id'];
+                $userId = $pending->getUserId();
                 $user = $this->auth_service->getUserById($userId) ?? $user;
                 // Best-effort: an audit-logging failure here must not turn a
                 // clean 401 into a 500 (which would also drop the error_code
@@ -799,11 +800,11 @@ final class UserController extends OpenIdController
                 } catch (\Throwable $auditEx) {
                     Log::warning($auditEx);
                 }
-                return $this->unauthorized(['error_code' => 'mfa_verification_failed']);
+                return $this->unauthorized(['error_code' => MFAConstants::ERROR_CODE_VERIFICATION_FAILED]);
             }
 
             // Second factor verified: establish the session.
-            $this->auth_service->loginUser($user, (bool) $pending['remember']);
+            $this->auth_service->loginUser($user, $pending->shouldRemember());
 
             if ($trust_device) {
                 // Best-effort: the OTP is already redeemed and the session
@@ -879,18 +880,26 @@ final class UserController extends OpenIdController
                 return $this->mfaSessionExpired();
             }
 
-            $user = $this->auth_service->getUserById((int) $pending['user_id']);
+            $user = $this->auth_service->getUserById($pending->getUserId());
             if (is_null($user)) {
                 $strategy->clearPendingState();
                 return $this->mfaSessionExpired();
             }
+
+            // Same guard verify2FA() applies before redeeming: a pending OAuth2
+            // authorization request must still resolve to an existing client,
+            // or the single-use recovery code would be burned (and a session
+            // established) for an authorization request that can only fail at
+            // the /oauth2/auth hop. Recovery-code checking itself is
+            // client-agnostic, so the resolved client is not passed down.
+            $this->resolveClientFromMemento();
 
             try {
                 $this->auth_service->verifyMFARecoveryCode($user, $strategy, $recovery_code);
             } catch (AuthenticationException $ex) {
                 Log::warning($ex);
                 // Re-fetch user: the tx wrapper closed/reset the EM on failure, detaching the entity.
-                $userId = (int) $pending['user_id'];
+                $userId = $pending->getUserId();
                 $user = $this->auth_service->getUserById($userId) ?? $user;
                 // Best-effort: see verify2FA() for rationale.
                 try {
@@ -903,10 +912,10 @@ final class UserController extends OpenIdController
                 } catch (\Throwable $auditEx) {
                     Log::warning($auditEx);
                 }
-                return $this->unauthorized(['error_code' => 'mfa_invalid_recovery']);
+                return $this->unauthorized(['error_code' => MFAConstants::ERROR_CODE_INVALID_RECOVERY]);
             }
 
-            $this->auth_service->loginUser($user, (bool) $pending['remember']);
+            $this->auth_service->loginUser($user, $pending->shouldRemember());
             $strategy->clearPendingState();
             $this->clearMFAUISessionState();
 
@@ -925,16 +934,14 @@ final class UserController extends OpenIdController
             }
 
             // See verify2FA() for rationale: return the destination as data so a real
-            // top-level navigation (not this XHR) performs any cross-origin hop.
+            // top-level navigation (not this XHR) performs any cross-origin hop. The
+            // recovery-codes standing rides along so the login page can warn the user
+            // when they've just burned into their last few codes (see RecoveryCodesStatus).
             $redirect = $this->login_strategy->postLogin();
-            return $this->ok([
-                'redirect_url' => $redirect->getTargetUrl(),
-                // CU-86ba2zp66 / sds/idp-mfa.md §4.10.3, §4.11 step 5: the login page
-                // must be able to warn the user when they've just burned into their
-                // last few recovery codes, since it may be their only way back in.
-                'recovery_codes_remaining' => $this->recovery_code_service->countUnusedRecoveryCodes($user),
-                'recovery_codes_low_threshold' => (int) config('auth.recovery_codes.low_threshold', 3),
-            ]);
+            return $this->ok(array_merge(
+                ['redirect_url' => $redirect->getTargetUrl()],
+                $this->recovery_code_service->getStatus($user)->toArray()
+            ));
         } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412($ex->getMessages());
@@ -969,13 +976,13 @@ final class UserController extends OpenIdController
                 return $this->mfaSessionExpired();
             }
 
-            $user = $this->auth_service->getUserById((int) $pending['user_id']);
+            $user = $this->auth_service->getUserById($pending->getUserId());
             if (is_null($user) || !$user->isTwoFactorMethodEnabled($method)) {
                 $strategy->clearPendingState();
                 return $this->mfaSessionExpired();
             }
 
-            $payload = $this->auth_service->resendMFAChallenge($user, $strategy, $this->resolveClientFromMemento(), (bool) $pending['remember']);
+            $payload = $this->auth_service->resendMFAChallenge($user, $strategy, $this->resolveClientFromMemento(), $pending->shouldRemember());
 
             // Keep the refresh-restorable session state in sync with the
             // fresh challenge (e.g. otp_lifetime countdown resets on resend,
@@ -1021,7 +1028,7 @@ final class UserController extends OpenIdController
     private function mfaSessionExpired()
     {
         $this->clearMFAUISessionState();
-        return $this->unauthorized(['error_code' => 'mfa_session_expired']);
+        return $this->unauthorized(['error_code' => MFAConstants::ERROR_CODE_SESSION_EXPIRED]);
     }
 
     /**
@@ -1191,7 +1198,7 @@ final class UserController extends OpenIdController
                 $lang2Code[] = $lang;
         }
 
-        return View::make("profile", [
+        return View::make("profile", array_merge([
             'user' => json_encode(SerializerRegistry::getInstance()->getSerializer(
                 $user, SerializerRegistry::SerializerType_Private)->serialize()),
             "openid_url" => $this->server_configuration_service->getUserIdentityEndpointURL($user->getIdentifier()),
@@ -1200,10 +1207,7 @@ final class UserController extends OpenIdController
             'countries' => CountryList::getCountries(),
             'languages' => $lang2Code,
             'two_factor_enabled' => $user->shouldRequire2FA(),
-            'recovery_codes_remaining' => $this->recovery_code_service->countUnusedRecoveryCodes($user),
-            'recovery_codes_total' => (int)config('auth.recovery_codes.count', 10),
-            'recovery_codes_low_threshold' => (int)config('auth.recovery_codes.low_threshold', 3),
-        ]);
+        ], $this->recovery_code_service->getStatus($user)->toArray()));
     }
 
     public function deleteTrustedSite($id)

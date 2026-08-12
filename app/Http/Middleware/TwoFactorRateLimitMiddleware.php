@@ -13,6 +13,7 @@
  **/
 
 use App\Services\Auth\ITwoFactorRateLimitService;
+use Auth\MFAConstants;
 use Closure;
 use Illuminate\Cache\RateLimiting\Unlimited;
 use Illuminate\Support\Facades\Log;
@@ -41,8 +42,8 @@ final class TwoFactorRateLimitMiddleware
      * Response error_code values that count as a verification failure.
      */
     private const FAILURE_CODES = [
-        'mfa_verification_failed',
-        'mfa_invalid_recovery',
+        MFAConstants::ERROR_CODE_VERIFICATION_FAILED,
+        MFAConstants::ERROR_CODE_INVALID_RECOVERY,
     ];
 
     public function __construct(private readonly ITwoFactorRateLimitService $rate_limit_service)
