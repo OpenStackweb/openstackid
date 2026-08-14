@@ -210,7 +210,6 @@ const SignUpPage = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      name="country_iso_code"
                       variant="outlined"
                       size="small"
                       fullWidth
@@ -219,6 +218,7 @@ const SignUpPage = ({
                     />
                   )}
                 />
+                <input type="hidden" name="country_iso_code" value={formik.values.country_iso_code} />
               </Grid>
               <Grid item xs={12}>
                 <label htmlFor="password" className={styles.field_label}>Password</label>
