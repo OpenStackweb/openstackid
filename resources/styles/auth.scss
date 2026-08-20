@@ -64,4 +64,15 @@
     letter-spacing: 0.5em;
   }
 
+  .button {
+    width: 380px;
+    color: white;
+    background-color: black;
+
+    &:global(.Mui-disabled) {
+      background-color: rgba(0, 0, 0, 0.12);
+      color: rgba(0, 0, 0, 0.26);
+    }
+  }
+
 }

@@ -49,4 +49,33 @@ class PasswordPolicyRenderingTest extends TestCase
             );
         }
     }
+
+    public function test_rendered_signup_pattern_agrees_with_server_pattern(): void
+    {
+        $html = view('auth.register', [
+            'countries'    => [],
+            'client_id'    => '',
+            'redirect_uri' => '',
+            'errors'       => new ViewErrorBag(),
+        ])->render();
+
+        $this->assertSame(1, preg_match('/shape_pattern:\s*(.+?),\R/', $html, $m));
+
+        // Resolve the \uXXXX escapes a JS parser would resolve in the literal.
+        // Trim both single quotes ({{ }} format) and double quotes (Js::from format).
+        $client = preg_replace_callback(
+            '/\\\\u([0-9a-fA-F]{4})/',
+            fn ($u) => mb_chr(hexdec($u[1])),
+            trim($m[1], "\"'")
+        );
+        $server = Config::get('auth.password_shape_pattern');
+
+        foreach (['Passwordma1', 'Passw0rdabc', ';Passw0rdaa', 'Valid1Pass!'] as $probe) {
+            $this->assertSame(
+                (bool) preg_match("/{$server}/", $probe),
+                (bool) preg_match("/{$client}/", $probe),
+                "rendered and server patterns disagree on '{$probe}'"
+            );
+        }
+    }
 }
