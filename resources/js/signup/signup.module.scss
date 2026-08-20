@@ -1,51 +1,23 @@
 @import "../../styles/global.scss";
+@import "../../styles/auth.scss";
 
 .main_container {
-  margin-top: 5%;
-  margin-bottom: 10%;
-  max-width: 544px !important;
 
-  a {
-    color: $base-color-dark;
-  }
-
-  .title_container {
-    .app_logo {
-      display: flex;
-      max-width: 40%;
-      margin: auto;
-      padding-bottom: 40px;
-    }
+  .field_label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: $text-color-dark;
   }
 
   .signup_container {
     border: solid 1px $border-color;
     color: $text-color-dark;
     background-color: white;
+    padding: 16px;
 
     .turnstile {
-      margin-top: 10px;
-      margin-bottom: 10px;
       text-align: center;
-    }
-
-    .button {
-      width: 380px;
-      color: white;
-      background-color: $base-color-dark;
-    }
-
-    .password_hint {
-      display: flex;
-      color: $hint-text-color;
-      vertical-align: middle;
-    }
-
-    .countries {
-      height: 40px !important;
-      &_empty_text {
-        color: $hint-text-color;
-      }
     }
 
     .error_label {
