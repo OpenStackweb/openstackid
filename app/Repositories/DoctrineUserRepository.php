@@ -140,4 +140,22 @@ final class DoctrineUserRepository
 
         return $qb->getQuery()->getOneOrNullResult();
     }
+
+    /**
+     * @param string $provider
+     * @param string $external_id
+     * @return User|null
+     */
+    public function getByExternalId(string $provider, string $external_id): ?User
+    {
+        return $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select("e")
+            ->from($this->getBaseEntity(), "e")
+            ->Where("e.external_provider = :provider AND e.external_id = :external_id")
+            ->setParameter("provider", $provider)
+            ->setParameter("external_id", $external_id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }
