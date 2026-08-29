@@ -42,7 +42,7 @@ class WelcomeNewUserEmail extends Mailable
     /**
      * @var string
      */
-    public $bio_link;
+    public $profile_link;
 
     /**
      * @var string
@@ -90,7 +90,7 @@ class WelcomeNewUserEmail extends Mailable
     {
         $this->user_email = $user->getEmail();
         $this->user_fullname = $user->getFullName();
-        $this->bio_link = URL::action("UserController@getLogin");
+        $this->profile_link = URL::signedRoute('auth.profile-link', ['user_id' => $user->getId()]);
         $this->user_is_complete = !empty($user->getFirstName()) &&
                                   !empty($user->getLastName()) &&
                                   !empty($user->getCompany()) &&
