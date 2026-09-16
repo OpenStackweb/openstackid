@@ -109,7 +109,7 @@ class User extends BaseEntity
     /**
      * @var bool
      */
-    #[ORM\Column(name: 'public_profile_allow_chat_with_me', options: ['default' => 0], type: 'boolean')]
+    #[ORM\Column(name: 'public_profile_allow_chat_with_me', options: ['default' => 1], type: 'boolean')]
     private $public_profile_allow_chat_with_me;
 
     /**
@@ -464,7 +464,7 @@ class User extends BaseEntity
         $this->public_profile_show_social_media_info = false;
         $this->public_profile_show_bio = true;
         $this->public_profile_show_telephone_number = false;
-        $this->public_profile_allow_chat_with_me = false;
+        $this->public_profile_allow_chat_with_me = true;
 
         $this->password = "";
         $this->identifier = null;
