@@ -29,6 +29,12 @@ use Utils\Services\IAuthService;
  */
 class UserMappingTest extends BrowserKitTestCase
 {
+    public function testDefaultPublicProfileAllowChatWithMeIsTrue()
+    {
+        $user = new User();
+        $this->assertTrue($user->isPublicProfileAllowChatWithMe());
+    }
+
     public function testUserPersistence()
     {
         $email = 'test@nomail.com';
