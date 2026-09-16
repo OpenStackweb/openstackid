@@ -7,6 +7,7 @@ import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Checkbox from "@material-ui/core/Checkbox";
 import DeleteIcon from '@material-ui/icons/Delete';
+import InfoOutlinedIcon from '@material-ui/icons/InfoOutlined';
 import Grid from "@material-ui/core/Grid";
 import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
@@ -759,6 +760,18 @@ const ProfilePage = ({
                                 formik={formik}
                                 passwordPolicy={passwordPolicy}/>
 
+                            <Grid item>
+                                <div className={styles.privacy_note}>
+                                    <InfoOutlinedIcon className={styles.privacy_note_icon}/>
+                                    <Typography variant="body2" className={styles.privacy_note_text}>
+                                        These settings apply to your account profile across the entire
+                                        platform (chat, directory, and public profile contexts for any
+                                        show or event) — they are not per-show. They do not control your
+                                        speaker profile, if you have one: speaker profile data is public
+                                        separately, except for your email and phone number.
+                                    </Typography>
+                                </div>
+                            </Grid>
                             <Grid item spacing={2} container direction="row">
                                 <Grid item xs={6}>
                                     <FormControlLabel
