@@ -13,11 +13,9 @@
  **/
 
 use Auth\User;
-use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Request;
-use Keepsuit\LaravelOpenTelemetry\Facades\Logger;
 use Utils\IPHelper;
 
 /**
