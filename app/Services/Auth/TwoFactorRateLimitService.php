@@ -43,6 +43,22 @@ final class TwoFactorRateLimitService implements ITwoFactorRateLimitService
         RateLimiter::hit($this->cacheKey($action, $subject), $windowSeconds);
     }
 
+    public function consume(string $action, string|int $subject): int
+    {
+        [, $windowSeconds] = $this->limitsFor($action);
+
+        // Same fixed-window semantics as increment(); increment() on the
+        // limiter returns the post-increment count from the cache store's
+        // atomic INCR (Redis in every deployed environment).
+        return RateLimiter::increment($this->cacheKey($action, $subject), $windowSeconds);
+    }
+
+    public function refund(string $action, string|int $subject): void
+    {
+        [, $windowSeconds] = $this->limitsFor($action);
+        RateLimiter::decrement($this->cacheKey($action, $subject), $windowSeconds);
+    }
+
     public function getLimit(string $action): int
     {
         [$maxAttempts, ] = $this->limitsFor($action);
