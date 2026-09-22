@@ -31,8 +31,9 @@ use Illuminate\Support\Facades\RateLimiter;
  * middleware only decides *when* a hit counts, since the stock throttle
  * pipeline has no hook for that:
  *
- *  - verify / recovery: increment ONLY on a failed response.
- *  - resend / otp:      increment on EVERY request.
+ *  - every request reserves an attempt atomically before the controller runs.
+ *  - verify / recovery: the attempt is refunded unless the response is a failure.
+ *  - resend / otp:      every request counts.
  *
  * @package App\Http\Middleware
  */
@@ -71,7 +72,12 @@ final class TwoFactorRateLimitMiddleware
 
         $subject = $limit->key;
 
-        if ($this->rate_limit_service->isRateLimited($action, $subject)) {
+        // Reserve the attempt atomically BEFORE the controller runs: a separate
+        // check-then-increment let N concurrent requests all pass the check
+        // (sessions are not locked), exceeding max_attempts.
+        $attempts = $this->rate_limit_service->consume($action, $subject);
+
+        if ($attempts > $this->rate_limit_service->getLimit($action)) {
             Log::debug(sprintf("TwoFactorRateLimitMiddleware: action %s subject %s rate limited", $action, $subject));
 
             $responseCallback = $limit->responseCallback;
@@ -84,10 +90,13 @@ final class TwoFactorRateLimitMiddleware
 
         $response = $next($request);
 
-        if ($action === ITwoFactorRateLimitService::ActionResend || $action === ITwoFactorRateLimitService::ActionOtp) {
-            $this->rate_limit_service->increment($action, $subject);
-        } else if ($this->isFailure($response)) {
-            $this->rate_limit_service->increment($action, $subject);
+        // verify / recovery only count failures (SDS idp-mfa.md §4.12): give the
+        // reserved attempt back unless the response is a verification failure.
+        $countsOnlyFailures = $action === ITwoFactorRateLimitService::ActionVerify
+            || $action === ITwoFactorRateLimitService::ActionRecovery;
+
+        if ($countsOnlyFailures && !$this->isFailure($response)) {
+            $this->rate_limit_service->refund($action, $subject);
         }
 
         return $response;
