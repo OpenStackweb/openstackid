@@ -47,7 +47,8 @@ jobs:
       REDIS_DATABASES: 16
       SSL_ENABLED: false
       SESSION_DRIVER: redis
-      SESSION_COOKIE_SECURE: false
+      SESSION_SECURE_COOKIE: false
+      SESSION_COOKIE_SAME_SITE: lax
       PHP_VERSION: 8.3
       OTEL_SDK_DISABLED: true
       OTEL_SERVICE_ENABLED: false
