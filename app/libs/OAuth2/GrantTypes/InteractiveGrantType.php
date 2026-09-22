@@ -496,6 +496,14 @@ abstract class InteractiveGrantType extends AbstractGrantType
         } else if(!empty($token_hint) && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_IDTokenHint)) {
             Log::debug("InteractiveGrant::processUserHint processing Token hint...");
 
+            // Mark as processed up front: if verification/reload fails below, the exception
+            // is caught upstream and the pending memento gets re-serialized with this same
+            // request. Without this, every resume of that memento (e.g. right after a
+            // successful password login redirects back to /oauth2/auth) would retry this
+            // same stale/invalid hint, fail again, and log the user right back out —
+            // an infinite login loop driven by a hint that can never succeed.
+            $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_IDTokenHint);
+
             $jwt = BasicJWTFactory::build($token_hint);
 
             if($jwt instanceof IJWE) {
@@ -542,6 +550,13 @@ abstract class InteractiveGrantType extends AbstractGrantType
 
                 if(!$verified)
                     throw new InvalidLoginHint('invalid id_token_hint');
+            }
+
+            if(!$jwt instanceof IJWS) {
+                // neither IJWE->IJWS nor a plain IJWS: e.g. an unsecured JWT (alg=none).
+                // Never trust a sub/jti pair that was not cryptographically verified above.
+                $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is not signed/verifiable");
+                throw new InvalidLoginHint('id_token_hint must be signed');
             }
 
             $sub     = $jwt->getClaimSet()->getSubject();
