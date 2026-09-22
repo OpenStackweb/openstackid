@@ -665,32 +665,62 @@ final class AuthService extends AbstractService implements IAuthService
 
     /**
      * @param string $jti
-     * @throws Exception
+     * @param string|null $user_id
+     * @return void
+     * @throws ReloadSessionException
      */
-    public function reloadSession(string $jti): void
+    public function reloadSession(string $jti, string $user_id = null): void
     {
+        $former_session_id = Session::getId();
         Log::debug(sprintf("AuthService::reloadSession jti %s", $jti));
         $session_id = $this->cache_service->getSingleValue($jti);
 
         Log::debug(sprintf("AuthService::reloadSession session_id %s", $session_id));
-        if (empty($session_id))
+        if (empty($session_id)) {
+            Log::warning("AuthService::reloadSession session_id is not present at cache");
+            if(!is_null($user_id)) {
+                Log::warning(sprintf("AuthService::reloadSession user id provided %s", $user_id));
+                $user = $this->getUserById($user_id);
+                if (is_null($user))
+                    throw new ReloadSessionException('user not found!');
+                Auth::login($user);
+                return;
+            }
             throw new ReloadSessionException('session not found!');
+        }
 
         if ($this->cache_service->exists($session_id . "invalid")) {
             // session was marked as void, check if we are authenticated
-            if (!Auth::check())
+            if (!Auth::check()) {
+                Session::setId($former_session_id);
+                Session::start();
                 throw new ReloadSessionException('user not found!');
+            }
         }
 
-        Session::setId(Crypt::decrypt($session_id));
-        Session::start();
-        if (!Auth::check()) {
-            $user_id = $this->principal_service->get()->getUserId();
-            Log::debug(sprintf("AuthService::reloadSession user_id %s", $user_id));
-            $user = $this->getUserById($user_id);
-            if (is_null($user))
-                throw new ReloadSessionException('user not found!');
-            Auth::login($user);
+        try {
+            Session::setId(Crypt::decrypt($session_id));
+            Session::start();
+            if (!Auth::check()) {
+                $session_user_id = $this->principal_service->get()->getUserId();
+                Log::debug(sprintf("AuthService::reloadSession user_id %s", $session_user_id));
+                $user = $this->getUserById($session_user_id);
+                if (is_null($user))
+                    throw new ReloadSessionException('user not found!');
+                Auth::login($user);
+            }
+        }
+        catch (ReloadSessionException $ex) {
+            Log::warning(sprintf("AuthService::reloadSession ex %s", $ex->getMessage()));
+            Session::setId($former_session_id);
+            Session::start();
+            if(!is_null($user_id)) {
+                Log::warning(sprintf("AuthService::reloadSession user id provided %s", $user_id));
+                $user = $this->getUserById($user_id);
+                if (is_null($user))
+                    throw new ReloadSessionException('user not found!');
+                Auth::login($user);
+            }
         }
     }
 

@@ -140,7 +140,7 @@ interface IAuthService
      * @param string $jti
      * @return void
      */
-    public function reloadSession(string $jti):void;
+    public function reloadSession(string $jti, string $user_id = null):void;
 
     const LOGGED_RELAYING_PARTIES_COOKIE_NAME = 'rps';
 

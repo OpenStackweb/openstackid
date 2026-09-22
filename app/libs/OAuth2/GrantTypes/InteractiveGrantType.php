@@ -547,11 +547,24 @@ abstract class InteractiveGrantType extends AbstractGrantType
             $sub     = $jwt->getClaimSet()->getSubject();
             $user_id = $this->auth_service->unwrapUserId($sub->getString());
             $user    = $this->auth_service->getUserById($user_id);
+            $jti     = $jwt->getClaimSet()->getJWTID();
 
-            $jti = $jwt->getClaimSet()->getJWTID();
-            if(is_null($jti)) throw new InvalidLoginHint('invalid jti!');
+            if(is_null($jti)) {
+                $this->log_service->debug_msg("InteractiveGrantType::processUserHint: jti is null");
+                throw new InvalidLoginHint('invalid jti!');
+            }
 
-            $this->auth_service->reloadSession($jti->getValue());
+            $this->log_service->debug_msg(
+                sprintf
+                (
+                    "InteractiveGrantType::processUserHint: jwt sub %s user_id %s jti %s",
+                    $sub->getString(),
+                    $user_id,
+                    $jti->getValue()
+                )
+            );
+
+            $this->auth_service->reloadSession($jti->getValue(), $user_id);
 
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_IDTokenHint);
         }
