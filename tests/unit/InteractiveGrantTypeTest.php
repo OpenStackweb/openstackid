@@ -503,6 +503,119 @@ class InteractiveGrantTypeTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // Fix: reject an unsigned (alg=none) id_token_hint before trusting it,
+    // and mark a failed hint as processed so it can't loop the user out of
+    // a login they just completed.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Builds a compact-serialization "unsecured JWT" (RFC 7519 §6): a real,
+     * parseable JWS-shaped token with alg=none and no signature segment.
+     * BasicJWTFactory::build() turns this into an UnsecuredJWT, which is
+     * neither IJWE nor IJWS - exactly the forgeable shape the fix rejects.
+     */
+    private function buildUnsignedIdTokenHint(array $payload): string
+    {
+        $encode = function (array $data): string {
+            return rtrim(strtr(base64_encode(json_encode($data)), '+/', '-_'), '=');
+        };
+        $header = ['alg' => 'none', 'typ' => 'JWT'];
+        return $encode($header) . '.' . $encode($payload) . '.';
+    }
+
+    /**
+     * An id_token_hint with alg=none carries no signature at all, so it must
+     * never be trusted: not for reloadSession's fallback authentication, not
+     * even to read who it claims to be. Anyone could forge one naming any
+     * user_id. The fix rejects it (not IJWS) before sub/jti are ever read.
+     */
+    public function testProcessUserHintRejectsUnsignedAlgNoneIdTokenHint(): void
+    {
+        $forged_hint = $this->buildUnsignedIdTokenHint([
+            'sub' => '999',
+            'jti' => 'forged-jti-attacker-controlled',
+            'iss' => 'https://idp.test',
+            'aud' => 'test-client-id',
+        ]);
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $forged_hint,
+        ]);
+
+        $this->setupValidClient();
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+
+        $this->auth_service->shouldReceive('isUserLogged')->andReturn(false);
+        $this->auth_service->shouldReceive('getUserAuthenticationResponse')
+            ->andReturn(IAuthService::AuthenticationResponse_None);
+
+        // The forged sub/jti must never reach account resolution or session
+        // reload - the hint has to be rejected before either is read.
+        $this->auth_service->shouldNotReceive('unwrapUserId');
+        $this->auth_service->shouldNotReceive('getUserById');
+        $this->auth_service->shouldNotReceive('reloadSession');
+
+        $this->auth_service->shouldReceive('logout')->with(false)->once();
+        $this->memento_service->shouldReceive('serialize')->once();
+
+        $login_redirect = 'login-redirect-response';
+        $this->auth_strategy->shouldReceive('doLogin')
+            ->once()
+            ->andReturn($login_redirect);
+
+        $result = $this->grant_type->publicHandle($request);
+
+        $this->assertEquals($login_redirect, $result);
+    }
+
+    /**
+     * A hint that fails must be marked processed on this same pass. Before
+     * this fix, the "processed" flag was only set after a *successful*
+     * reloadSession(), so a stale/invalid hint kept getting re-attempted
+     * every time the pending OAuth2 memento was resumed - including right
+     * after a fresh, valid password login redirects back to /oauth2/auth -
+     * logging the user back out in an infinite loop.
+     */
+    public function testFailedIdTokenHintIsMarkedProcessedToPreventLoginLoop(): void
+    {
+        $forged_hint = $this->buildUnsignedIdTokenHint([
+            'sub' => '999',
+            'jti' => 'forged-jti-attacker-controlled',
+        ]);
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $forged_hint,
+        ]);
+
+        $this->assertFalse(
+            $request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_IDTokenHint)
+        );
+
+        $this->setupValidClient();
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+
+        $this->auth_service->shouldReceive('isUserLogged')->andReturn(false);
+        $this->auth_service->shouldReceive('getUserAuthenticationResponse')
+            ->andReturn(IAuthService::AuthenticationResponse_None);
+
+        $this->auth_service->shouldReceive('logout')->with(false)->once();
+        $this->memento_service->shouldReceive('serialize')->once();
+        $this->auth_strategy->shouldReceive('doLogin')->once()->andReturn('login-response');
+
+        $this->grant_type->publicHandle($request);
+
+        // The same $request instance handle() mutated: even though the hint
+        // failed, it must be marked processed so a memento resume of this
+        // exact request won't retry (and fail, and log out) again.
+        $this->assertTrue(
+            $request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_IDTokenHint),
+            'a failed id_token_hint must still be marked processed to avoid a login loop'
+        );
+    }
+
+    // -----------------------------------------------------------------------
     // Normal flow: consent accepted -> successful authorization
     // -----------------------------------------------------------------------
 
