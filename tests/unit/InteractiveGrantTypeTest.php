@@ -13,13 +13,27 @@
  * limitations under the License.
  **/
 
+use App\libs\OAuth2\Exceptions\ReloadSessionException;
 use Auth\User;
 use Exception;
 use Illuminate\Container\Container;
 use Illuminate\Support\Facades\Facade;
+use jwa\cryptographic_algorithms\DigitalSignatures_MACs_Registry;
+use jwa\JSONWebSignatureAndEncryptionAlgorithms;
+use jwk\IJWK;
+use jwk\impl\OctetSequenceJWKFactory;
+use jwk\impl\OctetSequenceJWKSpecification;
+use jwk\impl\RSAJWKFactory;
+use jwk\impl\RSAJWKPEMPrivateKeySpecification;
+use jwk\JSONWebKeyPublicKeyUseValues;
+use jws\impl\specs\JWS_ParamsSpecification;
+use jws\JWSFactory;
+use jwt\impl\JWTClaimSet;
 use Mockery;
 use Models\OAuth2\Client;
+use Models\OAuth2\ServerPrivateKey;
 use OAuth2\Models\IClient;
+use OAuth2\Models\JWTResponseInfo;
 use OAuth2\Models\Principal;
 use OAuth2\Models\SecurityContext;
 use OAuth2\OAuth2Message;
@@ -41,6 +55,10 @@ use OAuth2\Services\IUserConsentService;
 use OAuth2\Strategies\IOAuth2AuthenticationStrategy;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Utils\Db\ITransactionService;
+use utils\json_types\JsonValue;
+use utils\json_types\NumericDate;
+use utils\json_types\StringOrURI;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
 
@@ -613,6 +631,174 @@ class InteractiveGrantTypeTest extends TestCase
             $request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_IDTokenHint),
             'a failed id_token_hint must still be marked processed to avoid a login loop'
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // Fix: the sub-based fallback in reloadSession() is only unlocked by a hint
+    // whose signature was verified with the IDP's own server key. A signature
+    // that verifies with a client-controlled key (HS* client secret, a public
+    // key the client registered, its jwks_uri) proves the *client* made it,
+    // not the IDP, so it must keep the old jti-only semantics.
+    // -----------------------------------------------------------------------
+
+    private function buildHintClaimSet(string $sub, string $jti): JWTClaimSet
+    {
+        $now = time();
+        return new JWTClaimSet(
+            new StringOrURI('https://idp.test'),
+            new StringOrURI($sub),
+            new StringOrURI('test-client-id'),
+            new NumericDate($now),
+            new NumericDate($now + 600),
+            new JsonValue($jti)
+        );
+    }
+
+    /**
+     * Signs a real JWS with the library so the header round-trips exactly the
+     * way JWS::verify() re-serializes it.
+     */
+    private function signHint(IJWK $jwk, string $alg, JWTClaimSet $claim_set): string
+    {
+        return JWSFactory::build(
+            new JWS_ParamsSpecification($jwk, new StringOrURI($alg), $claim_set)
+        )->toCompactSerialization();
+    }
+
+    /**
+     * Common expectations for a hint that verifies but whose reloadSession()
+     * fails: the request must end at the login page, never authenticated.
+     */
+    private function expectHintReloadFailureEndsAtLogin(): string
+    {
+        $this->auth_service->shouldReceive('isUserLogged')->andReturn(false);
+        $this->auth_service->shouldReceive('getUserAuthenticationResponse')
+            ->andReturn(IAuthService::AuthenticationResponse_None);
+        $this->auth_service->shouldReceive('unwrapUserId')->with('999')->andReturn('999');
+        $this->auth_service->shouldReceive('getUserById')->with('999')->andReturn(null);
+
+        $this->auth_service->shouldReceive('logout')->with(false)->once();
+        $this->memento_service->shouldReceive('serialize')->once();
+
+        $login_redirect = 'login-redirect-response';
+        $this->auth_strategy->shouldReceive('doLogin')->once()->andReturn($login_redirect);
+        return $login_redirect;
+    }
+
+    /**
+     * The client signs its id_tokens with HS512, i.e. with its own client
+     * secret - the IDP and the client share that key, so a token minted by
+     * the client verifies exactly like an IDP-issued one. Such a hint must
+     * reach reloadSession() WITHOUT the sub-based fallback ($user_id null).
+     */
+    public function testClientKeyVerifiedIdTokenHintDoesNotUnlockSubFallback(): void
+    {
+        $secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
+        $alg    = JSONWebSignatureAndEncryptionAlgorithms::HS512;
+
+        $client_jwk = OctetSequenceJWKFactory::build(new OctetSequenceJWKSpecification($secret, $alg));
+        $client_jwk->setKeyUse(JSONWebKeyPublicKeyUseValues::Signature);
+
+        $hint = $this->signHint($client_jwk, $alg, $this->buildHintClaimSet('999', 'jti-client-signed'));
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $hint,
+        ]);
+
+        $client = $this->setupValidClient();
+        $client->shouldReceive('getIdTokenResponseInfo')
+            ->andReturn(new JWTResponseInfo(DigitalSignatures_MACs_Registry::getInstance()->get($alg)));
+        $client->shouldReceive('getClientType')->andReturn(IClient::ClientType_Confidential);
+        $client->shouldReceive('getClientSecret')->andReturn($secret);
+
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+        $login_redirect = $this->expectHintReloadFailureEndsAtLogin();
+
+        // Key assertion: the signature was verified with the CLIENT's key, so
+        // the sub-based fallback must not be offered to reloadSession().
+        $this->auth_service->shouldReceive('reloadSession')
+            ->once()
+            ->withArgs(function ($jti, $user_id = null) {
+                return $jti === 'jti-client-signed' && $user_id === null;
+            })
+            ->andThrow(new ReloadSessionException('session not found!'));
+
+        $result = $this->grant_type->publicHandle($request);
+
+        $this->assertEquals($login_redirect, $result);
+    }
+
+    /**
+     * Positive control: a hint verified with the IDP's own RS256 server key
+     * (the client has no registered signing key and no jwks_uri, so the
+     * client-key lookup throws RecipientKeyNotFoundException) keeps the
+     * sub-based fallback - reloadSession() receives the resolved user_id.
+     */
+    public function testServerKeyVerifiedIdTokenHintKeepsSubFallback(): void
+    {
+        $alg = JSONWebSignatureAndEncryptionAlgorithms::RS256;
+
+        $key_pair = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        openssl_pkey_export($key_pair, $pem);
+
+        $server_jwk = RSAJWKFactory::build(
+            new RSAJWKPEMPrivateKeySpecification($pem, RSAJWKPEMPrivateKeySpecification::WithoutPassword, $alg)
+        );
+        $server_jwk->setKeyUse(JSONWebKeyPublicKeyUseValues::Signature)->setId('server-sig-key');
+
+        $hint = $this->signHint($server_jwk, $alg, $this->buildHintClaimSet('999', 'jti-server-signed'));
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $hint,
+        ]);
+
+        $client = $this->setupValidClient();
+        $client->shouldReceive('getIdTokenResponseInfo')
+            ->andReturn(new JWTResponseInfo(DigitalSignatures_MACs_Registry::getInstance()->get($alg)));
+        // No client-controlled signing key anywhere -> RecipientKeyNotFoundException
+        // -> InteractiveGrantType falls back to the server signing key.
+        $client->shouldReceive('getCurrentPublicKeyByUse')
+            ->with(JSONWebKeyPublicKeyUseValues::Signature, $alg)
+            ->andReturn(null);
+        $this->jwk_set_reader_service->shouldReceive('read')->with($client)->andReturn(null);
+
+        // ServerSigningKeyFinder resolves ITransactionService through the App facade.
+        $app = Facade::getFacadeApplication();
+        $app->instance('app', $app);
+        $tx_service = Mockery::mock(ITransactionService::class);
+        $tx_service->shouldReceive('transaction')->andReturnUsing(function (callable $callback) {
+            return $callback();
+        });
+        $app->instance(ITransactionService::class, $tx_service);
+
+        $server_key_alg = Mockery::mock();
+        $server_key_alg->shouldReceive('getName')->andReturn($alg);
+        $server_key = Mockery::mock(ServerPrivateKey::class);
+        $server_key->shouldReceive('isActive')->andReturn(true);
+        $server_key->shouldReceive('getAlg')->andReturn($server_key_alg);
+        $server_key->shouldReceive('toJWK')->andReturn($server_jwk);
+        $server_key->shouldReceive('markAsUsed')->andReturnNull();
+        $this->server_private_key_repository->shouldReceive('getByKeyIdentifier')
+            ->with('server-sig-key')
+            ->andReturn($server_key);
+
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+        $login_redirect = $this->expectHintReloadFailureEndsAtLogin();
+
+        // Key assertion: the signature was verified with the SERVER key, so
+        // the sub-based fallback is offered to reloadSession().
+        $this->auth_service->shouldReceive('reloadSession')
+            ->once()
+            ->withArgs(function ($jti, $user_id = null) {
+                return $jti === 'jti-server-signed' && $user_id === '999';
+            })
+            ->andThrow(new ReloadSessionException('user not found!'));
+
+        $result = $this->grant_type->publicHandle($request);
+
+        $this->assertEquals($login_redirect, $result);
     }
 
     // -----------------------------------------------------------------------

@@ -522,6 +522,13 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $payload = $jwt->getPlainText();
                 $jwt     = BasicJWTFactory::build($payload);
             }
+            // Only a signature made with this IDP's own private key proves the IDP
+            // issued the hint. A key the client controls (an HS* client secret, a
+            // public key the client registered, its jwks_uri) proves the *client*
+            // made it, so it must never unlock the sub-based fallback in
+            // reloadSession() - it keeps the jti-only semantics.
+            $issued_by_this_idp = false;
+
             if($jwt instanceof IJWS) {
                 $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is IJWS");
                 // signed by client ?
@@ -545,6 +552,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
                         $jwt->getJOSEHeader()->getKeyID()->getValue()
                     );
                     $jwt->setKey($server_private_sig_key);
+                    $issued_by_this_idp = true;
                 }
 
                 $verified = $jwt->verify($jwt->getJOSEHeader()->getAlgorithm()->getString());
@@ -596,7 +604,13 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 )
             );
 
-            $this->auth_service->reloadSession($jti->getValue(), $user_id);
+            // The sub-based fallback (login by $user_id when the jti is no longer
+            // cached) is only safe for a hint this IDP is proven to have issued.
+            $this->auth_service->reloadSession
+            (
+                $jti->getValue(),
+                $issued_by_this_idp ? $user_id : null
+            );
 
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_IDTokenHint);
         }

@@ -17,14 +17,23 @@ use Database\Seeders\TestSeeder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
+use jwa\JSONWebSignatureAndEncryptionAlgorithms;
 use jwe\IJWE;
+use jwk\impl\OctetSequenceJWKFactory;
+use jwk\impl\OctetSequenceJWKSpecification;
 use jwk\impl\RSAJWKFactory;
 use jwk\impl\RSAJWKPEMPrivateKeySpecification;
 use jwk\JSONWebKeyPublicKeyUseValues;
 use jws\IJWS;
+use jws\impl\specs\JWS_ParamsSpecification;
+use jws\JWSFactory;
+use jwt\impl\JWTClaimSet;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use OAuth2\OAuth2Protocol;
 use utils\factories\BasicJWTFactory;
+use utils\json_types\JsonValue;
+use utils\json_types\NumericDate;
+use utils\json_types\StringOrURI;
 use Utils\Services\IAuthService;
 use Utils\Services\UtilsServiceCatalog;
 
@@ -245,5 +254,47 @@ final class OIDCColdSessionReloadTest extends OpenStackIDBaseTestCase
         $this->assertTrue(str_contains($response->getTargetUrl(), '/auth/login'),
             sprintf('an expired id_token_hint must require login, got %s', $response->getTargetUrl()));
         $this->assertFalse(Auth::check(), 'an expired id_token_hint must not authenticate anyone');
+    }
+
+    /**
+     * The seeded test client signs its id_tokens with HS512 - i.e. with the
+     * client secret, a key the client itself holds. A token minted with that
+     * secret verifies exactly like an IDP-issued one, so it proves nothing
+     * about who issued it. When its jti is not in the cache (never minted by
+     * the IDP, or long evicted), reloadSession()'s sub-based fallback must NOT
+     * turn it into a login for whatever user id the token names.
+     */
+    public function testColdSessionRejectsClientSignedIdTokenHintWhenJtiIsNotCached()
+    {
+        $alg = JSONWebSignatureAndEncryptionAlgorithms::HS512;
+
+        $client_jwk = OctetSequenceJWKFactory::build(new OctetSequenceJWKSpecification(self::ClientSecret, $alg));
+        $client_jwk->setKeyUse(JSONWebKeyPublicKeyUseValues::Signature);
+
+        $now = time();
+        $claim_set = new JWTClaimSet(
+            new StringOrURI('https://idp.test'),
+            new StringOrURI((string)$this->user->getId()),
+            new StringOrURI(self::ClientId),
+            new NumericDate($now),
+            new NumericDate($now + 600),
+            new JsonValue('never-cached-' . Str::random(16))
+        );
+
+        $forged_hint = JWSFactory::build(
+            new JWS_ParamsSpecification($client_jwk, new StringOrURI($alg), $claim_set)
+        )->toCompactSerialization();
+
+        $this->startColdSession();
+
+        $params = $this->authorizeParams();
+        $params[OAuth2Protocol::OAuth2Protocol_IDTokenHint] = $forged_hint;
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth", $params);
+
+        $this->assertResponseStatus(302);
+        $this->assertTrue(str_contains($response->getTargetUrl(), '/auth/login'),
+            sprintf('a client-signed id_token_hint with an unknown jti must require login, got %s', $response->getTargetUrl()));
+        $this->assertFalse(Auth::check(), 'a client-signed id_token_hint must never authenticate anyone by sub');
     }
 }
