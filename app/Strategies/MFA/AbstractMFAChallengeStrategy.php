@@ -4,13 +4,13 @@ use Auth\Exceptions\AuthenticationException;
 use Auth\MFAConstants;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Models\OAuth2\Client;
 
 abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
 {
-    private const SESSION_TTL           = 300;
     private const KEY_USER_ID           = MFAConstants::SESSION_KEY_PENDING_USER_ID;
     private const KEY_PENDING_AT        = MFAConstants::SESSION_KEY_PENDING_AT;
     private const KEY_REMEMBER          = MFAConstants::SESSION_KEY_REMEMBER;
@@ -27,7 +27,7 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
             return null;
         }
 
-        if ((time() - $pending_at) > self::SESSION_TTL) {
+        if ((time() - $pending_at) > (int) Config::get('two_factor.session_ttl', 600)) {
             $this->clearPendingState();
             return null;
         }
