@@ -317,7 +317,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     }
 
     // -------------------------------------------------------------------------
-    // cancelLogin
+    // resetLogin (login SPA "Cancel") / cancelLogin (abort sign-in)
     // -------------------------------------------------------------------------
 
     public function testCancelClearsUIStateAndPendingChallenge(): void
@@ -325,7 +325,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
         $code = $this->latestOtpCode(self::ADMIN_EMAIL);
 
-        $this->cancelLogin();
+        $this->resetLogin();
 
         $this->assertNull(Session::get('flow'), 'cancel must not leave a stale 2FA screen restorable on refresh');
         $this->assertNull(Session::get('mfa_method'));
@@ -354,14 +354,14 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testCancelClearsPasswordlessOtpSessionState(): void
     {
         // Server-side proof for the client fix in login.js's handleDelete()
-        // (widened to call cancelLogin() for the OTP flow, not just MFA):
-        // cancelLogin() already unconditionally clears the same key set
-        // emitOTP() writes, so a refresh after "sign in using a different
-        // e-mail" must not resurrect the abandoned OTP screen.
+        // (widened to call the reset endpoint for the OTP flow, not just MFA):
+        // resetLogin() unconditionally clears the same key set emitOTP()
+        // writes, so a refresh after "sign in using a different e-mail" must
+        // not resurrect the abandoned OTP screen.
         $email = $this->createPlainUser();
         $this->emitOTP($email);
 
-        $this->cancelLogin();
+        $this->resetLogin();
 
         $this->assertNull(Session::get('flow'), 'cancel must not leave a stale OTP screen restorable on refresh');
         $this->assertNull(Session::get('user_verified'));
@@ -372,6 +372,86 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertNull(Session::get('user_fullname'));
         $this->assertNull(Session::get('user_pic'));
         $this->assertNull(Session::get('user_is_active'));
+    }
+
+    public function testResetDuringOIDCChallengePreservesOAuth2Request(): void
+    {
+        // Regression: the login SPA's "Cancel" used to hit cancelLogin(), which
+        // delegates to OAuth2LoginStrategy::cancelLogin() - the grant then forgets
+        // the memento, so re-logging in landed on the profile instead of
+        // resuming the relying party's request.
+        $this->startOIDCFlowUpToChallenge();
+
+        $this->resetLogin();
+
+        $this->assertResponseStatus(200);
+        $this->assertTrue(
+            App::make(IMementoOAuth2SerializerService::class)->exists(),
+            'cancel must only reset the login screen, not abort the pending OIDC request'
+        );
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $response = $this->verify($this->latestOtpCode(self::ADMIN_EMAIL));
+
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame(URL::action('OAuth2\OAuth2ProviderController@auth'), $payload['redirect_url'] ?? null);
+
+        $this->completeConsentAndGetAuthCode();
+    }
+
+    public function testResetDuringPasswordlessOTPPreservesOAuth2Request(): void
+    {
+        // Same regression through login.js's handleDelete(), which calls the
+        // reset endpoint for the passwordless OTP screen ("sign in using a
+        // different e-mail").
+        $this->startOIDCAuthorizationRequest();
+        $email = $this->createPlainUser();
+        $this->emitOTP($email);
+
+        $this->resetLogin();
+
+        $this->assertResponseStatus(200);
+        $this->assertTrue(
+            App::make(IMementoOAuth2SerializerService::class)->exists(),
+            'cancel must only reset the login screen, not abort the pending OIDC request'
+        );
+
+        $this->emitOTP($email);
+        $response = $this->postLoginOTP($email, $this->latestOtpCode($email));
+
+        $this->assertResponseStatus(302);
+        $this->assertSame(URL::action('OAuth2\OAuth2ProviderController@auth'), $response->getTargetUrl());
+    }
+
+    public function testCancelLoginStillAbortsOIDCRequest(): void
+    {
+        // cancelLogin() keeps main's contract: it aborts the sign-in through the
+        // login strategy, so the relying party gets access_denied and the memento
+        // is gone. It must also invalidate the pending MFA challenge.
+        $this->startOIDCFlowUpToChallenge();
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $response = $this->action('GET', 'UserController@cancelLogin');
+        $this->assertResponseStatus(302);
+        $this->assertSame(URL::action('OAuth2\OAuth2ProviderController@auth'), $response->getTargetUrl());
+
+        $response = $this->action('GET', 'OAuth2\OAuth2ProviderController@auth');
+        $this->assertResponseStatus(302);
+        $url = $response->getTargetUrl();
+        $this->assertTrue(
+            str_starts_with($url, self::OIDC_REDIRECT_URI),
+            "an aborted sign-in must be answered on the client redirect_uri, got: {$url}"
+        );
+        parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $query);
+        $this->assertSame('access_denied', $query['error'] ?? null);
+        $this->assertFalse(App::make(IMementoOAuth2SerializerService::class)->exists());
+
+        $response = $this->verify($code);
+        $this->assertResponseStatus(401);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame(MFAConstants::ERROR_CODE_SESSION_EXPIRED, $payload['error_code']);
+        $this->assertFalse(Auth::check());
     }
 
     // -------------------------------------------------------------------------
@@ -1282,6 +1362,20 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
      */
     private function startOIDCFlowUpToChallenge(): void
     {
+        $this->startOIDCAuthorizationRequest();
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $this->assertResponseStatus(302);
+        $this->assertFalse(Auth::check(), 'password alone must not establish a session while MFA is pending');
+    }
+
+    /**
+     * Sends the OIDC authorization-code request: the authorize endpoint
+     * serializes the memento and bounces to the login screen, so every login
+     * call that follows runs under the OAuth2LoginStrategy.
+     */
+    private function startOIDCAuthorizationRequest(): void
+    {
         $response = $this->action('POST', 'OAuth2\OAuth2ProviderController@auth', [
             'client_id'     => self::OIDC_CLIENT_ID,
             'redirect_uri'  => self::OIDC_REDIRECT_URI,
@@ -1293,10 +1387,6 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
             str_contains($response->getTargetUrl(), '/login'),
             'an unauthenticated OIDC request must bounce to the login screen'
         );
-
-        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
-        $this->assertResponseStatus(302);
-        $this->assertFalse(Auth::check(), 'password alone must not establish a session while MFA is pending');
     }
 
     /**
@@ -1494,9 +1584,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         ], [], $cookies);
     }
 
-    private function cancelLogin()
+    private function resetLogin()
     {
-        return $this->action('POST', 'UserController@cancelLogin', [
+        return $this->action('POST', 'UserController@resetLogin', [
             '_token' => Session::token(),
         ]);
     }
