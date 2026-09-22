@@ -16,8 +16,12 @@ test.describe('Login flow', () => {
     await loginPage.goto();
     await loginPage.fillEmail('test@test.com');
     await loginPage.fillPassword('wrongpassword');
-    // Wrong password: server redirects back to login; the password step disappears
-    await expect(loginPage.passwordForm).not.toBeVisible();
+    // Wrong password: the native form POST redirects back with flashed session
+    // state (flow/username/user_verified), so the password step is redisplayed
+    // with an inline error rather than resetting to the email step (see
+    // DefaultLoginStrategy::errorLogin()).
+    await expect(loginPage.passwordForm).toBeVisible();
+    await expect(loginPage.errorLabel).toBeVisible();
   });
 
   test('redirects to home after successful login', async ({ loginPage, page }) => {
