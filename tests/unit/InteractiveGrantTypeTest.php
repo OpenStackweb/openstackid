@@ -802,6 +802,128 @@ class InteractiveGrantTypeTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // Claim validation on a verified hint (CodeRabbit threads on PR #158):
+    // exp must be strictly in the future, and a missing sub must be rejected
+    // as an InvalidLoginHint instead of dereferencing null.
+    // -----------------------------------------------------------------------
+
+    /**
+     * A confidential client whose id_tokens are HS512-signed with its own
+     * secret, plus the matching JWK to sign test hints with.
+     *
+     * @return array{0: IJWK, 1: string}
+     */
+    private function setupClientSecretSignedClient(): array
+    {
+        $secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
+        $alg    = JSONWebSignatureAndEncryptionAlgorithms::HS512;
+
+        $client = $this->setupValidClient();
+        $client->shouldReceive('getIdTokenResponseInfo')
+            ->andReturn(new JWTResponseInfo(DigitalSignatures_MACs_Registry::getInstance()->get($alg)));
+        $client->shouldReceive('getClientType')->andReturn(IClient::ClientType_Confidential);
+        $client->shouldReceive('getClientSecret')->andReturn($secret);
+
+        $jwk = OctetSequenceJWKFactory::build(new OctetSequenceJWKSpecification($secret, $alg));
+        $jwk->setKeyUse(JSONWebKeyPublicKeyUseValues::Signature);
+
+        return [$jwk, $alg];
+    }
+
+    /**
+     * Common expectations for a verified hint that must be rejected during
+     * claim validation: reloadSession() is never reached and the request
+     * ends at the login page.
+     */
+    private function expectHintRejectedBeforeReload(): string
+    {
+        $this->auth_service->shouldReceive('isUserLogged')->andReturn(false);
+        $this->auth_service->shouldReceive('getUserAuthenticationResponse')
+            ->andReturn(IAuthService::AuthenticationResponse_None);
+
+        $this->auth_service->shouldNotReceive('unwrapUserId');
+        $this->auth_service->shouldNotReceive('getUserById');
+        $this->auth_service->shouldNotReceive('reloadSession');
+
+        $this->auth_service->shouldReceive('logout')->with(false)->once();
+        $this->memento_service->shouldReceive('serialize')->once();
+
+        $login_redirect = 'login-redirect-response';
+        $this->auth_strategy->shouldReceive('doLogin')->once()->andReturn($login_redirect);
+        return $login_redirect;
+    }
+
+    /**
+     * RFC 7519 §4.1.4: the current time MUST be strictly before exp. A hint
+     * whose exp equals the current second is already expired.
+     *
+     * NumericDate::now() is wall-clock time, so this test builds the hint
+     * with exp = time() right before handling it; the whole handle() call
+     * runs well within one second.
+     */
+    public function testProcessUserHintRejectsIdTokenHintWhoseExpEqualsNow(): void
+    {
+        [$jwk, $alg] = $this->setupClientSecretSignedClient();
+
+        $now = time();
+        $claim_set = new JWTClaimSet(
+            new StringOrURI('https://idp.test'),
+            new StringOrURI('999'),
+            new StringOrURI('test-client-id'),
+            new NumericDate($now - 60),
+            new NumericDate($now),
+            new JsonValue('jti-exp-boundary')
+        );
+        $hint = $this->signHint($jwk, $alg, $claim_set);
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $hint,
+        ]);
+
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+        $login_redirect = $this->expectHintRejectedBeforeReload();
+
+        $result = $this->grant_type->publicHandle($request);
+
+        $this->assertEquals($login_redirect, $result);
+    }
+
+    /**
+     * A verified hint without a sub claim must be rejected as an
+     * InvalidLoginHint (ending at the login page like any other bad hint),
+     * not blow up dereferencing null - that raises an Error, which the
+     * Exception-only catch in mustAuthenticateUser() does not handle.
+     */
+    public function testProcessUserHintRejectsIdTokenHintWithoutSub(): void
+    {
+        [$jwk, $alg] = $this->setupClientSecretSignedClient();
+
+        $now = time();
+        $claim_set = new JWTClaimSet(
+            new StringOrURI('https://idp.test'),
+            null,
+            new StringOrURI('test-client-id'),
+            new NumericDate($now),
+            new NumericDate($now + 600),
+            new JsonValue('jti-no-sub')
+        );
+        $hint = $this->signHint($jwk, $alg, $claim_set);
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $hint,
+        ]);
+
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+        $login_redirect = $this->expectHintRejectedBeforeReload();
+
+        $result = $this->grant_type->publicHandle($request);
+
+        $this->assertEquals($login_redirect, $result);
+    }
+
+    // -----------------------------------------------------------------------
     // Normal flow: consent accepted -> successful authorization
     // -----------------------------------------------------------------------
 

@@ -578,13 +578,20 @@ abstract class InteractiveGrantType extends AbstractGrantType
             // across different clients of this IDP (e.g. client A -> client B), so
             // the token's original audience is expected to differ from the client
             // making this request.
+            // RFC 7519 §4.1.4: the current time MUST be strictly before exp, so
+            // exp == now is already expired.
             $expiration_time = $claim_set->getExpirationTime();
-            if(is_null($expiration_time) || $expiration_time->isBefore(NumericDate::now())) {
+            if(is_null($expiration_time) || !$expiration_time->isAfter(NumericDate::now())) {
                 $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is expired");
                 throw new InvalidLoginHint('id_token_hint is expired');
             }
 
-            $sub     = $claim_set->getSubject();
+            $sub = $claim_set->getSubject();
+            if(is_null($sub)) {
+                $this->log_service->debug_msg("InteractiveGrantType::processUserHint: sub is null");
+                throw new InvalidLoginHint('invalid sub!');
+            }
+
             $user_id = $this->auth_service->unwrapUserId($sub->getString());
             $user    = $this->auth_service->getUserById($user_id);
             $jti     = $claim_set->getJWTID();
