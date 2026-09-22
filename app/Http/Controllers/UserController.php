@@ -247,6 +247,24 @@ final class UserController extends OpenIdController
         return $this->login_strategy->getLogin();
     }
 
+    public function getProfileLink(LaravelRequest $request)
+    {
+        if (!$request->hasValidSignature()) {
+            abort(403);
+        }
+        $user_id = intval($request->query('user_id'));
+        $current = $this->auth_service->getCurrentUser();
+        if ($current && $current->getId() !== $user_id) {
+            $this->auth_service->logout();
+        }
+        if ($this->auth_service->getCurrentUser()) {
+            return Redirect::action("UserController@getProfile");
+        }
+        $user = $this->auth_service->getUserById($user_id);
+        $hint = $user ? $user->getEmail() : null;
+        return Redirect::action("UserController@getLogin", $hint ? ['login_hint' => $hint] : []);
+    }
+
     public function cancelLogin()
     {
         return $this->login_strategy->cancelLogin();
