@@ -16,8 +16,9 @@
       <!-- The directory scan only picks up *Test.php (PHPUnit's default
            suffix), so the concrete *TestCase.php protocol suites were never
            executed by CI - they must be listed explicitly. Abstract bases
-           (OpenStackIDBaseTestCase, BrowserKitTestCase, etc.) need no entry. -->
-      <file>./tests/OAuth2ProtocolTestCase.php</file>
+           (OpenStackIDBaseTestCase, BrowserKitTestCase, etc.) need no entry.
+           OAuth2ProtocolTestCase.php was renamed to OAuth2ProtocolTest.php
+           and is auto-discovered, so it is not listed here. -->
       <file>./tests/OIDCProtocolTestCase.php</file>
       <file>./tests/OIDCPasswordlessTestCase.php</file>
       <file>./tests/OpenIdProtocolTestCase.php</file>
