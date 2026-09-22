@@ -681,7 +681,7 @@ final class AuthService extends AbstractService implements IAuthService
             if(!is_null($user_id)) {
                 Log::warning(sprintf("AuthService::reloadSession user id provided %s", $user_id));
                 $user = $this->getUserById($user_id);
-                if (is_null($user))
+                if (is_null($user) || !$user->canLogin())
                     throw new ReloadSessionException('user not found!');
                 Auth::login($user);
                 return;
@@ -717,10 +717,19 @@ final class AuthService extends AbstractService implements IAuthService
             if(!is_null($user_id)) {
                 Log::warning(sprintf("AuthService::reloadSession user id provided %s", $user_id));
                 $user = $this->getUserById($user_id);
-                if (is_null($user))
+                if (is_null($user) || !$user->canLogin())
                     throw new ReloadSessionException('user not found!');
                 Auth::login($user);
+                return;
             }
+            throw $ex;
+        }
+        catch (\Throwable $ex) {
+            // Any non-ReloadSessionException failure (e.g. a DB error inside
+            // getUserById()) must still leave the caller's real session intact.
+            Session::setId($former_session_id);
+            Session::start();
+            throw $ex;
         }
     }
 
