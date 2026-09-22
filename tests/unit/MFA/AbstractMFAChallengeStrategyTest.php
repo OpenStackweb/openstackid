@@ -17,6 +17,7 @@ use Auth\Exceptions\AuthenticationException;
 use Auth\MFAConstants;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Models\OAuth2\Client;
@@ -62,13 +63,36 @@ class AbstractMFAChallengeStrategyTest extends TestCase
     public function testGetPendingState_withExpiredSession_returnsNull(): void
     {
         Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, 99);
-        Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time() - 301);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time() - 601);
         Session::put(MFAConstants::SESSION_KEY_REMEMBER, false);
 
         $state = $this->strategy->getPendingState();
 
         $this->assertNull($state);
         $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID));
+    }
+
+    public function testGetPendingState_withinDefaultTtl_matchesDefaultOtpLifetime(): void
+    {
+        // Regression: the pending state used to expire at a hardcoded 300s while
+        // the default OTP (otp.lifetime = 600) and its UI countdown stayed valid,
+        // so a code entered between 300s and 600s was rejected as session-expired.
+        Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, 99);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time() - 400);
+        Session::put(MFAConstants::SESSION_KEY_REMEMBER, false);
+
+        $this->assertNotNull($this->strategy->getPendingState());
+    }
+
+    public function testGetPendingState_honorsConfiguredSessionTtl(): void
+    {
+        Config::set('two_factor.session_ttl', 120);
+
+        Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, 99);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time() - 121);
+        Session::put(MFAConstants::SESSION_KEY_REMEMBER, false);
+
+        $this->assertNull($this->strategy->getPendingState());
     }
 
     public function testGetPendingState_withMissingSession_returnsNull(): void
