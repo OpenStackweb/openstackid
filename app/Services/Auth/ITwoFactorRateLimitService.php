@@ -84,6 +84,27 @@ interface ITwoFactorRateLimitService
     public function increment(string $action, string|int $subject): void;
 
     /**
+     * Atomically counts one attempt and returns the attempts in the current
+     * window including this one, so concurrent requests cannot all pass a
+     * separate check-then-increment.
+     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
+     * @param string|int $subject a user id for session-keyed actions, or a raw
+     *                            (already-canonicalized) subject string for ActionOtp
+     * @return int
+     */
+    public function consume(string $action, string|int $subject): int;
+
+    /**
+     * Gives back an attempt previously taken with consume() - used when the
+     * attempt must not count (e.g. a successful verify/recovery).
+     * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
+     * @param string|int $subject a user id for session-keyed actions, or a raw
+     *                            (already-canonicalized) subject string for ActionOtp
+     * @return void
+     */
+    public function refund(string $action, string|int $subject): void;
+
+    /**
      * The configured max-attempts ceiling for this action, for the
      * X-RateLimit-Limit response header.
      * @param string $action one of self::ActionVerify|ActionRecovery|ActionResend|ActionOtp
