@@ -152,6 +152,7 @@ return [
     |
     */
 
+
     'secure' => env('SESSION_COOKIE_SECURE', true),
 
     /*
@@ -185,5 +186,10 @@ return [
    |
    */
 
+
+    // Defaults to "none": the OAuth2 memento lives in the session and must survive
+    // cross-site POST callbacks (e.g. Sign in with Apple form_post). Browsers reject
+    // SameSite=None without Secure, so plain-http environments must set both
+    // SESSION_SECURE_COOKIE=false and SESSION_COOKIE_SAME_SITE=lax.
     'same_site' => env('SESSION_COOKIE_SAME_SITE', 'none'),
 ];
