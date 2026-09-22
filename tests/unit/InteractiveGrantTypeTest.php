@@ -37,6 +37,7 @@ use OAuth2\Models\IClient;
 use OAuth2\Models\JWTResponseInfo;
 use OAuth2\Models\Principal;
 use OAuth2\Models\SecurityContext;
+use OAuth2\Models\SessionReloadHint;
 use OAuth2\OAuth2Message;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Repositories\IClientRepository;
@@ -698,7 +699,7 @@ class InteractiveGrantTypeTest extends TestCase
      * The client signs its id_tokens with HS512, i.e. with its own client
      * secret - the IDP and the client share that key, so a token minted by
      * the client verifies exactly like an IDP-issued one. Such a hint must
-     * reach reloadSession() WITHOUT the sub-based fallback ($user_id null).
+     * reach reloadSession() WITHOUT the sub-based fallback (a jti-only hint).
      */
     public function testClientKeyVerifiedIdTokenHintDoesNotUnlockSubFallback(): void
     {
@@ -728,8 +729,8 @@ class InteractiveGrantTypeTest extends TestCase
         // the sub-based fallback must not be offered to reloadSession().
         $this->auth_service->shouldReceive('reloadSession')
             ->once()
-            ->withArgs(function ($jti, $user_id = null, $auth_time = null) {
-                return $jti === 'jti-client-signed' && $user_id === null;
+            ->withArgs(function (SessionReloadHint $hint) {
+                return $hint->getJti() === 'jti-client-signed' && !$hint->allowsSubFallback();
             })
             ->andThrow(new ReloadSessionException('session not found!'));
 
@@ -742,7 +743,7 @@ class InteractiveGrantTypeTest extends TestCase
      * Positive control: a hint verified with the IDP's own RS256 server key
      * (the client has no registered signing key and no jwks_uri, so the
      * client-key lookup throws RecipientKeyNotFoundException) keeps the
-     * sub-based fallback - reloadSession() receives the resolved user_id.
+     * sub-based fallback - reloadSession() receives a hint carrying the resolved user_id.
      */
     public function testServerKeyVerifiedIdTokenHintKeepsSubFallback(): void
     {
@@ -764,8 +765,11 @@ class InteractiveGrantTypeTest extends TestCase
         // auth_time claim the hint's iat is the attested authentication time.
         $this->auth_service->shouldReceive('reloadSession')
             ->once()
-            ->withArgs(function ($jti, $user_id = null, $auth_time = null) use ($iat) {
-                return $jti === 'jti-server-signed' && $user_id === '999' && $auth_time === $iat;
+            ->withArgs(function (SessionReloadHint $hint) use ($iat) {
+                return $hint->getJti() === 'jti-server-signed'
+                    && $hint->allowsSubFallback()
+                    && $hint->getUserId() === 999
+                    && $hint->getAuthTime() === $iat;
             })
             ->andThrow(new ReloadSessionException('user not found!'));
 
@@ -803,10 +807,11 @@ class InteractiveGrantTypeTest extends TestCase
 
         $this->auth_service->shouldReceive('reloadSession')
             ->once()
-            ->withArgs(function ($jti, $user_id = null, $received_auth_time = null) use ($auth_time) {
-                return $jti === 'jti-server-signed-auth-time'
-                    && $user_id === '999'
-                    && $received_auth_time === $auth_time;
+            ->withArgs(function (SessionReloadHint $hint) use ($auth_time) {
+                return $hint->getJti() === 'jti-server-signed-auth-time'
+                    && $hint->allowsSubFallback()
+                    && $hint->getUserId() === 999
+                    && $hint->getAuthTime() === $auth_time;
             })
             ->andThrow(new ReloadSessionException('user not found!'));
 

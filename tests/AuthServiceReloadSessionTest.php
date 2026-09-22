@@ -20,6 +20,7 @@ use Auth\User;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use OAuth2\Models\Principal;
+use OAuth2\Models\SessionReloadHint;
 use OAuth2\Services\IPrincipalService;
 use OAuth2\Services\ISecurityContextService;
 use OpenId\Services\IUserService;
@@ -128,7 +129,7 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
 
         $this->expectException(ReloadSessionException::class);
 
-        $this->service->reloadSession('jti-1', '42');
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 42, 1700000000));
     }
 
     public function testCacheMissFallbackRegistersPrincipalOnSuccess(): void
@@ -146,7 +147,7 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
         $this->mock_principal_service->expects($this->once())->method('clear');
         $this->mock_principal_service->expects($this->once())->method('register')->with(42, 1700000000);
 
-        $this->service->reloadSession('jti-1', '42', 1700000000);
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 42, 1700000000));
     }
 
     // -----------------------------------------------------------------------
@@ -189,7 +190,7 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
 
         $this->expectException(ReloadSessionException::class);
 
-        $this->service->reloadSession('jti-1', '99');
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 99, 1700000000));
     }
 
     public function testCatchFallbackRegistersPrincipalOnSuccess(): void
@@ -210,11 +211,11 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
         $this->mock_principal_service->expects($this->once())->method('clear');
         $this->mock_principal_service->expects($this->once())->method('register')->with(99, 1700000000);
 
-        $this->service->reloadSession('jti-1', '99', 1700000000);
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 99, 1700000000));
     }
 
     /**
-     * No $user_id fallback was provided: the failed resume must propagate,
+     * A jti-only hint (no sub fallback): the failed resume must propagate,
      * not return as if reloadSession() had succeeded.
      */
     public function testCatchRethrowsWhenNoFallbackUserIdProvided(): void
@@ -229,7 +230,7 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
 
         $this->expectException(ReloadSessionException::class);
 
-        $this->service->reloadSession('jti-1');
+        $this->service->reloadSession(SessionReloadHint::jtiOnly('jti-1'));
     }
 
     // -----------------------------------------------------------------------
@@ -264,6 +265,6 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('DB is down');
 
-        $this->service->reloadSession('jti-1', '5');
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 5, 1700000000));
     }
 }

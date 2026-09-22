@@ -41,6 +41,7 @@ use OAuth2\Heuristics\ClientSigningKeyFinder;
 use OAuth2\Heuristics\ServerEncryptionKeyFinder;
 use OAuth2\Heuristics\ServerSigningKeyFinder;
 use OAuth2\Models\IClient;
+use OAuth2\Models\SessionReloadHint;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Services\ITokenService;
 use OAuth2\OAuth2Protocol;
@@ -629,12 +630,11 @@ abstract class InteractiveGrantType extends AbstractGrantType
             // cached) is only safe for a hint this IDP is proven to have issued AND
             // that carries an attested authentication time; otherwise degrade to the
             // jti-only semantics rather than inventing an auth_time.
-            $this->auth_service->reloadSession
-            (
-                $jti->getValue(),
-                ($issued_by_this_idp && !is_null($hint_auth_time)) ? $user_id : null,
-                $hint_auth_time
-            );
+            $reload_hint = ($issued_by_this_idp && !is_null($hint_auth_time))
+                ? SessionReloadHint::withSubFallback($jti->getValue(), intval($user_id), $hint_auth_time)
+                : SessionReloadHint::jtiOnly($jti->getValue());
+
+            $this->auth_service->reloadSession($reload_hint);
 
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_IDTokenHint);
         }

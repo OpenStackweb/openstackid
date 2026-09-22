@@ -32,6 +32,7 @@ use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Exceptions\InvalidOTPException;
 use OAuth2\Models\IClient;
+use OAuth2\Models\SessionReloadHint;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Services\IPrincipalService;
 use OAuth2\Services\ISecurityContextService;
@@ -664,34 +665,22 @@ final class AuthService extends AbstractService implements IAuthService
     }
 
     /**
-     * @param string $jti
-     * @param string|null $user_id
-     * @param int|null $auth_time
+     * @param SessionReloadHint $hint
      * @return void
      * @throws ReloadSessionException
      */
-    public function reloadSession(string $jti, ?string $user_id = null, ?int $auth_time = null): void
+    public function reloadSession(SessionReloadHint $hint): void
     {
         $former_session_id = Session::getId();
+        $jti = $hint->getJti();
         Log::debug(sprintf("AuthService::reloadSession jti %s", $jti));
         $session_id = $this->cache_service->getSingleValue($jti);
 
         Log::debug(sprintf("AuthService::reloadSession session_id %s", $session_id));
         if (empty($session_id)) {
             Log::warning("AuthService::reloadSession session_id is not present at cache");
-            if(!is_null($user_id)) {
-                Log::warning(sprintf("AuthService::reloadSession user id provided %s", $user_id));
-                $user = $this->getUserById($user_id);
-                if (is_null($user) || !$user->canLogin())
-                    throw new ReloadSessionException('user not found!');
-                Auth::login($user);
-                // Auth::login() alone leaves this session's IDP-specific principal
-                // state (user_id/auth_time/op_browser_state) unset - every other
-                // login path in this class pairs it with register().
-                // The user did not authenticate now: they authenticated when the IDP
-                // issued the hint, so register that time (time() is only a safety net).
-                $this->principal_service->clear();
-                $this->principal_service->register($user->getId(), $auth_time ?? time());
+            if($hint->allowsSubFallback()) {
+                $this->loginFromReloadHint($hint);
                 return;
             }
             throw new ReloadSessionException('session not found!');
@@ -722,19 +711,8 @@ final class AuthService extends AbstractService implements IAuthService
             Log::warning(sprintf("AuthService::reloadSession ex %s", $ex->getMessage()));
             Session::setId($former_session_id);
             Session::start();
-            if(!is_null($user_id)) {
-                Log::warning(sprintf("AuthService::reloadSession user id provided %s", $user_id));
-                $user = $this->getUserById($user_id);
-                if (is_null($user) || !$user->canLogin())
-                    throw new ReloadSessionException('user not found!');
-                Auth::login($user);
-                // Auth::login() alone leaves this session's IDP-specific principal
-                // state (user_id/auth_time/op_browser_state) unset - every other
-                // login path in this class pairs it with register().
-                // The user did not authenticate now: they authenticated when the IDP
-                // issued the hint, so register that time (time() is only a safety net).
-                $this->principal_service->clear();
-                $this->principal_service->register($user->getId(), $auth_time ?? time());
+            if($hint->allowsSubFallback()) {
+                $this->loginFromReloadHint($hint);
                 return;
             }
             throw $ex;
@@ -746,6 +724,29 @@ final class AuthService extends AbstractService implements IAuthService
             Session::start();
             throw $ex;
         }
+    }
+
+    /**
+     * Sub-based fallback of reloadSession(): logs in the user an IDP-signed
+     * id_token_hint names, on the caller's current session.
+     * @param SessionReloadHint $hint must allow the sub fallback
+     * @throws ReloadSessionException
+     */
+    private function loginFromReloadHint(SessionReloadHint $hint): void
+    {
+        $user_id = $hint->getUserId();
+        Log::warning(sprintf("AuthService::loginFromReloadHint user id provided %s", $user_id));
+        $user = $this->getUserById($user_id);
+        if (is_null($user) || !$user->canLogin())
+            throw new ReloadSessionException('user not found!');
+        Auth::login($user);
+        // Auth::login() alone leaves this session's IDP-specific principal
+        // state (user_id/auth_time/op_browser_state) unset - every other
+        // login path in this class pairs it with register().
+        // The user did not authenticate now: they authenticated when the IDP
+        // issued the hint, so register the time the hint attests.
+        $this->principal_service->clear();
+        $this->principal_service->register($user->getId(), $hint->getAuthTime());
     }
 
     /**

@@ -17,6 +17,7 @@ use Auth\User;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
 use OAuth2\Models\IClient;
+use OAuth2\Models\SessionReloadHint;
 use OpenId\Models\IOpenIdUser;
 /**
  * Interface IAuthService
@@ -137,12 +138,13 @@ interface IAuthService
     public function getLoggedRPs():array;
 
     /**
-     * @param string $jti
-     * @param string|null $user_id user to log in when the cached session can't be resumed (IDP-signed hints only)
-     * @param int|null $auth_time epoch the IDP originally attested for that user (hint's auth_time, else iat)
+     * Resumes the OP session an id_token_hint refers to (through its cached jti).
+     * When the hint allows the sub-based fallback and the cached session can't be
+     * resumed, logs in the user the hint names with the auth_time it attests.
+     * @param SessionReloadHint $hint
      * @return void
      */
-    public function reloadSession(string $jti, ?string $user_id = null, ?int $auth_time = null):void;
+    public function reloadSession(SessionReloadHint $hint):void;
 
     const LOGGED_RELAYING_PARTIES_COOKIE_NAME = 'rps';
 
