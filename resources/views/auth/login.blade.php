@@ -36,7 +36,7 @@
             resendVerificationEmailAction: '{{ URL::action("UserController@resendVerificationEmail") }}',
             verify2faAction: '{{ URL::action("UserController@verify2FA") }}',
             resend2faAction: '{{ URL::action("UserController@resend2FA") }}',
-            cancelLogin: '{{ URL::action("UserController@cancelLogin") }}',
+            cancelLogin: '{{ URL::action("UserController@resetLogin") }}',
             recovery2faAction: '{{ URL::action("UserController@verify2FARecovery") }}',
             mfaMethod: '{{ Session::has("mfa_method") ? Session::get("mfa_method") : "email_otp" }}',
             authError: authError,
