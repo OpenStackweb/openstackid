@@ -41,6 +41,7 @@ use OAuth2\Heuristics\ClientSigningKeyFinder;
 use OAuth2\Heuristics\ServerEncryptionKeyFinder;
 use OAuth2\Heuristics\ServerSigningKeyFinder;
 use OAuth2\Models\IClient;
+use OAuth2\Models\SessionReloadHint;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Services\ITokenService;
 use OAuth2\OAuth2Protocol;
@@ -59,6 +60,7 @@ use OAuth2\Services\IUserConsentService;
 use OAuth2\Strategies\IOAuth2AuthenticationStrategy;
 use utils\exceptions\InvalidCompactSerializationException;
 use utils\factories\BasicJWTFactory;
+use utils\json_types\NumericDate;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
 use phpseclib\Crypt\Random;
@@ -496,6 +498,14 @@ abstract class InteractiveGrantType extends AbstractGrantType
         } else if(!empty($token_hint) && !$request->isProcessedParam(OAuth2Protocol::OAuth2Protocol_IDTokenHint)) {
             Log::debug("InteractiveGrant::processUserHint processing Token hint...");
 
+            // Mark as processed up front: if verification/reload fails below, the exception
+            // is caught upstream and the pending memento gets re-serialized with this same
+            // request. Without this, every resume of that memento (e.g. right after a
+            // successful password login redirects back to /oauth2/auth) would retry this
+            // same stale/invalid hint, fail again, and log the user right back out —
+            // an infinite login loop driven by a hint that can never succeed.
+            $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_IDTokenHint);
+
             $jwt = BasicJWTFactory::build($token_hint);
 
             if($jwt instanceof IJWE) {
@@ -513,6 +523,13 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $payload = $jwt->getPlainText();
                 $jwt     = BasicJWTFactory::build($payload);
             }
+            // Only a signature made with this IDP's own private key proves the IDP
+            // issued the hint. A key the client controls (an HS* client secret, a
+            // public key the client registered, its jwks_uri) proves the *client*
+            // made it, so it must never unlock the sub-based fallback in
+            // reloadSession() - it keeps the jti-only semantics.
+            $issued_by_this_idp = false;
+
             if($jwt instanceof IJWS) {
                 $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is IJWS");
                 // signed by client ?
@@ -536,6 +553,7 @@ abstract class InteractiveGrantType extends AbstractGrantType
                         $jwt->getJOSEHeader()->getKeyID()->getValue()
                     );
                     $jwt->setKey($server_private_sig_key);
+                    $issued_by_this_idp = true;
                 }
 
                 $verified = $jwt->verify($jwt->getJOSEHeader()->getAlgorithm()->getString());
@@ -544,14 +562,79 @@ abstract class InteractiveGrantType extends AbstractGrantType
                     throw new InvalidLoginHint('invalid id_token_hint');
             }
 
-            $sub     = $jwt->getClaimSet()->getSubject();
+            if(!$jwt instanceof IJWS) {
+                // neither IJWE->IJWS nor a plain IJWS: e.g. an unsecured JWT (alg=none).
+                // Never trust a sub/jti pair that was not cryptographically verified above.
+                $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is not signed/verifiable");
+                throw new InvalidLoginHint('id_token_hint must be signed');
+            }
+
+            $claim_set = $jwt->getClaimSet();
+
+            // A verified signature only proves who issued the token, not that it's
+            // still inside its validity window. The jti cache entry mirrors the
+            // token's own lifetime but isn't a substitute for checking exp directly
+            // (eviction timing, clock skew, etc. aren't guaranteed to line up).
+            // Intentionally NOT checking aud here: this hint is meant to carry SSO
+            // across different clients of this IDP (e.g. client A -> client B), so
+            // the token's original audience is expected to differ from the client
+            // making this request.
+            // RFC 7519 §4.1.4: the current time MUST be strictly before exp, so
+            // exp == now is already expired.
+            $expiration_time = $claim_set->getExpirationTime();
+            if(is_null($expiration_time) || !$expiration_time->isAfter(NumericDate::now())) {
+                $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is expired");
+                throw new InvalidLoginHint('id_token_hint is expired');
+            }
+
+            $sub = $claim_set->getSubject();
+            if(is_null($sub)) {
+                $this->log_service->debug_msg("InteractiveGrantType::processUserHint: sub is null");
+                throw new InvalidLoginHint('invalid sub!');
+            }
+
             $user_id = $this->auth_service->unwrapUserId($sub->getString());
             $user    = $this->auth_service->getUserById($user_id);
+            $jti     = $claim_set->getJWTID();
 
-            $jti = $jwt->getClaimSet()->getJWTID();
-            if(is_null($jti)) throw new InvalidLoginHint('invalid jti!');
+            if(is_null($jti)) {
+                $this->log_service->debug_msg("InteractiveGrantType::processUserHint: jti is null");
+                throw new InvalidLoginHint('invalid jti!');
+            }
 
-            $this->auth_service->reloadSession($jti->getValue());
+            $this->log_service->debug_msg(
+                sprintf
+                (
+                    "InteractiveGrantType::processUserHint: jwt sub %s user_id %s jti %s",
+                    $sub->getString(),
+                    $user_id,
+                    $jti->getValue()
+                )
+            );
+
+            // The fallback login must carry the authentication time the IDP originally
+            // attested for this user (auth_time when the RP asked for max_age, else iat),
+            // not "now": shouldForceReLogin() and the next id_token's auth_time claim
+            // both read it from the registered principal.
+            // Note: getClaimByName() returns the stored JsonValue at runtime (see
+            // JWTClaimSet::addClaim / JWTClaimSetFactory), not a JWTClaim.
+            $hint_auth_time  = null;
+            $auth_time_claim = $claim_set->getClaimByName(OAuth2Protocol::OAuth2Protocol_AuthTime);
+            $issued_at       = $claim_set->getIssuedAt();
+            if(!is_null($auth_time_claim))
+                $hint_auth_time = intval($auth_time_claim->getValue());
+            else if(!is_null($issued_at))
+                $hint_auth_time = intval($issued_at->getValue());
+
+            // The sub-based fallback (login by $user_id when the jti is no longer
+            // cached) is only safe for a hint this IDP is proven to have issued AND
+            // that carries an attested authentication time; otherwise degrade to the
+            // jti-only semantics rather than inventing an auth_time.
+            $reload_hint = ($issued_by_this_idp && !is_null($hint_auth_time))
+                ? SessionReloadHint::withSubFallback($jti->getValue(), intval($user_id), $hint_auth_time)
+                : SessionReloadHint::jtiOnly($jti->getValue());
+
+            $this->auth_service->reloadSession($reload_hint);
 
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_IDTokenHint);
         }
