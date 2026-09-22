@@ -24,6 +24,10 @@ class StubServerConfigurationService extends ServerConfigurationService
             return intval($_ENV['access.token.lifetime']);
         }
 
+        if ($value === 'OAuth2.IdToken.Lifetime' && isset($_ENV['id.token.lifetime'])) {
+            return intval($_ENV['id.token.lifetime']);
+        }
+
         return parent::getConfigValue($value);
     }
 }
