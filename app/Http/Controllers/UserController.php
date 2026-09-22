@@ -292,18 +292,40 @@ final class UserController extends OpenIdController
         return $this->login_strategy->getLogin();
     }
 
+    /**
+     * Aborts the whole sign-in: the login strategy answers the relying party
+     * (e.g. access_denied for OAuth2/OIDC).
+     */
     public function cancelLogin()
     {
-        // A cancelled login must invalidate any pending MFA challenge server-side,
-        // not just reset the client's view of things - otherwise an OTP issued
-        // before cancel can still complete a login the user explicitly abandoned.
+        $this->clearPendingLoginState();
+
+        return $this->login_strategy->cancelLogin();
+    }
+
+    /**
+     * Backs the login SPA's "Cancel" / "sign in using a different e-mail": back
+     * to the e-mail/password screen (SDS idp-mfa.md §4.10.1) without aborting the
+     * relying party's request - cancelLogin() would make the grant forget the
+     * OAuth2 memento, so the next login would land on the profile instead of the RP.
+     */
+    public function resetLogin()
+    {
+        $this->clearPendingLoginState();
+
+        return $this->ok();
+    }
+
+    private function clearPendingLoginState(): void
+    {
+        // Pending MFA challenges must be invalidated server-side, not just in the
+        // client's view - otherwise an OTP issued before cancel/reset can still
+        // complete a login the user explicitly abandoned.
         $method = Session::get('mfa_method');
         if (!is_null($method)) {
             MFAChallengeStrategyFactory::create($method)->clearPendingState();
         }
         $this->clearMFAUISessionState();
-
-        return $this->login_strategy->cancelLogin();
     }
 
     use JsonResponses;

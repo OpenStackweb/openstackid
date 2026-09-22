@@ -9,7 +9,7 @@ import type { Page } from '@playwright/test';
 const VERIFY_URL   = '**/auth/login/2fa/verify**';
 const RESEND_URL   = '**/auth/login/2fa/resend**';
 const RECOVERY_URL = '**/auth/login/2fa/recovery**';
-const CANCEL_URL   = '**/auth/login/cancel**';
+const CANCEL_URL   = '**/auth/login/reset**';
 
 // Each TS-* test gets its own MFA-enforced super-admin (mfa-ts-NNN@test.com,
 // seeded by CI via idp:create-super-admin - see pull_request_frontend_tests.yml).
