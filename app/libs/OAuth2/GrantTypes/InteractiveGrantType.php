@@ -59,6 +59,7 @@ use OAuth2\Services\IUserConsentService;
 use OAuth2\Strategies\IOAuth2AuthenticationStrategy;
 use utils\exceptions\InvalidCompactSerializationException;
 use utils\factories\BasicJWTFactory;
+use utils\json_types\NumericDate;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
 use phpseclib\Crypt\Random;
@@ -559,10 +560,26 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 throw new InvalidLoginHint('id_token_hint must be signed');
             }
 
-            $sub     = $jwt->getClaimSet()->getSubject();
+            $claim_set = $jwt->getClaimSet();
+
+            // A verified signature only proves who issued the token, not that it's
+            // still inside its validity window. The jti cache entry mirrors the
+            // token's own lifetime but isn't a substitute for checking exp directly
+            // (eviction timing, clock skew, etc. aren't guaranteed to line up).
+            // Intentionally NOT checking aud here: this hint is meant to carry SSO
+            // across different clients of this IDP (e.g. client A -> client B), so
+            // the token's original audience is expected to differ from the client
+            // making this request.
+            $expiration_time = $claim_set->getExpirationTime();
+            if(is_null($expiration_time) || $expiration_time->isBefore(NumericDate::now())) {
+                $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is expired");
+                throw new InvalidLoginHint('id_token_hint is expired');
+            }
+
+            $sub     = $claim_set->getSubject();
             $user_id = $this->auth_service->unwrapUserId($sub->getString());
             $user    = $this->auth_service->getUserById($user_id);
-            $jti     = $jwt->getClaimSet()->getJWTID();
+            $jti     = $claim_set->getJWTID();
 
             if(is_null($jti)) {
                 $this->log_service->debug_msg("InteractiveGrantType::processUserHint: jti is null");

@@ -684,6 +684,11 @@ final class AuthService extends AbstractService implements IAuthService
                 if (is_null($user) || !$user->canLogin())
                     throw new ReloadSessionException('user not found!');
                 Auth::login($user);
+                // Auth::login() alone leaves this session's IDP-specific principal
+                // state (user_id/auth_time/op_browser_state) unset - every other
+                // login path in this class pairs it with register().
+                $this->principal_service->clear();
+                $this->principal_service->register($user->getId(), time());
                 return;
             }
             throw new ReloadSessionException('session not found!');
@@ -720,6 +725,11 @@ final class AuthService extends AbstractService implements IAuthService
                 if (is_null($user) || !$user->canLogin())
                     throw new ReloadSessionException('user not found!');
                 Auth::login($user);
+                // Auth::login() alone leaves this session's IDP-specific principal
+                // state (user_id/auth_time/op_browser_state) unset - every other
+                // login path in this class pairs it with register().
+                $this->principal_service->clear();
+                $this->principal_service->register($user->getId(), time());
                 return;
             }
             throw $ex;

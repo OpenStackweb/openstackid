@@ -65,6 +65,12 @@ final class OIDCColdSessionReloadTest extends OpenStackIDBaseTestCase
         Session::start();
     }
 
+    protected function tearDown(): void
+    {
+        unset($_ENV['id.token.lifetime']);
+        parent::tearDown();
+    }
+
     /**
      * Point the session facade at a brand-new anonymous session WITHOUT
      * destroying the previous session's server-side data - a real cold
@@ -175,5 +181,69 @@ final class OIDCColdSessionReloadTest extends OpenStackIDBaseTestCase
         // The OP session was effectively rebuilt: user is authenticated again.
         $this->assertTrue(Auth::check(), 'reloadSession must leave the user authenticated');
         $this->assertEquals($this->user->getId(), Auth::user()->getId());
+    }
+
+    /**
+     * A real, correctly-signed id_token_hint whose exp has already passed
+     * must not authenticate anyone. A verified signature only proves who
+     * issued the token, not that it's still within its validity window -
+     * this covers the claim-validation gap raised on PR #158.
+     */
+    public function testColdSessionRejectsExpiredIdTokenHint()
+    {
+        // A near-zero id_token lifetime lets a real, back-channel-minted
+        // token expire almost immediately, without hand-forging a signature.
+        $_ENV['id.token.lifetime'] = 1;
+
+        $this->be($this->user);
+        Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth", $this->authorizeParams());
+        parse_str(parse_url($response->getTargetUrl(), PHP_URL_QUERY), $query);
+        $code = $query['code'];
+
+        $this->startColdSession();
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
+            [
+                'code'         => $code,
+                'redirect_uri' => self::RedirectUri,
+                'grant_type'   => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
+            ],
+            [], [], [],
+            ["HTTP_Authorization" => " Basic " . base64_encode(self::ClientId . ':' . self::ClientSecret)]);
+
+        $json = json_decode($response->getContent());
+        $id_token_hint = $json->id_token;
+        $jwt = BasicJWTFactory::build($json->id_token);
+        if ($jwt instanceof IJWE) {
+            $recipient_key = RSAJWKFactory::build
+            (
+                new RSAJWKPEMPrivateKeySpecification
+                (
+                    TestSeeder::$client_private_key_1,
+                    RSAJWKPEMPrivateKeySpecification::WithoutPassword,
+                    $jwt->getJOSEHeader()->getAlgorithm()->getString()
+                )
+            );
+            $recipient_key->setKeyUse(JSONWebKeyPublicKeyUseValues::Encryption)->setId('recipient_public_key');
+            $jwt->setRecipientKey($recipient_key);
+            $id_token_hint = $jwt->getPlainText();
+        }
+
+        // Let the 1-second id_token_lifetime actually elapse.
+        sleep(2);
+
+        $this->startColdSession();
+
+        $params = $this->authorizeParams();
+        $params[OAuth2Protocol::OAuth2Protocol_IDTokenHint] = $id_token_hint;
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth", $params);
+
+        $this->assertResponseStatus(302);
+        $this->assertTrue(str_contains($response->getTargetUrl(), '/auth/login'),
+            sprintf('an expired id_token_hint must require login, got %s', $response->getTargetUrl()));
+        $this->assertFalse(Auth::check(), 'an expired id_token_hint must not authenticate anyone');
     }
 }
