@@ -53,6 +53,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pending Challenge Session
+    |--------------------------------------------------------------------------
+    |
+    | Seconds a pending 2FA challenge stays valid in the session after the
+    | password step (SDS idp-mfa.md §4.14). Defaults to the default OTP
+    | lifetime (otp.lifetime) so the session never expires before the code
+    | and its UI countdown do.
+    |
+    */
+    'session_ttl' => env('TWO_FACTOR_SESSION_TTL', 600),
+
+    /*
+    |--------------------------------------------------------------------------
     | Rate Limiting
     |--------------------------------------------------------------------------
     |
