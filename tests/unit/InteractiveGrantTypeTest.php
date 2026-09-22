@@ -29,6 +29,7 @@ use jwk\JSONWebKeyPublicKeyUseValues;
 use jws\impl\specs\JWS_ParamsSpecification;
 use jws\JWSFactory;
 use jwt\impl\JWTClaimSet;
+use jwt\JWTClaim;
 use Mockery;
 use Models\OAuth2\Client;
 use Models\OAuth2\ServerPrivateKey;
@@ -641,17 +642,25 @@ class InteractiveGrantTypeTest extends TestCase
     // not the IDP, so it must keep the old jti-only semantics.
     // -----------------------------------------------------------------------
 
-    private function buildHintClaimSet(string $sub, string $jti): JWTClaimSet
+    /**
+     * @param int|null $iat issued-at epoch (defaults to now)
+     * @param int|null $auth_time optional auth_time claim, as the IDP adds it when max_age was requested
+     */
+    private function buildHintClaimSet(string $sub, string $jti, ?int $iat = null, ?int $auth_time = null): JWTClaimSet
     {
-        $now = time();
-        return new JWTClaimSet(
+        $iat = $iat ?? time();
+        $claim_set = new JWTClaimSet(
             new StringOrURI('https://idp.test'),
             new StringOrURI($sub),
             new StringOrURI('test-client-id'),
-            new NumericDate($now),
-            new NumericDate($now + 600),
+            new NumericDate($iat),
+            new NumericDate($iat + 600),
             new JsonValue($jti)
         );
+        if (!is_null($auth_time)) {
+            $claim_set->addClaim(new JWTClaim(OAuth2Protocol::OAuth2Protocol_AuthTime, new JsonValue($auth_time)));
+        }
+        return $claim_set;
     }
 
     /**
@@ -719,7 +728,7 @@ class InteractiveGrantTypeTest extends TestCase
         // the sub-based fallback must not be offered to reloadSession().
         $this->auth_service->shouldReceive('reloadSession')
             ->once()
-            ->withArgs(function ($jti, $user_id = null) {
+            ->withArgs(function ($jti, $user_id = null, $auth_time = null) {
                 return $jti === 'jti-client-signed' && $user_id === null;
             })
             ->andThrow(new ReloadSessionException('session not found!'));
@@ -737,6 +746,84 @@ class InteractiveGrantTypeTest extends TestCase
      */
     public function testServerKeyVerifiedIdTokenHintKeepsSubFallback(): void
     {
+        [$server_jwk, $alg] = $this->setupServerKeySignedClient();
+
+        $iat  = time() - 30;
+        $hint = $this->signHint($server_jwk, $alg, $this->buildHintClaimSet('999', 'jti-server-signed', $iat));
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $hint,
+        ]);
+
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+        $login_redirect = $this->expectHintReloadFailureEndsAtLogin();
+
+        // Key assertion: the signature was verified with the SERVER key, so
+        // the sub-based fallback is offered to reloadSession(), and with no
+        // auth_time claim the hint's iat is the attested authentication time.
+        $this->auth_service->shouldReceive('reloadSession')
+            ->once()
+            ->withArgs(function ($jti, $user_id = null, $auth_time = null) use ($iat) {
+                return $jti === 'jti-server-signed' && $user_id === '999' && $auth_time === $iat;
+            })
+            ->andThrow(new ReloadSessionException('user not found!'));
+
+        $result = $this->grant_type->publicHandle($request);
+
+        $this->assertEquals($login_redirect, $result);
+    }
+
+    /**
+     * When the hint carries an explicit auth_time claim (the IDP adds it
+     * whenever the original request asked for max_age), that value - not
+     * iat, and never "now" - is what the fallback must register, so that
+     * shouldForceReLogin() and the next id_token's auth_time stay truthful.
+     */
+    public function testServerKeyVerifiedIdTokenHintForwardsAuthTimeClaimOverIat(): void
+    {
+        [$server_jwk, $alg] = $this->setupServerKeySignedClient();
+
+        $now       = time();
+        $iat       = $now - 10;
+        $auth_time = $now - 500;
+        $hint = $this->signHint(
+            $server_jwk,
+            $alg,
+            $this->buildHintClaimSet('999', 'jti-server-signed-auth-time', $iat, $auth_time)
+        );
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $hint,
+        ]);
+
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+        $login_redirect = $this->expectHintReloadFailureEndsAtLogin();
+
+        $this->auth_service->shouldReceive('reloadSession')
+            ->once()
+            ->withArgs(function ($jti, $user_id = null, $received_auth_time = null) use ($auth_time) {
+                return $jti === 'jti-server-signed-auth-time'
+                    && $user_id === '999'
+                    && $received_auth_time === $auth_time;
+            })
+            ->andThrow(new ReloadSessionException('user not found!'));
+
+        $result = $this->grant_type->publicHandle($request);
+
+        $this->assertEquals($login_redirect, $result);
+    }
+
+    /**
+     * An RS256 client with no registered signing key and no jwks_uri, so the
+     * client-key lookup throws RecipientKeyNotFoundException and
+     * InteractiveGrantType falls back to the IDP's server signing key.
+     *
+     * @return array{0: IJWK, 1: string} the server JWK to sign hints with, and the alg
+     */
+    private function setupServerKeySignedClient(): array
+    {
         $alg = JSONWebSignatureAndEncryptionAlgorithms::RS256;
 
         $key_pair = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
@@ -746,12 +833,6 @@ class InteractiveGrantTypeTest extends TestCase
             new RSAJWKPEMPrivateKeySpecification($pem, RSAJWKPEMPrivateKeySpecification::WithoutPassword, $alg)
         );
         $server_jwk->setKeyUse(JSONWebKeyPublicKeyUseValues::Signature)->setId('server-sig-key');
-
-        $hint = $this->signHint($server_jwk, $alg, $this->buildHintClaimSet('999', 'jti-server-signed'));
-
-        $request = $this->buildOIDCRequest([
-            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $hint,
-        ]);
 
         $client = $this->setupValidClient();
         $client->shouldReceive('getIdTokenResponseInfo')
@@ -783,22 +864,7 @@ class InteractiveGrantTypeTest extends TestCase
             ->with('server-sig-key')
             ->andReturn($server_key);
 
-        $this->setupSecurityContext();
-        $this->allowCleanupCalls();
-        $login_redirect = $this->expectHintReloadFailureEndsAtLogin();
-
-        // Key assertion: the signature was verified with the SERVER key, so
-        // the sub-based fallback is offered to reloadSession().
-        $this->auth_service->shouldReceive('reloadSession')
-            ->once()
-            ->withArgs(function ($jti, $user_id = null) {
-                return $jti === 'jti-server-signed' && $user_id === '999';
-            })
-            ->andThrow(new ReloadSessionException('user not found!'));
-
-        $result = $this->grant_type->publicHandle($request);
-
-        $this->assertEquals($login_redirect, $result);
+        return [$server_jwk, $alg];
     }
 
     // -----------------------------------------------------------------------

@@ -141,10 +141,12 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
         $this->session_mock->shouldReceive('getId')->once()->andReturn('former-session-id');
         $this->auth_mock->shouldReceive('login')->once()->with($user);
 
+        // The principal must be registered with the auth_time the hint attested,
+        // not with "now" - the user did not authenticate on this request.
         $this->mock_principal_service->expects($this->once())->method('clear');
-        $this->mock_principal_service->expects($this->once())->method('register')->with(42, $this->isType('int'));
+        $this->mock_principal_service->expects($this->once())->method('register')->with(42, 1700000000);
 
-        $this->service->reloadSession('jti-1', '42');
+        $this->service->reloadSession('jti-1', '42', 1700000000);
     }
 
     // -----------------------------------------------------------------------
@@ -204,10 +206,11 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
         ]);
 
         $this->auth_mock->shouldReceive('login')->once()->with($user);
+        // Same contract as the cache-miss branch: register the attested auth_time.
         $this->mock_principal_service->expects($this->once())->method('clear');
-        $this->mock_principal_service->expects($this->once())->method('register')->with(99, $this->isType('int'));
+        $this->mock_principal_service->expects($this->once())->method('register')->with(99, 1700000000);
 
-        $this->service->reloadSession('jti-1', '99');
+        $this->service->reloadSession('jti-1', '99', 1700000000);
     }
 
     /**

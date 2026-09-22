@@ -611,12 +611,29 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 )
             );
 
+            // The fallback login must carry the authentication time the IDP originally
+            // attested for this user (auth_time when the RP asked for max_age, else iat),
+            // not "now": shouldForceReLogin() and the next id_token's auth_time claim
+            // both read it from the registered principal.
+            // Note: getClaimByName() returns the stored JsonValue at runtime (see
+            // JWTClaimSet::addClaim / JWTClaimSetFactory), not a JWTClaim.
+            $hint_auth_time  = null;
+            $auth_time_claim = $claim_set->getClaimByName(OAuth2Protocol::OAuth2Protocol_AuthTime);
+            $issued_at       = $claim_set->getIssuedAt();
+            if(!is_null($auth_time_claim))
+                $hint_auth_time = intval($auth_time_claim->getValue());
+            else if(!is_null($issued_at))
+                $hint_auth_time = intval($issued_at->getValue());
+
             // The sub-based fallback (login by $user_id when the jti is no longer
-            // cached) is only safe for a hint this IDP is proven to have issued.
+            // cached) is only safe for a hint this IDP is proven to have issued AND
+            // that carries an attested authentication time; otherwise degrade to the
+            // jti-only semantics rather than inventing an auth_time.
             $this->auth_service->reloadSession
             (
                 $jti->getValue(),
-                $issued_by_this_idp ? $user_id : null
+                ($issued_by_this_idp && !is_null($hint_auth_time)) ? $user_id : null,
+                $hint_auth_time
             );
 
             $request->markParamAsProcessed(OAuth2Protocol::OAuth2Protocol_IDTokenHint);

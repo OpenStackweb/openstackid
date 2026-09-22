@@ -138,9 +138,11 @@ interface IAuthService
 
     /**
      * @param string $jti
+     * @param string|null $user_id user to log in when the cached session can't be resumed (IDP-signed hints only)
+     * @param int|null $auth_time epoch the IDP originally attested for that user (hint's auth_time, else iat)
      * @return void
      */
-    public function reloadSession(string $jti, string $user_id = null):void;
+    public function reloadSession(string $jti, ?string $user_id = null, ?int $auth_time = null):void;
 
     const LOGGED_RELAYING_PARTIES_COOKIE_NAME = 'rps';
 

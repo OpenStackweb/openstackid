@@ -666,10 +666,11 @@ final class AuthService extends AbstractService implements IAuthService
     /**
      * @param string $jti
      * @param string|null $user_id
+     * @param int|null $auth_time
      * @return void
      * @throws ReloadSessionException
      */
-    public function reloadSession(string $jti, string $user_id = null): void
+    public function reloadSession(string $jti, ?string $user_id = null, ?int $auth_time = null): void
     {
         $former_session_id = Session::getId();
         Log::debug(sprintf("AuthService::reloadSession jti %s", $jti));
@@ -687,8 +688,10 @@ final class AuthService extends AbstractService implements IAuthService
                 // Auth::login() alone leaves this session's IDP-specific principal
                 // state (user_id/auth_time/op_browser_state) unset - every other
                 // login path in this class pairs it with register().
+                // The user did not authenticate now: they authenticated when the IDP
+                // issued the hint, so register that time (time() is only a safety net).
                 $this->principal_service->clear();
-                $this->principal_service->register($user->getId(), time());
+                $this->principal_service->register($user->getId(), $auth_time ?? time());
                 return;
             }
             throw new ReloadSessionException('session not found!');
@@ -728,8 +731,10 @@ final class AuthService extends AbstractService implements IAuthService
                 // Auth::login() alone leaves this session's IDP-specific principal
                 // state (user_id/auth_time/op_browser_state) unset - every other
                 // login path in this class pairs it with register().
+                // The user did not authenticate now: they authenticated when the IDP
+                // issued the hint, so register that time (time() is only a safety net).
                 $this->principal_service->clear();
-                $this->principal_service->register($user->getId(), time());
+                $this->principal_service->register($user->getId(), $auth_time ?? time());
                 return;
             }
             throw $ex;
