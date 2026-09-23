@@ -34,7 +34,8 @@ const RecoveryCodeForm = ({
         <form onSubmit={handleSubmit} target="_self" className={styles.otp_form} data-testid="recovery-form">
             <div className={styles.subtitle}>Enter a recovery code</div>
             <p className={styles.info_message}>
-                Enter one of the recovery codes you saved when you enabled two-step verification.
+                This is not the code we e-mailed you. Enter one of the recovery codes you saved
+                when you enabled two-step verification.
             </p>
             <TextField
                 id="recovery_code"
@@ -46,7 +47,10 @@ const RecoveryCodeForm = ({
                 fullWidth
                 autoFocus={true}
                 label="Recovery code"
-                autoComplete="one-time-code"
+                helperText="8 characters, shown as ABCD-1234. The dash is optional."
+                // Deliberately not "one-time-code": that hint makes the OS offer the
+                // e-mailed OTP here, which is the wrong credential for this field.
+                autoComplete="off"
                 disabled={disableInput}
                 onChange={onRecoveryCodeChange}
                 error={!!recoveryError}
@@ -69,7 +73,8 @@ const RecoveryCodeForm = ({
             <div className={styles.footer_instructions}>
                 <hr className={styles.separator}/>
                 <div className={styles.box}>
-                    <Link href="#" onClick={handleBack} variant="body2" target="_self">
+                    <Link href="#" onClick={handleBack} variant="body2" target="_self"
+                          data-testid="back-to-otp-link">
                         Back to verification code
                     </Link>
                     {" · "}

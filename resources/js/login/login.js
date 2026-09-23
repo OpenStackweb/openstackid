@@ -587,15 +587,21 @@ class LoginPage extends React.Component {
     this.setState({
       ...this.state,
       authFlow: FLOW.RECOVERY,
+      recoveryCode: "",
       errors: { ...this.state.errors, recovery: "" },
     });
   }
 
   onBackToOtp() {
+    // Drop the abandoned recovery code as we leave the mode so a credential the
+    // user chose not to spend is not kept in component state for the rest of the
+    // session. A clean field on re-entry is already guaranteed by onUseRecovery();
+    // this is about not holding the value, not about what the next render shows.
     this.setState({
       ...this.state,
       authFlow: FLOW.MFA,
-      errors: { ...this.state.errors, twofactor: "" },
+      recoveryCode: "",
+      errors: { ...this.state.errors, twofactor: "", recovery: "" },
     });
   }
 
