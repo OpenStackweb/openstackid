@@ -21,6 +21,8 @@ export class LoginPage {
   readonly useRecoveryLink: Locator;
   // Recovery code step
   readonly recoveryForm: Locator;
+  readonly recoveryCodeInput: Locator;
+  readonly backToOtpLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -38,6 +40,8 @@ export class LoginPage {
     this.cancelLink = page.locator('[data-testid="cancel-link"]');
     this.useRecoveryLink = page.locator('[data-testid="use-recovery-link"]');
     this.recoveryForm = page.locator('[data-testid="recovery-form"]');
+    this.recoveryCodeInput = page.locator('#recovery_code');
+    this.backToOtpLink = page.locator('[data-testid="back-to-otp-link"]');
   }
 
   async goto() {
