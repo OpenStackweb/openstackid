@@ -29,6 +29,56 @@ SSL_ENABLED=false
 [https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04) and [https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04)
 4.Run script ./start_local_server.sh (http://localhost:8001/)
 
+Frontend Development
+====================
+
+openstackid is a Laravel app — blade templates reference compiled JS bundles in `public/assets/`, not source files. The source files in `resources/js/` must be compiled before changes take effect in the browser.
+
+**One-time setup:** The compiled assets in `public/assets/` are owned by root if they were originally built inside Docker. Fix ownership before running any build commands:
+
+```bash
+sudo chown -R $(whoami) public/assets
+```
+
+**Build and watch** (recompiles automatically on save, Ctrl+C to stop):
+
+```bash
+npm run build-dev
+```
+
+To do a one-shot build without watch mode:
+
+```bash
+./node_modules/.bin/webpack --config webpack.prod.js
+```
+
+**Captcha:** The reset password and other pages require a Cloudflare Turnstile site key. Add test keys to `.env` to use the captcha locally without a real Cloudflare account:
+
+```dotenv
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+```
+
+**Email:** Outbound email is logged to a date-stamped file in `storage/logs/` rather than sent. However, emails are queued via Redis by default, so they are not processed until a queue worker runs. After submitting the forgot password form, process the queue to trigger the log entry:
+
+```bash
+docker exec idp-app php artisan queue:work --stop-when-empty
+```
+
+This processes all pending jobs and exits when the queue is empty. Use `--once` if you only want to process a single job.
+
+To retrieve a password reset link after processing the queue:
+
+```bash
+grep "password/reset" storage/logs/laravel-$(date +%Y-%m-%d).log | tail -1
+```
+
+After editing `.env`, clear the config cache:
+
+```bash
+docker exec idp-app php artisan config:clear
+```
+
 Redump the database
 ===================
 
