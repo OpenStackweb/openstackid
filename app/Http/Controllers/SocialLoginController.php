@@ -12,7 +12,9 @@
  * limitations under the License.
  **/
 
+use App\Http\Controllers\Traits\MFACookieManager;
 use App\libs\Auth\SocialLoginProviders;
+use App\Services\Auth\ITwoFactorChallengeService;
 use App\Services\Auth\IUserService;
 use Auth\Exceptions\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +31,7 @@ use Utils\Services\IAuthService;
  */
 final class SocialLoginController extends Controller
 {
+    use MFACookieManager;
 
     /**
      * @var IAuthService
@@ -49,21 +52,29 @@ final class SocialLoginController extends Controller
     private $memento_service;
 
     /**
+     * @var ITwoFactorChallengeService
+     */
+    private $two_factor_challenge_service;
+
+    /**
      * SocialLoginController constructor.
      * @param IAuthService $auth_service
      * @param IUserService $user_service
      * @param IMementoOAuth2SerializerService $memento_service
      * @param ILoginStrategyFactory $login_strategy_factory
+     * @param ITwoFactorChallengeService $two_factor_challenge_service
      */
     public function __construct(
         IAuthService $auth_service,
         IUserService $user_service,
         IMementoOAuth2SerializerService $memento_service,
-        ILoginStrategyFactory $login_strategy_factory
+        ILoginStrategyFactory $login_strategy_factory,
+        ITwoFactorChallengeService $two_factor_challenge_service
     ){
         $this->auth_service = $auth_service;
         $this->user_service = $user_service;
         $this->memento_service = $memento_service;
+        $this->two_factor_challenge_service = $two_factor_challenge_service;
         $this->middleware(function ($request, $next) use($login_strategy_factory){
             // we do it here just to ensure that user session is loaded
             Log::debug(sprintf("SocialLoginController::middleware"));
@@ -159,6 +170,24 @@ final class SocialLoginController extends Controller
                 (
                     "We are sorry, your username does not match an existing record."
                 );
+            }
+
+            // Social login is primary authentication only - the local MFA
+            // policy still applies on return from the provider, exactly as
+            // it does for the password flow. An enforced user gets the same
+            // challenge (rate-limited, audited, session-flashed) instead of
+            // an immediate session.
+            $payload = $this->two_factor_challenge_service->issueChallengeIfRequired($user, $this->getCookieToken(), true);
+            if (!is_null($payload)) {
+                $payload = array_merge($payload, [
+                    'username'       => $user_email,
+                    'user_fullname'  => $user->getFullName(),
+                    'user_pic'       => $user->getPic(),
+                    'user_verified'  => true,
+                    'user_is_active' => $user->isActive() ? 1 : 0,
+                ]);
+
+                return $this->login_strategy->challengeRequired($payload);
             }
 
             Auth::login($user, true);

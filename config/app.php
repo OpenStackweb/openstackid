@@ -152,6 +152,7 @@ return [
         Services\OpenId\OpenIdProvider::class,
         Auth\AuthenticationServiceProvider::class,
         Services\ServicesProvider::class,
+        App\Services\Auth\TwoFactorServiceProvider::class,
         Strategies\StrategyProvider::class,
         OAuth2\OAuth2ServiceProvider::class,
         OpenId\OpenIdServiceProvider::class,
