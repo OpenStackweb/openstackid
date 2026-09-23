@@ -193,6 +193,15 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
     public function testEnforcedUserCannotBypassMFAViaPasswordlessLogin(): void
     {
+        // No separate "no login side effect" assertions here on purpose: the
+        // DB-visible ones (OTP redemption, sibling revocation) are unreachable
+        // by construction, because the guard throws inside the AuthService
+        // transaction and DoctrineTransactionService rolls the whole closure
+        // back - moving the guard below finalizeRedemption() leaves the OTP
+        // un-redeemed all the same. The session-visible one (Auth::login() and
+        // the Login event that queues PostLoginUser) is already covered by the
+        // Auth::check() assertion below, which is what fails first if the guard
+        // is moved below Auth::login(). Both were verified by mutation.
         $this->emitOTP(self::ADMIN_EMAIL);
         $code = $this->latestOtpCode(self::ADMIN_EMAIL);
 
@@ -211,6 +220,56 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
             'the flashed message must explain why passwordless login was rejected'
         );
         $this->assertSame('otp', Session::get('flow'), 'a reload must land back on the OTP screen, not silently fall back to password');
+    }
+
+    public function testInvalidOtpAgainstEnforcedUserDoesNotLeakMFAStatus(): void
+    {
+        // Regression guard: the enforcement check used to run BEFORE the OTP was
+        // validated, so an attacker submitting a garbage/guessed code against an
+        // MFA-enforced account's email got the distinguishing "requires password
+        // and two-factor authentication" message without ever proving control of
+        // the inbox - an account-enumeration oracle. The check must now only be
+        // reachable after loginWithOTPEnforcing2FA() has proven the code valid,
+        // so an invalid code gets the same generic rejection for any account.
+        //
+        // Enumeration is about DISTINGUISHABILITY, not about one phrase: merely
+        // asserting the absence of "two-factor authentication" would still pass
+        // if some future enforced-only branch leaked a *differently* worded
+        // message. So the enforced account's rejection is compared byte-for-byte
+        // against a non-enforced control driven through the same endpoint with
+        // the same bad code.
+        $control_email = $this->createPlainUser();
+
+        $this->emitOTP(self::ADMIN_EMAIL);
+        $this->postLoginOTP(self::ADMIN_EMAIL, 'not-the-real-code');
+
+        $this->assertFalse(Auth::check(), 'an invalid code must never authenticate');
+        $this->assertResponseStatus(302);
+        $enforced_notice = Session::get('flash_notice');
+        $this->assertNotNull($enforced_notice, 'the enforced account must get a flashed rejection');
+
+        // Cleared so the control's assertion cannot silently read the enforced
+        // account's leftover flash and compare a value against itself.
+        Session::forget('flash_notice');
+
+        $this->emitOTP($control_email);
+        $this->postLoginOTP($control_email, 'not-the-real-code');
+
+        $this->assertFalse(Auth::check(), 'an invalid code must never authenticate the control account either');
+        $this->assertResponseStatus(302);
+        $control_notice = Session::get('flash_notice');
+        $this->assertNotNull($control_notice, 'the control account must get a flashed rejection');
+
+        $this->assertSame(
+            $control_notice,
+            $enforced_notice,
+            'an invalid code must produce an identical rejection for an enforced and a non-enforced account - any difference is an enumeration oracle'
+        );
+        $this->assertStringNotContainsString(
+            'two-factor authentication',
+            $enforced_notice,
+            'an invalid code must not leak that the account is MFA-enforced'
+        );
     }
 
     public function testNonEnforcedUserStillLogsInViaPasswordlessLogin(): void
