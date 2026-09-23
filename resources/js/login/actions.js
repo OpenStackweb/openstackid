@@ -1,4 +1,4 @@
-import {postRawRequest} from '../base_actions'
+import {postRawRequest, postRawRequestFull} from '../base_actions'
 
 export const verifyAccount = (email, token) => {
 
@@ -51,7 +51,11 @@ export const verifyRecoveryCode = (recoveryCode, token) => {
         recovery_code: recoveryCode
     };
 
-    return postRawRequest(window.RECOVERY_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
+    // postRawRequestFull(), not postRawRequest(): the latter also copies every
+    // param onto the query string, which would write the recovery code - a
+    // credential that completes a login on its own - into every access log it
+    // passes through. Same reasoning as the current_password fix in #146.
+    return postRawRequestFull(window.RECOVERY_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 }
 
 export const cancelLogin = (token) => {
