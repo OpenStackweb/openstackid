@@ -45,6 +45,9 @@ use Strategies\MFA\MFAChallengeStrategyFactory;
 use Strategies\MFA\MFAPendingState;
 use Illuminate\Support\Facades\URL;
 use Utils\Services\IAuthService;
+use Laravel\Socialite\Contracts\Provider as SocialiteProviderContract;
+use Laravel\Socialite\Facades\Socialite;
+use Mockery;
 
 /**
  * Integration tests for the MFA-gated password login flow wired into UserController.
@@ -300,6 +303,64 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertTrue(
             Auth::check(),
             'with the kill-switch off, passwordless login must not be blocked for an enforced admin'
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // social login must apply the local MFA policy on return from the
+    // provider, same as the password flow (as of 2026-09-23) - social login
+    // stays primary authentication (never rejected outright), but an
+    // enforced user must be challenged, not silently logged in.
+    // -------------------------------------------------------------------------
+
+    public function testEnforcedUserSocialLoginTriggersMFAChallenge(): void
+    {
+        $this->socialLoginAs(self::ADMIN_EMAIL);
+
+        $this->assertFalse(Auth::check(), 'social login must not authenticate an enforced-2FA user without a challenge');
+        $this->assertResponseStatus(302, 'must reuse challengeRequired(), the same as the password flow');
+        $this->assertSame(
+            IAuthService::AuthenticationFlowMFA,
+            Session::get('flow'),
+            'the login page must be told to render the 2FA screen, not silently drop the user back to the social buttons'
+        );
+
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->assertGreaterThan(0, $this->countAudit($admin->getId(), TwoFactorAuditLog::EventChallengeIssued));
+    }
+
+    public function testEnforcedUserCanCompleteSocialLoginViaMFAChallenge(): void
+    {
+        $this->socialLoginAs(self::ADMIN_EMAIL);
+        $this->assertFalse(Auth::check(), 'precondition: the challenge must still be pending before verification');
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $this->verify($code);
+
+        $this->assertTrue(Auth::check(), 'the social-triggered challenge must be completable through the unchanged verify2FA() endpoint');
+    }
+
+    public function testNonEnforcedUserStillLogsInViaSocialLogin(): void
+    {
+        $email = $this->createPlainUser();
+
+        $this->socialLoginAs($email);
+
+        $this->assertTrue(Auth::check(), 'social login must keep working immediately for non-enforced users');
+    }
+
+    public function testEnforcedUserCanUseSocialLoginWhenTwoFactorGloballyDisabled(): void
+    {
+        // Kill-switch (SDS idp-mfa.md §10.1): with 2FA globally disabled, the
+        // social-login challenge must NOT fire, matching the passwordless
+        // kill-switch behaviour above.
+        Config::set('two_factor.enabled', false);
+
+        $this->socialLoginAs(self::ADMIN_EMAIL);
+
+        $this->assertTrue(
+            Auth::check(),
+            'with the kill-switch off, social login must not be blocked for an enforced admin'
         );
     }
 
@@ -1669,6 +1730,26 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
             'flow'       => 'otp',
             '_token'     => Session::token(),
         ]);
+    }
+
+    private function socialLoginAs(string $email)
+    {
+        Config::set('services.facebook.client_id', 'test-client-id');
+        Config::set('services.facebook.client_secret', 'test-client-secret');
+
+        $socialUser = (new \Laravel\Socialite\Two\User())->map([
+            'id'     => 'social-' . uniqid(),
+            'email'  => $email,
+            'name'   => 'Social User',
+            'avatar' => null,
+        ]);
+
+        $provider = Mockery::mock(SocialiteProviderContract::class);
+        $provider->shouldReceive('user')->andReturn($socialUser);
+
+        Socialite::shouldReceive('driver')->with('facebook')->andReturn($provider);
+
+        return $this->action('GET', 'SocialLoginController@callback', ['provider' => 'facebook']);
     }
 
     private function verify(string $otp, bool $trustDevice = false)

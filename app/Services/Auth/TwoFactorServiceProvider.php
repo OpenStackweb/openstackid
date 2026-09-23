@@ -43,6 +43,7 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
         $this->app->singleton(ITwoFactorGateService::class, MFAGateService::class);
         $this->app->singleton(ITwoFactorRateLimitService::class, TwoFactorRateLimitService::class);
         $this->app->singleton(IRecoveryCodeService::class, RecoveryCodeService::class);
+        $this->app->singleton(ITwoFactorChallengeService::class, TwoFactorChallengeService::class);
     }
 
     /**
@@ -112,6 +113,7 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
             ITwoFactorGateService::class,
             ITwoFactorRateLimitService::class,
             IRecoveryCodeService::class,
+            ITwoFactorChallengeService::class,
         ];
     }
 }
