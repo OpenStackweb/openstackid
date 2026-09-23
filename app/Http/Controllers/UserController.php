@@ -23,8 +23,7 @@ use App\ModelSerializers\SerializerRegistry;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\IRecoveryCodeService;
 use App\Services\Auth\ITwoFactorAuditService;
-use App\Services\Auth\ITwoFactorGateService;
-use App\Services\Auth\ITwoFactorRateLimitService;
+use App\Services\Auth\ITwoFactorChallengeService;
 use App\Services\Auth\IUserService as AuthUserService;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Exceptions\UnverifiedEmailMemberException;
@@ -153,19 +152,14 @@ final class UserController extends OpenIdController
     private $two_factor_audit_service;
 
     /**
-     * @var ITwoFactorGateService
-     */
-    private $mfa_gate_service;
-
-    /**
-     * @var ITwoFactorRateLimitService
-     */
-    private $two_factor_rate_limit_service;
-
-    /**
      * @var IRecoveryCodeService
      */
     private $recovery_code_service;
+
+    /**
+     * @var ITwoFactorChallengeService
+     */
+    private $two_factor_challenge_service;
 
     /**
      * @param IMementoOpenIdSerializerService $openid_memento_service
@@ -205,9 +199,8 @@ final class UserController extends OpenIdController
         LoginHintProcessStrategy $login_hint_process_strategy,
         IDeviceTrustService $device_trust_service,
         ITwoFactorAuditService $two_factor_audit_service,
-        ITwoFactorGateService $mfa_gate_service,
-        ITwoFactorRateLimitService $two_factor_rate_limit_service,
         IRecoveryCodeService $recovery_code_service,
+        ITwoFactorChallengeService $two_factor_challenge_service,
     )
     {
         $this->openid_memento_service = $openid_memento_service;
@@ -227,9 +220,8 @@ final class UserController extends OpenIdController
         $this->security_context_service = $security_context_service;
         $this->device_trust_service = $device_trust_service;
         $this->two_factor_audit_service = $two_factor_audit_service;
-        $this->mfa_gate_service = $mfa_gate_service;
-        $this->two_factor_rate_limit_service = $two_factor_rate_limit_service;
         $this->recovery_code_service = $recovery_code_service;
+        $this->two_factor_challenge_service = $two_factor_challenge_service;
 
         $this->middleware(function ($request, $next) use($login_hint_process_strategy){
 
@@ -547,47 +539,8 @@ final class UserController extends OpenIdController
 
                         $cookieToken = $this->getCookieToken();
 
-                        if ($this->mfa_gate_service->requiresChallenge($user, $cookieToken)) {
-                            // Initial issuance shares the resend rate-limit window
-                            // (SDS idp-mfa.md §4.12) - without this, this route
-                            // would be an unthrottled way to mail-bomb the account
-                            // owner with OTP codes.
-                            if ($this->two_factor_rate_limit_service->isRateLimited(
-                                ITwoFactorRateLimitService::ActionResend,
-                                $user->getId()
-                            )) {
-                                throw new AuthenticationException(ITwoFactorRateLimitService::RATE_LIMIT_MESSAGE);
-                            }
-
-                            // Issue a challenge and stop short of session creation.
-                            $client   = $this->resolveClientFromMemento();
-                            $method   = $user->getTwoFactorMethod();
-                            $strategy = MFAChallengeStrategyFactory::create($method);
-                            $payload = $this->auth_service->issueMFAChallenge($user, $strategy, $client, $remember);
-                            $this->two_factor_rate_limit_service->increment(ITwoFactorRateLimitService::ActionResend, $user->getId());
-
-                            // Best-effort: the challenge was already issued and the OTP
-                            // sent, so an audit-logging failure must not 500 the user
-                            // out of the mfa_required response they need to proceed.
-                            try {
-                                $this->two_factor_audit_service->log(
-                                    $user,
-                                    TwoFactorAuditLog::EventChallengeIssued,
-                                    $method,
-                                    IPHelper::getUserIp()
-                                );
-                            } catch (\Throwable $ex) {
-                                Log::warning($ex);
-                            }
-
-                            // Restore-on-refresh: a subsequent GET /login can rehydrate
-                            // the 2FA screen from session instead of dropping back to the
-                            // password form. otp_length/otp_lifetime (part of $payload)
-                            // are flashed by challengeRequired() itself; flow/mfa_method
-                            // aren't part of the challenge payload, so they're set here.
-                            Session::put('flow', IAuthService::AuthenticationFlowMFA);
-                            Session::put('mfa_method', $method);
-
+                        $payload = $this->two_factor_challenge_service->issueChallengeIfRequired($user, $cookieToken, $remember);
+                        if (!is_null($payload)) {
                             // The password step now submits as a native form POST, so this
                             // response is a fresh page load, not a client-side transition -
                             // without these, the React app remounts with no identity state
