@@ -12,7 +12,9 @@
  * limitations under the License.
  **/
 
+use App\libs\Auth\Models\UserTrustedDevice;
 use Auth\User;
+use models\exceptions\EntityNotFoundException;
 
 /**
  * Interface IDeviceTrustService
@@ -34,9 +36,28 @@ interface IDeviceTrustService
     public function trustDevice(User $user, string $userAgent, string $ipAddress): string;
 
     /**
-     * Revokes all trusted devices for the given user.
+     * Returns the user's active (non-revoked, non-expired) trusted devices.
+     * Read-only: unlike isDeviceTrusted() it never touches last_seen_at.
+     *
+     * @return UserTrustedDevice[]
      */
-    public function removeTrustedDevices(User $user): void;
+    public function getActiveTrustedDevices(User $user): array;
+
+    /**
+     * Revokes one of the user's trusted devices. Idempotent: an already revoked
+     * or expired device is returned untouched and no audit event is logged.
+     *
+     * @throws EntityNotFoundException if the device does not exist or belongs to another user
+     */
+    public function revokeTrustedDevice(User $user, int $deviceId): UserTrustedDevice;
+
+    /**
+     * Revokes all active trusted devices for the given user, logging one
+     * device_revoked audit event per revoked device.
+     *
+     * @return UserTrustedDevice[] the devices that were revoked by this call
+     */
+    public function removeTrustedDevices(User $user): array;
 
     /**
      * Returns the SHA-256 hash of the given token used as the stored device identifier.
