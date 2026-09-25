@@ -13,9 +13,13 @@
  **/
 
 use App\Http\Controllers\APICRUDController;
+use App\Http\Controllers\Traits\MFACookieManager;
 use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
+use App\libs\Auth\Models\UserTrustedDevice;
+use App\ModelSerializers\Auth\UserTrustedDeviceSerializer;
 use App\ModelSerializers\SerializerRegistry;
+use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\IRecoveryCodeService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
@@ -40,6 +44,8 @@ final class UserApiController extends APICRUDController
 
     use RequestProcessor;
 
+    use MFACookieManager;
+
     /**
      * @var ITokenService
      */
@@ -51,12 +57,18 @@ final class UserApiController extends APICRUDController
     private $recovery_code_service;
 
     /**
+     * @var IDeviceTrustService
+     */
+    private $device_trust_service;
+
+    /**
      * UserApiController constructor.
      * @param IUserRepository $user_repository
      * @param ILogService $log_service
      * @param IUserService $user_service
      * @param ITokenService $token_service
      * @param IRecoveryCodeService $recovery_code_service
+     * @param IDeviceTrustService $device_trust_service
      */
     public function __construct
     (
@@ -64,12 +76,14 @@ final class UserApiController extends APICRUDController
         ILogService     $log_service,
         IUserService    $user_service,
         ITokenService   $token_service,
-        IRecoveryCodeService $recovery_code_service
+        IRecoveryCodeService $recovery_code_service,
+        IDeviceTrustService  $device_trust_service
     )
     {
         parent::__construct($user_repository, $user_service, $log_service);
         $this->token_service = $token_service;
         $this->recovery_code_service = $recovery_code_service;
+        $this->device_trust_service = $device_trust_service;
     }
 
     /**
@@ -317,6 +331,98 @@ final class UserApiController extends APICRUDController
 
             return $this->ok(['recovery_codes' => $codes]);
         });
+    }
+
+    /**
+     * Lists the current user's active trusted devices. "is_current" flags the
+     * device whose device-trust cookie came with this request.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function getMyTrustedDevices()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $params = [
+                UserTrustedDeviceSerializer::ParamCurrentDeviceIdentifier => $this->getCurrentDeviceIdentifier(),
+            ];
+
+            $data = array_map(
+                fn(UserTrustedDevice $device) => SerializerRegistry::getInstance()
+                    ->getSerializer($device)
+                    ->serialize(null, [], [], $params),
+                $this->device_trust_service->getActiveTrustedDevices(Auth::user())
+            );
+
+            return $this->ok(['data' => array_values($data)]);
+        });
+    }
+
+    /**
+     * Revokes one of the current user's trusted devices. Only the MFA bypass is
+     * removed; the current session stays active.
+     *
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function revokeMyTrustedDevice($id)
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () use ($id) {
+            $device = $this->device_trust_service->revokeTrustedDevice(Auth::user(), intval($id));
+
+            if ($this->isCurrentDevice($device)) {
+                $this->expireDeviceTrustCookie();
+            }
+
+            return $this->deleted();
+        });
+    }
+
+    /**
+     * Revokes all of the current user's active trusted devices. Only the MFA
+     * bypass is removed; the current session stays active.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function revokeAllMyTrustedDevices()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $devices = $this->device_trust_service->removeTrustedDevices(Auth::user());
+
+            foreach ($devices as $device) {
+                if ($this->isCurrentDevice($device)) {
+                    $this->expireDeviceTrustCookie();
+                    break;
+                }
+            }
+
+            return $this->deleted();
+        });
+    }
+
+    /**
+     * Hashed identifier of the device-trust cookie sent with this request, or
+     * null when there is none.
+     */
+    private function getCurrentDeviceIdentifier(): ?string
+    {
+        $token = $this->getCookieToken();
+        if (empty($token)) return null;
+        return $this->device_trust_service->generateDeviceIdentifier($token);
+    }
+
+    private function isCurrentDevice(UserTrustedDevice $device): bool
+    {
+        $current = $this->getCurrentDeviceIdentifier();
+        return !is_null($current) && hash_equals($device->getDeviceIdentifier(), $current);
     }
 
     public function revokeAllMyTokens()

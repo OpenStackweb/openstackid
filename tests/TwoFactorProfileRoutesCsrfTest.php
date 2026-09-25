@@ -32,9 +32,9 @@ final class TwoFactorProfileRoutesCsrfTest extends TestCase
     /**
      * @dataProvider stateChangingRoutes
      */
-    public function testTwoFactorProfileRouteRequiresCsrf(string $uri): void
+    public function testTwoFactorProfileRouteRequiresCsrf(string $uri, string $method = 'POST'): void
     {
-        $route = Route::getRoutes()->match(Request::create($uri, 'POST'));
+        $route = Route::getRoutes()->match(Request::create($uri, $method));
 
         $this->assertContains('csrf', $route->gatherMiddleware());
     }
@@ -42,8 +42,10 @@ final class TwoFactorProfileRoutesCsrfTest extends TestCase
     public static function stateChangingRoutes(): array
     {
         return [
-            'enable 2fa'                => ['/admin/api/v1/users/me/2fa/enable'],
-            'regenerate recovery codes' => ['/admin/api/v1/users/me/recovery-codes/regenerate'],
+            'enable 2fa'                 => ['/admin/api/v1/users/me/2fa/enable'],
+            'regenerate recovery codes'  => ['/admin/api/v1/users/me/recovery-codes/regenerate'],
+            'revoke trusted device'      => ['/admin/api/v1/users/me/2fa/devices/1', 'DELETE'],
+            'revoke all trusted devices' => ['/admin/api/v1/users/me/2fa/devices', 'DELETE'],
         ];
     }
 }
