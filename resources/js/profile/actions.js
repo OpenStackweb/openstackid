@@ -97,6 +97,18 @@ export const enableTwoFactor = async (method) => {
     return postRawRequestFull(window.ENABLE_TWO_FACTOR_ENDPOINT)(params, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
+export const getTrustedDevices = async () => {
+    return getRawRequest(window.GET_TRUSTED_DEVICES_ENDPOINT)({});
+}
+
+export const revokeTrustedDevice = async (id) => {
+    return deleteRawRequest(window.REVOKE_TRUSTED_DEVICE_ENDPOINT.replace('@id', id))({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+}
+
+export const revokeAllTrustedDevices = async () => {
+    return deleteRawRequest(window.REVOKE_ALL_TRUSTED_DEVICES_ENDPOINT)({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+}
+
 const normalizeEntity = (entity) => {
     entity.public_profile_show_photo = entity.public_profile_show_photo ? 1 : 0;
     entity.public_profile_show_fullname = entity.public_profile_show_fullname ? 1 : 0;
