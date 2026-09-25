@@ -20,6 +20,8 @@ use Auth\User;
 use DateTime;
 use DateInterval;
 use DateTimeZone;
+use Illuminate\Support\Facades\Log;
+use models\exceptions\EntityNotFoundException;
 use Utils\IPHelper;
 use Utils\Db\ITransactionService;
 
@@ -96,15 +98,72 @@ final class DeviceTrustService implements IDeviceTrustService
         return true;
     }
 
-    public function removeTrustedDevices(User $user): void
+    public function getActiveTrustedDevices(User $user): array
     {
-        $this->repository->revokeAllForUser($user);
+        return $this->repository->getActiveByUser($user);
+    }
 
-        $this->audit_service->log(
-            $user,
-            TwoFactorAuditLog::EventDeviceRevoked,
-            $user->getTwoFactorMethod(),
-            IPHelper::getUserIp()
-        );
+    public function revokeTrustedDevice(User $user, int $deviceId): UserTrustedDevice
+    {
+        // Scoped by owner: another user's device id is indistinguishable from a
+        // missing one, so the caller cannot probe for ids that exist.
+        $device = $this->repository->getByIdAndUser($deviceId, $user);
+        if (!$device instanceof UserTrustedDevice) {
+            throw new EntityNotFoundException('Trusted device not found.');
+        }
+
+        // Idempotent: a device that no longer bypasses the challenge has nothing
+        // to revoke, and logging it again would only add noise to the audit trail.
+        if ($device->isRevoked() || $device->isExpired()) {
+            return $device;
+        }
+
+        $this->tx_service->transaction(function () use ($device) {
+            $device->setIsRevoked(true);
+            $this->repository->add($device, false);
+        });
+
+        $this->logDeviceRevoked($user, $device);
+
+        return $device;
+    }
+
+    public function removeTrustedDevices(User $user): array
+    {
+        $devices = $this->tx_service->transaction(function () use ($user) {
+            $devices = $this->repository->getActiveByUser($user);
+            foreach ($devices as $device) {
+                $device->setIsRevoked(true);
+                $this->repository->add($device, false);
+            }
+            return $devices;
+        });
+
+        foreach ($devices as $device) {
+            $this->logDeviceRevoked($user, $device);
+        }
+
+        return $devices;
+    }
+
+    /**
+     * Best-effort, after the revocation is committed: an audit failure must not
+     * 500 a request whose device is already revoked, and audit_service->log()
+     * opens its own transaction, which cannot be nested inside ours (see
+     * RecoveryCodeService::enableTwoFactorAndGenerateCodes()).
+     */
+    private function logDeviceRevoked(User $user, UserTrustedDevice $device): void
+    {
+        try {
+            $this->audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventDeviceRevoked,
+                $user->getTwoFactorMethod(),
+                IPHelper::getUserIp(),
+                ['device_id' => $device->getId()]
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
     }
 }
