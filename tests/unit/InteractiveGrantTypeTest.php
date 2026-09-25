@@ -779,6 +779,44 @@ class InteractiveGrantTypeTest extends TestCase
     }
 
     /**
+     * Regression test for a production TypeError: a client that never
+     * configured id_token_signed_response_alg (DB default 'none') presents
+     * an id_token_hint signed by the IDP's own server key. getIdTokenResponseInfo()
+     * ->getSigningAlgorithm() then returns null, which used to be passed
+     * straight into ClientSigningKeyFinder::find()'s non-nullable
+     * ICryptoAlgorithm $alg parameter, causing a fatal TypeError instead of
+     * the intended fall-through to the server signing key.
+     */
+    public function testMissingClientSigningAlgConfigFallsBackToServerKey(): void
+    {
+        [$server_jwk, $alg] = $this->setupServerKeySignedClient(false);
+
+        $hint = $this->signHint($server_jwk, $alg, $this->buildHintClaimSet('999', 'jti-no-alg-configured'));
+
+        $request = $this->buildOIDCRequest([
+            OAuth2Protocol::OAuth2Protocol_IDTokenHint => $hint,
+        ]);
+
+        $this->setupSecurityContext();
+        $this->allowCleanupCalls();
+        $login_redirect = $this->expectHintReloadFailureEndsAtLogin();
+
+        // Key assertion: despite the client having no configured signing alg,
+        // the hint still verifies via the server key and keeps the sub-based
+        // fallback - proving the fallback path was reached, not a TypeError.
+        $this->auth_service->shouldReceive('reloadSession')
+            ->once()
+            ->withArgs(function (SessionReloadHint $hint) {
+                return $hint->getJti() === 'jti-no-alg-configured' && $hint->allowsSubFallback();
+            })
+            ->andThrow(new ReloadSessionException('user not found!'));
+
+        $result = $this->grant_type->publicHandle($request);
+
+        $this->assertEquals($login_redirect, $result);
+    }
+
+    /**
      * When the hint carries an explicit auth_time claim (the IDP adds it
      * whenever the original request asked for max_age), that value - not
      * iat, and never "now" - is what the fallback must register, so that
@@ -827,7 +865,13 @@ class InteractiveGrantTypeTest extends TestCase
      *
      * @return array{0: IJWK, 1: string} the server JWK to sign hints with, and the alg
      */
-    private function setupServerKeySignedClient(): array
+    /**
+     * @param bool $client_signing_alg_configured When false, simulates a client
+     *        that never configured id_token_signed_response_alg (DB default
+     *        'none'), so getIdTokenResponseInfo()->getSigningAlgorithm() is
+     *        null and ClientSigningKeyFinder::find() must never be reached.
+     */
+    private function setupServerKeySignedClient(bool $client_signing_alg_configured = true): array
     {
         $alg = JSONWebSignatureAndEncryptionAlgorithms::RS256;
 
@@ -840,14 +884,21 @@ class InteractiveGrantTypeTest extends TestCase
         $server_jwk->setKeyUse(JSONWebKeyPublicKeyUseValues::Signature)->setId('server-sig-key');
 
         $client = $this->setupValidClient();
-        $client->shouldReceive('getIdTokenResponseInfo')
-            ->andReturn(new JWTResponseInfo(DigitalSignatures_MACs_Registry::getInstance()->get($alg)));
-        // No client-controlled signing key anywhere -> RecipientKeyNotFoundException
-        // -> InteractiveGrantType falls back to the server signing key.
-        $client->shouldReceive('getCurrentPublicKeyByUse')
-            ->with(JSONWebKeyPublicKeyUseValues::Signature, $alg)
-            ->andReturn(null);
-        $this->jwk_set_reader_service->shouldReceive('read')->with($client)->andReturn(null);
+        if ($client_signing_alg_configured) {
+            $client->shouldReceive('getIdTokenResponseInfo')
+                ->andReturn(new JWTResponseInfo(DigitalSignatures_MACs_Registry::getInstance()->get($alg)));
+            // No client-controlled signing key anywhere -> RecipientKeyNotFoundException
+            // -> InteractiveGrantType falls back to the server signing key.
+            $client->shouldReceive('getCurrentPublicKeyByUse')
+                ->with(JSONWebKeyPublicKeyUseValues::Signature, $alg)
+                ->andReturn(null);
+            $this->jwk_set_reader_service->shouldReceive('read')->with($client)->andReturn(null);
+        } else {
+            // sig_alg is null -> ClientSigningKeyFinder must never be
+            // instantiated/called, so no client-key lookups are expected here.
+            $client->shouldReceive('getIdTokenResponseInfo')
+                ->andReturn(new JWTResponseInfo(null));
+        }
 
         // ServerSigningKeyFinder resolves ITransactionService through the App facade.
         $app = Facade::getFacadeApplication();
