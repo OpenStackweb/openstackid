@@ -45,6 +45,13 @@ final class UserLogoutPreservesPendingOAuth2RequestTest extends OpenStackIDBaseT
     protected function prepareForTests(): void
     {
         parent::prepareForTests();
+        // SocialLoginController only accepts a provider that has credentials configured; CI has none,
+        // so give the Apple driver dummy ones (the provider round trip is mocked, nothing is called).
+        Config::set('services.' . self::Provider, [
+            'client_id' => 'test-apple-client-id',
+            'client_secret' => 'test-apple-client-secret',
+            'redirect' => sprintf('/auth/login/%s/callback', self::Provider),
+        ]);
         $user = EntityManager::getRepository(User::class)->findOneBy(['email' => self::LoggedUserEmail]);
         Session::start();
         $this->be($user);
