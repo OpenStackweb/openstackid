@@ -146,9 +146,13 @@ return [
     | to the server if the browser has a HTTPS connection. This will keep
     | the cookie from being sent to you if it can not be done securely.
     |
+    | Must stay true while same_site is "none": browsers reject SameSite=None
+    | cookies that are not Secure. The flag is evaluated against the URL the
+    | browser sees, so a pod serving plain HTTP behind a TLS edge still needs it.
+    |
     */
 
-    'secure' => true,
+    'secure' => env('SESSION_COOKIE_SECURE', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -172,10 +176,15 @@ return [
    | take place, and can be used to mitigate CSRF attacks. By default, we
    | do not enable this as other CSRF protection services are in place.
    |
-   | Supported: "lax", "strict"
+   | The IDP needs "none": Sign in with Apple returns through a cross-site
+   | POST (response_mode=form_post) and the browser only attaches the session
+   | cookie to that POST when it is SameSite=None. With "lax" the callback
+   | lands on an empty session and the pending OAuth2 request is lost.
+   |
+   | Supported: "none", "lax", "strict"
    |
    */
 
-    'same_site' => 'none',
+    'same_site' => env('SESSION_COOKIE_SAME_SITE', 'none'),
 
 ];
