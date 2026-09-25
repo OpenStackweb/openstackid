@@ -13,6 +13,7 @@ namespace Tests;
  * limitations under the License.
  **/
 
+use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserTrustedDevice;
 use App\Services\Auth\DeviceTrustService;
 use App\Services\Auth\ITwoFactorAuditService;
@@ -22,6 +23,7 @@ use DateTime;
 use DateInterval;
 use DateTimeZone;
 use Mockery;
+use models\exceptions\EntityNotFoundException;
 use Utils\Db\ITransactionService;
 
 /**
@@ -275,22 +277,121 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     // removeTrustedDevices
     // -------------------------------------------------------------------------
 
-    public function testRemoveTrustedDevicesRevokesAll(): void
+    public function testRemoveTrustedDevicesRevokesEveryActiveDeviceAndLogsOneEventEach(): void
     {
         $user = Mockery::mock(User::class);
         $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
+        $devices = [
+            $this->makeDevice(expired: false, revoked: false),
+            $this->makeDevice(expired: false, revoked: false),
+        ];
+
         $this->repo
-            ->shouldReceive('revokeAllForUser')
+            ->shouldReceive('getActiveByUser')
             ->once()
-            ->with($user);
+            ->with($user)
+            ->andReturn($devices);
+        $this->repo->shouldReceive('add')->twice();
+
+        $this->audit_service
+            ->shouldReceive('log')
+            ->twice()
+            ->with($user, TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'), Mockery::type('array'));
+
+        $revoked = $this->service->removeTrustedDevices($user);
+
+        $this->assertSame($devices, $revoked);
+        foreach ($devices as $device) {
+            $this->assertTrue($device->isRevoked());
+        }
+    }
+
+    public function testRemoveTrustedDevicesWithoutActiveDevicesLogsNothing(): void
+    {
+        $user = Mockery::mock(User::class);
+
+        $this->repo->shouldReceive('getActiveByUser')->once()->with($user)->andReturn([]);
+        $this->repo->shouldNotReceive('add');
+        $this->audit_service->shouldNotReceive('log');
+
+        $this->assertSame([], $this->service->removeTrustedDevices($user));
+    }
+
+    public function testRemoveTrustedDevicesSurvivesAuditFailure(): void
+    {
+        $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
+
+        $device = $this->makeDevice(expired: false, revoked: false);
+        $this->repo->shouldReceive('getActiveByUser')->once()->andReturn([$device]);
+        $this->repo->shouldReceive('add')->once();
+        $this->audit_service->shouldReceive('log')->once()->andThrow(new \RuntimeException('audit down'));
+
+        $revoked = $this->service->removeTrustedDevices($user);
+
+        $this->assertCount(1, $revoked);
+        $this->assertTrue($device->isRevoked(), 'an audit failure must not undo or block the revocation');
+    }
+
+    // -------------------------------------------------------------------------
+    // revokeTrustedDevice
+    // -------------------------------------------------------------------------
+
+    public function testRevokeTrustedDeviceRevokesAndLogsOnce(): void
+    {
+        $user = Mockery::mock(User::class);
+        $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
+
+        $device = $this->makeDevice(expired: false, revoked: false);
+        $this->repo->shouldReceive('getByIdAndUser')->once()->with(42, $user)->andReturn($device);
+        $this->repo->shouldReceive('add')->once()->with($device, false);
 
         $this->audit_service
             ->shouldReceive('log')
             ->once()
-            ->with($user, \App\libs\Auth\Models\TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'));
+            ->with($user, TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'), Mockery::type('array'));
 
-        $this->service->removeTrustedDevices($user);
+        $this->assertSame($device, $this->service->revokeTrustedDevice($user, 42));
+        $this->assertTrue($device->isRevoked());
+    }
+
+    public function testRevokeTrustedDeviceThrowsWhenNotOwnedOrMissing(): void
+    {
+        $user = Mockery::mock(User::class);
+
+        $this->repo->shouldReceive('getByIdAndUser')->once()->with(42, $user)->andReturn(null);
+        $this->repo->shouldNotReceive('add');
+        $this->audit_service->shouldNotReceive('log');
+
+        $this->expectException(EntityNotFoundException::class);
+        $this->service->revokeTrustedDevice($user, 42);
+    }
+
+    public function testRevokeAlreadyRevokedDeviceIsNoOp(): void
+    {
+        $user = Mockery::mock(User::class);
+
+        $device = $this->makeDevice(expired: false, revoked: true);
+        $this->repo->shouldReceive('getByIdAndUser')->once()->andReturn($device);
+        $this->repo->shouldNotReceive('add');
+        $this->audit_service->shouldNotReceive('log');
+
+        $this->assertSame($device, $this->service->revokeTrustedDevice($user, 42));
+    }
+
+    public function testRevokeExpiredDeviceIsNoOp(): void
+    {
+        $user = Mockery::mock(User::class);
+
+        $device = $this->makeDevice(expired: true, revoked: false);
+        $this->repo->shouldReceive('getByIdAndUser')->once()->andReturn($device);
+        $this->repo->shouldNotReceive('add');
+        $this->audit_service->shouldNotReceive('log');
+
+        $this->service->revokeTrustedDevice($user, 42);
+
+        $this->assertFalse($device->isRevoked(), 'an expired device is left as is');
     }
 
     // -------------------------------------------------------------------------

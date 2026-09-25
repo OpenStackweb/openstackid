@@ -83,4 +83,36 @@ trait MFACookieManager
 
         );
     }
+
+    /**
+     * Queues an already-expired trusted-device cookie so the browser drops it.
+     * Name, path, domain and flags must match queueDeviceTrustCookie() or the
+     * browser treats it as a different cookie and keeps the original.
+     *
+     * @return void
+     */
+    protected function expireDeviceTrustCookie(): void
+    {
+        $name = Config::get('two_factor.cookie_name', 'device_trust_token');
+        $path = Config::get('session.path');
+        $domain = Config::get('session.domain');
+        $secure = true;
+        $httpOnly = true;
+        $raw = false;
+        $sameSite = 'lax';
+
+        // Negative lifetime, same as \Illuminate\Cookie\CookieJar::forget()
+        Cookie::queue
+        (
+            $name,
+            '', // value
+            -2628000,
+            $path,
+            $domain,
+            $secure,
+            $httpOnly,
+            $raw,
+            $sameSite
+        );
+    }
 }
