@@ -62,8 +62,8 @@
             config.maxLoginFailedAttempts = {{Session::get("max_login_failed_attempts")}};
         @endif
 
-        @if(Session::has('login_attempts'))
-            config.loginAttempts = {{Session::get("login_attempts")}};
+        @if(Session::has('captcha_failed_attempts'))
+            config.loginAttempts = {{Session::get("captcha_failed_attempts")}};
         @endif
 
         @if(Session::has('user_is_active'))
