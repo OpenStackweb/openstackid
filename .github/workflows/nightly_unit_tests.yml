@@ -32,6 +32,9 @@ jobs:
       SSL_ENABLED: false
       SESSION_DRIVER: redis
       PHP_VERSION: 8.3
+      FACEBOOK_CLIENT_ID: 214242500242860
+      FACEBOOK_CLIENT_SECRET: dummy_test_secret_for_ci_only
+      FACEBOOK_REDIRECT_URI: /auth/login/facebook/callback
     services:
       mysql:
         image: mysql:8.0
