@@ -50,6 +50,13 @@ use Utils\Services\ICacheService;
  */
 final class AuthService extends AbstractService implements IAuthService
 {
+
+    /**
+     * TTL of the logout revocation markers. It must outlive any id_token an
+     * RP can still hold (OAuth2.IdToken.Lifetime is admin configurable, 1h by default).
+     */
+    private const REVOCATION_MARKER_TTL = 2592000; // 30 days
+
     /**
      * @var IPrincipalService
      */
@@ -427,6 +434,7 @@ final class AuthService extends AbstractService implements IAuthService
         $current_user = $this->getCurrentUser();
         // check if we have user on session
         if (!is_null($current_user)) {
+            $this->markUserLoggedOut($current_user->getId());
             $ip = IPHelper::getUserIp();
             Log::debug(sprintf("AuthService::logout we have user %s from ip %s", $current_user->getId(), $ip));
             $this->user_action_service->addUserAction
@@ -458,15 +466,50 @@ final class AuthService extends AbstractService implements IAuthService
         );
 
         // Flush all session data and regenerate the session ID to ensure no stale
-        // data survives (OAuth2 memento, OpenID auth context, authorization responses, etc.)
-        Session::flush();
-        Session::regenerate();
+        // data survives (OAuth2 memento, OpenID auth context, authorization responses, etc.).
+        // invalidate() regenerates with destroy=true: the old session id's data is
+        // removed from the store, so it can't be resumed through an id_token_hint.
+        Session::invalidate();
     }
 
+    /**
+     * Marks the current session as void. The marker is keyed by a hash of the
+     * session id (Crypt::encrypt() uses a random IV, two encryptions of the same
+     * id never match) so reloadSession() can find it.
+     */
     public function invalidateSession(): void
     {
-        $session_id = Crypt::encrypt(Session::getId());
-        $this->cache_service->addSingleValue($session_id . "invalid", $session_id);
+        $this->cache_service->setSingleValue
+        (
+            self::sessionRevocationKey(Session::getId()),
+            '1',
+            self::REVOCATION_MARKER_TTL
+        );
+    }
+
+    /**
+     * Records "now" as the moment the user logged out: any id_token_hint whose
+     * authentication happened at or before it can't log the user back in.
+     * @param int $user_id
+     */
+    private function markUserLoggedOut(int $user_id): void
+    {
+        $this->cache_service->setSingleValue
+        (
+            self::userLogoutKey($user_id),
+            (string)time(),
+            self::REVOCATION_MARKER_TTL
+        );
+    }
+
+    private static function sessionRevocationKey(string $session_id): string
+    {
+        return 'session.revoked.' . hash('sha256', $session_id);
+    }
+
+    private static function userLogoutKey(int $user_id): string
+    {
+        return 'user.logged_out_at.' . $user_id;
     }
 
     /**
@@ -686,17 +729,22 @@ final class AuthService extends AbstractService implements IAuthService
             throw new ReloadSessionException('session not found!');
         }
 
-        if ($this->cache_service->exists($session_id . "invalid")) {
-            // session was marked as void, check if we are authenticated
-            if (!Auth::check()) {
-                Session::setId($former_session_id);
-                Session::start();
-                throw new ReloadSessionException('user not found!');
-            }
+        try {
+            $cached_session_id = Crypt::decrypt($session_id);
+        } catch (\Throwable $ex) {
+            Log::warning(sprintf("AuthService::reloadSession ex %s", $ex->getMessage()));
+            throw new ReloadSessionException('session not found!');
+        }
+
+        if ($this->cache_service->exists(self::sessionRevocationKey($cached_session_id))) {
+            // session was marked as void (logout): never resume it, and never
+            // fall back to the sub either, the user logged out.
+            Log::warning("AuthService::reloadSession session was marked as void");
+            throw new ReloadSessionException('session was marked as void!');
         }
 
         try {
-            Session::setId(Crypt::decrypt($session_id));
+            Session::setId($cached_session_id);
             Session::start();
             if (!Auth::check()) {
                 $session_user_id = $this->principal_service->get()->getUserId();
@@ -739,6 +787,14 @@ final class AuthService extends AbstractService implements IAuthService
         $user = $this->getUserById($user_id);
         if (is_null($user) || !$user->canLogin())
             throw new ReloadSessionException('user not found!');
+
+        // the user logged out after the hint's authentication: the hint is revoked
+        $logged_out_at = $this->cache_service->getSingleValue(self::userLogoutKey($user_id));
+        if (!empty($logged_out_at) && $hint->getAuthTime() <= intval($logged_out_at)) {
+            Log::warning(sprintf("AuthService::loginFromReloadHint user %s logged out after the hint was issued", $user_id));
+            throw new ReloadSessionException('session was marked as void!');
+        }
+
         Auth::login($user);
         // Auth::login() alone leaves this session's IDP-specific principal
         // state (user_id/auth_time/op_browser_state) unset - every other
