@@ -71,6 +71,8 @@ export default function NavBar({menuConfig}) {
                             <Button onClick={() => goTo(`${menuConfig.settingURL}`)}>
                                 {menuConfig.settingsText}
                             </Button>
+                            {menuConfig.canAccessOAuth2Console &&
+                                <>
                             <Button aria-controls="oauth-menu"
                                     aria-haspopup="true"
                                     onClick={handleOauthMenuClick}
@@ -89,6 +91,8 @@ export default function NavBar({menuConfig}) {
                                 <MenuItem
                                     onClick={() => goTo(`${menuConfig.oauthGrantsURL}`)}>{menuConfig.oauthGrantsText}</MenuItem>
                             </Menu>
+                                </>
+                            }
                             {(menuConfig.isOAuth2ServerAdmin || menuConfig.isOpenIdServerAdmin || menuConfig.isSuperAdmin) &&
                                 <>
                                     <Button aria-controls="server-admin-menu"
