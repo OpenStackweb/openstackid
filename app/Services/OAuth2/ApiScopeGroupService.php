@@ -14,6 +14,7 @@
 use App\Models\OAuth2\Factories\ApiScopeGroupFactory;
 use Auth\Repositories\IUserRepository;
 use models\exceptions\EntityNotFoundException;
+use models\exceptions\ValidationException;
 use models\utils\IEntity;
 use OAuth2\Exceptions\InvalidApiScopeGroup;
 use OAuth2\Repositories\IApiScopeRepository;
@@ -100,7 +101,7 @@ final class ApiScopeGroupService implements IApiScopeGroupService
                 $former_group = $this->repository->getByName($payload['name']);
                 if(!is_null($former_group) && $former_group->getId() != $id)
                 {
-                    throw new InvalidApiScopeGroup(sprintf('there is already another api scope group name (%s).', $payload['name']));
+                    throw new ValidationException(sprintf('there is already another api scope group name (%s).', $payload['name']));
                 }
             }
 
@@ -144,7 +145,7 @@ final class ApiScopeGroupService implements IApiScopeGroupService
 
             if(!is_null($former_group))
             {
-                throw new InvalidApiScopeGroup(sprintf('there is already another api scope group name (%s).', $name));
+                throw new ValidationException(sprintf('there is already another api scope group name (%s).', $name));
             }
             $group  = ApiScopeGroupFactory::build($payload);
             $scopes = $payload['scopes'];
