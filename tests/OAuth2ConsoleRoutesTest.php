@@ -30,14 +30,28 @@ final class OAuth2ConsoleRoutesTest extends OpenStackIDBaseTestCase
 
     private bool $plainUserPrepared = false;
 
+    protected function prepareForTests(): void
+    {
+        parent::prepareForTests();
+        // avoid the http -> https redirect of the 'ssl' middleware masking the gate responses
+        Config::set('server.ssl_enabled', false);
+    }
+
+    private function findUser(string $identifier): User
+    {
+        // drop seeder-built in-memory entities so Doctrine hydrates fully initialized ones from the DB
+        EntityManager::clear();
+        return EntityManager::getRepository(User::class)->findOneBy(['identifier' => $identifier]);
+    }
+
     private function superAdmin(): User
     {
-        return EntityManager::getRepository(User::class)->findOneBy(['identifier' => 'sebastian.marcet']);
+        return $this->findUser('sebastian.marcet');
     }
 
     private function plainUser(): User
     {
-        $user = EntityManager::getRepository(User::class)->findOneBy(['identifier' => '2']);
+        $user = $this->findUser('2');
         if (!$this->plainUserPrepared) {
             // seeded users are all super admins: strip their groups once to get a plain user
             $user->getGroups()->clear();
@@ -78,6 +92,7 @@ final class OAuth2ConsoleRoutesTest extends OpenStackIDBaseTestCase
         Config::set('oauth2.console_allowed_groups', [self::AllowedSlug]);
         $this->call('GET', '/admin/clients');
         $this->assertResponseStatus(302);
+        $this->assertStringContainsString('/auth/login', $this->response->headers->get('Location'));
     }
 
     public function testEverybodyDeniedWhenConfigIsEmpty()
@@ -150,15 +165,17 @@ final class OAuth2ConsoleRoutesTest extends OpenStackIDBaseTestCase
     public function testMenuVisibilityFollowsGate()
     {
         $user = $this->plainUser();
+        // add to the group before authenticating: only super admins can alter memberships
+        $this->addToAllowedGroup($user);
         $this->be($user);
 
+        // member of the group but empty config: still denied
         Config::set('oauth2.console_allowed_groups', []);
         $this->call('GET', '/accounts/user/profile');
         $this->assertResponseStatus(200);
         $this->assertStringContainsString('canAccessOAuth2Console: parseInt(\'0\')', $this->response->getContent());
 
         Config::set('oauth2.console_allowed_groups', [self::AllowedSlug]);
-        $this->addToAllowedGroup($user);
         $this->call('GET', '/accounts/user/profile');
         $this->assertResponseStatus(200);
         $this->assertStringContainsString('canAccessOAuth2Console: parseInt(\'1\')', $this->response->getContent());
