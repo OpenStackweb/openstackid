@@ -49,6 +49,7 @@
             formAction: '{{ URL::action("UserController@postConsent") }}',
             contactEmails: contactEmails,
             redirectURL: '{!! $redirect_to !!}',
+            website: @json($website ?? null),
             disclaimer: disclaimer,
         }
 
