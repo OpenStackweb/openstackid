@@ -22,7 +22,7 @@ const LogoutOptions = ({appTypes, initialValues, onSavePromise}) => {
         if (initialValues.application_type === appTypes.Native) {
             return isValidNativeUri(value);
         }
-        const regex = /^https:\/\/([\w@][\w.:@]+)\/?[\w\.?=%&=\-@/$,]*$/ig;
+        const regex = /^https:\/\/([\w@][\w.:@\-]+)\/?[\w\.?=%&=\-@/$,]*$/ig;
         return regex.test(value);
     }
 

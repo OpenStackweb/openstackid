@@ -111,7 +111,7 @@ class CustomValidator extends Validator
 
     public function validateSslurl($attribute, $value)
     {
-        return preg_match(";^https:\/\/([\w@][\w.:@]+)\/?[\w\.?=%&=\-@/$,]*$;i", $value) == 1;
+        return preg_match(";^https:\/\/([\w@][\w.:@\-]+)\/?[\w\.?=%&=\-@/$,]*$;i", $value) == 1;
     }
 
     public function validateFreeText($attribute, $value)
