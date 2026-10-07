@@ -30,6 +30,7 @@ class Kernel extends ConsoleKernel
         Commands\CleanOpenIdStaleData::class,
         Commands\CreateSuperAdmin::class,
         Commands\EnforceAdmin2FACommand::class,
+        Commands\Reset2FACommand::class,
         Commands\CreateRawUser::class,
         Commands\CreateOAuth2TestClient::class,
         Commands\GetLatestOtp::class,
