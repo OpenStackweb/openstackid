@@ -67,4 +67,29 @@ interface IRecoveryCodeService
      * @return RecoveryCodesStatus remaining/total/low-threshold standing for the user
      */
     public function getStatus(User $user): RecoveryCodesStatus;
+
+    /**
+     * Disables 2FA for the user: clears two_factor_enabled and two_factor_enforced_at,
+     * deletes every recovery code and revokes every trusted device, all in a single
+     * transaction. A device_revoked audit event is recorded best-effort afterwards.
+     *
+     * $actor identifies who performs the operation:
+     *  - null: a system/console operation (e.g. idp:reset-2fa), no password is required;
+     *  - the same user: self-service, $currentPassword must match;
+     *  - another user: an administrator acting on the account, no password is required.
+     *    Authorizing the administrator is the caller's responsibility.
+     *
+     * The caller is responsible for emitting the settings_changed audit event, as only
+     * it knows the context (reason, actor, operator).
+     *
+     * Group-enforced users are still required to complete 2FA at login afterwards,
+     * as enforcement is derived from group membership (User::shouldRequire2FA()).
+     *
+     * @param User $user
+     * @param string|null $currentPassword
+     * @param User|null $actor
+     * @return void
+     * @throws ValidationException if the actor is the user and $currentPassword does not match
+     */
+    public function disableTwoFactor(User $user, ?string $currentPassword, ?User $actor): void;
 }
