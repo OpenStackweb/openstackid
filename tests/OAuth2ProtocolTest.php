@@ -734,9 +734,11 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
 
     /**
      * Refreshes $count times, each time with the newest refresh token (they rotate).
+     * $after_each runs with the decoded response right after every refresh, while its access token is
+     * still the newest one (rotating the refresh token invalidates the previous access token).
      * @return array list of decoded refresh responses
      */
-    private function refreshTokens(object $tokens, int $count, string $client_id, string $client_secret): array
+    private function refreshTokens(object $tokens, int $count, string $client_id, string $client_secret, ?callable $after_each = null): array
     {
         $res = [];
         $refresh_token = $tokens->refresh_token;
@@ -750,6 +752,9 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
             $json = json_decode($response->getContent());
             $refresh_token = $json->refresh_token;
             $res[] = $json;
+            if (!is_null($after_each)) {
+                $after_each($json);
+            }
         }
         return $res;
     }
@@ -773,12 +778,12 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
             // authorization code grant is never jittered
             $this->assertEquals($lifetime, $tokens->expires_in);
 
-            $refreshed = $this->refreshTokens($tokens, 5, $client_id, $client_secret);
-
             $access_token_repository = app(\OAuth2\Repositories\IAccessTokenRepository::class);
             $cache_service = app(UtilsServiceCatalog::CacheService);
             $values = [];
-            foreach ($refreshed as $json) {
+            // checked right after each refresh: the redis ttl starts counting down as soon as the
+            // token is stored, so reading it after the remaining refreshes would drift out of bounds
+            $this->refreshTokens($tokens, 5, $client_id, $client_secret, function (object $json) use ($lifetime, $jitter, $access_token_repository, $cache_service, &$values) {
                 $expires_in = $json->expires_in;
                 $values[] = $expires_in;
                 $this->assertGreaterThanOrEqual($lifetime - $jitter, $expires_in);
@@ -792,7 +797,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
                 $ttl = $cache_service->ttl($hashed);
                 $this->assertLessThanOrEqual($expires_in, $ttl);
                 $this->assertGreaterThanOrEqual($expires_in - 5, $ttl);
-            }
+            });
             $this->assertGreaterThan(1, count(array_unique($values)), 'refresh lifetimes are not jittered');
         } finally {
             unset($_ENV['access.token.lifetime'], $_ENV['access.token.refresh.jitter']);
