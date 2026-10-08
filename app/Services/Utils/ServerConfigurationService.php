@@ -144,6 +144,8 @@ class ServerConfigurationService
 
         $this->default_config_params["OAuth2.AuthorizationCode.Lifetime"] = Config::get('server.OAuth2_AuthorizationCode_Lifetime', 240);
         $this->default_config_params["OAuth2.AccessToken.Lifetime"] = Config::get('server.OAuth2_AccessToken_Lifetime', 3600);
+        //max random reduction (seconds) applied to access tokens issued by the refresh_token grant, 0 disables
+        $this->default_config_params["OAuth2.AccessToken.RefreshJitter"] = Config::get('server.OAuth2_AccessToken_RefreshJitter', 720);
         $this->default_config_params["OAuth2.IdToken.Lifetime"] = Config::get('server.OAuth2_IdToken_Lifetime', 3600);
         //infinite by default
         $this->default_config_params["OAuth2.RefreshToken.Lifetime"] = Config::get('server.OAuth2_RefreshToken_Lifetime', 0);

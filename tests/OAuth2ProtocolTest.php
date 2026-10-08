@@ -701,6 +701,187 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
     }
 
     /**
+     * Runs auth code -> token and returns the decoded token response (access + refresh token).
+     * @param string $client_id
+     * @param string $client_secret
+     * @return object
+     */
+    private function getTokensFromAuthCode(string $client_id, string $client_secret)
+    {
+        Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth", [
+            OAuth2Protocol::OAuth2Protocol_ClientId => $client_id,
+            OAuth2Protocol::OAuth2Protocol_RedirectUri => 'https://www.test.com/oauth2',
+            OAuth2Protocol::OAuth2Protocol_ResponseType => OAuth2Protocol::OAuth2Protocol_ResponseType_Code,
+            OAuth2Protocol::OAuth2Protocol_Scope => sprintf('%s/resource-server/read', $this->current_realm),
+            OAuth2Protocol::OAuth2Protocol_AccessType => OAuth2Protocol::OAuth2Protocol_AccessType_Offline
+        ], [], [], []);
+
+        $output = [];
+        parse_str(@parse_url($response->getTargetUrl())['query'], $output);
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token", [
+            'code' => $output['code'],
+            'redirect_uri' => 'https://www.test.com/oauth2',
+            'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
+        ], [], [], [],
+            array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
+
+        $this->assertResponseStatus(200);
+        return json_decode($response->getContent());
+    }
+
+    /**
+     * Refreshes $count times, each time with the newest refresh token (they rotate).
+     * $after_each runs with the decoded response right after every refresh, while its access token is
+     * still the newest one (rotating the refresh token invalidates the previous access token).
+     * @return array list of decoded refresh responses
+     */
+    private function refreshTokens(object $tokens, int $count, string $client_id, string $client_secret, ?callable $after_each = null): array
+    {
+        $res = [];
+        $refresh_token = $tokens->refresh_token;
+        for ($i = 0; $i < $count; $i++) {
+            $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token", [
+                'refresh_token' => $refresh_token,
+                'grant_type' => OAuth2Protocol::OAuth2Protocol_GrantType_RefreshToken,
+            ], [], [], [],
+                array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
+            $this->assertResponseStatus(200);
+            $json = json_decode($response->getContent());
+            $refresh_token = $json->refresh_token;
+            $res[] = $json;
+            if (!is_null($after_each)) {
+                $after_each($json);
+            }
+        }
+        return $res;
+    }
+
+    /**
+     * @return object decoded introspection response for $access_token
+     */
+    private function introspect(string $access_token, string $client_id, string $client_secret): object
+    {
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@introspection", [
+            'token' => $access_token,
+        ], [], [], [],
+            array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
+        $this->assertResponseStatus(200);
+        return json_decode($response->getContent());
+    }
+
+    /**
+     * refresh grant lifetime is lifetime - random_int(0, jitter); other grants stay unjittered
+     * @throws Exception
+     */
+    public function testRefreshTokenJitterBounds()
+    {
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
+        $lifetime = 3600;
+        $jitter = 720;
+
+        try {
+            $_ENV['access.token.lifetime'] = $lifetime;
+            $_ENV['access.token.refresh.jitter'] = $jitter;
+
+            $tokens = $this->getTokensFromAuthCode($client_id, $client_secret);
+            // authorization code grant is never jittered
+            $this->assertEquals($lifetime, $tokens->expires_in);
+
+            $access_token_repository = app(\OAuth2\Repositories\IAccessTokenRepository::class);
+            $cache_service = app(UtilsServiceCatalog::CacheService);
+            $values = [];
+            // checked right after each refresh: the redis ttl starts counting down as soon as the
+            // token is stored, so reading it after the remaining refreshes would drift out of bounds
+            $this->refreshTokens($tokens, 5, $client_id, $client_secret, function (object $json) use ($lifetime, $jitter, $client_id, $client_secret, $access_token_repository, $cache_service, &$values) {
+                $expires_in = $json->expires_in;
+                $values[] = $expires_in;
+                $this->assertGreaterThanOrEqual($lifetime - $jitter, $expires_in);
+                $this->assertLessThanOrEqual($lifetime, $expires_in);
+
+                // same value stored on DB and as redis ttl
+                $hashed = \Laminas\Crypt\Hash::compute('sha256', $json->access_token);
+                $access_token_db = $access_token_repository->getByValue($hashed);
+                $this->assertNotNull($access_token_db);
+                $this->assertEquals($expires_in, $access_token_db->getLifetime());
+                $ttl = $cache_service->ttl($hashed);
+                $this->assertLessThanOrEqual($expires_in, $ttl);
+                $this->assertGreaterThanOrEqual($expires_in - 5, $ttl);
+
+                // introspection must report the jittered lifetime, not the configured one
+                $introspection = $this->introspect($json->access_token, $client_id, $client_secret);
+                $this->assertLessThanOrEqual($expires_in, $introspection->expires_in);
+                $this->assertGreaterThanOrEqual($expires_in - 5, $introspection->expires_in);
+            });
+            $this->assertGreaterThan(1, count(array_unique($values)), 'refresh lifetimes are not jittered');
+        } finally {
+            unset($_ENV['access.token.lifetime'], $_ENV['access.token.refresh.jitter']);
+        }
+    }
+
+    /**
+     * jitter larger than lifetime - MinRefreshedAccessTokenLifetime is clamped so the issued
+     * lifetime never drops below the floor, and a lifetime at the floor is issued unchanged
+     * @throws Exception
+     */
+    public function testRefreshTokenJitterClampedToMinLifetime()
+    {
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
+        $min_lifetime = \Services\OAuth2\TokenService::MinRefreshedAccessTokenLifetime;
+
+        try {
+            // headroom above the floor is 40s, jitter asks for 720s
+            $lifetime = $min_lifetime + 40;
+            $_ENV['access.token.lifetime'] = $lifetime;
+            $_ENV['access.token.refresh.jitter'] = 720;
+
+            $tokens = $this->getTokensFromAuthCode($client_id, $client_secret);
+            $refreshed = $this->refreshTokens($tokens, 5, $client_id, $client_secret);
+            foreach ($refreshed as $json) {
+                $this->assertGreaterThanOrEqual($min_lifetime, $json->expires_in);
+                $this->assertLessThanOrEqual($lifetime, $json->expires_in);
+            }
+
+            // no headroom at all: the jitter is disabled and the lifetime is issued as configured.
+            // keep refreshing the same chain: a new auth code would not get a refresh token
+            // (consent was already given), the refresh grant rotates it.
+            $_ENV['access.token.lifetime'] = $min_lifetime;
+
+            foreach ($this->refreshTokens(end($refreshed), 2, $client_id, $client_secret) as $json) {
+                $this->assertEquals($min_lifetime, $json->expires_in);
+            }
+        } finally {
+            unset($_ENV['access.token.lifetime'], $_ENV['access.token.refresh.jitter']);
+        }
+    }
+
+    /**
+     * jitter = 0 keeps the current behaviour
+     * @throws Exception
+     */
+    public function testRefreshTokenJitterZero()
+    {
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
+
+        try {
+            $_ENV['access.token.lifetime'] = 3600;
+            $_ENV['access.token.refresh.jitter'] = 0;
+
+            $tokens = $this->getTokensFromAuthCode($client_id, $client_secret);
+            foreach ($this->refreshTokens($tokens, 2, $client_id, $client_secret) as $json) {
+                $this->assertEquals(3600, $json->expires_in);
+            }
+        } finally {
+            unset($_ENV['access.token.lifetime'], $_ENV['access.token.refresh.jitter']);
+        }
+    }
+
+    /**
      * test refresh token replay attack
      * @throws Exception
      */
