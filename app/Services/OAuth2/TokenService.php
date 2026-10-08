@@ -106,6 +106,11 @@ final class TokenService extends AbstractService implements ITokenService
     const ClientAccessTokensQty = '.atokens.qty';
     const ClientAccessTokensQtyLifetime = 86400;
 
+    /**
+     * floor (seconds) for the jittered lifetime of access tokens issued on refresh
+     */
+    const MinRefreshedAccessTokenLifetime = 60;
+
     const ClientRefreshTokensQty = '.rtokens.qty';
     const ClientRefreshTokensQtyLifetime = 86400;
 
@@ -604,7 +609,7 @@ final class TokenService extends AbstractService implements ITokenService
                 (
                     $refresh_token,
                     $scope,
-                    $this->configuration_service->getConfigValue('OAuth2.AccessToken.Lifetime')
+                    $this->getRefreshedAccessTokenLifetime()
                 )
             );
 
@@ -651,6 +656,25 @@ final class TokenService extends AbstractService implements ITokenService
             );
             return $access_token;
         });
+    }
+
+    /**
+     * Lifetime for access tokens issued by the refresh_token grant:
+     * configured lifetime minus a random reduction in [0, jitter], so clients that refresh
+     * together drift apart. Never above the configured lifetime, never below
+     * MinRefreshedAccessTokenLifetime (unless the configured lifetime itself is lower).
+     * @return int
+     */
+    private function getRefreshedAccessTokenLifetime(): int
+    {
+        $lifetime = intval($this->configuration_service->getConfigValue('OAuth2.AccessToken.Lifetime'));
+        $jitter = intval($this->configuration_service->getConfigValue('OAuth2.AccessToken.RefreshJitter'));
+        $jitter = min(max(0, $jitter), max(0, $lifetime - self::MinRefreshedAccessTokenLifetime));
+
+        $issued_lifetime = $jitter > 0 ? $lifetime - random_int(0, $jitter) : $lifetime;
+
+        Log::debug(sprintf("TokenService::getRefreshedAccessTokenLifetime lifetime %s jitter %s issued %s", $lifetime, $jitter, $issued_lifetime));
+        return $issued_lifetime;
     }
 
     /**
