@@ -837,6 +837,10 @@ final class TokenService extends AbstractService implements ITokenService
                     'refresh_token'
                 ]);
 
+                // the lifetime this token was issued with (jittered on refresh); it must win over the
+                // configured one so the remaining lifetime reported matches the DB value and the redis ttl
+                $access_token_lifetime = intval($payload['lifetime']);
+
                 // reload auth code ...
                 $payload['value'] = $payload['auth_code'];
 
@@ -854,7 +858,7 @@ final class TokenService extends AbstractService implements ITokenService
                     $value,
                     $auth_code,
                     $payload['issued'],
-                    $this->configuration_service->getConfigValue('OAuth2.AccessToken.Lifetime'),
+                    $access_token_lifetime,
                 );
 
                 $refresh_token_value = $payload['refresh_token'];

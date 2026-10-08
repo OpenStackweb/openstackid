@@ -760,6 +760,19 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
     }
 
     /**
+     * @return object decoded introspection response for $access_token
+     */
+    private function introspect(string $access_token, string $client_id, string $client_secret): object
+    {
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@introspection", [
+            'token' => $access_token,
+        ], [], [], [],
+            array("HTTP_Authorization" => " Basic " . base64_encode($client_id . ':' . $client_secret)));
+        $this->assertResponseStatus(200);
+        return json_decode($response->getContent());
+    }
+
+    /**
      * refresh grant lifetime is lifetime - random_int(0, jitter); other grants stay unjittered
      * @throws Exception
      */
@@ -783,7 +796,7 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
             $values = [];
             // checked right after each refresh: the redis ttl starts counting down as soon as the
             // token is stored, so reading it after the remaining refreshes would drift out of bounds
-            $this->refreshTokens($tokens, 5, $client_id, $client_secret, function (object $json) use ($lifetime, $jitter, $access_token_repository, $cache_service, &$values) {
+            $this->refreshTokens($tokens, 5, $client_id, $client_secret, function (object $json) use ($lifetime, $jitter, $client_id, $client_secret, $access_token_repository, $cache_service, &$values) {
                 $expires_in = $json->expires_in;
                 $values[] = $expires_in;
                 $this->assertGreaterThanOrEqual($lifetime - $jitter, $expires_in);
@@ -797,6 +810,11 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
                 $ttl = $cache_service->ttl($hashed);
                 $this->assertLessThanOrEqual($expires_in, $ttl);
                 $this->assertGreaterThanOrEqual($expires_in - 5, $ttl);
+
+                // introspection must report the jittered lifetime, not the configured one
+                $introspection = $this->introspect($json->access_token, $client_id, $client_secret);
+                $this->assertLessThanOrEqual($expires_in, $introspection->expires_in);
+                $this->assertGreaterThanOrEqual($expires_in - 5, $introspection->expires_in);
             });
             $this->assertGreaterThan(1, count(array_unique($values)), 'refresh lifetimes are not jittered');
         } finally {
