@@ -20,13 +20,13 @@ use PHPUnit\Framework\TestCase;
 /**
  * Regression: the session cookie defaults were flipped to secure=false /
  * same_site=lax, so any environment that does not set the env vars (prod sets
- * neither SESSION_SECURE_COOKIE nor SESSION_COOKIE_SAME_SITE) silently lost the
+ * neither SESSION_COOKIE_SECURE nor SESSION_COOKIE_SAME_SITE) silently lost the
  * Secure flag and the SameSite=None the OAuth2 memento needs to survive
  * cross-site POST callbacks.
  */
 final class SessionCookieConfigTest extends TestCase
 {
-    private const VARS = ['SESSION_SECURE_COOKIE', 'SESSION_COOKIE_SAME_SITE'];
+    private const VARS = ['SESSION_COOKIE_SECURE', 'SESSION_COOKIE_SAME_SITE'];
 
     private array $saved = [];
 
@@ -63,7 +63,7 @@ final class SessionCookieConfigTest extends TestCase
 
     public function testPlainHttpEnvironmentsCanOptOut(): void
     {
-        putenv('SESSION_SECURE_COOKIE=false');
+        putenv('SESSION_COOKIE_SECURE=false');
         putenv('SESSION_COOKIE_SAME_SITE=lax');
 
         $config = require __DIR__ . '/../../config/session.php';
