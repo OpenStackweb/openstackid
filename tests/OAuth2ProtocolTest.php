@@ -823,6 +823,43 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
     }
 
     /**
+     * jitter larger than lifetime - 60 is clamped so the issued lifetime never drops below 60s,
+     * and a lifetime at the floor is issued unchanged
+     * @throws Exception
+     */
+    public function testRefreshTokenJitterClampedToMinLifetime()
+    {
+        $client_id = '.-_~87D8/Vcvr6fvQbH4HyNgwTlfSyQ3x.openstack.client';
+        $client_secret = 'ITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhgITc/6Y5N7kOtGKhg';
+        $min_lifetime = \Services\OAuth2\TokenService::MinRefreshedAccessTokenLifetime;
+
+        try {
+            // headroom above the floor is 40s, jitter asks for 720s
+            $lifetime = $min_lifetime + 40;
+            $_ENV['access.token.lifetime'] = $lifetime;
+            $_ENV['access.token.refresh.jitter'] = 720;
+
+            $tokens = $this->getTokensFromAuthCode($client_id, $client_secret);
+            $refreshed = $this->refreshTokens($tokens, 5, $client_id, $client_secret);
+            foreach ($refreshed as $json) {
+                $this->assertGreaterThanOrEqual($min_lifetime, $json->expires_in);
+                $this->assertLessThanOrEqual($lifetime, $json->expires_in);
+            }
+
+            // no headroom at all: the jitter is disabled and the lifetime is issued as configured.
+            // keep refreshing the same chain: a new auth code would not get a refresh token
+            // (consent was already given), the refresh grant rotates it.
+            $_ENV['access.token.lifetime'] = $min_lifetime;
+
+            foreach ($this->refreshTokens(end($refreshed), 2, $client_id, $client_secret) as $json) {
+                $this->assertEquals($min_lifetime, $json->expires_in);
+            }
+        } finally {
+            unset($_ENV['access.token.lifetime'], $_ENV['access.token.refresh.jitter']);
+        }
+    }
+
+    /**
      * jitter = 0 keeps the current behaviour
      * @throws Exception
      */
