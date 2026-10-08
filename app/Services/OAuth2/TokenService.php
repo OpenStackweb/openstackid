@@ -107,9 +107,12 @@ final class TokenService extends AbstractService implements ITokenService
     const ClientAccessTokensQtyLifetime = 86400;
 
     /**
-     * floor (seconds) for the jittered lifetime of access tokens issued on refresh
+     * floor (seconds) for the jittered lifetime of access tokens issued on refresh.
+     * Kept well above the 60s skew the js clients (openstack-uicore-foundation) subtract from
+     * expires_in before refreshing: a lifetime at or near that skew would make them refresh on
+     * every request.
      */
-    const MinRefreshedAccessTokenLifetime = 60;
+    const MinRefreshedAccessTokenLifetime = 300;
 
     const ClientRefreshTokensQty = '.rtokens.qty';
     const ClientRefreshTokensQtyLifetime = 86400;

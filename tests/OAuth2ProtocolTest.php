@@ -823,8 +823,8 @@ final class OAuth2ProtocolTest extends OpenStackIDBaseTestCase
     }
 
     /**
-     * jitter larger than lifetime - 60 is clamped so the issued lifetime never drops below 60s,
-     * and a lifetime at the floor is issued unchanged
+     * jitter larger than lifetime - MinRefreshedAccessTokenLifetime is clamped so the issued
+     * lifetime never drops below the floor, and a lifetime at the floor is issued unchanged
      * @throws Exception
      */
     public function testRefreshTokenJitterClampedToMinLifetime()
