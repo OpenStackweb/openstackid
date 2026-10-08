@@ -17,9 +17,12 @@ use Illuminate\Support\Facades\Session;
 /**
  * Class TurnstileProtectedControllersTest
  *
- * Smoke tests verifying that cf-turnstile-response is always required on the
- * five auth endpoints that gate every submission behind Turnstile (unlike
- * UserController::postLogin, which only activates the rule above a threshold).
+ * Smoke tests verifying that cf-turnstile-response is required on the five auth
+ * endpoints that gate every submission behind Turnstile.
+ *
+ * Requests MUST go over HTTPS (callSecure) because .env.testing sets
+ * SSL_ENABLED=true, which causes SSLMiddleware to redirect plain HTTP requests
+ * to HTTPS before reaching any controller.
  */
 final class TurnstileProtectedControllersTest extends BrowserKitTestCase
 {
@@ -37,8 +40,8 @@ final class TurnstileProtectedControllersTest extends BrowserKitTestCase
 
     private function postWithSession(string $url, array $data = []): void
     {
-        $this->call('GET', $url);
-        $this->call('POST', $url, array_merge(['_token' => Session::token()], $data));
+        $this->callSecure('GET', $url);
+        $this->callSecure('POST', $url, array_merge(['_token' => Session::token()], $data));
     }
 
     // -------------------------------------------------------------------------
