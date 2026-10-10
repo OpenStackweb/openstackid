@@ -77,6 +77,7 @@
             serverPrivateKeysAdminText: '{{ __("Private Keys") }}',
             settingsText: '{{ __('Settings') }}',
             usersAdminText: '{{ __("Users") }}',
+            canAccessOAuth2Console: parseInt('{{ Auth::user()->canAccessOAuth2Console() ? 1 : 0 }}') === 1,
             isOAuth2ServerAdmin: parseInt('{{ Auth::user()->isOAuth2ServerAdmin() }}') === 1 ? true : false,
             isOpenIdServerAdmin: parseInt('{{ Auth::user()->isOpenIdServerAdmin() }}') === 1 ? true : false,
             isSuperAdmin: parseInt('{{ Auth::user()->isSuperAdmin() }}') === 1 ? true : false
