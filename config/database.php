@@ -102,6 +102,13 @@ return [
          * @see https://github.com/predis/predis/wiki/Connection-Parameters
          */
         'cluster' => false,
+        /*
+         * REDIS_PERSISTENT=true keeps one TLS socket per connection in each php-fpm worker,
+         * so requests skip the TLS handshake. Every connection needs its own persistent id:
+         * they share host:port, and a shared socket would let one connection's SELECT
+         * switch the database of another within the same request. predis takes the id from
+         * 'persistent', phpredis from 'persistent_id'; both are set so either client is safe.
+         */
 
         'default' => [
             'host' => env('REDIS_HOST'),
@@ -110,6 +117,8 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'timeout' => env('REDIS_TIMEOUT', 30.0),
             'scheme' => env('REDIS_SCHEME', 'tcp'),
+            'persistent' => env('REDIS_PERSISTENT', false) ? 'openstackid_default' : false,
+            'persistent_id' => 'openstackid_default',
         ],
 
         'cache' => [
@@ -119,6 +128,8 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'timeout' => env('REDIS_TIMEOUT', 30.0),
             'scheme' => env('REDIS_SCHEME', 'tcp'),
+            'persistent' => env('REDIS_PERSISTENT', false) ? 'openstackid_cache' : false,
+            'persistent_id' => 'openstackid_cache',
         ],
 
         'session' => [
@@ -128,6 +139,8 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'timeout' => env('REDIS_TIMEOUT', 30.0),
             'scheme' => env('REDIS_SCHEME', 'tcp'),
+            'persistent' => env('REDIS_PERSISTENT', false) ? 'openstackid_session' : false,
+            'persistent_id' => 'openstackid_session',
         ],
 
         'worker' => [
@@ -137,6 +150,8 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'timeout' => env('REDIS_TIMEOUT', 30.0),
             'scheme' => env('REDIS_SCHEME', 'tcp'),
+            'persistent' => env('REDIS_PERSISTENT', false) ? 'openstackid_worker' : false,
+            'persistent_id' => 'openstackid_worker',
         ],
         'doctrine_cache' => [
             'host' => env('REDIS_HOST'),
@@ -145,6 +160,8 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'timeout' => env('REDIS_TIMEOUT', 30.0),
             'scheme' => env('REDIS_SCHEME', 'tcp'),
+            'persistent' => env('REDIS_PERSISTENT', false) ? 'openstackid_doctrine_cache' : false,
+            'persistent_id' => 'openstackid_doctrine_cache',
         ],
     ],
     'allow_disabled_pk' => env('ALLOW_DISABLED_PK', false),
