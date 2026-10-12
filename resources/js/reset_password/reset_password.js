@@ -8,14 +8,19 @@ import CardContent from "@material-ui/core/CardContent";
 import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Grid from "@material-ui/core/Grid";
-import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
+import IconButton from "@material-ui/core/IconButton";
+import InputAdornment from "@material-ui/core/InputAdornment";
+import Visibility from "@material-ui/icons/Visibility";
+import VisibilityOff from "@material-ui/icons/VisibilityOff";
+import CheckCircle from "@material-ui/icons/CheckCircle";
+import Cancel from "@material-ui/icons/Cancel";
+import RadioButtonUnchecked from "@material-ui/icons/RadioButtonUnchecked";
 import PasswordStrengthBar from "react-password-strength-bar";
 import TextField from "@material-ui/core/TextField";
-import Typography from "@material-ui/core/Typography";
 import Swal from "sweetalert2";
 import {MuiThemeProvider, createTheme} from "@material-ui/core/styles";
 import {useFormik} from "formik";
-import {object, string} from "yup";
+import {object} from "yup";
 import Banner from "../components/banner/banner";
 
 import styles from "./reset_password.module.scss";
@@ -39,6 +44,7 @@ const ResetPasswordPage = ({
   const formEl = useRef(null);
   const captcha = useRef(null);
   const [captchaConfirmation, setCaptchaConfirmation] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (resetPasswordError) {
@@ -76,6 +82,8 @@ const ResetPasswordPage = ({
     }
   };
 
+  const passwordRequirementItems = passwordPolicy.shape_list.split(",").map(s => s.trim());
+
   return (
     <Container component="main" maxWidth="xs" className={styles.main_container}>
       <CssBaseline />
@@ -94,8 +102,8 @@ const ResetPasswordPage = ({
       >
         <Card className={styles.reset_password_container} variant="outlined">
           <CardHeader
-              title="Reset your Password"
-              subheader="You can reset your password here."
+              title="Set a new password."
+              subheader="Resetting the password for the FNid below."
           />
           <CardContent>
             <Grid
@@ -106,26 +114,29 @@ const ResetPasswordPage = ({
             >
               <Grid item>
                 <TextField
+                    className={styles.email_field}
                     id="email"
                     name="email"
                     autoComplete="email"
-                    variant="outlined"
+                    variant="filled"
                     fullWidth
                     size="small"
-                    label="Email Address"
+                    hiddenLabel
                     value={formik.values.email}
                     disabled={true}
+                    inputProps={{ 'aria-label': 'Email address' }}
+                    InputProps={{ disableUnderline: true }}
                 />
               </Grid>
               <Grid item xs={12}>
                 <TextField
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     variant="outlined"
                     fullWidth
                     size="small"
-                    label="Password"
+                    label="New password"
                     inputProps={{maxLength: passwordPolicy.max_length}}
                     value={formik.values.password}
                     onChange={formik.handleChange}
@@ -133,6 +144,20 @@ const ResetPasswordPage = ({
                         formik.touched.password && Boolean(formik.errors.password)
                     }
                     helperText={formik.touched.password && formik.errors.password}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="end"
+                                    size="small"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        )
+                    }}
                 />
                 {formik.values.password && (
                     <PasswordStrengthBar
@@ -149,7 +174,7 @@ const ResetPasswordPage = ({
                     variant="outlined"
                     fullWidth
                     size="small"
-                    label="Confirm Password"
+                    label="Confirm password"
                     inputProps={{maxLength: passwordPolicy.max_length}}
                     value={formik.values.password_confirmation}
                     onChange={formik.handleChange}
@@ -161,14 +186,37 @@ const ResetPasswordPage = ({
                         formik.touched.password_confirmation &&
                         formik.errors.password_confirmation
                     }
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                {!formik.values.password_confirmation
+                                    ? <RadioButtonUnchecked style={{ color: '#ccc' }} />
+                                    : formik.values.password_confirmation === formik.values.password && formik.values.password
+                                        ? <CheckCircle style={{ color: '#2e7d32' }} />
+                                        : <Cancel style={{ color: '#c62828', opacity: 0.6 }} />
+                                }
+                                <span className={styles.sr_only} aria-live="polite">
+                                    {!formik.values.password_confirmation
+                                        ? ""
+                                        : formik.values.password_confirmation === formik.values.password && formik.values.password
+                                            ? "Passwords match"
+                                            : "Passwords do not match"
+                                    }
+                                </span>
+                            </InputAdornment>
+                        )
+                    }}
                 />
               </Grid>
               <Grid item className={styles.password_hint}>
-                <InfoOutlinedIcon fontSize="small"/>
-                &nbsp;
-                <Typography variant="body2">
-                    <div dangerouslySetInnerHTML={{ __html: `The Password must be ${passwordPolicy.min_length}–${passwordPolicy.max_length} characters, and ${passwordPolicy.shape_warning}` }} />
-                </Typography>
+                <p>Your password must include:</p>
+                <ul>
+                  <li key="length">{passwordPolicy.min_length}–{passwordPolicy.max_length} characters</li>
+                  {passwordRequirementItems.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+                <p className={styles.password_characters}>Allowed: <span>{passwordPolicy.allowed_special_characters_text}</span></p>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
                 <Grid container item justify='center'>
@@ -195,6 +243,11 @@ const ResetPasswordPage = ({
                       disableElevation
                       fullWidth
                       type="submit"
+                      disabled={
+                          !!formik.errors.password ||
+                          !formik.values.password_confirmation ||
+                          formik.values.password_confirmation !== formik.values.password
+                      }
                   >
                     {submitButtonText}
                   </Button>
@@ -207,6 +260,7 @@ const ResetPasswordPage = ({
         <input type="hidden" value={initialValues.email} id="email" name="email"/>
         <input type="hidden" name="token" value={token}/>
       </form>
+      <p className={styles.help_link}>Need help? <a href="mailto:support@fntech.com">support@fntech.com</a></p>
     </Container>
   );
 };
