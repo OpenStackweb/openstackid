@@ -68,12 +68,15 @@ final class EventServiceProvider extends ServiceProvider
         ],
         \Illuminate\Queue\Events\JobProcessed::class => [
             'App\Listeners\CleanupJobAuditContextListener@handleJobProcessed',
+            'App\Listeners\ClearEntityManagerAfterJobListener@handleJobProcessed',
         ],
         \Illuminate\Queue\Events\JobFailed::class => [
             'App\Listeners\CleanupJobAuditContextListener@handleJobFailed',
+            'App\Listeners\ClearEntityManagerAfterJobListener@handleJobFailed',
         ],
         \Illuminate\Queue\Events\JobExceptionOccurred::class => [
             'App\Listeners\CleanupJobAuditContextListener@handleJobExceptionOccurred',
+            'App\Listeners\ClearEntityManagerAfterJobListener@handleJobExceptionOccurred',
         ],
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
             // ... other providers
