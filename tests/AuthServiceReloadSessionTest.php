@@ -118,7 +118,7 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
 
     public function testCacheMissFallbackRejectsUserThatCannotLogin(): void
     {
-        $this->mock_cache_service->method('getSingleValue')->with('jti-1')->willReturn(null);
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([['jti-1', null]]);
 
         $user = $this->mockUser(42, can_login: false);
         $this->mock_user_repository->method('getByIdWithGroups')->with(42)->willReturn($user);
@@ -134,7 +134,7 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
 
     public function testCacheMissFallbackRegistersPrincipalOnSuccess(): void
     {
-        $this->mock_cache_service->method('getSingleValue')->with('jti-1')->willReturn(null);
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([['jti-1', null]]);
 
         $user = $this->mockUser(42, can_login: true);
         $this->mock_user_repository->method('getByIdWithGroups')->with(42)->willReturn($user);
@@ -157,8 +157,8 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
 
     private function mockFailedSessionResume(): void
     {
-        $this->mock_cache_service->method('getSingleValue')->with('jti-1')->willReturn('encrypted-session-id');
-        $this->mock_cache_service->method('exists')->with('encrypted-session-idinvalid')->willReturn(false);
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([['jti-1', 'encrypted-session-id']]);
+        $this->mock_cache_service->method('exists')->with('session.revoked.' . hash('sha256', 'decrypted-session-id'))->willReturn(false);
 
         $this->crypt_mock->shouldReceive('decrypt')->with('encrypted-session-id')->andReturn('decrypted-session-id');
         $this->session_mock->shouldReceive('setId')->with('decrypted-session-id')->zeroOrMoreTimes();
@@ -240,8 +240,8 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
 
     public function testNonReloadSessionExceptionRestoresFormerSessionAndRethrows(): void
     {
-        $this->mock_cache_service->method('getSingleValue')->with('jti-1')->willReturn('encrypted-session-id');
-        $this->mock_cache_service->method('exists')->with('encrypted-session-idinvalid')->willReturn(false);
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([['jti-1', 'encrypted-session-id']]);
+        $this->mock_cache_service->method('exists')->with('session.revoked.' . hash('sha256', 'decrypted-session-id'))->willReturn(false);
 
         $this->crypt_mock->shouldReceive('decrypt')->with('encrypted-session-id')->andReturn('decrypted-session-id');
         $this->session_mock->shouldReceive('setId')->with('decrypted-session-id')->once();
@@ -266,5 +266,129 @@ final class AuthServiceReloadSessionTest extends PHPUnitTestCase
         $this->expectExceptionMessage('DB is down');
 
         $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 5, 1700000000));
+    }
+
+    // -----------------------------------------------------------------------
+    // Logout revocation: the marker invalidateSession() writes is the one
+    // reloadSession() reads, and a logged out user can't come back through
+    // the sub fallback with a hint issued before the logout.
+    // -----------------------------------------------------------------------
+
+    /**
+     * invalidateSession() and reloadSession() must agree on the marker key.
+     * Crypt::encrypt() is not used for it (random IV: two encryptions of the
+     * same id never match), a hash of the session id is.
+     */
+    public function testMarkerWrittenByInvalidateSessionIsFoundByReloadSession(): void
+    {
+        $store = [];
+        $this->mock_cache_service->method('setSingleValue')->willReturnCallback(
+            function ($key, $value, $ttl = 0) use (&$store) {
+                $store[$key] = $value;
+                return true;
+            }
+        );
+        $this->mock_cache_service->method('exists')->willReturnCallback(
+            function ($key) use (&$store) {
+                return array_key_exists($key, $store);
+            }
+        );
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([['jti-1', 'encrypted-session-id']]);
+
+        // the session being logged out is the one the jti maps to
+        $this->session_mock->shouldReceive('getId')->andReturn('decrypted-session-id', 'caller-session-id');
+        $this->crypt_mock->shouldReceive('decrypt')->with('encrypted-session-id')->andReturn('decrypted-session-id');
+
+        $this->service->invalidateSession();
+
+        $this->auth_mock->shouldNotReceive('login');
+        $this->session_mock->shouldNotReceive('setId');
+        $this->mock_principal_service->expects($this->never())->method('register');
+
+        $this->expectException(ReloadSessionException::class);
+        $this->service->reloadSession(SessionReloadHint::jtiOnly('jti-1'));
+    }
+
+    /**
+     * A revoked session is rejected even when the caller is already
+     * authenticated, and even when the hint allows the sub fallback.
+     */
+    public function testRevokedSessionIsNotResumedNorFallsBackToSub(): void
+    {
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([['jti-1', 'encrypted-session-id']]);
+        $this->mock_cache_service->method('exists')
+            ->with('session.revoked.' . hash('sha256', 'decrypted-session-id'))
+            ->willReturn(true);
+        $this->crypt_mock->shouldReceive('decrypt')->with('encrypted-session-id')->andReturn('decrypted-session-id');
+        $this->session_mock->shouldReceive('getId')->andReturn('former-session-id');
+        $this->auth_mock->shouldReceive('check')->andReturn(true);
+
+        $this->session_mock->shouldNotReceive('setId');
+        $this->auth_mock->shouldNotReceive('login');
+        $this->mock_user_repository->expects($this->never())->method('getByIdWithGroups');
+
+        $this->expectException(ReloadSessionException::class);
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 42, 1700000000));
+    }
+
+    public function testCacheMissFallbackRejectsHintIssuedBeforeUserLoggedOut(): void
+    {
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([
+            ['jti-1', null],
+            ['user.logged_out_at.42', '1700000100'],
+        ]);
+        $this->mock_user_repository->method('getByIdWithGroups')->with(42)->willReturn($this->mockUser(42, can_login: true));
+        $this->session_mock->shouldReceive('getId')->once()->andReturn('former-session-id');
+
+        $this->auth_mock->shouldNotReceive('login');
+        $this->mock_principal_service->expects($this->never())->method('register');
+
+        $this->expectException(ReloadSessionException::class);
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 42, 1700000000));
+    }
+
+    public function testCatchFallbackRejectsHintIssuedBeforeUserLoggedOut(): void
+    {
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([
+            ['jti-1', 'encrypted-session-id'],
+            ['user.logged_out_at.99', '1700000100'],
+        ]);
+        $this->mock_cache_service->method('exists')->willReturn(false);
+        $this->crypt_mock->shouldReceive('decrypt')->with('encrypted-session-id')->andReturn('decrypted-session-id');
+        $this->session_mock->shouldReceive('setId')->zeroOrMoreTimes();
+        $this->session_mock->shouldReceive('getId')->once()->andReturn('former-session-id');
+        $this->auth_mock->shouldReceive('check')->andReturn(false);
+
+        $principal = new Principal();
+        $principal->setState([0, time(), '']);
+        $this->mock_principal_service->method('get')->willReturn($principal);
+        $this->mock_user_repository->method('getByIdWithGroups')->willReturnMap([
+            [0, null],
+            [99, $this->mockUser(99, can_login: true)],
+        ]);
+
+        $this->auth_mock->shouldNotReceive('login');
+
+        $this->expectException(ReloadSessionException::class);
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 99, 1700000000));
+    }
+
+    /**
+     * A hint from an authentication made after the logout (the user logged in again) is fine.
+     */
+    public function testCacheMissFallbackAcceptsHintIssuedAfterUserLoggedOut(): void
+    {
+        $this->mock_cache_service->method('getSingleValue')->willReturnMap([
+            ['jti-1', null],
+            ['user.logged_out_at.42', '1699999999'],
+        ]);
+        $user = $this->mockUser(42, can_login: true);
+        $this->mock_user_repository->method('getByIdWithGroups')->with(42)->willReturn($user);
+        $this->session_mock->shouldReceive('getId')->once()->andReturn('former-session-id');
+
+        $this->auth_mock->shouldReceive('login')->once()->with($user);
+        $this->mock_principal_service->expects($this->once())->method('register')->with(42, 1700000000);
+
+        $this->service->reloadSession(SessionReloadHint::withSubFallback('jti-1', 42, 1700000000));
     }
 }

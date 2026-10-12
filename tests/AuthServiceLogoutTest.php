@@ -29,9 +29,9 @@ use Utils\Services\IAuthService;
 
 /**
  * Class AuthServiceLogoutTest
- * Tests that AuthService::logout() properly flushes all session data
- * and regenerates the session ID, fixing the incomplete session cleanup
- * that previously required callers to manually call Session::flush().
+ * Tests that AuthService::logout() destroys the current session (Session::invalidate():
+ * flush + regenerate with destroy=true, so the old session id's data leaves the store)
+ * and writes the revocation markers reloadSession() consults.
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
@@ -108,14 +108,21 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
         return $user;
     }
 
+    /**
+     * @var array<string, array{0: string, 1: int}> key => [value, ttl] of every setSingleValue() call
+     */
+    private array $cache_writes = [];
+
     private function expectSessionInvalidation(): void
     {
         $this->session_mock->shouldReceive('getId')->once()->andReturn('test-session-id');
-        $this->crypt_mock->shouldReceive('encrypt')->once()->with('test-session-id')->andReturn('encrypted-session-id');
+        $this->cache_writes = [];
         $this->mock_cache_service
-            ->expects($this->once())
-            ->method('addSingleValue')
-            ->with('encrypted-session-idinvalid', 'encrypted-session-id');
+            ->method('setSingleValue')
+            ->willReturnCallback(function ($key, $value, $ttl = 0) {
+                $this->cache_writes[$key] = [$value, $ttl];
+                return true;
+            });
     }
 
     private function expectCoreLogoutCalls(bool $clear_security_ctx = true): void
@@ -134,14 +141,13 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
         $this->cookie_mock->shouldReceive('queue')->once();
     }
 
-    private function expectSessionFlushAndRegenerate(): void
+    private function expectSessionInvalidate(): void
     {
-        $this->session_mock->shouldReceive('flush')->once();
-        $this->session_mock->shouldReceive('regenerate')->once();
+        $this->session_mock->shouldReceive('invalidate')->once();
     }
 
     /**
-     * Verify that logout() calls Session::flush() and Session::regenerate()
+     * Verify that logout() calls Session::invalidate()
      * when no user is logged in (guest context).
      */
     public function testLogoutFlushesSessionForGuestUser(): void
@@ -149,13 +155,13 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
         $this->mockGuestUser();
         $this->expectSessionInvalidation();
         $this->expectCoreLogoutCalls();
-        $this->expectSessionFlushAndRegenerate();
+        $this->expectSessionInvalidate();
 
         $this->service->logout();
     }
 
     /**
-     * Verify that logout() calls Session::flush() and Session::regenerate()
+     * Verify that logout() calls Session::invalidate()
      * when an authenticated user is logged in.
      */
     public function testLogoutFlushesSessionForAuthenticatedUser(): void
@@ -167,13 +173,13 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
 
         $this->expectSessionInvalidation();
         $this->expectCoreLogoutCalls();
-        $this->expectSessionFlushAndRegenerate();
+        $this->expectSessionInvalidate();
 
         $this->service->logout();
     }
 
     /**
-     * Verify that Session::flush() is called AFTER Auth::logout() to ensure
+     * Verify that Session::invalidate() is called AFTER Auth::logout() to ensure
      * the Laravel auth guard has already cleared its state before the session
      * is destroyed. This ordering prevents Auth::logout() from operating
      * on an empty session.
@@ -195,21 +201,17 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
             $call_order[] = 'auth_logout';
         });
 
-        $this->session_mock->shouldReceive('flush')->once()->andReturnUsing(function () use (&$call_order) {
-            $call_order[] = 'session_flush';
-        });
-
-        $this->session_mock->shouldReceive('regenerate')->once()->andReturnUsing(function () use (&$call_order) {
-            $call_order[] = 'session_regenerate';
+        $this->session_mock->shouldReceive('invalidate')->once()->andReturnUsing(function () use (&$call_order) {
+            $call_order[] = 'session_invalidate';
         });
 
         $this->service->logout();
 
-        $this->assertEquals(['auth_logout', 'session_flush', 'session_regenerate'], $call_order);
+        $this->assertEquals(['auth_logout', 'session_invalidate'], $call_order);
     }
 
     /**
-     * Verify that Session::flush() is called AFTER invalidateSession()
+     * Verify that Session::invalidate() is called AFTER invalidateSession()
      * captures the session ID. If flush happened first, the session ID
      * would be lost and the cache blacklist entry would be wrong.
      */
@@ -231,17 +233,14 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
             return 'original-session-id';
         });
 
-        $this->crypt_mock->shouldReceive('encrypt')->once()->with('original-session-id')->andReturn('encrypted-id');
         $this->mock_cache_service
             ->expects($this->once())
-            ->method('addSingleValue')
-            ->with('encrypted-idinvalid', 'encrypted-id');
+            ->method('setSingleValue')
+            ->with('session.revoked.' . hash('sha256', 'original-session-id'), '1', $this->anything());
 
-        $this->session_mock->shouldReceive('flush')->once()->andReturnUsing(function () use (&$session_id_captured) {
-            $this->assertTrue($session_id_captured, 'Session::flush() was called before Session::getId()');
+        $this->session_mock->shouldReceive('invalidate')->once()->andReturnUsing(function () use (&$session_id_captured) {
+            $this->assertTrue($session_id_captured, 'Session::invalidate() was called before Session::getId()');
         });
-
-        $this->session_mock->shouldReceive('regenerate')->once();
 
         $this->service->logout();
     }
@@ -255,7 +254,7 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
         $this->mockGuestUser();
         $this->expectSessionInvalidation();
         $this->expectCoreLogoutCalls(clear_security_ctx: false);
-        $this->expectSessionFlushAndRegenerate();
+        $this->expectSessionInvalidate();
 
         $this->service->logout(clear_security_ctx: false);
     }
@@ -287,7 +286,7 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
             'none'
         );
 
-        $this->expectSessionFlushAndRegenerate();
+        $this->expectSessionInvalidate();
 
         $this->service->logout();
     }
@@ -312,9 +311,33 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
         $this->config_mock->shouldReceive('get')->with('session.domain')->andReturn('.example.com');
         $this->cookie_mock->shouldReceive('queue')->once();
 
-        $this->expectSessionFlushAndRegenerate();
+        $this->expectSessionInvalidate();
 
         $this->service->logout();
+    }
+
+    /**
+     * The session marker is keyed by a hash of the session id, and the
+     * user-level "logged out at" marker is written for the authenticated user,
+     * both with a TTL (no leaked keys).
+     */
+    public function testLogoutWritesSessionAndUserRevocationMarkers(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->expectSessionInvalidation();
+        $this->expectCoreLogoutCalls();
+        $this->expectSessionInvalidate();
+
+        $this->service->logout();
+
+        $session_key = 'session.revoked.' . hash('sha256', 'test-session-id');
+        $this->assertArrayHasKey($session_key, $this->cache_writes);
+        $this->assertSame('1', $this->cache_writes[$session_key][0]);
+        $this->assertGreaterThan(0, $this->cache_writes[$session_key][1]);
+
+        $this->assertArrayHasKey('user.logged_out_at.42', $this->cache_writes);
+        $this->assertEqualsWithDelta(time(), (int)$this->cache_writes['user.logged_out_at.42'][0], 5);
+        $this->assertGreaterThan(0, $this->cache_writes['user.logged_out_at.42'][1]);
     }
 
     /**
@@ -347,10 +370,9 @@ final class AuthServiceLogoutTest extends PHPUnitTestCase
         $this->config_mock->shouldReceive('get')->with('session.domain')->andReturn('.example.com');
         $this->cookie_mock->shouldReceive('queue')->once();
 
-        $this->session_mock->shouldReceive('flush')->once()->andReturnUsing(function () use (&$session_flushed) {
+        $this->session_mock->shouldReceive('invalidate')->once()->andReturnUsing(function () use (&$session_flushed) {
             $session_flushed = true;
         });
-        $this->session_mock->shouldReceive('regenerate')->once();
 
         $this->service->logout();
 
