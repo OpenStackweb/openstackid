@@ -146,6 +146,7 @@ return [
         App\Providers\AuthServiceProvider::class,
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
+        App\Providers\DoctrineWorkerServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         Services\Utils\UtilsProvider::class,
         Services\OAuth2\OAuth2ServiceProvider::class,
