@@ -37,6 +37,8 @@ jobs:
       PHP_VERSION: 8.3
       OTEL_SDK_DISABLED: true
       OTEL_SERVICE_ENABLED: false
+      MAIL_FROM_EMAIL: noreply@tipit.net
+      MAIL_FROM_NAME: noreply@tipit.net
     services:
       mysql:
         image: mysql:8.0
