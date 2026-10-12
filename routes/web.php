@@ -69,6 +69,8 @@ Route::group(array('middleware' => ['ssl']), function () {
             Route::post('', ['middleware' => 'csrf', 'uses' => 'Auth\EmailVerificationController@resend']);
         });
 
+        Route::get('profile-link', 'UserController@getProfileLink')->name('auth.profile-link');
+
         // password reset routes
 
         Route::group(array('prefix' => 'password'), function () {
