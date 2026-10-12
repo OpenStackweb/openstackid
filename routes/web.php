@@ -49,7 +49,7 @@ Route::group(array('middleware' => ['ssl']), function () {
             Route::group(array('prefix' => 'verification'), function () {
                 Route::post('resend', ['middleware' => ['csrf'], 'uses' => 'UserController@resendVerificationEmail']);
             });
-            Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
+            Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin'])->block();
             Route::get('cancel', "UserController@cancelLogin");
             Route::group(array('prefix' => '{provider}'), function () {
                 Route::get('', 'SocialLoginController@redirect')->name("social_login");

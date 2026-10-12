@@ -396,8 +396,8 @@ final class UserController extends OpenIdController
     {
         $max_login_attempts_2_show_captcha = $this->server_configuration_service->getConfigValue("MaxFailed.LoginAttempts.2ShowCaptcha");
         $max_login_failed_attempts = intval($this->server_configuration_service->getConfigValue("MaxFailed.Login.Attempts"));
-        $login_attempts                    = 0;
-        $username                          = '';
+        $login_attempts = (int) Session::get('captcha_failed_attempts', 0);
+        $username = '';
         $user = null;
 
         try
@@ -411,7 +411,6 @@ final class UserController extends OpenIdController
             if (isset($data['password']))
                 $data['password'] = trim($data['password']);
 
-            $login_attempts = intval(Request::input('login_attempts'));
             // Build the validation constraint set.
             $rules = [
                 'username' => 'required|email',
@@ -436,7 +435,10 @@ final class UserController extends OpenIdController
                 $connection = $data['connection'] ?? null;
 
                 try {
+                    $user = $this->auth_service->getUserByUsername($username);
                     if ($flow == "password" && $this->auth_service->login($username, $password, $remember)) {
+                        Session::forget('captcha_failed_attempts');
+                        Session::save();
                         return $this->login_strategy->postLogin();
                     }
 
@@ -468,15 +470,18 @@ final class UserController extends OpenIdController
 
                         $otpClaim = OAuth2OTP::fromParams($username, $connection, $password);
                         $this->auth_service->loginWithOTP($otpClaim, $client);
+                        Session::forget('captcha_failed_attempts');
+                        Session::save();
                         return $this->login_strategy->postLogin();
                     }
                 } catch (AuthenticationException $ex) {
                     // failed login attempt...
 
-                    $user = $this->auth_service->getUserByUsername($username);
-                    if (!is_null($user)) {
-                        $login_attempts = $user->getLoginFailedAttempt();
-                    }
+                    $login_attempts = $login_attempts + 1;
+                    Session::put('captcha_failed_attempts', $login_attempts);
+                    Session::save();
+
+                    // User.loginFailedAttempt drives account lockout (persisted by auth_service).
 
                     return $this->login_strategy->errorLogin
                     (
@@ -525,6 +530,9 @@ final class UserController extends OpenIdController
             Log::warning($ex1);
 
             $user = $this->auth_service->getUserByUsername($username);
+            $login_attempts = $login_attempts + 1;
+            Session::put('captcha_failed_attempts', $login_attempts);
+            Session::save();
 
             $response_data =    [
                 'max_login_attempts_2_show_captcha' => $max_login_attempts_2_show_captcha,
