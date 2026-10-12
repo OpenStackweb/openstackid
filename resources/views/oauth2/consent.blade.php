@@ -16,7 +16,14 @@
         <div class="row">
             <div class="col-md-6 col-md-offset-8">
                 Welcome, <a target="_self"
-                            href="{!! URL::action("UserController@getProfile") !!}">{!!Auth::user()->getIdentifier()!!}</a>
+                            href="{!! URL::action("UserController@getProfile") !!}">{{ Auth::user()->getIdentifier() }}</a>.
+                @if($can_switch_account ?? true)
+                    Not you?
+                    <form method="POST" action="{{ URL::action("UserController@switchAccount") }}" style="display:inline">
+                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-link" style="padding:0;vertical-align:baseline">Switch account</button>
+                    </form>
+                @endif
             </div>
         </div>
     @endif
