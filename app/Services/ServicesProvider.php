@@ -15,8 +15,10 @@ use App\libs\Auth\Repositories\IUserExceptionTrailRepository;
 use App\Services\Apis\IRocketChatAPI;
 use App\Services\Apis\RocketChatAPI;
 use App\Services\Auth\DisqusSSOService;
+use App\Services\Auth\FacebookDataDeletionService;
 use App\Services\Auth\GroupService;
 use App\Services\Auth\IDisqusSSOService;
+use App\Services\Auth\IFacebookDataDeletionService;
 use App\Services\Auth\IGroupService;
 use App\Services\Auth\IRocketChatSSOService;
 use App\Services\Auth\IUserIdentifierGeneratorService;
@@ -92,6 +94,7 @@ final class ServicesProvider extends ServiceProvider implements DeferrableProvid
             });
 
         App::singleton(IUserService::class, UserService::class);
+        App::singleton(IFacebookDataDeletionService::class, FacebookDataDeletionService::class);
         App::singleton(IGroupService::class, GroupService::class);
         App::singleton(IDisqusSSOService::class, DisqusSSOService::class);
         App::singleton(IRocketChatSSOService::class, RocketChatSSOService::class);
@@ -110,6 +113,7 @@ final class ServicesProvider extends ServiceProvider implements DeferrableProvid
             \Services\SecurityPolicies\LockUserSecurityPolicy::class,
             \Services\SecurityPolicies\OAuth2LockClientCounterMeasure::class,
             IUserService::class,
+            IFacebookDataDeletionService::class,
             IGroupService::class,
             OAuth2SecurityPolicy::class,
             AuthorizationCodeRedeemPolicy::class,
