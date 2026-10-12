@@ -43,7 +43,7 @@ class CustomValidator extends Validator
         $this->isImplicit('fail');
     }
 
-    public function validateBoolean($attribute, $value)
+    public function validateBoolean($attribute, $value, $parameters = [])
     {
         if (is_bool($value)) {
             return true;
