@@ -676,7 +676,27 @@ final class UserController extends OpenIdController
     {
         $user = $this->auth_service->getCurrentUser();
         // RevokeUserGrantsOnExplicitLogout::dispatch($user)->afterResponse();
+
+        // A web logout issued while a relying party request is pending (the user is switching
+        // accounts from the consent/profile pages) must not drop that request: AuthService::logout
+        // flushes the whole session, so keep the pending OAuth2 / OpenID memento aside and put it
+        // back afterwards. The next login then keeps the OAUTH2 / OIDC strategy and returns the
+        // user to the relying party instead of their identity page.
+        $pending_oauth2_request = $this->oauth2_memento_service->exists() ? $this->oauth2_memento_service->load() : null;
+        $pending_openid_request = $this->openid_memento_service->exists() ? $this->openid_memento_service->load() : null;
+
         $this->auth_service->logout();
+
+        if (!is_null($pending_oauth2_request)) {
+            Log::debug("UserController::logout restoring pending OAuth2 request after logout");
+            $this->oauth2_memento_service->serialize($pending_oauth2_request);
+        }
+
+        if (!is_null($pending_openid_request)) {
+            Log::debug("UserController::logout restoring pending OpenID request after logout");
+            $this->openid_memento_service->serialize($pending_openid_request);
+        }
+
         return Redirect::action("UserController@getLogin");
     }
 
