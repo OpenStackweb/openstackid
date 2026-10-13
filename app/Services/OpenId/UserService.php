@@ -14,6 +14,7 @@
 
 use App\Events\UserEmailUpdated;
 use App\Events\UserPasswordResetSuccessful;
+use App\Events\UserSpamStateUpdated;
 use App\Jobs\AddUserAction;
 use App\Jobs\RevokeUserGrantsOnSessionRevocation;
 use App\Jobs\PublishUserDeleted;
@@ -295,8 +296,9 @@ final class UserService extends AbstractService implements IUserService
     public function update(int $id, array $payload): IEntity
     {
         $password_changed = false;
+        $spam_reclassification_needed = false;
 
-        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed) {
+        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed, &$spam_reclassification_needed) {
 
             $user = $this->repository->getById($id);
 
@@ -305,7 +307,9 @@ final class UserService extends AbstractService implements IUserService
 
             $former_email = $user->getEmail();
             $former_password = $user->getPassword();
-            $current_user = !empty($this->server_ctx->getCurrentUserId()) ? $this->repository->getById($this->server_ctx->getCurrentUserId()) : Auth::user();
+            $former_bio = $user->getBio();
+            $former_spam_type = $user->getSpamType();
+            $current_user =!empty($this->server_ctx->getCurrentUserId()) ? $this->repository->getById($this->server_ctx->getCurrentUserId()) : Auth::user();
             $should_ask_4_cur_password_validation = !(!is_null($current_user) &&
                     $user->getId() != $current_user->getId() && // is not the same user as current user
                     ($current_user->isAdmin() || $current_user->isSuperAdmin()) && // current user should be admin
@@ -368,7 +372,15 @@ final class UserService extends AbstractService implements IUserService
                 }
             }
 
-            if ($former_email != $user->getEmail()) {
+            // mirrors User::preUpdate, which resets the spam classification but must not dispatch
+            // UserSpamStateUpdated from inside the flush (nested flush drops the outer change set)
+            $bio_changed = $former_bio != $user->getBio() && !empty($user->getBio());
+            $email_changed = $former_email != $user->getEmail();
+            if ($former_spam_type != User::SpamTypeNone && ($bio_changed || $email_changed)) {
+                $spam_reclassification_needed = true;
+            }
+
+            if ($email_changed) {
                 Log::warning(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email, $user->getEmail()));
                 $user->clearEmailVerification();
                 Event::dispatch(new UserEmailUpdated($user->getId()));
@@ -385,6 +397,14 @@ final class UserService extends AbstractService implements IUserService
         if ($password_changed) {
             Session::regenerate();
             Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
+        }
+
+        if ($spam_reclassification_needed) {
+            try {
+                Event::dispatch(new UserSpamStateUpdated($user->getId()));
+            } catch (\Exception $ex) {
+                Log::warning($ex);
+            }
         }
 
         try {
