@@ -135,9 +135,11 @@ Route::group(array('middleware' => ['ssl', 'auth']), function () {
 
 Route::group(['prefix' => 'admin', 'middleware' => ['ssl', 'auth']], function () {
     //client admin UI
-    Route::get('clients/edit/{id}', ['middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'AdminController@editRegisteredClient']);
-    Route::get('clients', 'AdminController@listOAuth2Clients');
-    Route::get('/grants', 'AdminController@editIssuedGrants');
+    Route::group(['middleware' => ['oauth2.console.access']], function () {
+        Route::get('clients/edit/{id}', ['middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'AdminController@editRegisteredClient']);
+        Route::get('clients', 'AdminController@listOAuth2Clients');
+        Route::get('/grants', 'AdminController@editIssuedGrants');
+    });
 
     //oauth2 server admin UI
     Route::group(['middleware' => ['oauth2.currentuser.serveradmin']], function () {
@@ -241,7 +243,7 @@ Route::group([
     });
 
     //client api
-    Route::group(array('prefix' => 'clients'), function () {
+    Route::group(array('prefix' => 'clients', 'middleware' => ['oauth2.console.access.json']), function () {
 
         Route::get('', 'ClientApiController@getAll');
         Route::post('', 'ClientApiController@create');
