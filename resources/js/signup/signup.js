@@ -84,10 +84,12 @@ const SignUpPage = ({
       return errors;
     },
     onSubmit: (values) => {
-      const turnstileResponse = captcha.current?.getResponse();
-      if (!turnstileResponse) {
-        setCaptchaConfirmation("Remember to check the captcha");
-        return;
+      if (captchaPublicKey) {
+        const turnstileResponse = captcha.current?.getResponse();
+        if (!turnstileResponse) {
+          setCaptchaConfirmation("Remember to check the captcha");
+          return;
+        }
       }
       doHtmlFormPost();
     },

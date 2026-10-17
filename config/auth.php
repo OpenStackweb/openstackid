@@ -107,6 +107,12 @@ return [
     'password_shape_warning' => env('AUTH_PASSWORD_SHAPE_WARNING', 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (#?!@$%^&*+-).'),
     'verification_email_lifetime' => env("AUTH_VERIFICATION_EMAIL_LIFETIME", 600),
     'allows_native_auth' => env('AUTH_ALLOWS_NATIVE_AUTH', 1),
+
+    'recovery_codes' => [
+        'count'          => env('MFA_RECOVERY_CODES_COUNT', 10),
+        'length'         => env('MFA_RECOVERY_CODE_LENGTH', 8),
+        'low_threshold'  => env('MFA_RECOVERY_CODES_LOW_THRESHOLD', 3),
+    ],
     'allows_native_on_config' => env('AUTH_ALLOWS_NATIVE_AUTH_CONFIG', 1),
     'allows_opt_auth' => env('AUTH_ALLOWS_OTP_AUTH', 1),
 ];

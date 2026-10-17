@@ -79,10 +79,47 @@ nvm use
 
 # Tests
 
+## Backend (PHPUnit)
+
+```bash
 php artisan view:clear
 php artisan cache:clear
-
 ./vendor/bin/phpunit
+```
+
+## Frontend — Unit/Component (Jest)
+
+Run from inside the `idp-app` container:
+
+```bash
+yarn test:unit        # watch mode
+yarn test:unit:ci     # single run with coverage
+```
+
+## Frontend — E2E (Playwright)
+
+Run from the **host** (outside any container). The full stack must be running (`./start_local_server.sh`).
+
+```bash
+# Run all E2E tests
+docker compose --profile e2e run --rm playwright npx playwright test
+
+# Run a specific file
+docker compose --profile e2e run --rm playwright npx playwright test tests/e2e/tests/auth/login.spec.ts
+```
+
+> E2E tests cannot be run from inside the `idp-app` container — it has no browser.
+> The `playwright` service (`mcr.microsoft.com/playwright:v1.61.1-jammy`) includes Chromium and all required system dependencies.
+
+### Viewing the HTML report
+
+The report is written to `tests/e2e/report/` on the host. Serve it from the host (not from inside any container) so the browser can reach it:
+
+```bash
+nvm use 22.2.0
+yarn test:e2e:report
+# Open http://localhost:9323
+```
 
 # install docker compose
 

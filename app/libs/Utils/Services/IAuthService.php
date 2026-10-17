@@ -19,6 +19,7 @@ use Models\OAuth2\OAuth2OTP;
 use OAuth2\Models\IClient;
 use OAuth2\Models\SessionReloadHint;
 use OpenId\Models\IOpenIdUser;
+use Strategies\MFA\IMFAChallengeStrategy;
 /**
  * Interface IAuthService
  */
@@ -39,6 +40,7 @@ interface IAuthService
 
     const AuthenticationFlowPassword = "password";
     const AuthenticationFlowPasswordless = "otp";
+    const AuthenticationFlowMFA = "2fa";
     /**
      * @return bool
      */
@@ -59,6 +61,29 @@ interface IAuthService
     public function login(string $username, string $password, bool $remember_me): bool;
 
     /**
+     * Validates the supplied credentials without establishing a session.
+     * Delegates to CustomAuthProvider::retrieveByCredentials() so security
+     * checkpoints (LockUserCounterMeasure, etc.) still fire on failure.
+     *
+     * @param string $username
+     * @param string $password
+     * @return User
+     * @throws AuthenticationException on invalid credentials, missing user, or locked account.
+     * @throws \Auth\Exceptions\UnverifiedEmailMemberException when the user's email is not verified
+     */
+    public function validateCredentials(string $username, string $password): User;
+
+    /**
+     * Establishes a Laravel session for an already-authenticated user.
+     * Used by the 2FA flow after the second factor is verified.
+     *
+     * @param User $user
+     * @param bool $remember
+     * @return void
+     */
+    public function loginUser(User $user, bool $remember): void;
+
+    /**
      * @param OAuth2OTP $otpClaim
      * @param Client|null $client
      * @param bool $remember
@@ -66,6 +91,18 @@ interface IAuthService
      * @throws AuthenticationException
      */
     public function loginWithOTP(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP;
+
+    /**
+     * Same as loginWithOTP(), but rejects the login when the resolved user has
+     * MFA enforced - passwordless (email-only) proof is not sufficient for an
+     * account that requires two-factor authentication.
+     * @param OAuth2OTP $otpClaim
+     * @param Client|null $client
+     * @param bool $remember
+     * @return OAuth2OTP|null
+     * @throws AuthenticationException
+     */
+    public function loginWithOTPEnforcing2FA(OAuth2OTP $otpClaim, ?Client $client = null, bool $remember = false): ?OAuth2OTP;
 
 
     /**
@@ -174,5 +211,32 @@ interface IAuthService
         User $sessionUser,
         ?Client $client = null
     ): OAuth2OTP;
+
+    public function issueMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        ?Client $client = null,
+        bool $remember = false
+    ): array;
+
+    public function verifyMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        string $value,
+        ?Client $client = null
+    ): void;
+
+    public function verifyMFARecoveryCode(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        string $inputCode
+    ): void;
+
+    public function resendMFAChallenge(
+        User $user,
+        IMFAChallengeStrategy $strategy,
+        ?Client $client = null,
+        bool $remember = false
+    ): array;
 
 }
