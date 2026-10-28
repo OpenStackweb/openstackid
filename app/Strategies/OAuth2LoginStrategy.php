@@ -15,6 +15,7 @@
 use App\libs\OAuth2\Strategies\ILoginHintProcessStrategy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use OAuth2\Endpoints\AuthorizationEndpoint;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
@@ -78,8 +79,22 @@ class OAuth2LoginStrategy extends DefaultLoginStrategy
 
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
+        $provider = $auth_request instanceof OAuth2AuthenticationRequest ? $auth_request->getProvider() : null;
+
+        // A pending 2FA challenge means challengeRequired() sent us here to RENDER
+        // the login page so login.js can show the 2FA screen. The memento still
+        // carries the provider the relying party asked for (e.g. provider=facebook),
+        // so re-dispatching to it would send the user straight back to the provider,
+        // whose callback would issue a fresh challenge on every round trip until the
+        // resend rate-limit fails the login outright - the 2FA screen would never
+        // be reached.
+        if (!empty($provider) && Session::get('flow') === IAuthService::AuthenticationFlowMFA) {
+            Log::debug("OAuth2LoginStrategy::getLogin 2FA challenge pending, rendering login page instead of dispatching to provider", ['provider' => $provider]);
+            $provider = null;
+        }
+
         return $response_strategy->getLoginResponse([
-            'provider' => $auth_request instanceof OAuth2AuthenticationRequest ? $auth_request->getProvider() : null,
+            'provider' => $provider,
             'tenant' => $auth_request instanceof OAuth2AuthorizationRequest ? $auth_request->getTenant() : null
         ]);
     }
