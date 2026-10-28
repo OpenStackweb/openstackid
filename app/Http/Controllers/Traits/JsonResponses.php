@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Response;
 use Exception;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Trait JsonResponses
  * @package App\Http\Controllers\Traits
@@ -23,11 +24,11 @@ trait JsonResponses
 {
     protected function error500(Exception $ex){
         Log::error($ex);
-        return Response::json(array( 'error' => 'server error'), 500);
+        return Response::json(array( 'error' => 'server error'), HttpResponse::HTTP_INTERNAL_SERVER_ERROR);
     }
 
     protected function created($data='ok'){
-        $res = Response::json($data, 201);
+        $res = Response::json($data, HttpResponse::HTTP_CREATED );
         //jsonp
         if(Request::has('callback'))
             $res->setCallback(Request::input('callback'));
@@ -36,7 +37,7 @@ trait JsonResponses
 
     protected function updated($data = 'ok', $has_content = true)
     {
-        $res = Response::json($data, $has_content ? 201 : 204);
+        $res = Response::json($data, $has_content ? HttpResponse::HTTP_CREATED : HttpResponse::HTTP_NO_CONTENT);
         //jsonp
         if (Request::has('callback')) {
             $res->setCallback(Request::input('callback'));
@@ -45,7 +46,7 @@ trait JsonResponses
     }
 
     protected function deleted($data='ok'){
-        $res =  Response::json($data, 204);
+        $res =  Response::json($data, HttpResponse::HTTP_NO_CONTENT);
         //jsonp
         if(Request::has('callback'))
             $res->setCallback(Request::input('callback'));
@@ -61,19 +62,24 @@ trait JsonResponses
     }
 
     protected function error400($data = ['message' => 'Bad Request']){
-        return Response::json($data, 400);
+        return Response::json($data, HttpResponse::HTTP_BAD_REQUEST);
     }
 
     protected function error404($data = array('message' => 'Entity Not Found')){
         if(!is_array($data)){
             $data = ['message' => $data];
         }
-        return Response::json($data, 404);
+        return Response::json($data, HttpResponse::HTTP_NOT_FOUND);
     }
 
     protected function error403($data = array('message' => 'Forbidden'))
     {
-        return Response::json($data, 403);
+        return Response::json($data, HttpResponse::HTTP_FORBIDDEN);
+    }
+
+    protected function unauthorized($data = array('message' => 'UnAuthorized'))
+    {
+        return Response::json($data, HttpResponse::HTTP_UNAUTHORIZED);
     }
 
     /**
@@ -94,6 +100,6 @@ trait JsonResponses
         if(!is_array($messages)){
             $messages = [$messages];
         }
-        return Response::json(array('message' => 'Validation Failed', 'errors' => $messages), 412);
+        return Response::json(array('message' => 'Validation Failed', 'errors' => $messages), HttpResponse::HTTP_PRECONDITION_FAILED);
     }
 }

@@ -3,7 +3,7 @@
          backupGlobals="false"
          colors="true"
          processIsolation="false"
-         stopOnFailure="true"
+         stopOnFailure="false"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.2/phpunit.xsd"
          cacheDirectory=".phpunit.cache"
          backupStaticProperties="false"
@@ -13,6 +13,15 @@
       <directory>./tests/</directory>
       <exclude>./tests/OpenTelemetry/</exclude>
       <exclude>./tests/TestCase.php</exclude>
+      <!-- The directory scan only picks up *Test.php (PHPUnit's default
+           suffix), so the concrete *TestCase.php protocol suites were never
+           executed by CI - they must be listed explicitly. Abstract bases
+           (OpenStackIDBaseTestCase, BrowserKitTestCase, etc.) need no entry.
+           OAuth2ProtocolTestCase.php was renamed to OAuth2ProtocolTest.php
+           and is auto-discovered, so it is not listed here. -->
+      <file>./tests/OIDCProtocolTestCase.php</file>
+      <file>./tests/OIDCPasswordlessTestCase.php</file>
+      <file>./tests/OpenIdProtocolTestCase.php</file>
     </testsuite>
     <testsuite name="OTEL Functionality Test Suite">
       <directory>./tests/OpenTelemetry/</directory>
@@ -21,6 +30,16 @@
     </testsuite>
     <testsuite name="OTEL Custom Formatters Test Suite">
       <directory>./tests/OpenTelemetry/Formatters/</directory>
+    </testsuite>
+    <testsuite name="Two Factor Authentication Test Suite">
+      <file>./tests/TwoFactorRepositoriesTest.php</file>
+      <file>./tests/unit/UserTwoFactorTest.php</file>
+      <file>./tests/unit/MFA/AbstractMFAChallengeStrategyTest.php</file>
+      <file>./tests/unit/MFA/EmailOTPMFAChallengeStrategyTest.php</file>
+      <file>./tests/unit/MFA/MFAChallengeStrategyFactoryTest.php</file>
+      <file>./tests/unit/TwoFactorAuditServiceTest.php</file>
+      <file>./tests/unit/MFAGateServiceTest.php</file>
+      <file>./tests/TwoFactorLoginFlowTest.php</file>
     </testsuite>
   </testsuites>
   <php>

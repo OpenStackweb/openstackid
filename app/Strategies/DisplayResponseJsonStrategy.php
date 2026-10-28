@@ -96,4 +96,13 @@ class DisplayResponseJsonStrategy implements IDisplayResponseStrategy
         }
         return Response::json($data, 412);
     }
+
+    /**
+     * @param array $data
+     * @return SymfonyResponse
+     */
+    public function getChallengeRequiredResponse(array $data = [])
+    {
+        return Response::json(array_merge(['error_code' => ILoginStrategy::MFA_REQUIRED], $data), 412);
+    }
 }
