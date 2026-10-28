@@ -364,6 +364,53 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         );
     }
 
+    public function testEnforcedUserSocialLoginFromOIDCRequestWithProviderReachesMFAScreen(): void
+    {
+        // Regression: relying parties (event-site) send the OIDC request with
+        // provider=facebook so the IDP skips its own login screen and dispatches
+        // straight to the provider. After the social callback issued the
+        // challenge and bounced back to /login, OAuth2LoginStrategy::getLogin()
+        // dispatched to the provider AGAIN (the memento still carries the
+        // provider), so the 2FA screen was never rendered: provider -> callback
+        // -> new OTP -> provider ... until the resend rate-limit turned the
+        // whole login into social_login_error.
+        $this->startOIDCAuthorizationRequest(['provider' => 'facebook']);
+
+        $response = $this->action('GET', 'UserController@getLogin');
+        $this->assertResponseStatus(302);
+        $this->assertSame(
+            route('social_login', ['provider' => 'facebook']),
+            $response->getTargetUrl(),
+            'with no challenge pending, the provider named in the request must still be dispatched directly'
+        );
+
+        $response = $this->socialLoginAs(self::ADMIN_EMAIL);
+        $this->assertResponseStatus(302);
+        $this->assertFalse(Auth::check(), 'social login must not authenticate an enforced-2FA user without a challenge');
+        $this->assertSame(URL::action('UserController@getLogin'), $response->getTargetUrl());
+
+        $response = $this->action('GET', 'UserController@getLogin');
+        $this->assertResponseStatus(
+            200,
+            'with a challenge pending, the login page must render so login.js can show the 2FA screen, not bounce back to the provider'
+        );
+        $this->assertStringContainsString(
+            sprintf("config.flow = '%s'", IAuthService::AuthenticationFlowMFA),
+            $response->getContent(),
+            'the rendered login page must tell login.js to open the 2FA screen'
+        );
+
+        $response = $this->verify($this->latestOtpCode(self::ADMIN_EMAIL));
+        $this->assertResponseStatus(200);
+        $this->assertTrue(Auth::check(), 'the social-triggered challenge must be completable through verify2FA()');
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame(
+            URL::action('OAuth2\OAuth2ProviderController@auth'),
+            $payload['redirect_url'] ?? null,
+            'after verification the user must resume the relying party request'
+        );
+    }
+
     // -------------------------------------------------------------------------
     // passwordless (flow=otp) refresh-resilience
     // -------------------------------------------------------------------------
@@ -1494,14 +1541,14 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
      * serializes the memento and bounces to the login screen, so every login
      * call that follows runs under the OAuth2LoginStrategy.
      */
-    private function startOIDCAuthorizationRequest(): void
+    private function startOIDCAuthorizationRequest(array $extraParams = []): void
     {
-        $response = $this->action('POST', 'OAuth2\OAuth2ProviderController@auth', [
+        $response = $this->action('POST', 'OAuth2\OAuth2ProviderController@auth', array_merge([
             'client_id'     => self::OIDC_CLIENT_ID,
             'redirect_uri'  => self::OIDC_REDIRECT_URI,
             'response_type' => 'code',
             'scope'         => 'openid profile email',
-        ]);
+        ], $extraParams));
         $this->assertResponseStatus(302);
         $this->assertTrue(
             str_contains($response->getTargetUrl(), '/login'),
