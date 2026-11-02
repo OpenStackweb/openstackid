@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7a845effcad9c4a73104f38d9bbb5dfb",
+    "content-hash": "d32ad6af2e248b6fe5017745733a52dd",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -7462,16 +7462,16 @@
         },
         {
             "name": "smarcet/jose4php",
-            "version": "dev-feature/remove-phpseclib2-compat-dep",
+            "version": "3.0.0-beta.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/smarcet/JOSE4PHP.git",
-                "reference": "112b6835f7b2744f58fd367e4bec4abb42471cd1"
+                "reference": "87205d2506c81ab7cf3a96668728531ca84c77e3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/smarcet/JOSE4PHP/zipball/112b6835f7b2744f58fd367e4bec4abb42471cd1",
-                "reference": "112b6835f7b2744f58fd367e4bec4abb42471cd1",
+                "url": "https://api.github.com/repos/smarcet/JOSE4PHP/zipball/87205d2506c81ab7cf3a96668728531ca84c77e3",
+                "reference": "87205d2506c81ab7cf3a96668728531ca84c77e3",
                 "shasum": ""
             },
             "require": {
@@ -7525,9 +7525,9 @@
             ],
             "support": {
                 "issues": "https://github.com/smarcet/JOSE4PHP/issues",
-                "source": "https://github.com/smarcet/JOSE4PHP/tree/feature/remove-phpseclib2-compat-dep"
+                "source": "https://github.com/smarcet/JOSE4PHP/tree/ls"
             },
-            "time": "2026-09-29T16:47:02+00:00"
+            "time": "2026-11-02T16:25:12+00:00"
         },
         {
             "name": "socialiteproviders/apple",
@@ -14427,9 +14427,7 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {
-        "smarcet/jose4php": 20
-    },
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
