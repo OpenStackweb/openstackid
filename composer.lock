@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d32ad6af2e248b6fe5017745733a52dd",
+    "content-hash": "9f4fccb832bd740afe0b62f48c8ce540",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -7462,16 +7462,16 @@
         },
         {
             "name": "smarcet/jose4php",
-            "version": "3.0.0-beta.1",
+            "version": "3.0.0-beta.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/smarcet/JOSE4PHP.git",
-                "reference": "87205d2506c81ab7cf3a96668728531ca84c77e3"
+                "reference": "dd28228d58978748e4f225716703650ad1c7e05b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/smarcet/JOSE4PHP/zipball/87205d2506c81ab7cf3a96668728531ca84c77e3",
-                "reference": "87205d2506c81ab7cf3a96668728531ca84c77e3",
+                "url": "https://api.github.com/repos/smarcet/JOSE4PHP/zipball/dd28228d58978748e4f225716703650ad1c7e05b",
+                "reference": "dd28228d58978748e4f225716703650ad1c7e05b",
                 "shasum": ""
             },
             "require": {
@@ -7525,9 +7525,9 @@
             ],
             "support": {
                 "issues": "https://github.com/smarcet/JOSE4PHP/issues",
-                "source": "https://github.com/smarcet/JOSE4PHP/tree/ls"
+                "source": "https://github.com/smarcet/JOSE4PHP/tree/3.0.0-beta.2"
             },
-            "time": "2026-11-02T16:25:12+00:00"
+            "time": "2026-11-02T16:49:48+00:00"
         },
         {
             "name": "socialiteproviders/apple",
