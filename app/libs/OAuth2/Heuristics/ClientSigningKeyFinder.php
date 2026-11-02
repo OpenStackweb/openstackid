@@ -79,8 +79,8 @@ final class ClientSigningKeyFinder implements IKeyFinder
         if(!is_null($kid_hint))
         {
             $recipient_key = $client->getPublicKeyByIdentifier($kid_hint);
-            if(!$recipient_key->isActive()) $recipient_key = null;
-            if($recipient_key->getAlg()->getName() !== $alg->getName()) $recipient_key = null;
+            if(!is_null($recipient_key) && !$recipient_key->isActive()) $recipient_key = null;
+            if(!is_null($recipient_key) && $recipient_key->getAlg()->getName() !== $alg->getName()) $recipient_key = null;
         }
 
         if(is_null($recipient_key))
@@ -110,7 +110,7 @@ final class ClientSigningKeyFinder implements IKeyFinder
             {
                 if
                 (
-                    $jwk->getKeyUse() ===  JSONWebKeyPublicKeyUseValues::Signature &&
+                    $jwk->getKeyUse()->getString() === JSONWebKeyPublicKeyUseValues::Signature &&
                     $jwk->getAlgorithm()->getString() === $alg->getName()
                 )
                 {

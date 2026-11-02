@@ -64,7 +64,7 @@ final class ClientPrivateKeyAssertionAuthContextValidator extends ClientAssertio
         if(!is_null($kid))
         {
             $key = $client->getPublicKeyByIdentifier($kid->getValue());
-            if($key->isActive() && !$key->isExpired()) return $key->toJWK();
+            if(!is_null($key) && $key->isActive() && !$key->isExpired()) return $key->toJWK();
         }
         $alg =   $jws->getJOSEHeader()->getAlgorithm()->getString();
 
@@ -84,6 +84,8 @@ final class ClientPrivateKeyAssertionAuthContextValidator extends ClientAssertio
 
         $jwk_set = $this->jwks_reader->read($client);
 
+        if(is_null($jwk_set)) return null;
+
         if(!is_null($kid))
         {
             $key = $jwk_set->getKeyById($kid->getValue());
@@ -94,7 +96,7 @@ final class ClientPrivateKeyAssertionAuthContextValidator extends ClientAssertio
         {
             if
             (
-                $key->getKeyUse() === JSONWebKeyPublicKeyUseValues::Signature &&
+                $key->getKeyUse()->getString() === JSONWebKeyPublicKeyUseValues::Signature &&
                 $key->getAlgorithm()->getString() === $alg
             )
             {
