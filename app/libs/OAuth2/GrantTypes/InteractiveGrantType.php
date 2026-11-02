@@ -63,7 +63,7 @@ use utils\factories\BasicJWTFactory;
 use utils\json_types\NumericDate;
 use Utils\Services\IAuthService;
 use Utils\Services\ILogService;
-use phpseclib\Crypt\Random;
+use phpseclib3\Crypt\Random;
 
 /**
  * Class InteractiveGrantType

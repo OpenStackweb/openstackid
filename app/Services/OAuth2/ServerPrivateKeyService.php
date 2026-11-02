@@ -17,7 +17,7 @@ use OAuth2\Repositories\IServerPrivateKeyRepository;
 use Utils\Db\ITransactionService;
 use Models\OAuth2\ServerPrivateKey;
 use DateTime;
-use phpseclib\Crypt\RSA;
+use phpseclib3\Crypt\RSA;
 use models\exceptions\ValidationException;
 /**
  * Class ServerPrivateKeyService
@@ -25,11 +25,6 @@ use models\exceptions\ValidationException;
  */
 final class ServerPrivateKeyService extends AsymmetricKeyService implements IServerPrivateKeyService
 {
-
-    /**
-     * @var RSA
-     */
-    private $rsa;
 
     /**
      * ServerPrivateKeyService constructor.
@@ -43,7 +38,6 @@ final class ServerPrivateKeyService extends AsymmetricKeyService implements ISer
     )
     {
         parent::__construct($repository, $tx_service);
-        $this->rsa = new RSA();
     }
 
     /**
@@ -72,17 +66,11 @@ final class ServerPrivateKeyService extends AsymmetricKeyService implements ISer
 
             if(empty($pem))
             {
+                $rsa_key = RSA::createKey(2048);
                 if(!empty($password))
-                    $this->rsa->setPassword($password);
-                /**
-                 * array(
-                 *    'privatekey' => $privatekey,
-                 *   'publickey' => $publickey,
-                 *   'partialkey' => false
-                 *   );
-                 */
-                $res = $this->rsa->createKey(2048);
-                $pem = $res['privatekey'];
+                    $rsa_key = $rsa_key->withPassword($password);
+                // PKCS1 ("-----BEGIN RSA PRIVATE KEY-----"), encrypted when a password is set
+                $pem = $rsa_key->toString('PKCS1');
             }
 
             $key = ServerPrivateKey::build

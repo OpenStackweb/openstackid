@@ -16,7 +16,7 @@ use jwk\impl\RSAJWKFactory;
 use jwk\impl\RSAJWKPEMPrivateKeySpecification;
 use OAuth2\Models\IServerPrivateKey;
 use DateTime;
-use phpseclib\Crypt\RSA;
+use phpseclib3\Crypt\PublicKeyLoader;
 use Illuminate\Support\Facades\Crypt;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
@@ -108,15 +108,10 @@ class ServerPrivateKey extends AsymmetricKey implements IServerPrivateKey
 
     public function getPublicKeyPEM()
     {
-        $private_key_pem =  $this->pem_content;
-        $rsa             = new RSA();
-
-        if(!empty($this->password)){
-            $rsa->setPassword($this->password);
-        }
-
-        $rsa->loadKey($private_key_pem);
-        return $rsa->getPublicKey();
+        // phpseclib 2 getPublicKey() defaulted to PKCS8 ("-----BEGIN PUBLIC KEY-----"); keep it so the output does not change
+        return PublicKeyLoader::load($this->pem_content, !empty($this->password) ? $this->password : false)
+            ->getPublicKey()
+            ->toString('PKCS8');
     }
 
     /**
