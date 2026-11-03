@@ -16,8 +16,7 @@ use jwk\impl\JWKSet;
 use OAuth2\Models\IClient;
 use OAuth2\Services\IClientJWKSetReader;
 use GuzzleHttp\Client as HttpClient;
-use GuzzleHttp\Exception\RequestException as HttpRequestException;
-use Utils\Http\HttpContentType;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
 /**
@@ -26,6 +25,10 @@ use Illuminate\Support\Facades\Config;
  */
 final class HttpIClientJWKSetReader implements IClientJWKSetReader
 {
+    /**
+     * @see https://www.rfc-editor.org/rfc/rfc7517#section-8.5.1
+     */
+    private const JsonMediaTypes = ['application/json', 'application/jwk-set+json'];
 
     /**
      * @param IClient $client
@@ -40,24 +43,30 @@ final class HttpIClientJWKSetReader implements IClientJWKSetReader
             if (empty($jwk_set_uri)) return null;
 
             $client = new HttpClient([
-                'defaults' => [
-                    'timeout'         => Config::get('curl.timeout', 60),
-                    'allow_redirects' => Config::get('curl.allow_redirects', false),
-                    'verify'          => Config::get('curl.verify_ssl_cert', true)
-                ]
+                'timeout'         => Config::get('curl.timeout', 60),
+                'allow_redirects' => Config::get('curl.allow_redirects', false),
+                'verify'          => Config::get('curl.verify_ssl_cert', true)
             ]);
 
             $response  = $client->get($jwk_set_uri);
             if ($response->getStatusCode() !== 200) return null;
-            $content_type = $response->getHeader('content-type');
-            if (is_null($content_type)) return null;
-            if (!$content_type->hasValue(HttpContentType::Json)) return null;
-            return JWKSet::fromJson($response->getBody());
+            if (!self::isJson($response->getHeaderLine('content-type'))) return null;
+            return JWKSet::fromJson((string)$response->getBody());
         }
-        catch (HttpRequestException $ex)
+        catch (GuzzleException $ex)
         {
             Log::warning($ex->getMessage());
             return null;
         }
+    }
+
+    /**
+     * @param string $content_type
+     * @return bool
+     */
+    private static function isJson(string $content_type): bool
+    {
+        $media_type = strtolower(trim(explode(';', $content_type)[0]));
+        return in_array($media_type, self::JsonMediaTypes, true);
     }
 }

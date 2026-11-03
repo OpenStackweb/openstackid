@@ -245,6 +245,21 @@ class InteractiveGrantTypeTest extends TestCase
     }
 
     /**
+     * OIDC Session Management: session_state is sha256(client_id + origin + session_id + salt) . '.' . salt
+     */
+    public function testGetSessionStateHashesClientOriginSessionAndSalt(): void
+    {
+        $session_state = $this->grant_type->getSessionState('https://client.example.com', 'test-client-id', 'session-id');
+
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}\.[0-9a-f]{32}$/', $session_state);
+
+        [$hash, $salt] = explode('.', $session_state);
+
+        $this->assertSame(hash('sha256', 'test-client-idhttps://client.example.comsession-id' . $salt), $hash);
+        $this->assertNotSame($session_state, $this->grant_type->getSessionState('https://client.example.com', 'test-client-id', 'session-id'));
+    }
+
+    /**
      * Build a valid OAuth2AuthenticationRequest (OIDC) with the given extra params merged in.
      */
     private function buildOIDCRequest(array $extra = []): OAuth2AuthenticationRequest

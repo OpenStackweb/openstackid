@@ -19,7 +19,10 @@ use jwk\JSONWebKeyTypes;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Models\IClient;
 use Utils\Services\IAuthService;
-use phpseclib\Crypt\RSA;
+use phpseclib3\Crypt\PublicKeyLoader;
+use phpseclib3\Crypt\RSA\PrivateKey as RSAPrivateKey;
+use phpseclib3\Crypt\RSA\PublicKey as RSAPublicKey;
+use phpseclib3\Exception\NoKeyLoadedException;
 
 /**
  * Class CustomValidator
@@ -43,7 +46,7 @@ class CustomValidator extends Validator
         $this->isImplicit('fail');
     }
 
-    public function validateBoolean($attribute, $value)
+    public function validateBoolean($attribute, $value, $parameters = [])
     {
         if (is_bool($value)) {
             return true;
@@ -211,6 +214,24 @@ class CustomValidator extends Validator
         return in_array($value,OAuth2Protocol::$supported_content_encryption_algorithms);
     }
 
+    /**
+     * Loads an RSA key the way phpseclib 2 loadKey() did: returns null instead of throwing.
+     * @param string|null $pem
+     * @param string|false $password
+     * @return RSAPublicKey|RSAPrivateKey|null
+     */
+    private function loadRSAKey(?string $pem, $password = false)
+    {
+        if (is_null($pem)) return null;
+        try {
+            $key = PublicKeyLoader::load($pem, $password);
+        } catch (NoKeyLoadedException $ex) {
+            return null;
+        }
+        // only RSA keys are valid here (phpseclib 2 RSA::loadKey() also accepted EC keys)
+        return ($key instanceof RSAPublicKey || $key instanceof RSAPrivateKey) ? $key : null;
+    }
+
     public function validatePublicKeyPem($attribute, $value)
     {
         $res1 = strpos($value,'-----BEGIN PUBLIC KEY-----');
@@ -221,18 +242,14 @@ class CustomValidator extends Validator
         $PKCS8 = $res1 !== false && $res3 !== false;
         $PKCS1 = $res2 !== false && $res4 !== false;
 
-        $rsa    = new RSA;
-        $parsed = $rsa->loadKey($value);
-
-        return ($PKCS8 || $PKCS1) && $parsed;
+        return ($PKCS8 || $PKCS1) && !is_null($this->loadRSAKey($value));
     }
 
     public function validatePublicKeyPemLength($attribute, $value)
     {
-        $rsa    = new RSA();
-        $parsed = $rsa->loadKey($value);
+        $key = $this->loadRSAKey($value);
 
-        return $parsed && $rsa->getSize() > 1024;
+        return !is_null($key) && $key->getLength() > 1024;
     }
 
     public function validatePrivateKeyPem($attribute, $value, $parameters)
@@ -247,14 +264,9 @@ class CustomValidator extends Validator
 
         $encrypted      = strpos($value,'ENCRYPTED') !== false ;
         $password_param = $parameters[0];
-        $rsa            = new RSA;
-        if(isset($this->data[$password_param]) && $encrypted){
-            $rsa->setPassword($this->data[$password_param]);
-        }
+        $password       = (isset($this->data[$password_param]) && $encrypted) ? $this->data[$password_param] : false;
 
-        $parsed         = $rsa->loadKey($value);
-
-        return ($PKCS8 || $PKCS1) && $parsed;
+        return ($PKCS8 || $PKCS1) && !is_null($this->loadRSAKey($value, $password));
     }
 
     public function validatePrivateKeyPemLength($attribute, $value, $parameters)
@@ -262,14 +274,10 @@ class CustomValidator extends Validator
 
         $encrypted      = strpos($value,'ENCRYPTED') !== false ;
         $password_param = $parameters[0];
-        $rsa            = new RSA;
-        if(isset($this->data[$password_param]) && $encrypted){
-            $rsa->setPassword($this->data[$password_param]);
-        }
+        $password       = (isset($this->data[$password_param]) && $encrypted) ? $this->data[$password_param] : false;
+        $key            = $this->loadRSAKey($value, $password);
 
-        $parsed         = $rsa->loadKey($value);
-
-        return $parsed && $rsa->getSize() >= 2048;
+        return !is_null($key) && $key->getLength() >= 2048;
     }
 
     public function validatePublicKeyUsage($attribute, $value, $parameters)
@@ -285,11 +293,7 @@ class CustomValidator extends Validator
     public function validatePrivateKeyPassword($attribute, $value, $parameters){
        $pem_param = $parameters[0];
        if(!isset($this->data[$pem_param])) return true;
-       $pem_content = $this->data[$pem_param];
-       $rsa    = new RSA;
-       $rsa->setPassword($value);
-       $parsed = $rsa->loadKey($pem_content);
-       return $parsed;
+       return !is_null($this->loadRSAKey($this->data[$pem_param], $value));
     }
 
     public function validateCustomUrlSet($attribute, $value, $parameters)
