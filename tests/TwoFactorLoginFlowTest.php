@@ -1418,6 +1418,47 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertTrue(Auth::check(), 'session must be established despite the audit failure');
     }
 
+    public function testRecoveryCodesStatusFailureDoesNotBlockOTPLogin(): void
+    {
+        // The recovery-codes standing is best-effort: it is read after the OTP is
+        // redeemed and the session established, so a failure must NOT 500 the
+        // user - the response still carries redirect_url, just without the status.
+        $this->failRecoveryCodesStatus();
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $response = $this->verify($this->latestOtpCode(self::ADMIN_EMAIL));
+
+        $this->assertEquals(200, $response->getStatusCode(), 'a recovery-codes status failure must not fail the login');
+        $this->assertTrue(Auth::check(), 'session must be established despite the status failure');
+        $payload = json_decode($response->getContent(), true);
+        $this->assertStringStartsWith('http', $payload['redirect_url'] ?? '');
+        $this->assertArrayNotHasKey('recovery_codes_remaining', $payload);
+    }
+
+    public function testRecoveryCodesStatusFailureDoesNotBlockRecoveryLogin(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $plain = 'RECOVERYSTATUSFAIL' . strtoupper(uniqid());
+        $this->createRecoveryCode($admin, $plain, false);
+        $this->failRecoveryCodesStatus();
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $response = $this->recovery($plain);
+
+        $this->assertEquals(200, $response->getStatusCode(), 'a recovery-codes status failure must not fail the login');
+        $this->assertTrue(Auth::check(), 'session must be established despite the status failure');
+        $payload = json_decode($response->getContent(), true);
+        $this->assertStringStartsWith('http', $payload['redirect_url'] ?? '');
+        $this->assertArrayNotHasKey('recovery_codes_remaining', $payload);
+    }
+
+    private function failRecoveryCodesStatus(): void
+    {
+        $mock = \Mockery::mock(IRecoveryCodeService::class);
+        $mock->shouldReceive('getStatus')->andThrow(new \RuntimeException('recovery codes store unavailable'));
+        $this->app->instance(IRecoveryCodeService::class, $mock);
+    }
+
     public function testDeviceTrustFailureDoesNotBlockLogin(): void
     {
         // Device-trust enrollment is best-effort: by the time it runs the OTP is
