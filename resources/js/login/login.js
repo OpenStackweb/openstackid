@@ -143,6 +143,7 @@ class LoginPage extends React.Component {
     this.onVerify2FA = this.onVerify2FA.bind(this);
     this.onResend2FA = this.onResend2FA.bind(this);
     this.onVerifyRecovery = this.onVerifyRecovery.bind(this);
+    this.proceedAfterVerifiedLogin = this.proceedAfterVerifiedLogin.bind(this);
     this.onContinueAfterLowRecoveryCodes = this.onContinueAfterLowRecoveryCodes.bind(this);
     this.onAcknowledgeRecoveryCodes = this.onAcknowledgeRecoveryCodes.bind(this);
     this.onGenerateNewRecoveryCodes = this.onGenerateNewRecoveryCodes.bind(this);
@@ -448,14 +449,10 @@ class LoginPage extends React.Component {
         // data (never a redirect for this XHR to follow) - a real top-level navigation
         // to it lets the browser complete any further hop natively, cross-origin
         // included, which this XHR never could.
+        // The recovery-codes standing rides along: warn before navigating when
+        // the user is running low (see proceedAfterVerifiedLogin()).
         const { response } = payload;
-        const redirectUrl =
-          (response && response.redirect_url) || window.location.href;
-        if (response && response.recovery_codes_enrollment_required === true) {
-          this.startRecoveryEnrollment(redirectUrl, response.csrf_token);
-          return;
-        }
-        window.location.href = redirectUrl;
+        this.proceedAfterVerifiedLogin(response);
       },
       (error) => {
         this.handleMfaError(error, "twofactor");
@@ -556,31 +553,7 @@ class LoginPage extends React.Component {
     verifyRecoveryCode(recoveryCode, this.props.token).then(
       (payload) => {
         const { response } = payload;
-        const redirectUrl =
-          (response && response.redirect_url) || window.location.href;
-        // The enrollment modal replaces the low-code banner: a user who has to
-        // enroll gets a fresh batch instead of a warning about the old one.
-        if (response && response.recovery_codes_enrollment_required === true) {
-          this.startRecoveryEnrollment(redirectUrl, response.csrf_token);
-          return;
-        }
-        const remaining = response && response.recovery_codes_remaining;
-        const threshold =
-          (response && response.recovery_codes_low_threshold) ??
-          DEFAULT_RECOVERY_CODES_LOW_THRESHOLD;
-        const alreadyDismissed =
-          sessionStorage.getItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY) === "1";
-
-        if (typeof remaining === "number" && remaining < threshold && !alreadyDismissed) {
-          this.setState({
-            ...this.state,
-            lowRecoveryCodesWarning: { remaining, redirectUrl },
-          });
-          return;
-        }
-
-        // See onVerify2FA() for rationale on using a real top-level navigation.
-        window.location.href = redirectUrl;
+        this.proceedAfterVerifiedLogin(response);
       },
       (error) => {
         this.handleMfaError(error, "recovery");
@@ -699,6 +672,40 @@ class LoginPage extends React.Component {
       recoveryEnrollment: { ...enrollment, busy: true },
     });
     this.startRecoveryEnrollment(enrollment.redirectUrl, enrollment.csrfToken);
+  }
+
+  /**
+   * Shared tail of every successful 2FA verification (email OTP and recovery
+   * code): show the "running low on recovery codes" warning once per browser
+   * session, otherwise navigate to the post-login destination.
+   */
+  proceedAfterVerifiedLogin(response) {
+    const redirectUrl =
+      (response && response.redirect_url) || window.location.href;
+    // The enrollment modal replaces the low-code banner: a user who has to
+    // enroll gets a fresh batch instead of a warning about the old one.
+    if (response && response.recovery_codes_enrollment_required === true) {
+      this.startRecoveryEnrollment(redirectUrl, response.csrf_token);
+      return;
+    }
+    const remaining = response && response.recovery_codes_remaining;
+    const threshold =
+      (response && response.recovery_codes_low_threshold) ??
+      DEFAULT_RECOVERY_CODES_LOW_THRESHOLD;
+    const alreadyDismissed =
+      sessionStorage.getItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY) === "1";
+
+    if (typeof remaining === "number" && remaining < threshold && !alreadyDismissed) {
+      this.setState({
+        ...this.state,
+        lowRecoveryCodesWarning: { remaining, redirectUrl },
+      });
+      return;
+    }
+
+    // Real top-level navigation: the backend returns the destination as data so the
+    // browser completes any cross-origin hop natively (an XHR could not).
+    window.location.href = redirectUrl;
   }
 
   onContinueAfterLowRecoveryCodes() {
@@ -978,7 +985,7 @@ class LoginPage extends React.Component {
                 />
               )}
             </Typography>
-            {showTwoFactorForm && (
+            {showTwoFactorForm && !this.state.lowRecoveryCodesWarning && (
               <TwoFactorForm
                 otpCode={this.state.twoFactorCode}
                 otpError={this.state.errors.twofactor}
@@ -1006,7 +1013,7 @@ class LoginPage extends React.Component {
                 onCancel={this.resetToPasswordFlow}
               />
             )}
-            {showRecoveryForm && this.state.lowRecoveryCodesWarning && (
+            {this.state.lowRecoveryCodesWarning && (
               <div
                 className={recoveryCodesStyles.low_code_warning}
                 data-testid="low-recovery-codes-warning"
