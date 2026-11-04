@@ -126,7 +126,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
         $response = $this->action('POST', "UserController@postLogin",
             [
                 'username' => ' sebastian@tipit.net ',
-                'password' => ' 1qaz2wsx ',
+                'password' => ' 1Qaz2wsx!9 ',
                 '_token' => Session::token(),
                 'flow' => 'password',
             ]
@@ -172,7 +172,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -259,7 +259,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -341,7 +341,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -426,7 +426,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'hei@やる.ca',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -539,7 +539,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -623,7 +623,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -687,7 +687,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -849,7 +849,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -997,7 +997,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -1140,7 +1140,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => $json_response['required_params_valid_values']["_token"]
             )
@@ -1259,7 +1259,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -1457,7 +1457,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -1604,7 +1604,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -1743,7 +1743,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -1922,7 +1922,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -2074,7 +2074,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -2155,7 +2155,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -2240,7 +2240,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -2350,7 +2350,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -2487,7 +2487,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -2657,7 +2657,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -2764,7 +2764,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -2985,7 +2985,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -3103,7 +3103,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
@@ -3210,7 +3210,7 @@ final class OIDCProtocolTestCase extends OpenStackIDBaseTestCase
             array
             (
                 'username' => 'sebastian@tipit.net',
-                'password' => '1qaz2wsx',
+                'password' => '1Qaz2wsx!9',
                 'flow' => 'password',
                 '_token' => Session::token()
             )
