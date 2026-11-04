@@ -243,4 +243,19 @@ class OAuth2AuthenticationRequest extends OAuth2AuthorizationRequest
         $this->setParam('processed_params', $res);
         return $this;
     }
+
+    /**
+     * @param string $param_name
+     * @return $this
+     */
+    public function unmarkParamAsProcessed(string $param_name)
+    {
+        $res = array_filter
+        (
+            explode(' ', (string)$this->getParam('processed_params')),
+            fn(string $p) => $p !== '' && $p !== $param_name
+        );
+        $this->setParam('processed_params', implode(' ', $res));
+        return $this;
+    }
 }

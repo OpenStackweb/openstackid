@@ -581,6 +581,27 @@ final class UserController extends OpenIdController
     }
 
     /**
+     * "Not you? Switch account" on the OAuth2 consent screen.
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|mixed
+     */
+    public function switchAccount()
+    {
+        if (!($this->consent_strategy instanceof OAuth2ConsentStrategy)) {
+            Log::warning(sprintf("UserController::switchAccount no OAuth2 consent strategy. request %s %s", Request::method(), Request::path()));
+            return Response::view
+            (
+                'errors.400',
+                [
+                    'error' => "Bad Request",
+                    'error_description' => "Generic Error"
+                ],
+                400
+            );
+        }
+        return $this->consent_strategy->switchAccount();
+    }
+
+    /**
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|mixed
      */
     public function postConsent()
