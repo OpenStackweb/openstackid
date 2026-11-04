@@ -60,8 +60,10 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
                 // used_at before mutating. This closes the check->markUsed race
                 // window: a second concurrent submitter blocks on the lock and, on
                 // resume, sees the code already used instead of double-spending it.
-                $this->recovery_code_repository->refreshExclusiveLock($recoveryCode);
-                if ($recoveryCode->isUsed()) {
+                // A row that is gone under the lock was deleted by a concurrent
+                // regeneration or reset after it was read: the code is no longer valid.
+                if (!$this->recovery_code_repository->refreshExclusiveLock($recoveryCode)
+                    || $recoveryCode->isUsed()) {
                     throw new AuthenticationException("Invalid recovery code.");
                 }
                 $recoveryCode->markUsed();
