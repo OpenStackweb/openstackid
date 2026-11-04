@@ -678,6 +678,21 @@ class User extends BaseEntity
     }
 
     /**
+     * Access to the OAUTH2 Console is granted only to members of the groups
+     * listed in config('oauth2.console_allowed_groups'); empty list denies everybody.
+     * @return bool
+     */
+    public function canAccessOAuth2Console(): bool
+    {
+        $allowed = Config::get('oauth2.console_allowed_groups', []);
+        if (!is_array($allowed)) return false;
+        foreach ($allowed as $slug) {
+            if (is_string($slug) && $slug !== '' && $this->belongToGroup($slug)) return true;
+        }
+        return false;
+    }
+
+    /**
      * @return bool
      */
     public function isOpenIdServerAdmin(): bool

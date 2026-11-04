@@ -14,6 +14,7 @@
         <div id="navbar" class="navbar-collapse collapse">
             <ul id='main-menu' class="nav navbar-nav">
                 <li id="profile"><a target="_self" href='{!! URL::action("UserController@getProfile") !!}'>{{ __('Settings') }}</a></li>
+                @if(Auth::user()->canAccessOAuth2Console())
                 <li id="oauth2-console" class="dropdown">
                         <a target="_self" href="#" class="dropdown-toggle" data-toggle="dropdown">
                             {{ __('OAUTH2 Console') }}<b class="caret"></b>
@@ -23,6 +24,7 @@
                             <li><a target="_self" href='{!!URL::action("AdminController@editIssuedGrants")!!}'>{{ __('Issued OAUTH2 Grants') }}</a></li>
                         </ul>
                </li>
+                @endif
                 @if(Auth::user()->isOpenIdServerAdmin() || Auth::user()->isOAuth2ServerAdmin() || Auth::user()->isSuperAdmin())
                     <li id='server-admin' class="dropdown">
                         <a target="_self" href="#" class="dropdown-toggle" data-toggle="dropdown">
