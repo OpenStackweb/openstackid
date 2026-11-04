@@ -1978,10 +1978,11 @@ SQL;
             $bio_changed = $args->hasChangedField("bio") && !empty($args->getNewValue('bio'));
             $email_changed = $args->hasChangedField("email");
             if( $bio_changed|| $email_changed) {
-                // enqueue user for spam re checker
+                // only reset the state here: dispatching UserSpamStateUpdated from inside the flush
+                // makes its listener flush re-entrantly and drops this flush's change set;
+                // the service layer dispatches it after commit
                 Log::warning(sprintf("User::preUpdate user %s was marked for spam type reclasification.", $this->getEmail()));
                 $this->resetSpamTypeClassification();
-                Event::dispatch(new UserSpamStateUpdated($this->getId()));
             }
         }
     }
