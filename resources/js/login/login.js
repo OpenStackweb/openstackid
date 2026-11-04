@@ -450,9 +450,11 @@ class LoginPage extends React.Component {
         // to it lets the browser complete any further hop natively, cross-origin
         // included, which this XHR never could.
         // The recovery-codes standing rides along: warn before navigating when
-        // the user is running low (see proceedAfterVerifiedLogin()).
+        // the user is running low (see proceedAfterVerifiedLogin()). A user with
+        // no unused codes here most likely never generated any, so 0 is not
+        // "running low" on this path - that case belongs to enrollment, not here.
         const { response } = payload;
-        this.proceedAfterVerifiedLogin(response);
+        this.proceedAfterVerifiedLogin(response, { warnWhenNoneLeft: false });
       },
       (error) => {
         this.handleMfaError(error, "twofactor");
@@ -553,7 +555,8 @@ class LoginPage extends React.Component {
     verifyRecoveryCode(recoveryCode, this.props.token).then(
       (payload) => {
         const { response } = payload;
-        this.proceedAfterVerifiedLogin(response);
+        // The user just burned a code, so 0 left means they used their last one.
+        this.proceedAfterVerifiedLogin(response, { warnWhenNoneLeft: true });
       },
       (error) => {
         this.handleMfaError(error, "recovery");
@@ -678,8 +681,11 @@ class LoginPage extends React.Component {
    * Shared tail of every successful 2FA verification (email OTP and recovery
    * code): show the "running low on recovery codes" warning once per browser
    * session, otherwise navigate to the post-login destination.
+   *
+   * @param {object} response verification response (redirect_url + recovery-codes standing)
+   * @param {{warnWhenNoneLeft: boolean}} options whether 0 unused codes should warn
    */
-  proceedAfterVerifiedLogin(response) {
+  proceedAfterVerifiedLogin(response, { warnWhenNoneLeft }) {
     const redirectUrl =
       (response && response.redirect_url) || window.location.href;
     // The enrollment modal replaces the low-code banner: a user who has to
@@ -695,7 +701,12 @@ class LoginPage extends React.Component {
     const alreadyDismissed =
       sessionStorage.getItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY) === "1";
 
-    if (typeof remaining === "number" && remaining < threshold && !alreadyDismissed) {
+    const isLow =
+      typeof remaining === "number" &&
+      remaining < threshold &&
+      (warnWhenNoneLeft || remaining > 0);
+
+    if (isLow && !alreadyDismissed) {
       this.setState({
         ...this.state,
         lowRecoveryCodesWarning: { remaining, redirectUrl },

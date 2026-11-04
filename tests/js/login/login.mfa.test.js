@@ -264,6 +264,24 @@ describe('LoginPage', () => {
       expect(inst.state.lowRecoveryCodesWarning).toBeNull();
     });
 
+    it('no unused codes left — navigates directly (user never generated codes)', async () => {
+      verify2FA.mockReturnValue(
+        Promise.resolve({
+          response: {
+            redirect_url: 'https://idp.test/authorize',
+            recovery_codes_remaining: 0,
+            recovery_codes_low_threshold: DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
+          },
+        }),
+      );
+
+      inst.onVerify2FA();
+      await flush();
+
+      expect(window.location.href).toBe('https://idp.test/authorize');
+      expect(inst.state.lowRecoveryCodesWarning).toBeNull();
+    });
+
     it('response without the standing — navigates directly', async () => {
       verify2FA.mockReturnValue(
         Promise.resolve({ response: { redirect_url: 'https://idp.test/authorize' } }),
@@ -449,6 +467,24 @@ describe('LoginPage', () => {
         expect(window.location.href).toBe('');
         expect(inst.state.lowRecoveryCodesWarning).toEqual({
           remaining: DEFAULT_RECOVERY_CODES_LOW_THRESHOLD - 1,
+          redirectUrl: 'https://idp.test/authorize',
+        });
+      });
+
+      it('valid code that was the last one — warns with 0 left', async () => {
+        verifyRecoveryCode.mockReturnValue(
+          Promise.resolve({
+            response: { redirect_url: 'https://idp.test/authorize', recovery_codes_remaining: 0 },
+          }),
+        );
+        inst.state = { ...inst.state, recoveryCode: 'ABCD1234' };
+
+        inst.onVerifyRecovery();
+        await flush();
+
+        expect(window.location.href).toBe('');
+        expect(inst.state.lowRecoveryCodesWarning).toEqual({
+          remaining: 0,
           redirectUrl: 'https://idp.test/authorize',
         });
       });
