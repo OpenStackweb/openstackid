@@ -26,8 +26,13 @@ interface IUserRecoveryCodeRepository extends IBaseRepository
      * Acquires a PESSIMISTIC_WRITE row lock on the given recovery code and
      * re-hydrates its used_at state in the same round-trip. Required before
      * redeeming a recovery code to close the check->markUsed double-spend race.
+     * Must run inside a transaction.
+     *
+     * @return bool false when the row no longer exists (deleted by a concurrent
+     *              regeneration or 2FA reset after the code was read); the
+     *              entity is then stale and the code must not be redeemed
      */
-    public function refreshExclusiveLock(UserRecoveryCode $code): void;
+    public function refreshExclusiveLock(UserRecoveryCode $code): bool;
 
     /**
      * Delete every recovery code for a user (used when regenerating).

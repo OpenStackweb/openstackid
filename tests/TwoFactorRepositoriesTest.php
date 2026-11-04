@@ -275,6 +275,53 @@ class TwoFactorRepositoriesTest extends TestCase
         );
     }
 
+    public function testRefreshExclusiveLockReportsRowDeletedAfterRead(): void
+    {
+        $repo = App::make(IUserRecoveryCodeRepository::class);
+
+        $code = new UserRecoveryCode();
+        self::setProp($code, 'user', $this->user);
+        self::setProp($code, 'code_hash', password_hash('STALE_' . uniqid(), PASSWORD_BCRYPT));
+        EntityManager::persist($code);
+        EntityManager::flush();
+
+        // A concurrent regeneration (or 2FA reset) deletes the row after the
+        // redeemer loaded it: the in-memory entity still looks unused.
+        EntityManager::getConnection()->executeStatement(
+            'DELETE FROM user_recovery_codes WHERE id = ?',
+            [$code->getId()]
+        );
+
+        $found = EntityManager::wrapInTransaction(fn () => $repo->refreshExclusiveLock($code));
+
+        $this->assertFalse($found, 'The locked re-read must report that the code no longer exists.');
+    }
+
+    public function testRefreshExclusiveLockRehydratesExistingRow(): void
+    {
+        $repo = App::make(IUserRecoveryCodeRepository::class);
+
+        $code = new UserRecoveryCode();
+        self::setProp($code, 'user', $this->user);
+        self::setProp($code, 'code_hash', password_hash('LIVE_' . uniqid(), PASSWORD_BCRYPT));
+        EntityManager::persist($code);
+        EntityManager::flush();
+        $this->assertFalse($code->isUsed());
+
+        // A concurrent redemption marked it used after it was read.
+        EntityManager::getConnection()->executeStatement(
+            'UPDATE user_recovery_codes SET used_at = UTC_TIMESTAMP() WHERE id = ?',
+            [$code->getId()]
+        );
+
+        $found = EntityManager::wrapInTransaction(fn () => $repo->refreshExclusiveLock($code));
+
+        $this->assertTrue($found);
+        $this->assertTrue($code->isUsed(), 'The locked re-read must re-hydrate used_at.');
+
+        $repo->deleteAllForUser($this->user);
+    }
+
     public function testAuditLogsReturnedMostRecentFirst(): void
     {
         $repo       = App::make(ITwoFactorAuditLogRepository::class);

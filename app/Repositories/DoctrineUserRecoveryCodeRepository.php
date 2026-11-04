@@ -31,10 +31,24 @@ final class DoctrineUserRecoveryCodeRepository
         ]);
     }
 
-    public function refreshExclusiveLock(UserRecoveryCode $code): void
+    public function refreshExclusiveLock(UserRecoveryCode $code): bool
     {
-        // Single round-trip: SELECT ... FOR UPDATE that also re-hydrates the entity.
-        $this->getEntityManager()->refresh($code, \Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE);
+        // Single round-trip: SELECT ... FOR UPDATE that also re-hydrates the
+        // managed entity (HINT_REFRESH). EntityManager::refresh() is not used
+        // because it hydrates nothing and reports nothing when the row is gone,
+        // which would leave a deleted code looking unused.
+        $locked = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('c')
+            ->from(UserRecoveryCode::class, 'c')
+            ->where('c.id = :id')
+            ->setParameter('id', $code->getId())
+            ->getQuery()
+            ->setLockMode(\Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE)
+            ->setHint(\Doctrine\ORM\Query::HINT_REFRESH, true)
+            ->getOneOrNullResult();
+
+        return $locked !== null;
     }
 
     public function deleteAllForUser(User $user): int

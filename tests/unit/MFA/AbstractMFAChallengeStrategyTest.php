@@ -133,7 +133,7 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
         $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
         // Lock is taken before mutating (regression guard for 3357348455).
-        $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once();
+        $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once()->andReturn(true);
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
             public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }
@@ -162,8 +162,36 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
         $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
-        $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once();
+        $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once()->andReturn(true);
         $repo->shouldNotReceive('add');
+
+        $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
+            public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }
+            public function verifyChallenge(User $user, string $code, ?Client $client = null): void {}
+            public function resendChallenge(User $user, ?Client $client, bool $remember): array { return []; }
+        };
+
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage("Invalid recovery code.");
+        $strategy->verifyRecoveryCode($user, $code);
+    }
+
+    public function testVerifyRecoveryCode_rejects_whenCodeDeletedBeforeLock(): void
+    {
+        $user = new User();
+        $code = 'VALIDCODE';
+
+        // Hash matches an entity read before a concurrent regeneration deleted
+        // its row: the locked re-read finds nothing, so the code is no longer
+        // valid even though the stale entity still looks unused.
+        $recoveryCode = \Mockery::mock(\App\libs\Auth\Models\UserRecoveryCode::class);
+        $recoveryCode->shouldReceive('getCodeHash')->andReturn(Hash::make($code));
+        $recoveryCode->shouldReceive('isUsed')->andReturn(false);
+        $recoveryCode->shouldNotReceive('markUsed');
+
+        $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
+        $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
+        $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once()->andReturn(false);
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
             public function issueChallenge(User $user, ?Client $client, bool $remember): array { return []; }
