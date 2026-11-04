@@ -453,6 +453,7 @@ class LoginPage extends React.Component {
             user_verified: props.hasOwnProperty('user_verified') ? props.user_verified : false,
             user_active: props.hasOwnProperty('user_active') ? props.user_active : null,
             email_verified: props.hasOwnProperty('email_verified') ? props.email_verified : null,
+            invalid_email_format: false,
             errors: {
                 email: '',
                 otp: props.authError != '' ? props.authError : '',
@@ -584,6 +585,11 @@ class LoginPage extends React.Component {
 
     onHandleUserNameChange(ev) {
         let { value, id } = ev.target;
+        if (this.state.invalid_email_format) {
+            // clean the format error as soon as the user edits the field
+            this.setState({ ...this.state, user_name: value, invalid_email_format: false, errors: { ...this.state.errors, email: '' } });
+            return;
+        }
         this.setState({ ...this.state, user_name: value });
     }
 
@@ -609,9 +615,14 @@ class LoginPage extends React.Component {
             return false;
         }
         if (!emailValidator(user_name)) {
+            this.setState({
+                ...this.state,
+                invalid_email_format: true,
+                errors: { ...this.state.errors, email: 'Please enter a valid email address.' }
+            });
             return false;
         }
-        this.setState({ ...this.state, disableInput: true });
+        this.setState({ ...this.state, invalid_email_format: false, disableInput: true });
 
         verifyAccount(user_name, this.props.token).then((payload) => {
             let { response } = payload;
@@ -730,7 +741,7 @@ class LoginPage extends React.Component {
     getSignUpSignInTitle() {
       const { errors, user_active } = this.state;
 
-      if (errors.email && this.existingUserCanContinue()) {
+      if (errors.email && !this.state.invalid_email_format && this.existingUserCanContinue()) {
         return 'Create an account for:';
       }
       return 'Sign in';
@@ -801,7 +812,7 @@ class LoginPage extends React.Component {
                                     // we already had an interaction and got an user error...
                                     this.state.errors.email !== '' &&
                                     <>
-                                        {this.existingUserCanContinue() &&
+                                        {this.existingUserCanContinue() && !this.state.invalid_email_format &&
                                             <EmailErrorActions
                                                 emitOtpAction={this.handleEmitOtpAction}
                                                 onValidateEmail={this.onValidateEmail}
