@@ -668,8 +668,29 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertStringStartsWith('http', $payload['redirect_url']);
         $this->assertTrue(Auth::check());
 
+        // Same recovery-codes standing as verify2FARecovery() so the login page can warn
+        // about low codes after an email OTP sign-in (RecoveryCodesStatus::toArray()).
+        $this->assertSame(0, $payload['recovery_codes_remaining'] ?? null);
+        $this->assertSame((int) Config::get('auth.recovery_codes.count'), $payload['recovery_codes_total'] ?? null);
+        $this->assertSame((int) Config::get('auth.recovery_codes.low_threshold'), $payload['recovery_codes_low_threshold'] ?? null);
+
         $admin = $this->user(self::ADMIN_EMAIL);
         $this->assertGreaterThan(0, $this->countAudit($admin->getId(), TwoFactorAuditLog::EventChallengeSucceeded));
+    }
+
+    public function testOTPVerificationReportsUnusedRecoveryCodesRemaining(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->createRecoveryCode($admin, 'UNUSEDCODEONE', false);
+        $this->createRecoveryCode($admin, 'UNUSEDCODETWO', false);
+        $this->createRecoveryCode($admin, 'BURNEDCODE', true);
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $response = $this->verify($this->latestOtpCode(self::ADMIN_EMAIL));
+
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame(2, $payload['recovery_codes_remaining'] ?? null, 'used codes must not be counted');
     }
 
     public function testFailedOTPVerificationReturnsErrorAndIncrementsCounter(): void

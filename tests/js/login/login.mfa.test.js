@@ -22,7 +22,7 @@ delete window.location;
 window.location = { href: '', reload: jest.fn() };
 
 import { LoginPage } from '../../../resources/js/login/login';
-import { verifyRecoveryCode, cancelLogin } from '../../../resources/js/login/actions';
+import { verify2FA, verifyRecoveryCode, cancelLogin } from '../../../resources/js/login/actions';
 
 // ─── Minimal props that satisfy the LoginPage constructor ────────────────────
 
@@ -144,6 +144,109 @@ describe('LoginPage', () => {
 
       expect(window.location.reload).toHaveBeenCalledTimes(1);
       expect(inst.showAlert).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── Low recovery-codes warning after an email OTP sign-in ─────────────────
+
+  describe('onVerify2FA — low recovery-codes warning', () => {
+    let inst;
+
+    beforeEach(() => {
+      inst = makeInstance();
+      inst.state = { ...inst.state, authFlow: FLOW.MFA, twoFactorCode: '123456' };
+      window.location.href = '';
+      verify2FA.mockReset();
+      verifyRecoveryCode.mockReset();
+      sessionStorage.clear();
+    });
+
+    it('remaining below the threshold — shows the warning instead of navigating', async () => {
+      verify2FA.mockReturnValue(
+        Promise.resolve({
+          response: {
+            redirect_url: 'https://idp.test/authorize',
+            recovery_codes_remaining: DEFAULT_RECOVERY_CODES_LOW_THRESHOLD - 1,
+            recovery_codes_total: 10,
+            recovery_codes_low_threshold: DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
+          },
+        }),
+      );
+
+      inst.onVerify2FA();
+      await flush();
+
+      expect(window.location.href).toBe('');
+      expect(inst.state.lowRecoveryCodesWarning).toEqual({
+        remaining: DEFAULT_RECOVERY_CODES_LOW_THRESHOLD - 1,
+        redirectUrl: 'https://idp.test/authorize',
+      });
+    });
+
+    it('remaining at the threshold — navigates directly', async () => {
+      verify2FA.mockReturnValue(
+        Promise.resolve({
+          response: {
+            redirect_url: 'https://idp.test/authorize',
+            recovery_codes_remaining: DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
+            recovery_codes_low_threshold: DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
+          },
+        }),
+      );
+
+      inst.onVerify2FA();
+      await flush();
+
+      expect(window.location.href).toBe('https://idp.test/authorize');
+      expect(inst.state.lowRecoveryCodesWarning).toBeNull();
+    });
+
+    it('response without the standing — navigates directly', async () => {
+      verify2FA.mockReturnValue(
+        Promise.resolve({ response: { redirect_url: 'https://idp.test/authorize' } }),
+      );
+
+      inst.onVerify2FA();
+      await flush();
+
+      expect(window.location.href).toBe('https://idp.test/authorize');
+      expect(inst.state.lowRecoveryCodesWarning).toBeNull();
+    });
+
+    it('dismissed warning is not shown again in the same session (OTP and recovery paths)', async () => {
+      verify2FA.mockReturnValue(
+        Promise.resolve({
+          response: { redirect_url: 'https://idp.test/authorize', recovery_codes_remaining: 1 },
+        }),
+      );
+
+      inst.onVerify2FA();
+      await flush();
+      expect(inst.state.lowRecoveryCodesWarning).not.toBeNull();
+
+      inst.onContinueAfterLowRecoveryCodes();
+      expect(window.location.href).toBe('https://idp.test/authorize');
+
+      // Same session, OTP path again.
+      window.location.href = '';
+      inst.state = { ...inst.state, lowRecoveryCodesWarning: null, disableInput: false };
+      inst.onVerify2FA();
+      await flush();
+      expect(window.location.href).toBe('https://idp.test/authorize');
+      expect(inst.state.lowRecoveryCodesWarning).toBeNull();
+
+      // Same session, recovery path.
+      window.location.href = '';
+      verifyRecoveryCode.mockReturnValue(
+        Promise.resolve({
+          response: { redirect_url: 'https://idp.test/authorize', recovery_codes_remaining: 1 },
+        }),
+      );
+      inst.state = { ...inst.state, disableInput: false, recoveryCode: 'ABCD1234' };
+      inst.onVerifyRecovery();
+      await flush();
+      expect(window.location.href).toBe('https://idp.test/authorize');
+      expect(inst.state.lowRecoveryCodesWarning).toBeNull();
     });
   });
 
