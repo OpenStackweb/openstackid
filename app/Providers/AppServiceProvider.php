@@ -40,7 +40,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        if (!App::isLocal())
+        // local and testing (CI e2e, `php artisan serve` over plain http) keep the request
+        // scheme; forcing https there makes every asset URL unreachable
+        if (!App::environment(['local', 'testing']))
             URL::forceScheme('https');
 
         $logger = Log::getLogger();
