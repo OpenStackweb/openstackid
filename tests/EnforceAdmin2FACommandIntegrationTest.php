@@ -141,6 +141,35 @@ final class EnforceAdmin2FACommandIntegrationTest extends BrowserKitTestCase
             ->count();
     }
 
+    public function testProcessesMoreThanOneChunkAndClearsTheEntityManager(): void
+    {
+        // 1 admin from setUp + 100 more = 101 > ChunkSize (100)
+        $group = EntityManager::getRepository(Group::class)->findOneBy(['slug' => self::TestGroupSlug]);
+        for ($i = 0; $i < 100; $i++) {
+            $user = new User();
+            $email = sprintf('enforce-bulk-%d@nomail.com', $i);
+            $user->setEmail($email);
+            $user->setFirstName('Bulk');
+            $user->setLastName((string)$i);
+            $user->setIdentifier($email);
+            $user->setPassword('P@sswordS3cret');
+            $user->verifyEmail(false);
+            $user->addToGroup($group);
+            EntityManager::persist($user);
+        }
+        EntityManager::flush();
+
+        $this->assertSame(0, Artisan::call('idp:enforce-admin-2fa'));
+
+        $this->assertStringContainsString('processed 101, skipped 0, errors 0', Artisan::output());
+        Mail::assertSent(TwoFactorEnforcedMail::class, 101);
+        $this->assertSame(101, DB::table('two_factor_audit_log')
+            ->where('event_type', TwoFactorAuditLog::EventEnrollmentChanged)
+            ->count());
+        // nothing from the run stays managed after the last chunk
+        $this->assertSame(0, EntityManager::getUnitOfWork()->size());
+    }
+
     public function testDryRunWritesNothing(): void
     {
         $code = Artisan::call('idp:enforce-admin-2fa', ['--dry-run' => true]);
