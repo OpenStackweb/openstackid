@@ -22,6 +22,13 @@ use Tests\BrowserKitTestCase;
  */
 final class TwoFactorEnforcedMailTest extends BrowserKitTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // the sender comes from env vars that CI does not define
+        config(['mail.from' => ['address' => 'noreply@example.com', 'name' => 'noreply']]);
+    }
+
     public function testUserControlledNameIsEscaped(): void
     {
         $user = new User();
