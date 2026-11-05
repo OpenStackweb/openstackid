@@ -70,8 +70,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | Seconds a pending 2FA challenge stays valid in the session after the
-    | password step (SDS idp-mfa.md §4.14). Keep it >= otp_lifetime so the
-    | session never expires before the code and its UI countdown do.
+    | password step (SDS idp-mfa.md §4.14). Keep it >= the EFFECTIVE OTP
+    | lifetime (otp_lifetime, or 600 when its fallback applies), with some
+    | margin for issuance time, so the session never expires before the code
+    | and its UI countdown do.
     |
     */
     'session_ttl' => env('TWO_FACTOR_SESSION_TTL', 600),
