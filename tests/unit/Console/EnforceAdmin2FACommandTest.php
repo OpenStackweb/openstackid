@@ -129,6 +129,22 @@ final class EnforceAdmin2FACommandTest extends BrowserKitTestCase
         Mail::assertNothingSent();
     }
 
+    public function testRefusesToRunWhenTwoFactorIsDisabledGlobally(): void
+    {
+        config(['two_factor.enabled' => false]);
+        $this->createUser('enforce-h@nomail.com', true);
+
+        $this->audit_service->shouldNotReceive('log');
+
+        foreach ([[], ['--dry-run' => true]] as $options) {
+            $code = Artisan::call('idp:enforce-admin-2fa', $options);
+
+            $this->assertSame(1, $code);
+            $this->assertStringContainsString('two_factor.enabled is false', Artisan::output());
+        }
+        Mail::assertNothingSent();
+    }
+
     public function testIgnoresUsersOutsideEnforcedGroups(): void
     {
         $this->createUser('enforce-c@nomail.com', false);
