@@ -79,7 +79,8 @@ final class EnforceAdmin2FACommand extends Command
         $last_id = 0;
 
         do {
-            // keyset pagination over ids: the loop never holds the whole user set in memory
+            // keyset pagination over ids, plus a clear() after each chunk below: neither the
+            // id list nor the managed entities of previous chunks stay in memory
             $ids = $this->getUserIdsChunk($slugs, $last_id);
 
             foreach ($ids as $id) {
@@ -126,6 +127,10 @@ final class EnforceAdmin2FACommand extends Command
                     $this->error(sprintf('  error     %s: %s', $email, $ex->getMessage()));
                 }
             }
+
+            // the chunk is done (mails sent, audit rows committed): detach its users and
+            // audit rows so the unit of work does not grow, and each flush stays cheap
+            EntityManager::clear();
         } while (count($ids) === self::ChunkSize);
 
         $this->info(sprintf(
