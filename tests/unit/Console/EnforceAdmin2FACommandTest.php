@@ -14,7 +14,6 @@
 
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\Mail\TwoFactorEnforcedMail;
-use App\Services\Auth\IRecoveryCodeService;
 use App\Services\Auth\ITwoFactorAuditService;
 use Auth\Group;
 use Auth\User;
@@ -26,16 +25,12 @@ use Tests\BrowserKitTestCase;
 
 /**
  * Class EnforceAdmin2FACommandTest
- * Orchestration of idp:enforce-admin-2fa with the recovery code and audit
- * services mocked; the real DB is only used to resolve the group members.
+ * Orchestration of idp:enforce-admin-2fa with the audit service mocked; the real DB is only used to resolve the group members.
  * @package Tests\unit\Console
  */
 final class EnforceAdmin2FACommandTest extends BrowserKitTestCase
 {
     private Group $group;
-
-    /** @var \Mockery\MockInterface&IRecoveryCodeService */
-    private $recovery_service;
 
     /** @var \Mockery\MockInterface&ITwoFactorAuditService */
     private $audit_service;
@@ -60,9 +55,7 @@ final class EnforceAdmin2FACommandTest extends BrowserKitTestCase
         config(['two_factor.enforced_groups' => [self::TestGroupSlug]]);
         $this->group = $this->createEnforcedGroup();
         Mail::fake();
-        $this->recovery_service = Mockery::mock(IRecoveryCodeService::class);
         $this->audit_service = Mockery::mock(ITwoFactorAuditService::class);
-        $this->app->instance(IRecoveryCodeService::class, $this->recovery_service);
         $this->app->instance(ITwoFactorAuditService::class, $this->audit_service);
     }
 
@@ -89,12 +82,23 @@ final class EnforceAdmin2FACommandTest extends BrowserKitTestCase
         return $user;
     }
 
-    public function testProcessesUsersWithoutUnusedCodes(): void
+    private function markNotified(User $user): void
+    {
+        $log = new TwoFactorAuditLog();
+        $log->setUser($user);
+        $log->setEventType(TwoFactorAuditLog::EventEnrollmentChanged);
+        $log->setMethod(TwoFactorAuditLog::MethodEmailOtp);
+        $log->setIpAddress('127.0.0.1');
+        $log->setUserAgent('');
+        $log->setMetadata(['source' => 'enforce-admin-2fa']);
+        EntityManager::persist($log);
+        EntityManager::flush();
+    }
+
+    public function testProcessesUsersNotYetNotified(): void
     {
         $user = $this->createUser('enforce-a@nomail.com', true);
 
-        $this->recovery_service->shouldReceive('countUnusedRecoveryCodes')->once()->andReturn(0);
-        $this->recovery_service->shouldReceive('generateRecoveryCodes')->once()->andReturn(['AAAA-BBBB']);
         $this->audit_service->shouldReceive('log')
             ->once()
             ->with(
@@ -106,21 +110,16 @@ final class EnforceAdmin2FACommandTest extends BrowserKitTestCase
             );
 
         $code = Artisan::call('idp:enforce-admin-2fa');
-        $output = Artisan::output();
 
         $this->assertSame(0, $code);
-        $this->assertStringContainsString('processed 1, skipped 0, errors 0', $output);
-        // plaintext codes are shown once and never printed
-        $this->assertStringNotContainsString('AAAA-BBBB', $output);
+        $this->assertStringContainsString('processed 1, skipped 0, errors 0', Artisan::output());
         Mail::assertSent(TwoFactorEnforcedMail::class, 1);
     }
 
-    public function testSkipsUsersWithUnusedCodes(): void
+    public function testSkipsUsersAlreadyNotified(): void
     {
-        $this->createUser('enforce-b@nomail.com', true);
+        $this->markNotified($this->createUser('enforce-b@nomail.com', true));
 
-        $this->recovery_service->shouldReceive('countUnusedRecoveryCodes')->once()->andReturn(10);
-        $this->recovery_service->shouldNotReceive('generateRecoveryCodes');
         $this->audit_service->shouldNotReceive('log');
 
         $code = Artisan::call('idp:enforce-admin-2fa');
@@ -134,21 +133,19 @@ final class EnforceAdmin2FACommandTest extends BrowserKitTestCase
     {
         $this->createUser('enforce-c@nomail.com', false);
 
-        $this->recovery_service->shouldNotReceive('countUnusedRecoveryCodes');
-        $this->recovery_service->shouldNotReceive('generateRecoveryCodes');
+        $this->audit_service->shouldNotReceive('log');
 
         Artisan::call('idp:enforce-admin-2fa');
 
         $this->assertStringContainsString('processed 0, skipped 0, errors 0', Artisan::output());
+        Mail::assertNothingSent();
     }
 
     public function testDryRunWritesNothingAndReportsSameCounts(): void
     {
         $this->createUser('enforce-d@nomail.com', true);
-        $this->createUser('enforce-e@nomail.com', true);
+        $this->markNotified($this->createUser('enforce-e@nomail.com', true));
 
-        $this->recovery_service->shouldReceive('countUnusedRecoveryCodes')->twice()->andReturn(0, 10);
-        $this->recovery_service->shouldNotReceive('generateRecoveryCodes');
         $this->audit_service->shouldNotReceive('log');
 
         $code = Artisan::call('idp:enforce-admin-2fa', ['--dry-run' => true]);
@@ -158,18 +155,23 @@ final class EnforceAdmin2FACommandTest extends BrowserKitTestCase
         Mail::assertNothingSent();
     }
 
-    public function testErrorOnOneUserDoesNotStopTheRun(): void
+    public function testMailFailureOnOneUserDoesNotStopTheRunNorAuditsIt(): void
     {
         $this->createUser('enforce-f@nomail.com', true);
         $this->createUser('enforce-g@nomail.com', true);
 
-        $this->recovery_service->shouldReceive('countUnusedRecoveryCodes')->twice()->andReturn(0);
-        $this->recovery_service->shouldReceive('generateRecoveryCodes')
-            ->twice()
-            ->andReturnUsing(
-                fn() => throw new \RuntimeException('boom'),
-                fn() => ['AAAA-BBBB']
-            );
+        Mail::swap(new class(new \Illuminate\Mail\MailManager(app())) extends \Illuminate\Support\Testing\Fakes\MailFake {
+            private int $calls = 0;
+
+            public function send($view, array $data = [], $callback = null)
+            {
+                if (++$this->calls === 1) {
+                    throw new \RuntimeException('smtp down');
+                }
+                parent::send($view, $data, $callback);
+            }
+        });
+        // only the user whose mail was sent gets an audit row
         $this->audit_service->shouldReceive('log')->once();
 
         $code = Artisan::call('idp:enforce-admin-2fa');
