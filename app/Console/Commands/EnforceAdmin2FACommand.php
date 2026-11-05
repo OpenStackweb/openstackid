@@ -14,7 +14,6 @@
 
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\Mail\TwoFactorEnforcedMail;
-use App\Services\Auth\IRecoveryCodeService;
 use App\Services\Auth\ITwoFactorAuditService;
 use Auth\User;
 use Illuminate\Console\Command;
@@ -25,7 +24,7 @@ use LaravelDoctrine\ORM\Facades\EntityManager;
 /**
  * Class EnforceAdmin2FACommand
  * Onboards every user of the groups in config('two_factor.enforced_groups'):
- * recovery codes + notification email + audit. It deliberately does NOT touch
+ * notification email + audit row (the audit row is the "already notified" marker). It deliberately does NOT touch
  * two_factor_enabled / two_factor_method / two_factor_enforced_at: enforcement
  * is derived from group membership at runtime (User::shouldRequire2FA()).
  * @package App\Console\Commands
@@ -39,6 +38,8 @@ final class EnforceAdmin2FACommand extends Command
      */
     private const ConsoleIp = '127.0.0.1';
 
+    private const AuditSource = 'enforce-admin-2fa';
+
     /**
      * @var string
      */
@@ -47,9 +48,9 @@ final class EnforceAdmin2FACommand extends Command
     /**
      * @var string
      */
-    protected $description = 'Generate recovery codes and notify every user of the 2FA enforced groups';
+    protected $description = 'Notify every user of the 2FA enforced groups that 2FA is now required';
 
-    public function handle(IRecoveryCodeService $recovery_code_service, ITwoFactorAuditService $audit_service): int
+    public function handle(ITwoFactorAuditService $audit_service): int
     {
         $dry_run = (bool)$this->option('dry-run');
         $slugs = array_values(array_filter((array)config('two_factor.enforced_groups', [])));
@@ -84,10 +85,11 @@ final class EnforceAdmin2FACommand extends Command
                     }
                     $email = $user->getEmail();
 
-                    // never overwrite an existing batch: the user may have saved those codes
-                    if ($recovery_code_service->countUnusedRecoveryCodes($user) > 0) {
+                    // the audit row is written only after the mail was sent, so a failed
+                    // run leaves no marker and the next run retries exactly those users
+                    if ($this->wasAlreadyNotified($user)) {
                         $skipped++;
-                        $this->line(sprintf('  skipped   %s (already has unused recovery codes)', $email));
+                        $this->line(sprintf('  skipped   %s (already notified)', $email));
                         continue;
                     }
 
@@ -97,20 +99,17 @@ final class EnforceAdmin2FACommand extends Command
                         continue;
                     }
 
-                    // plaintext codes are shown once and must never be printed or mailed
-                    $recovery_code_service->generateRecoveryCodes($user);
+                    // at-least-once: if the audit write fails after the mail was sent,
+                    // the user is notified again on the next run
+                    Mail::send(new TwoFactorEnforcedMail($user));
 
                     $audit_service->log(
                         $user,
                         TwoFactorAuditLog::EventEnrollmentChanged,
                         TwoFactorAuditLog::MethodEmailOtp,
                         self::ConsoleIp,
-                        ['source' => 'enforce-admin-2fa']
+                        ['source' => self::AuditSource]
                     );
-
-                    // codes are already committed: a mail failure counts as an error
-                    // for this user but is never rolled back, that would invalidate them
-                    Mail::send(new TwoFactorEnforcedMail($user));
 
                     $processed++;
                     $this->line(sprintf('  processed %s', $email));
@@ -131,6 +130,20 @@ final class EnforceAdmin2FACommand extends Command
         ));
 
         return $errors > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function wasAlreadyNotified(User $user): bool
+    {
+        $logs = EntityManager::getRepository(TwoFactorAuditLog::class)->findBy([
+            'user' => $user,
+            'event_type' => TwoFactorAuditLog::EventEnrollmentChanged,
+        ]);
+        foreach ($logs as $log) {
+            if (($log->getMetadata()['source'] ?? null) === self::AuditSource) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
