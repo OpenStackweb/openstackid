@@ -17,6 +17,7 @@ use Auth\MFAConstants;
 use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use Models\OAuth2\Client;
 use Models\OAuth2\OAuth2OTP;
@@ -90,6 +91,61 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
         );
         $this->assertSame(42, Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID));
         $this->assertTrue(Session::get(MFAConstants::SESSION_KEY_REMEMBER));
+    }
+
+    public function testIssueChallenge_forcesTwoFactorLifetime_evenWhenAnOAuth2ClientIsInPlay(): void
+    {
+        // Regression: with an OAuth2 client in the memento, OTPFactory picks the
+        // client's PASSWORDLESS otp_lifetime (0 = never expires on at least one
+        // dev client), which the UI rendered as "already expired" and locked
+        // VERIFY for good. The MFA code must use two_factor.otp_lifetime instead.
+        Config::set('two_factor.otp_lifetime', 450);
+
+        $user   = $this->buildUser(42, 'user@example.com');
+        $client = \Mockery::mock(Client::class);
+        $client->shouldReceive('getOtpLifetime')->never();
+
+        $otp = \Mockery::mock(OAuth2OTP::class);
+        $otp->shouldReceive('getLength')->andReturn(6);
+        $otp->shouldReceive('getLifetime')->andReturn(450);
+        $otp->shouldReceive('getCreatedAt')->andReturn(new \DateTime('2026-01-01 00:00:00', new \DateTimeZone('UTC')));
+
+        $this->tokenService
+            ->shouldReceive('createOTPFromPayload')
+            ->once()
+            ->withArgs(function (array $payload, $passedClient, $lifetime) use ($client) {
+                return $passedClient === $client && $lifetime === 450;
+            })
+            ->andReturn($otp);
+
+        $result = $this->strategy->issueChallenge($user, $client, false);
+
+        $this->assertSame(450, $result['otp_lifetime']);
+    }
+
+    public function testIssueChallenge_fallsBackToDefaultLifetime_whenConfigIsNonPositive(): void
+    {
+        // A second factor must always expire: a 0/negative config value is a
+        // misconfiguration, not a request for a never-expiring code.
+        Config::set('two_factor.otp_lifetime', 0);
+
+        $user = $this->buildUser(42, 'user@example.com');
+
+        $otp = \Mockery::mock(OAuth2OTP::class);
+        $otp->shouldReceive('getLength')->andReturn(6);
+        $otp->shouldReceive('getLifetime')->andReturn(600);
+        $otp->shouldReceive('getCreatedAt')->andReturn(new \DateTime('2026-01-01 00:00:00', new \DateTimeZone('UTC')));
+
+        $this->tokenService
+            ->shouldReceive('createOTPFromPayload')
+            ->once()
+            ->withArgs(function (array $payload, $client, $lifetime) {
+                return $lifetime === 600;
+            })
+            ->andReturn($otp);
+
+        $this->strategy->issueChallenge($user, null, false);
+        $this->assertSame(600, EmailOTPMFAChallengeStrategy::resolveOtpLifetime());
     }
 
     // ---------- resendChallenge ----------

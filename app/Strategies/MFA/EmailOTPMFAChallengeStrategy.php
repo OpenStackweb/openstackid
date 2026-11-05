@@ -4,12 +4,21 @@ use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Models\OAuth2\Client;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Services\ITokenService;
 
 final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
 {
+    /**
+     * Fallback when two_factor.otp_lifetime is missing or non-positive.
+     * Matches the two_factor.session_ttl default so the pending session never
+     * outlives the code (SDS idp-mfa.md §4.14).
+     */
+    private const DEFAULT_OTP_LIFETIME = 600;
+
     public function __construct(
         IUserRecoveryCodeRepository $recovery_code_repository,
         private readonly ITokenService $token_service,
@@ -22,11 +31,18 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
     {
         $this->storePendingState($user->getId(), $remember);
 
+        // The MFA code always uses the IDP-wide two_factor.otp_lifetime, never
+        // the client's passwordless otp_lifetime that OTPFactory would pick up
+        // when an OAuth2 client is in play: that per-client value belongs to
+        // passwordless login, where 0 means "never expires". For a second
+        // factor that is both a security hole and an unusable screen (the UI
+        // renders a 0 lifetime as already expired and locks VERIFY, and no
+        // resend can get it out of that state).
         $otp = $this->token_service->createOTPFromPayload([
             OAuth2Protocol::OAuth2PasswordlessConnection => OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
             OAuth2Protocol::OAuth2PasswordlessSend       => OAuth2Protocol::OAuth2PasswordlessSendCode,
             OAuth2Protocol::OAuth2PasswordlessEmail      => $user->getEmail(),
-        ], $client);
+        ], $client, self::resolveOtpLifetime());
 
         return [
             'otp_length'    => $otp->getLength(),
@@ -89,5 +105,28 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
     public function resendChallenge(User $user, ?Client $client, bool $remember): array
     {
         return $this->issueChallenge($user, $client, $remember);
+    }
+
+    /**
+     * Lifetime (seconds) of every MFA email code. A non-positive value is a
+     * misconfiguration (a second factor must always expire), so it falls back
+     * to the default instead of issuing a never-expiring code.
+     *
+     * @return int
+     */
+    public static function resolveOtpLifetime(): int
+    {
+        $lifetime = intval(Config::get('two_factor.otp_lifetime', self::DEFAULT_OTP_LIFETIME));
+
+        if ($lifetime <= 0) {
+            Log::warning(sprintf(
+                "EmailOTPMFAChallengeStrategy::resolveOtpLifetime two_factor.otp_lifetime is %d, falling back to %d seconds",
+                $lifetime,
+                self::DEFAULT_OTP_LIFETIME
+            ));
+            $lifetime = self::DEFAULT_OTP_LIFETIME;
+        }
+
+        return $lifetime;
     }
 }
