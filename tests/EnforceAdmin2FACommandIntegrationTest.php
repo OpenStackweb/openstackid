@@ -85,7 +85,7 @@ final class EnforceAdmin2FACommandIntegrationTest extends BrowserKitTestCase
         $code = Artisan::call('idp:enforce-admin-2fa');
 
         $this->assertSame(0, $code);
-        $this->assertCount(10, $this->codeHashes());
+        $this->assertCount(0, $this->codeHashes());
         $this->assertSame(1, DB::table('two_factor_audit_log')
             ->where('user_id', $this->admin->getId())
             ->where('event_type', TwoFactorAuditLog::EventEnrollmentChanged)
@@ -104,16 +104,41 @@ final class EnforceAdmin2FACommandIntegrationTest extends BrowserKitTestCase
         $this->assertSame($before->two_factor_enforced_at, $after->two_factor_enforced_at);
     }
 
-    public function testSecondRunSkipsAndKeepsExistingCodes(): void
+    public function testSecondRunSkipsAlreadyNotified(): void
     {
         Artisan::call('idp:enforce-admin-2fa');
-        $hashes = $this->codeHashes();
 
         Artisan::call('idp:enforce-admin-2fa');
 
         $this->assertStringContainsString('processed 0, skipped 1, errors 0', Artisan::output());
-        $this->assertSame($hashes, $this->codeHashes());
         Mail::assertSent(TwoFactorEnforcedMail::class, 1);
+    }
+
+    public function testMailFailureIsRetriedOnNextRun(): void
+    {
+        Mail::swap(new class(new \Illuminate\Mail\MailManager(app())) extends \Illuminate\Support\Testing\Fakes\MailFake {
+            public function send($view, array $data = [], $callback = null)
+            {
+                throw new \RuntimeException('smtp down');
+            }
+        });
+
+        $this->assertSame(1, Artisan::call('idp:enforce-admin-2fa'));
+        $this->assertSame(0, $this->auditRows());
+
+        Mail::fake();
+        $this->assertSame(0, Artisan::call('idp:enforce-admin-2fa'));
+        $this->assertStringContainsString('processed 1, skipped 0, errors 0', Artisan::output());
+        Mail::assertSent(TwoFactorEnforcedMail::class, 1);
+        $this->assertSame(1, $this->auditRows());
+    }
+
+    private function auditRows(): int
+    {
+        return DB::table('two_factor_audit_log')
+            ->where('user_id', $this->admin->getId())
+            ->where('event_type', TwoFactorAuditLog::EventEnrollmentChanged)
+            ->count();
     }
 
     public function testDryRunWritesNothing(): void
