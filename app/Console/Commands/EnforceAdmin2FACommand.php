@@ -52,6 +52,13 @@ final class EnforceAdmin2FACommand extends Command
 
     public function handle(ITwoFactorAuditService $audit_service): int
     {
+        // with the global kill-switch off shouldRequire2FA() is false for everyone:
+        // telling admins that 2FA is required would be wrong
+        if (!config('two_factor.enabled', true)) {
+            $this->warn('two_factor.enabled is false (TWO_FACTOR_ENABLED): 2FA is not enforced, refusing to notify. Enable it first.');
+            return self::FAILURE;
+        }
+
         $dry_run = (bool)$this->option('dry-run');
         $slugs = array_values(array_filter((array)config('two_factor.enforced_groups', [])));
 
