@@ -42,17 +42,15 @@ final class DoctrineUserTrustedDeviceRepository
         return $result instanceof UserTrustedDevice ? $result : null;
     }
 
-    public function revokeAllForUser(User $user): void
+    public function getByIdAndUser(int $id, User $user): ?UserTrustedDevice
     {
-        $this->getEntityManager()
-            ->createQueryBuilder()
-            ->update($this->getBaseEntity(), 'd')
-            ->set('d.is_revoked', ':revoked')
-            ->where('d.user = :user')
-            ->setParameter('revoked', true)
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->execute();
+        $criteria = Criteria::create()
+            ->where(Criteria::expr()->eq('id', $id))
+            ->andWhere(Criteria::expr()->eq('user', $user))
+            ->setMaxResults(1);
+
+        $result = $this->matching($criteria)->first();
+        return $result instanceof UserTrustedDevice ? $result : null;
     }
 
     public function getActiveByUserAndIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice
