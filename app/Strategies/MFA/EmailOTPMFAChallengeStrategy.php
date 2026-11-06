@@ -20,20 +20,33 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
 
     public function issueChallenge(User $user, ?Client $client, bool $remember): array
     {
-        $this->storePendingState($user->getId(), $remember);
-
+        // The MFA code always uses the IDP-wide two_factor.otp_lifetime, never
+        // the client's passwordless otp_lifetime that OTPFactory would pick up
+        // when an OAuth2 client is in play: that per-client value belongs to
+        // passwordless login, where 0 means "never expires". For a second
+        // factor that is both a security hole and an unusable screen (the UI
+        // renders a 0 lifetime as already expired and locks VERIFY, and no
+        // resend can get it out of that state).
         $otp = $this->token_service->createOTPFromPayload([
             OAuth2Protocol::OAuth2PasswordlessConnection => OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
             OAuth2Protocol::OAuth2PasswordlessSend       => OAuth2Protocol::OAuth2PasswordlessSendCode,
             OAuth2Protocol::OAuth2PasswordlessEmail      => $user->getEmail(),
-        ], $client);
+        ], $client, self::resolveOtpLifetime());
+
+        // Same source isAlive()/getRemainingLifetime() use server-side, so a UI
+        // countdown seeded from it can never drift from the actual expiry check.
+        $issuedAt = $otp->getCreatedAt()?->getTimestamp() ?? time();
+
+        // Stored AFTER the code exists and anchored to its creation time: issuing
+        // (mail transport included) can take seconds, and a pending timestamp
+        // taken before it would expire the session while the code is still alive.
+        // It also leaves no orphan pending state when issuance throws.
+        $this->storePendingState($user->getId(), $remember, $issuedAt);
 
         return [
             'otp_length'    => $otp->getLength(),
             'otp_lifetime'  => $otp->getLifetime(),
-            // Same source isAlive()/getRemainingLifetime() use server-side, so a
-            // UI countdown seeded from it can never drift from the actual expiry check.
-            'otp_issued_at' => $otp->getCreatedAt()?->getTimestamp() ?? time(),
+            'otp_issued_at' => $issuedAt,
         ];
     }
 

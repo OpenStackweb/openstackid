@@ -53,13 +53,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Challenge Code Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | Seconds an MFA email code stays valid. Applies to every challenge,
+    | including logins started from an OAuth2 client: the client's own
+    | passwordless otp_lifetime (where 0 means "never expires") is never
+    | used for a second factor. Non-positive values fall back to 600.
+    |
+    */
+    'otp_lifetime' => env('TWO_FACTOR_OTP_LIFETIME', 600),
+
+    /*
+    |--------------------------------------------------------------------------
     | Pending Challenge Session
     |--------------------------------------------------------------------------
     |
     | Seconds a pending 2FA challenge stays valid in the session after the
-    | password step (SDS idp-mfa.md §4.14). Defaults to the default OTP
-    | lifetime (otp.lifetime) so the session never expires before the code
-    | and its UI countdown do.
+    | password step (SDS idp-mfa.md §4.14). The effective TTL is
+    | max(session_ttl, effective otp_lifetime), enforced in
+    | AbstractMFAChallengeStrategy::resolvePendingSessionTtl(), so the session
+    | can never expire before the code and its UI countdown do. Raise this
+    | value only to keep the challenge alive longer than the code.
     |
     */
     'session_ttl' => env('TWO_FACTOR_SESSION_TTL', 600),

@@ -1,10 +1,15 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act, fireEvent, cleanup } from '@testing-library/react';
 import TwoFactorForm from '../../../../resources/js/login/components/two_factor_form';
 
 // Suppress the 1-second interval so tests don't bleed real timers into each other.
+// Unmount while the fake clock is still installed so the component's
+// clearInterval() targets the fake timer it created.
 beforeEach(() => jest.useFakeTimers());
-afterEach(() => jest.useRealTimers());
+afterEach(() => {
+  cleanup();
+  jest.useRealTimers();
+});
 
 const baseProps = {
   otpCode: '123456',
@@ -51,6 +56,38 @@ describe('TwoFactorForm', () => {
     const label = screen.getByTestId('error-label');
     expect(label).toBeInTheDocument();
     expect(label).toHaveTextContent(msg);
+  });
+
+  it('an expired code is revived by a fresh one (codeVersion bump), re-enabling VERIFY', () => {
+    const { rerender } = render(<TwoFactorForm {...baseProps} otpLifetime={5} />);
+    act(() => { jest.advanceTimersByTime(6000); });
+    expect(screen.getByText(/has expired/)).toBeInTheDocument();
+    expect(screen.getByTestId('verify-button')).toBeDisabled();
+
+    // Same lifetime, new code: the parent bumps codeVersion on a successful resend.
+    rerender(<TwoFactorForm {...baseProps} otpLifetime={5} codeVersion={1} />);
+    expect(screen.queryByText(/has expired/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('verify-button')).not.toBeDisabled();
+  });
+
+  it('a successful resend keeps the cooldown running', async () => {
+    const onResend = jest.fn(() => Promise.resolve());
+    render(<TwoFactorForm {...baseProps} onResend={onResend} />);
+
+    await act(async () => { fireEvent.click(screen.getByTestId('resend-link')); });
+
+    expect(onResend).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('resend-link')).toHaveTextContent(/resend code \(30s\)/);
+  });
+
+  it('a failed resend releases the cooldown so the user can retry', async () => {
+    const onResend = jest.fn(() => Promise.reject(new Error('429')));
+    render(<TwoFactorForm {...baseProps} onResend={onResend} />);
+
+    await act(async () => { fireEvent.click(screen.getByTestId('resend-link')); });
+
+    expect(onResend).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('resend-link')).toHaveTextContent(/^resend code$/);
   });
 
 });
