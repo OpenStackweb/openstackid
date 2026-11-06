@@ -69,6 +69,12 @@ describe.each(FORMS)('$name captcha gate', ({ Form, props, submitLabel }) => {
     mockTurnstile.clear();
     // Returning false keeps jsdom from attempting the native navigation.
     onAuthenticate = jest.fn(() => false);
+    // api.js loaded: retry resets the existing widget.
+    window.turnstile = {};
+  });
+
+  afterEach(() => {
+    delete window.turnstile;
   });
 
   it('has no captcha and submits normally below the failed-attempts threshold', () => {
