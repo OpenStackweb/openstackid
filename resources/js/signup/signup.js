@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
-import { Turnstile } from "@marsidev/react-turnstile";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
@@ -22,6 +21,8 @@ import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
 import {buildPasswordValidationSchema} from "../validator";
 
+import { TurnstileCaptcha, useTurnstileCaptcha } from "../components/turnstile_captcha";
+
 import styles from "./signup.module.scss";
 
 const SignUpPage = ({
@@ -42,8 +43,7 @@ const SignUpPage = ({
   tenantName,
 }) => {
   const formEl = useRef(null);
-  const captcha = useRef(null);
-  const [captchaConfirmation, setCaptchaConfirmation] = useState(null);
+  const captcha = useTurnstileCaptcha(captchaPublicKey);
 
   useEffect(() => {
     if (signUpError) {
@@ -84,20 +84,12 @@ const SignUpPage = ({
       return errors;
     },
     onSubmit: (values) => {
-      const turnstileResponse = captcha.current?.getResponse();
-      if (!turnstileResponse) {
-        setCaptchaConfirmation("Remember to check the captcha");
+      if (!captcha.ensureToken()) {
         return;
       }
       doHtmlFormPost();
     },
   });
-
-  const onChangeCaptchaProvider = () => {
-    if (captcha.current?.getResponse()) {
-      setCaptchaConfirmation(null);
-    }
-  };
 
   return (
     <Container component="main" maxWidth="xs" className={styles.main_container}>
@@ -274,22 +266,11 @@ const SignUpPage = ({
                 </Typography>
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
-                <Grid container item justify='center'>
-                  <Turnstile
-                    ref={captcha}
-                    className={styles.turnstile}
-                    siteKey={captchaPublicKey}
-                    options={{ responseFieldName: "cf-turnstile-response" }}
-                    onSuccess={onChangeCaptchaProvider}
-                    onExpire={() => { captcha.current?.reset(); }}
-                    onError={() => setCaptchaConfirmation('The security check encountered an error. Please refresh the page and try again.')}
-                  />
-                  {captchaConfirmation && (
-                    <div className={styles.error_label}>
-                      {captchaConfirmation}
-                    </div>
-                  )}
-                </Grid>
+                <TurnstileCaptcha
+                  captcha={captcha}
+                  className={styles.turnstile}
+                  errorClassName={styles.error_label}
+                />
                 {codeOfConductUrl && (
                   <Grid container item justify='center'>
                     <Checkbox
@@ -372,9 +353,14 @@ const theme = createTheme({
   },
 });
 
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <SignUpPage {...config} />
-  </MuiThemeProvider>,
-  document.querySelector("#root")
-);
+export { SignUpPage };
+
+const root = document.querySelector("#root");
+if (root) {
+  ReactDOM.render(
+    <MuiThemeProvider theme={theme}>
+      <SignUpPage {...config} />
+    </MuiThemeProvider>,
+    root
+  );
+}

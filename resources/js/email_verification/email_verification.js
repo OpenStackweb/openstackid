@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
-import { Turnstile } from "@marsidev/react-turnstile";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
@@ -15,6 +14,7 @@ import { MuiThemeProvider, createTheme } from "@material-ui/core/styles";
 import { useFormik } from "formik";
 import { object, string, ref } from "yup";
 import Banner from "../components/banner/banner";
+import { TurnstileCaptcha, useTurnstileCaptcha } from "../components/turnstile_captcha";
 
 import styles from "./email_verification.module.scss";
 
@@ -37,8 +37,7 @@ const EmailVerificationPage = ({
   submitButtonText,
 }) => {
   const formEl = useRef(null);
-  const captcha = useRef(null);
-  const [captchaConfirmation, setCaptchaConfirmation] = useState(null);
+  const captcha = useTurnstileCaptcha(captchaPublicKey);
 
   useEffect(() => {
     if (emailVerificationError) {
@@ -56,19 +55,12 @@ const EmailVerificationPage = ({
     initialValues: initialValues,
     validationSchema: validationSchema,
     onSubmit: () => {
-      if (!captcha.current?.getResponse()) {
-        setCaptchaConfirmation("Remember to check the captcha");
+      if (!captcha.ensureToken()) {
         return;
       }
       doHtmlFormPost();
     },
   });
-
-  const onChangeCaptchaProvider = () => {
-    if (captcha.current?.getResponse()) {
-      setCaptchaConfirmation(null);
-    }
-  };
 
   return (
     <Container component="main" maxWidth="xs" className={styles.main_container}>
@@ -120,22 +112,11 @@ const EmailVerificationPage = ({
                 />
               </Grid>
               <Grid item container alignItems="center" justifyContent="center">
-                <Grid container item justify='center'>
-                  <Turnstile
-                    ref={captcha}
-                    className={styles.turnstile}
-                    siteKey={captchaPublicKey}
-                    options={{ responseFieldName: "cf-turnstile-response" }}
-                    onSuccess={onChangeCaptchaProvider}
-                    onExpire={() => { captcha.current?.reset(); }}
-                    onError={() => setCaptchaConfirmation('The security check encountered an error. Please refresh the page and try again.')}
-                  />
-                  {captchaConfirmation && (
-                    <div className={styles.error_label}>
-                      {captchaConfirmation}
-                    </div>
-                  )}
-                </Grid>
+                <TurnstileCaptcha
+                  captcha={captcha}
+                  className={styles.turnstile}
+                  errorClassName={styles.error_label}
+                />
                 <Grid container item justify='center'>
                   <Button
                     variant="contained"
@@ -174,9 +155,14 @@ const theme = createTheme({
   },
 });
 
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <EmailVerificationPage {...config} />
-  </MuiThemeProvider>,
-  document.querySelector("#root")
-);
+export { EmailVerificationPage };
+
+const root = document.querySelector("#root");
+if (root) {
+  ReactDOM.render(
+    <MuiThemeProvider theme={theme}>
+      <EmailVerificationPage {...config} />
+    </MuiThemeProvider>,
+    root
+  );
+}
