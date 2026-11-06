@@ -1214,7 +1214,10 @@ final class UserController extends OpenIdController
             'actions' => $actions,
             'countries' => CountryList::getCountries(),
             'languages' => $lang2Code,
-            'two_factor_enabled' => $user->shouldRequire2FA(),
+            // the stored flag, not the effective requirement: the profile needs to tell a
+            // self-enrolled user (can turn it off) from one enforced by group (cannot)
+            'two_factor_enabled' => $user->isTwoFactorEnabled(),
+            'two_factor_enforced' => $user->isTwoFactorEnforcedByGroup(),
             // The session completed a 2FA challenge within the enrollment window:
             // a batch can be generated without the password.
             'recovery_codes_window_open' => $window_open,
