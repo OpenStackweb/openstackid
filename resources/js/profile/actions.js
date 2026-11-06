@@ -87,9 +87,25 @@ export const revokeAllTokens = async () => {
     return deleteRawRequest(window.REVOKE_ALL_TOKENS_ENDPOINT)({'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
-export const regenerateRecoveryCodes = async (currentPassword) => {
-    const params = {current_password: currentPassword};
-    return postRawRequestFull(window.REGENERATE_RECOVERY_CODES_ENDPOINT)(params, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
+// Accept: application/json: the `auth` middleware must answer these XHRs with JSON
+// instead of redirecting to a session backurl.
+const jsonHeaders = () => ({'X-CSRF-TOKEN': window.CSFR_TOKEN, 'Accept': 'application/json'});
+
+// currentPassword is optional: a user without a password (social-only account)
+// regenerates inside the recovery enrollment window instead of confirming one.
+export const regenerateRecoveryCodes = async (currentPassword = null) => {
+    const params = currentPassword ? {current_password: currentPassword} : {};
+    return postRawRequestFull(window.REGENERATE_RECOVERY_CODES_ENDPOINT)(params, jsonHeaders());
+}
+
+// Generates a batch without the password, right after a 2FA challenge.
+export const enrollRecoveryCodes = async () => {
+    return postRawRequestFull(window.ENROLL_RECOVERY_CODES_ENDPOINT)({}, jsonHeaders());
+}
+
+// "I've Saved These Codes": confirms the exact batch that was displayed.
+export const acknowledgeRecoveryCodes = async (batchId) => {
+    return postRawRequestFull(window.ACKNOWLEDGE_RECOVERY_CODES_ENDPOINT)({batch_id: batchId}, jsonHeaders());
 }
 
 export const enableTwoFactor = async (method) => {

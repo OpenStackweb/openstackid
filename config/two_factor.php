@@ -66,6 +66,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Recovery-code enrollment window
+    |--------------------------------------------------------------------------
+    |
+    | Seconds after a successful 2FA challenge (verify2FA / verify2FARecovery)
+    | during which the session can generate a recovery-code batch without the
+    | current password (SDS idp-mfa.md §4.10.3, §4.14).
+    |
+    */
+    'recovery_enrollment_window' => env('TWO_FACTOR_RECOVERY_ENROLLMENT_WINDOW', 600),
+
+    /*
+    |--------------------------------------------------------------------------
     | Rate Limiting
     |--------------------------------------------------------------------------
     |
@@ -88,5 +100,10 @@ return [
         // budget separately.
         'max_otp_email_requests'   => env('TWO_FACTOR_MAX_OTP_EMAIL_REQUESTS', 5),
         'otp_email_window_minutes' => env('TWO_FACTOR_OTP_EMAIL_WINDOW_MINUTES', 15),
+
+        // Recovery-code enrollment (POST recovery-codes/enroll), keyed by the
+        // authenticated user; every request counts (SDS idp-mfa.md §4.12).
+        'max_enroll_requests'   => env('TWO_FACTOR_MAX_ENROLL_REQUESTS', 5),
+        'enroll_window_minutes' => env('TWO_FACTOR_ENROLL_WINDOW_MINUTES', 15),
     ],
 ];

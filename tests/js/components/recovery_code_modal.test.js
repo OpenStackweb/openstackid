@@ -42,6 +42,44 @@ describe('RecoveryCodeModal', () => {
         expect(onAcknowledge).toHaveBeenCalledTimes(1);
     });
 
+    it('restarts the delay when a different batch replaces the codes while the modal stays open', () => {
+        const NEW_CODES = ['CCCC-3333', 'DDDD-4444'];
+        const {rerender} = render(
+            <RecoveryCodeModal open={true} codes={CODES} email="user@test.com" onAcknowledge={jest.fn()}/>
+        );
+
+        act(() => {
+            jest.advanceTimersByTime(5000);
+        });
+        expect(screen.getByTestId('acknowledge-codes-button')).not.toBeDisabled();
+
+        rerender(<RecoveryCodeModal open={true} codes={NEW_CODES} email="user@test.com" onAcknowledge={jest.fn()}/>);
+
+        // The new codes must be readable before they can be confirmed.
+        expect(screen.getByTestId('acknowledge-codes-button')).toBeDisabled();
+        act(() => {
+            jest.advanceTimersByTime(5000);
+        });
+        expect(screen.getByTestId('acknowledge-codes-button')).not.toBeDisabled();
+    });
+
+    it('does not restart the delay when the same codes are passed again', () => {
+        const {rerender} = render(
+            <RecoveryCodeModal open={true} codes={CODES} email="user@test.com" onAcknowledge={jest.fn()}/>
+        );
+
+        act(() => {
+            jest.advanceTimersByTime(5000);
+        });
+        expect(screen.getByTestId('acknowledge-codes-button')).not.toBeDisabled();
+
+        // New array identity, same content (e.g. a parent re-rendering while a request is in flight).
+        rerender(<RecoveryCodeModal open={true} codes={[...CODES]} email="user@test.com" busy={false}
+                                     onAcknowledge={jest.fn()}/>);
+
+        expect(screen.getByTestId('acknowledge-codes-button')).not.toBeDisabled();
+    });
+
     it('cannot be dismissed by pressing Escape', () => {
         const onAcknowledge = jest.fn();
         render(<RecoveryCodeModal open={true} codes={CODES} email="user@test.com" onAcknowledge={onAcknowledge}/>);

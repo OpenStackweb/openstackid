@@ -19,6 +19,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
@@ -89,6 +90,25 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
         RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionVerify), fn () => $bySessionPendingUser(ITwoFactorRateLimitService::ActionVerify));
         RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionRecovery), fn () => $bySessionPendingUser(ITwoFactorRateLimitService::ActionRecovery));
         RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionResend), fn () => $bySessionPendingUser(ITwoFactorRateLimitService::ActionResend));
+
+        // Recovery-code enrollment is called from the login page right after
+        // verify2FA / verify2FARecovery, which already cleared the pending
+        // state: a pending-user subject would resolve to nothing and the
+        // middleware would let every request through unthrottled. The subject
+        // is the authenticated user instead.
+        RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionEnroll), function () use ($rateLimitService, $respondRateLimited) {
+            $userId = Auth::id();
+
+            if (is_null($userId)) {
+                return Limit::none();
+            }
+
+            return (new Limit(
+                (int) $userId,
+                $rateLimitService->getLimit(ITwoFactorRateLimitService::ActionEnroll),
+                $rateLimitService->getWindowSeconds(ITwoFactorRateLimitService::ActionEnroll)
+            ))->response($respondRateLimited);
+        });
 
         RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionOtp), function (Request $request) use ($rateLimitService, $respondRateLimited) {
             $username = strtolower(trim($request->input('username', '')));

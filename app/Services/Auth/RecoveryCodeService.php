@@ -15,11 +15,13 @@ namespace App\Services\Auth;
 
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserRecoveryCode;
+use Auth\MFAConstants;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Laminas\Math\Rand;
 use models\exceptions\ValidationException;
 use Utils\Db\ITransactionService;
@@ -33,6 +35,10 @@ final class RecoveryCodeService implements IRecoveryCodeService
 {
     private const CODE_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
+    private const AckMismatch = 'mismatch';
+    private const AckAlready  = 'already';
+    private const AckDone     = 'done';
+
     public function __construct(
         private readonly IUserRecoveryCodeRepository $repository,
         private readonly IUserRepository $user_repository,
@@ -44,10 +50,18 @@ final class RecoveryCodeService implements IRecoveryCodeService
     /**
      * @inheritDoc
      */
-    public function regenerateRecoveryCodes(User $user, string $currentPassword): array
+    public function regenerateRecoveryCodes(User $user, ?string $currentPassword): RecoveryCodesBatch
     {
-        if (!$user->checkPassword(trim($currentPassword))) {
-            throw new ValidationException('current_password is not correct.');
+        if ($user->hasPasswordSet()) {
+            if (!$user->checkPassword(trim((string)$currentPassword))) {
+                throw new ValidationException('current_password is not correct.');
+            }
+        } elseif (!$this->isWithinEnrollmentWindow($user)) {
+            // Social-only account: no password to confirm. Proof of identity is a
+            // real 2FA challenge completed moments ago in this session.
+            throw new ValidationException(
+                'Sign out and sign in again, then regenerate your recovery codes right after the sign-in.'
+            );
         }
 
         return $this->generateRecoveryCodes($user);
@@ -56,32 +70,22 @@ final class RecoveryCodeService implements IRecoveryCodeService
     /**
      * @inheritDoc
      */
-    public function generateRecoveryCodes(User $user): array
+    public function generateRecoveryCodes(User $user): RecoveryCodesBatch
     {
-        $codes = $this->tx_service->transaction(fn() => $this->regenerateCodesForUser($user));
+        $batch = $this->tx_service->transaction(function () use ($user) {
+            $this->repository->lockUserRow($user);
+            return $this->regenerateCodesForUser($user);
+        });
 
-        // Best-effort: the codes are already committed and about to be shown to
-        // the user, so an audit-logging failure must not 500 this response - a
-        // client retry on a 500 would regenerate and invalidate the codes it
-        // just received.
-        try {
-            $this->audit_service->log(
-                $user,
-                TwoFactorAuditLog::EventRecoveryCodesGenerated,
-                TwoFactorAuditLog::MethodRecovery,
-                IPHelper::getUserIp()
-            );
-        } catch (\Throwable $ex) {
-            Log::warning($ex);
-        }
+        $this->logCodesGenerated($user, $batch);
 
-        return $codes;
+        return $batch;
     }
 
     /**
      * @inheritDoc
      */
-    public function enableTwoFactorAndGenerateCodes(User $user, string $method): array
+    public function enableTwoFactorAndGenerateCodes(User $user, string $method): RecoveryCodesBatch
     {
         // Everything must live in a single transaction() call: it opens/commits
         // its own connection-level transaction and closes the entity manager on
@@ -89,7 +93,10 @@ final class RecoveryCodeService implements IRecoveryCodeService
         // second call inside it (e.g. by calling generateRecoveryCodes() here)
         // would let an inner failure tear down the EM out from under this
         // still-running outer transaction.
-        $codes = $this->tx_service->transaction(function () use ($user, $method) {
+        $batch = $this->tx_service->transaction(function () use ($user, $method) {
+            // The lock re-hydrates $user from the database, so it must come
+            // before enable2FA() mutates the entity.
+            $this->repository->lockUserRow($user);
             $user->enable2FA($method);
             $this->user_repository->add($user, false);
 
@@ -100,14 +107,8 @@ final class RecoveryCodeService implements IRecoveryCodeService
         // committed, so an audit-logging failure must not 500 this response - a
         // client retry on a 500 would regenerate and invalidate the codes it
         // just received.
+        $this->logCodesGenerated($user, $batch);
         try {
-            $this->audit_service->log(
-                $user,
-                TwoFactorAuditLog::EventRecoveryCodesGenerated,
-                TwoFactorAuditLog::MethodRecovery,
-                IPHelper::getUserIp()
-            );
-
             $this->audit_service->log(
                 $user,
                 TwoFactorAuditLog::EventEnrollmentChanged,
@@ -118,16 +119,126 @@ final class RecoveryCodeService implements IRecoveryCodeService
             Log::warning($ex);
         }
 
-        return $codes;
+        return $batch;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function acknowledgeRecoveryCodes(User $user, int $batchId): bool
+    {
+        // The batch mismatch is reported through the return value, not by
+        // throwing inside the callback: a throw makes the transaction service
+        // close the EntityManager, which nothing after it could use.
+        $outcome = $this->tx_service->transaction(function () use ($user, $batchId) {
+            $this->repository->lockUserRow($user);
+
+            $current = $this->repository->getCurrentBatchId($user);
+            if (is_null($current) || $current !== $batchId) {
+                return self::AckMismatch;
+            }
+
+            if (!is_null($user->getRecoveryCodesAcknowledgedAt())) {
+                return self::AckAlready;
+            }
+
+            $user->setRecoveryCodesAcknowledgedAt(new \DateTime('now', new \DateTimeZone('UTC')));
+            return self::AckDone;
+        });
+
+        if ($outcome === self::AckMismatch) {
+            return false;
+        }
+
+        if ($outcome === self::AckDone) {
+            // Best-effort: the acknowledgment is already committed.
+            try {
+                $this->audit_service->log(
+                    $user,
+                    TwoFactorAuditLog::EventRecoveryCodesAcknowledged,
+                    TwoFactorAuditLog::MethodRecovery,
+                    IPHelper::getUserIp(),
+                    ['batch_id' => $batchId]
+                );
+            } catch (\Throwable $ex) {
+                Log::warning($ex);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getCurrentBatchId(User $user): ?int
+    {
+        return $this->repository->getCurrentBatchId($user);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function requiresRecoveryCodeEnrollment(User $user): bool
+    {
+        return $this->enrollmentRequired($user, $this->countUnusedRecoveryCodes($user));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function isWithinEnrollmentWindow(User $user): bool
+    {
+        $marker = Session::get(MFAConstants::SESSION_KEY_COMPLETED_AT);
+        if (!is_array($marker) || !isset($marker['user_id'], $marker['at'])) {
+            return false;
+        }
+
+        if ((int)$marker['user_id'] !== $user->getId()) {
+            return false;
+        }
+
+        $age = time() - (int)$marker['at'];
+        return $age >= 0 && $age <= (int)config('two_factor.recovery_enrollment_window', 600);
+    }
+
+    private function enrollmentRequired(User $user, int $unusedCount): bool
+    {
+        return $user->shouldRequire2FA()
+            && ($unusedCount === 0 || is_null($user->getRecoveryCodesAcknowledgedAt()));
+    }
+
+    /**
+     * Audit row of a generation. Best-effort: the codes are already committed
+     * and about to be shown to the user, so an audit-logging failure must not
+     * 500 this response - a client retry on a 500 would regenerate and
+     * invalidate the codes it just received. The batch identifier comes from
+     * the generating transaction, never from a read after the commit.
+     */
+    private function logCodesGenerated(User $user, RecoveryCodesBatch $batch): void
+    {
+        try {
+            $this->audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventRecoveryCodesGenerated,
+                TwoFactorAuditLog::MethodRecovery,
+                IPHelper::getUserIp(),
+                ['batch_id' => $batch->getBatchId()]
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
     }
 
     /**
      * Invalidates every existing recovery code for the user and generates a
-     * fresh batch, within the caller's already-open transaction.
+     * fresh batch, within the caller's already-open transaction. The caller
+     * must already hold the users-row lock (IUserRecoveryCodeRepository::lockUserRow()).
      *
-     * @return string[] plaintext codes formatted as XXXX-XXXX
+     * Also clears recovery_codes_acknowledged_at: the new batch counts as usable
+     * only after the user confirms it. Covers every generation path.
      */
-    private function regenerateCodesForUser(User $user): array
+    private function regenerateCodesForUser(User $user): RecoveryCodesBatch
     {
         $count = (int)config('auth.recovery_codes.count', 10);
         $length = (int)config('auth.recovery_codes.length', 8);
@@ -146,7 +257,18 @@ final class RecoveryCodeService implements IRecoveryCodeService
             $this->repository->add($code, false);
         }
 
-        return array_map(static fn(string $code) => implode('-', str_split($code, 4)), $plaintext_codes);
+        $user->setRecoveryCodesAcknowledgedAt(null);
+
+        // Read inside the locked transaction (getCurrentBatchId() flushes first).
+        $batchId = $this->repository->getCurrentBatchId($user);
+        if (is_null($batchId)) {
+            throw new \RuntimeException('Recovery codes were not persisted.');
+        }
+
+        return new RecoveryCodesBatch(
+            array_map(static fn(string $code) => implode('-', str_split($code, 4)), $plaintext_codes),
+            $batchId
+        );
     }
 
     /**
@@ -162,10 +284,14 @@ final class RecoveryCodeService implements IRecoveryCodeService
      */
     public function getStatus(User $user): RecoveryCodesStatus
     {
+        $remaining = $this->countUnusedRecoveryCodes($user);
+
         return new RecoveryCodesStatus(
-            $this->countUnusedRecoveryCodes($user),
+            $remaining,
             (int) config('auth.recovery_codes.count', 10),
-            (int) config('auth.recovery_codes.low_threshold', 3)
+            (int) config('auth.recovery_codes.low_threshold', 3),
+            !is_null($user->getRecoveryCodesAcknowledgedAt()),
+            $this->enrollmentRequired($user, $remaining)
         );
     }
 }
