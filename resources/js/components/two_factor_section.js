@@ -9,6 +9,7 @@ const DEFAULT_METHOD = "email_otp";
 
 const TwoFactorSection = ({
                               twoFactorEnabled,
+                              twoFactorEnforced = false,
                               recoveryCodesRemaining,
                               recoveryCodesTotal,
                               recoveryCodesLowThreshold,
@@ -20,7 +21,7 @@ const TwoFactorSection = ({
                               email,
                               appName
                           }) => {
-    const [enabled, setEnabled] = useState(twoFactorEnabled);
+    const [enabled, setEnabled] = useState(twoFactorEnabled || twoFactorEnforced);
     const [loading, setLoading] = useState(false);
     // Standing and first batch returned by "Enable": the panel is mounted with them and
     // asks the user to confirm the batch before it counts as usable.
