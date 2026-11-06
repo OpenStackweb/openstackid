@@ -59,7 +59,7 @@ test.describe('Recovery code enrollment after the 2FA challenge', () => {
       await page.keyboard.press('Escape');
       await expect(modal).toBeVisible();
 
-      const acknowledge = await acknowledgeRecoveryCodesModal(page);
+      const acknowledge = await acknowledgeRecoveryCodesModal(page, { expectNavigation: true });
       expect(acknowledge.status).toBe(200);
       const status = acknowledge.body;
       expect(status.recovery_codes_acknowledged).toBe(true);

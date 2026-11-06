@@ -15,6 +15,10 @@ const ACK_DELAY_SECONDS = 5;
 
 const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge, error = null, busy = false, onRetry}) => {
     const [secondsLeft, setSecondsLeft] = useState(ACK_DELAY_SECONDS);
+    // Identity of the displayed batch. A different batch shown while the modal stays open
+    // (the login page re-enrolls after a 412) must get its own full delay: keyed by the
+    // codes' content, so a parent re-rendering with an equal array does not restart it.
+    const batchKey = codes ? codes.join("|") : "";
 
     useEffect(() => {
         if (!open) return undefined;
@@ -25,7 +29,7 @@ const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge, error = 
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [open]);
+    }, [open, batchKey]);
 
     return (
         <Dialog
