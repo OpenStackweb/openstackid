@@ -103,6 +103,15 @@ final class OTPFactory
         }
 
         if (!is_null($lifetime_override)) {
+            // An explicit override exists to guarantee expiry; 0 would re-create
+            // the "never expires" code this parameter was added to prevent, and
+            // silently falling back could land on a client's 0 again.
+            if ($lifetime_override <= 0) {
+                throw new \InvalidArgumentException(sprintf(
+                    "OTPFactory::buildFromPayload lifetime override must be positive, %d given",
+                    $lifetime_override
+                ));
+            }
             $lifetime = $lifetime_override;
         }
 
