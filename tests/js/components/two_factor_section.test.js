@@ -6,7 +6,10 @@ import {handleErrorResponse} from '../../../resources/js/utils';
 
 jest.mock('../../../resources/js/profile/actions');
 jest.mock('sweetalert2', () => jest.fn());
-jest.mock('../../../resources/js/utils', () => ({handleErrorResponse: jest.fn()}));
+// the real handler resolves the message and hands it to the custom handler when one is given
+jest.mock('../../../resources/js/utils', () => ({
+    handleErrorResponse: jest.fn((err, handler) => handler && handler('Validation error', ['current_password: is not correct'], 'warning')),
+}));
 
 describe('TwoFactorSection', () => {
     beforeEach(() => {
@@ -127,7 +130,7 @@ describe('TwoFactorSection', () => {
         expect(screen.getByTestId('two-factor-disabled-message')).toBeInTheDocument();
     });
 
-    it('keeps the dialog open and 2FA on when the password is rejected', async () => {
+    it('keeps the dialog open, shows the error inside it and keeps 2FA on when the password is rejected', async () => {
         disableTwoFactor.mockRejectedValue({status: 412});
         render(
             <TwoFactorSection twoFactorEnabled={true} recoveryCodesRemaining={7} recoveryCodesTotal={10}
@@ -141,6 +144,8 @@ describe('TwoFactorSection', () => {
 
         await waitFor(() => expect(disableTwoFactor).toHaveBeenCalledWith('wrong'));
         expect(handleErrorResponse).toHaveBeenCalled();
+        // shown inside the dialog: a SweetAlert would open below it
+        expect(await screen.findByTestId('disable-two-factor-error')).toHaveTextContent('current_password: is not correct');
         expect(screen.getByTestId('disable-two-factor-dialog')).toBeInTheDocument();
         expect(screen.getByTestId('two-factor-switch')).toBeChecked();
         expect(screen.getByTestId('recovery-codes-count')).toBeInTheDocument();
