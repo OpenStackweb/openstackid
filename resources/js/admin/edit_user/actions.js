@@ -91,6 +91,12 @@ const normalizeEntity = (entity) => {
     entity.public_profile_allow_chat_with_me = entity.public_profile_allow_chat_with_me ? 1 : 0;
     entity.active = entity.active ? 1 : 0;
     entity.email_verified = entity.email_verified ? 1 : 0;
+    // the stored flag, 1/0 like the other checkboxes: the server acts only when it differs
+    // from the stored value. The rest of the 2FA state is read only.
+    entity.two_factor_enabled = entity.two_factor_enabled ? 1 : 0;
+    delete entity.two_factor_enforced;
+    delete entity.two_factor_enforced_at;
+    delete entity.two_factor_method;
     entity.post_code = entity.post_code.toString();
 
     if (entity.birthday) {
