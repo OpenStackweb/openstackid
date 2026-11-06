@@ -9,6 +9,7 @@ import {
   useTurnstileCaptcha,
   CAPTCHA_LOAD_TIMEOUT_MS,
   CAPTCHA_MESSAGES,
+  TURNSTILE_SCRIPT_ID,
 } from '../../../resources/js/components/turnstile_captcha';
 
 // Minimal Turnstile-protected form, wired the way the auth pages wire it.
@@ -40,10 +41,14 @@ describe('TurnstileCaptcha / useTurnstileCaptcha', () => {
   beforeEach(() => {
     mockTurnstile.clear();
     onPost = jest.fn();
+    // api.js loaded: the global Turnstile API exists (cases below delete it when needed).
+    window.turnstile = {};
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    delete window.turnstile;
+    document.getElementById(TURNSTILE_SCRIPT_ID)?.remove();
   });
 
   it('asks the user to wait, instead of to "check the captcha", when submitted before a token exists', () => {
@@ -91,6 +96,58 @@ describe('TurnstileCaptcha / useTurnstileCaptcha', () => {
 
     // The retried widget gets a fresh timeout window.
     act(() => jest.advanceTimersByTime(CAPTCHA_LOAD_TIMEOUT_MS));
+    expect(screen.getByText(CAPTCHA_MESSAGES.FAILED)).toBeInTheDocument();
+  });
+
+  it('reloads api.js on retry when the script itself never loaded', () => {
+    jest.useFakeTimers();
+    delete window.turnstile;
+    const failedScript = document.createElement('script');
+    failedScript.id = TURNSTILE_SCRIPT_ID;
+    document.head.appendChild(failedScript);
+    render(<ProtectedForm siteKey="site-key" onPost={onPost} />);
+    expect(mockTurnstile.mounts).toBe(1);
+
+    act(() => jest.advanceTimersByTime(CAPTCHA_LOAD_TIMEOUT_MS));
+    fireEvent.click(retryButton());
+
+    // The failed <script> is dropped and the widget remounted, so the library injects
+    // api.js again; reset() would be a no-op without a widget.
+    expect(document.getElementById(TURNSTILE_SCRIPT_ID)).toBeNull();
+    expect(mockTurnstile.mounts).toBe(2);
+    expect(mockTurnstile.reset).not.toHaveBeenCalled();
+    expect(screen.queryByText(CAPTCHA_MESSAGES.FAILED)).not.toBeInTheDocument();
+
+    // The reloaded widget can still succeed and unblock the form.
+    solve();
+    submit();
+    expect(onPost).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not report a load failure while the user is completing an interactive challenge', () => {
+    jest.useFakeTimers();
+    render(<ProtectedForm siteKey="site-key" onPost={onPost} />);
+
+    act(() => mockTurnstile.props.onBeforeInteractive());
+    act(() => jest.advanceTimersByTime(CAPTCHA_LOAD_TIMEOUT_MS * 2));
+
+    expect(screen.queryByText(CAPTCHA_MESSAGES.FAILED)).not.toBeInTheDocument();
+    submit();
+    expect(onPost).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(CAPTCHA_MESSAGES.INTERACTIVE);
+
+    solve();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('re-arms the load timeout when the widget restarts after an interactive challenge', () => {
+    jest.useFakeTimers();
+    render(<ProtectedForm siteKey="site-key" onPost={onPost} />);
+
+    act(() => mockTurnstile.props.onBeforeInteractive());
+    act(() => mockTurnstile.props.onTimeout());
+    act(() => jest.advanceTimersByTime(CAPTCHA_LOAD_TIMEOUT_MS));
+
     expect(screen.getByText(CAPTCHA_MESSAGES.FAILED)).toBeInTheDocument();
   });
 
