@@ -1,9 +1,9 @@
 import React from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
 import Button from "@material-ui/core/Button";
 import Link from "@material-ui/core/Link";
 import OtpCodeInput from "./otp_code_input";
 import useOtpCountdown from "./use_otp_countdown";
+import { TurnstileCaptcha, useTurnstileCaptcha } from "../../components/turnstile_captcha";
 import styles from "../login.module.scss";
 
 const OTPInputForm = ({
@@ -20,13 +20,11 @@ const OTPInputForm = ({
   csrfToken,
   shouldShowCaptcha,
   captchaPublicKey,
-  onChangeCaptchaProvider,
-  onExpireCaptchaProvider,
-  onErrorCaptchaProvider,
   onReset,
   loginAttempts,
 }) => {
-  const showCaptcha = shouldShowCaptcha();
+  // The captcha only applies once the failed-attempts threshold is reached.
+  const captcha = useTurnstileCaptcha(shouldShowCaptcha() ? captchaPublicKey : "");
   const { secondsLeft, expired } = useOtpCountdown(otpLifetime ?? 0, codeVersion);
   // The countdown only renders when this page view knows when the code was
   // issued (a fresh emitOTP in this session). After a failed-submit page
@@ -36,7 +34,7 @@ const OTPInputForm = ({
   const blockExpired = countdownActive && expired;
 
   const handleSubmit = (ev) => {
-    if (blockExpired || !onAuthenticate(ev.target))
+    if (blockExpired || !captcha.ensureToken() || !onAuthenticate(ev.target))
     {
       ev.preventDefault();
     }
@@ -98,16 +96,11 @@ const OTPInputForm = ({
         id="login_attempts"
         name="login_attempts"
       />
-      {showCaptcha && captchaPublicKey && (
-        <Turnstile
-          className={styles.turnstile}
-          siteKey={captchaPublicKey}
-          options={{ responseFieldName: "cf-turnstile-response" }}
-          onSuccess={onChangeCaptchaProvider}
-          onExpire={onExpireCaptchaProvider}
-          onError={onErrorCaptchaProvider}
-        />
-      )}
+      <TurnstileCaptcha
+        captcha={captcha}
+        className={styles.turnstile}
+        errorClassName={styles.error_label}
+      />
     </form>
   );
 };
