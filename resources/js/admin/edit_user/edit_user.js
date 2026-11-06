@@ -42,6 +42,7 @@ const EditUserPage = ({
                           csrfToken,
                           fetchGroupsURL,
                           initialValues,
+                          isOwnAccount = false,
                           languages,
                           menuConfig,
                           passwordPolicy,
@@ -738,6 +739,7 @@ const EditUserPage = ({
                                     enabled={formik.values.two_factor_enabled}
                                     enforced={formik.values.two_factor_enforced}
                                     enforcedAt={formik.values.two_factor_enforced_at}
+                                    ownAccount={isOwnAccount}
                                     onChange={formik.handleChange}/>
                             </Grid>
                             <Grid item xs={12}>

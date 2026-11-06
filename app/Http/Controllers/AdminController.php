@@ -660,6 +660,9 @@ class AdminController extends Controller {
         return View::make("admin.edit-user",
             [
                 'user_id' => $user_id,
+                // a server admin manages their own 2FA from the profile (it asks for the
+                // password); UserService::update ignores the key when editing oneself
+                'is_own_account' => $this->auth_service->getCurrentUser()?->getId() == $user->getId(),
                 'user' => json_encode(SerializerRegistry::getInstance()
                     ->getSerializer($user, SerializerRegistry::SerializerType_Admin)->serialize('groups')),
                 'countries' => CountryList::getCountries(),

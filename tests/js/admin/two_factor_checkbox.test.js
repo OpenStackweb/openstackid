@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import TwoFactorCheckbox, {ENFORCED_BY_GROUP_TEXT} from '../../../resources/js/admin/edit_user/components/two_factor_checkbox';
+import TwoFactorCheckbox, {ENFORCED_BY_GROUP_TEXT, OWN_ACCOUNT_TEXT} from '../../../resources/js/admin/edit_user/components/two_factor_checkbox';
 
 describe('admin edit user TwoFactorCheckbox', () => {
     it('reflects the stored flag and can be toggled', () => {
@@ -28,6 +28,20 @@ describe('admin edit user TwoFactorCheckbox', () => {
         expect(box).toBeDisabled();
         expect(screen.getByTestId('two-factor-enforced-text')).toHaveTextContent(ENFORCED_BY_GROUP_TEXT);
         expect(ENFORCED_BY_GROUP_TEXT).toBe('Enforced by group membership');
+
+        fireEvent.click(box);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('is read only on the admin own account, keeping the stored value', () => {
+        const onChange = jest.fn();
+        render(<TwoFactorCheckbox enabled={true} ownAccount={true} onChange={onChange}/>);
+
+        const box = screen.getByTestId('two-factor-checkbox');
+        expect(box).toBeChecked();
+        expect(box).toBeDisabled();
+        expect(screen.getByTestId('two-factor-own-account-text')).toHaveTextContent(OWN_ACCOUNT_TEXT);
+        expect(screen.queryByTestId('two-factor-enforced-text')).not.toBeInTheDocument();
 
         fireEvent.click(box);
         expect(onChange).not.toHaveBeenCalled();
