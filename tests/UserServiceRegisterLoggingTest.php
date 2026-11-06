@@ -14,6 +14,7 @@
 
 use App\Services\Auth\IUserService;
 use Illuminate\Support\Facades\Log;
+use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;
 use Monolog\LogRecord;
@@ -69,5 +70,53 @@ final class UserServiceRegisterLoggingTest extends BrowserKitTestCase
         $this->assertStringNotContainsString($password, $log, 'password leaked to the log');
         $this->assertStringNotContainsString($captcha, $log, 'Turnstile token leaked to the log');
         $this->assertStringNotContainsString($csrf, $log, 'CSRF token leaked to the log');
+
+        $record = $this->registerUserRecord($capture);
+        $this->assertStringContainsString(json_encode($email), $record->message);
+        $this->assertStringContainsString('"email"', $record->message);
+        $this->assertStringContainsString('"password"', $record->message);
+    }
+
+    public function testRegisterUserDoesNotLetFieldNamesForgeLogLines(): void
+    {
+        // PHP keeps a %0A in a form field name as a real newline, and Laravel's line formatter
+        // allows inline line breaks, so an interpolated field name could forge a log line.
+        $forged = "extra\n[2026-01-01 00:00:00] production.ERROR: forged";
+
+        $capture = new TestHandler(Level::Debug);
+        $logger  = Log::getLogger();
+        $logger->pushHandler($capture);
+
+        try {
+            $this->app->make(IUserService::class)->registerUser([
+                'first_name'            => 'Log',
+                'last_name'             => 'Forge',
+                'email'                 => '  register-forge@example.com ',
+                'country_iso_code'      => 'US',
+                'password'              => 'Zx9!plainTextSecret',
+                'password_confirmation' => 'Zx9!plainTextSecret',
+                $forged                 => '1',
+            ]);
+        } finally {
+            $logger->popHandler();
+        }
+
+        $record = $this->registerUserRecord($capture);
+        $this->assertStringNotContainsString("\n", $record->message);
+        $this->assertStringContainsString('"register-forge@example.com"', $record->message);
+        $this->assertStringContainsString(json_encode($forged), $record->message);
+        // Written with the formatter Laravel gives its file channels, the record stays one line.
+        $line = (new LineFormatter(null, null, true, true, true))->format($record);
+        $this->assertSame(1, substr_count($line, "\n"), "registerUser log record spans several lines: {$line}");
+    }
+
+    private function registerUserRecord(TestHandler $capture): LogRecord
+    {
+        foreach ($capture->getRecords() as $record) {
+            if (str_starts_with($record->message, 'UserService::registerUser')) {
+                return $record;
+            }
+        }
+        $this->fail('no UserService::registerUser log record was captured');
     }
 }

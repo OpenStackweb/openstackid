@@ -131,14 +131,17 @@ final class UserService extends AbstractService implements IUserService
             $email = trim($payload['email']);
 
             // The payload is the raw sign-up form (password, confirmation, captcha and CSRF
-            // tokens): log field names only, never values.
+            // tokens): log field names only, never values. Field names are client-controlled, so
+            // they are JSON-encoded to escape control characters. They stay in the message: with
+            // inline line breaks allowed (Laravel's default), Monolog turns an escaped newline in
+            // a JSON-encoded context back into a real one.
             Log::debug
             (
                 sprintf
                 (
                     "UserService::registerUser email %s fields %s",
-                    $email,
-                    implode(',', array_keys($payload))
+                    json_encode($email),
+                    json_encode(array_keys($payload))
                 )
             );
             $former_user = $this->user_repository->getByEmailOrName($email);
