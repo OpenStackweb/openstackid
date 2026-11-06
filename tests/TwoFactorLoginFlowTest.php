@@ -191,6 +191,44 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertTrue(Auth::check(), 'a non-MFA user must get an authenticated session');
     }
 
+    public function testPasswordLoginNoLongerHitsTheChallengeAfterTheUserDisabledTwoFactor(): void
+    {
+        $email = $this->createPlainUser();
+        $user = $this->user($email);
+        $recovery = $this->app->make(IRecoveryCodeService::class);
+        $recovery->enableTwoFactorAndGenerateCodes($user, User::MFAMethod_OTP);
+
+        // control: enrolled, the password alone does not log in
+        $this->postLogin($email, self::SEED_PASSWORD);
+        $this->assertFalse(Auth::check());
+        $this->assertSame('2fa', Session::get('flow'));
+        $this->resetLogin();
+
+        $recovery->disableTwoFactor($user, self::SEED_PASSWORD, $user);
+
+        $this->postLogin($email, self::SEED_PASSWORD);
+
+        $this->assertResponseStatus(302);
+        $this->assertTrue(Auth::check(), 'with 2FA off the password alone must log the user in');
+        $this->assertNotSame('2fa', Session::get('flow'), 'no 2FA screen must be pending');
+    }
+
+    public function testGroupEnforcedUserIsStillChallengedAfterARefusedDisable(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+
+        try {
+            $this->app->make(IRecoveryCodeService::class)->disableTwoFactor($admin, self::SEED_PASSWORD, $admin);
+            $this->fail('a group-enforced user must not be able to disable 2FA');
+        } catch (\models\exceptions\ValidationException $ex) {
+        }
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $this->assertFalse(Auth::check(), 'enforcement does not depend on the stored flag');
+        $this->assertSame('2fa', Session::get('flow'));
+    }
+
     // -------------------------------------------------------------------------
     // passwordless (flow=otp) login must not bypass the MFA gate
     // -------------------------------------------------------------------------
