@@ -258,6 +258,11 @@ final class OAuth2UserApiController extends OAuth2ProtectedController
         if (isset($payload['active']))
             unset($payload['active']);
 
+        // 2FA is managed only from the admin user CRUD (server admin session) or the
+        // owner's profile, never by an OAuth2 client acting with the token owner's rights
+        if (array_key_exists('two_factor_enabled', $payload))
+            unset($payload['two_factor_enabled']);
+
         return HTMLCleaner::cleanData($payload, [
             'bio',
             'statement_of_interest'
