@@ -661,7 +661,7 @@ class AdminController extends Controller {
             [
                 'user_id' => $user_id,
                 'user' => json_encode(SerializerRegistry::getInstance()
-                    ->getSerializer($user, SerializerRegistry::SerializerType_Private)->serialize('groups')),
+                    ->getSerializer($user, SerializerRegistry::SerializerType_Admin)->serialize('groups')),
                 'countries' => CountryList::getCountries(),
                 'languages' => $lang2Code,
             ]

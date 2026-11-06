@@ -43,6 +43,7 @@ final class TwoFactorProfileRoutesCsrfTest extends TestCase
     {
         return [
             'enable 2fa'                => ['/admin/api/v1/users/me/2fa/enable'],
+            'disable 2fa'               => ['/admin/api/v1/users/me/2fa/disable'],
             'regenerate recovery codes' => ['/admin/api/v1/users/me/recovery-codes/regenerate'],
             'enroll recovery codes'     => ['/admin/api/v1/users/me/recovery-codes/enroll'],
             'acknowledge recovery codes' => ['/admin/api/v1/users/me/recovery-codes/acknowledge'],
