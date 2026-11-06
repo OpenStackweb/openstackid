@@ -410,6 +410,12 @@ final class UserService extends AbstractService implements IUserService
                 $password_changed = true;
             }
 
+            // enable2FA() runs after this transaction commits, so check its precondition here
+            // (after populate and the email change, which may set or clear email verification):
+            // a refused enable must roll back the whole update, like the group check above.
+            if ($two_factor_change === true && !$user->isTwoFactorMethodEnabled(User::MFAMethod_OTP))
+                throw new ValidationException("Two-factor authentication requires a verified email address.");
+
             return $user;
         });
 
