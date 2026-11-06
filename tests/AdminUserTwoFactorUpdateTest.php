@@ -138,6 +138,48 @@ final class AdminUserTwoFactorUpdateTest extends BrowserKitTestCase
         $this->assertSame(10, DB::table('user_recovery_codes')->where('user_id', $user->getId())->count());
     }
 
+    public function testDisablingWhileAddingAnEnforcedGroupInTheSameSaveReturns412AndSavesNothing(): void
+    {
+        $user = $this->plainUser(true);
+        $group = $this->app->make(IGroupRepository::class)->getOneBySlug(IGroupSlugs::SponsorUsersGroup);
+        Config::set('two_factor.enforced_groups', [IGroupSlugs::SponsorUsersGroup]);
+
+        $this->updateUser($user, [
+            'two_factor_enabled' => 0,
+            'first_name'         => 'Renamed',
+            'groups'             => [$group->getId()],
+        ]);
+
+        $this->assertResponseStatus(412);
+        EntityManager::clear();
+        $this->assertSame('Plain', $this->row($user)->first_name, 'the rest of the update must be rolled back');
+        $this->assertSame(0, DB::table('user_groups')
+            ->where('user_id', $user->getId())->where('group_id', $group->getId())->count(),
+            'the group change must be rolled back');
+        $this->assertSame(1, (int)$this->row($user)->two_factor_enabled);
+        $this->assertSame(10, DB::table('user_recovery_codes')->where('user_id', $user->getId())->count());
+    }
+
+    public function testDisablingWhileRemovingTheEnforcedGroupInTheSameSaveSucceeds(): void
+    {
+        $user = $this->plainUser(true);
+        $group = $this->app->make(IGroupRepository::class)->getOneBySlug(IGroupSlugs::SponsorUsersGroup);
+        $user->addToGroup($group);
+        EntityManager::flush();
+        Config::set('two_factor.enforced_groups', [IGroupSlugs::SponsorUsersGroup]);
+
+        // the admin form always sends the full list: the enforced group is no longer in it
+        $raw = $this->app->make(IGroupRepository::class)->getOneBySlug(IGroupSlugs::RawUsersGroup);
+        $this->updateUser($user, ['two_factor_enabled' => 0, 'groups' => [$raw->getId()]]);
+
+        $this->assertResponseStatus(201);
+        EntityManager::clear();
+        $this->assertSame(0, DB::table('user_groups')
+            ->where('user_id', $user->getId())->where('group_id', $group->getId())->count());
+        $this->assertSame(0, (int)$this->row($user)->two_factor_enabled);
+        $this->assertSame(0, DB::table('user_recovery_codes')->where('user_id', $user->getId())->count());
+    }
+
     public function testEnablingForAnUnverifiedEmailReturns412AndSavesNothing(): void
     {
         $user = $this->plainUser(false, false);
