@@ -237,18 +237,39 @@ final class RecoveryCodeService implements IRecoveryCodeService
      */
     public function disableTwoFactor(User $user, ?string $currentPassword, ?User $actor): void
     {
-        // self-service requires the current password; console and admin
-        // operations do not (see IRecoveryCodeService::disableTwoFactor)
-        if (!is_null($actor) && $actor->getId() === $user->getId()
-            && !$user->checkPassword(trim((string)$currentPassword))) {
-            throw new ValidationException('current_password is not correct.');
+        // Group enforcement does not depend on the stored flag: disabling would only
+        // delete the recovery codes and trusted devices of a user who is still
+        // challenged at login. The console (null actor) is the manual recovery path
+        // (idp:reset-2fa) and stays allowed.
+        if (!is_null($actor) && $user->isTwoFactorEnforcedByGroup()) {
+            throw new ValidationException('Two-factor authentication is enforced by group membership and cannot be disabled.');
+        }
+
+        $is_self = !is_null($actor) && $actor->getId() === $user->getId();
+
+        if ($is_self) {
+            if ($user->hasPasswordSet()) {
+                if (!$user->checkPassword(trim((string)$currentPassword))) {
+                    throw new ValidationException('current_password is not correct.');
+                }
+            } elseif (!$this->isWithinEnrollmentWindow($user)) {
+                // Social-only account: no password to confirm. Proof of identity is a
+                // real 2FA challenge completed moments ago in this session.
+                throw new ValidationException(
+                    'Sign out and sign in again, then turn off two-factor authentication right after the sign-in.'
+                );
+            }
         }
 
         // a single transaction() call: nesting another one (e.g. through the audit
         // service) inside it would let an inner failure close the entity manager
         // under this still-running outer transaction
         $this->tx_service->transaction(function () use ($user) {
+            // serializes with a concurrent regenerate: it also deletes and inserts
+            // codes. The lock re-hydrates $user, so it must precede disable2FA().
+            $this->repository->lockUserRow($user);
             $user->disable2FA();
+            $user->setRecoveryCodesAcknowledgedAt(null);
             $this->user_repository->add($user, false);
             $this->repository->deleteAllForUser($user);
             $this->trusted_device_repository->revokeAllForUser($user);
@@ -259,9 +280,14 @@ final class RecoveryCodeService implements IRecoveryCodeService
         try {
             $this->audit_service->log(
                 $user,
-                TwoFactorAuditLog::EventDeviceRevoked,
+                TwoFactorAuditLog::EventEnrollmentChanged,
                 $user->getTwoFactorMethod(),
-                IPHelper::getUserIp()
+                IPHelper::getUserIp(),
+                [
+                    'enabled'  => false,
+                    'actor_id' => $actor?->getId(),
+                    'reason'   => $is_self ? 'self' : (is_null($actor) ? 'console' : 'admin'),
+                ]
             );
         } catch (\Throwable $ex) {
             Log::warning($ex);

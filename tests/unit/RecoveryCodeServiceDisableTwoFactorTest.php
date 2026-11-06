@@ -19,6 +19,8 @@ use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\Repositories\IUserRepository;
 use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\User;
+use Auth\MFAConstants;
+use Illuminate\Support\Facades\Session;
 use Mockery;
 use models\exceptions\ValidationException;
 use Tests\BrowserKitTestCase;
@@ -74,30 +76,57 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         parent::tearDown();
     }
 
-    private function buildUser(int $id): \Mockery\MockInterface
+    private function buildUser(int $id, bool $enforced = false, bool $hasPassword = true): \Mockery\MockInterface
     {
         $user = Mockery::mock(User::class);
         $user->shouldReceive('getId')->andReturn($id);
         $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
+        $user->shouldReceive('isTwoFactorEnforcedByGroup')->andReturn($enforced);
+        $user->shouldReceive('hasPasswordSet')->andReturn($hasPassword);
         return $user;
     }
 
-    private function expectFullDisable(\Mockery\MockInterface $user): void
+    private function expectFullDisable(\Mockery\MockInterface $user, ?int $actor_id, string $reason): void
     {
-        $user->shouldReceive('disable2FA')->once();
+        $this->code_repo->shouldReceive('lockUserRow')->once()->with($user)->ordered();
+        $user->shouldReceive('disable2FA')->once()->ordered();
+        $user->shouldReceive('setRecoveryCodesAcknowledgedAt')->once()->with(null);
         $this->user_repo->shouldReceive('add')->once()->with($user, false);
         $this->code_repo->shouldReceive('deleteAllForUser')->once()->with($user)->andReturn(10);
         $this->device_repo->shouldReceive('revokeAllForUser')->once()->with($user);
         $this->audit_service->shouldReceive('log')
             ->once()
-            ->with($user, TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'));
+            ->with(
+                $user,
+                TwoFactorAuditLog::EventEnrollmentChanged,
+                User::MFAMethod_OTP,
+                Mockery::type('string'),
+                ['enabled' => false, 'actor_id' => $actor_id, 'reason' => $reason]
+            );
+    }
+
+    private function expectNothingChanges(\Mockery\MockInterface $user): void
+    {
+        $user->shouldNotReceive('disable2FA');
+        $this->tx_service->shouldNotReceive('transaction');
+        $this->code_repo->shouldNotReceive('deleteAllForUser');
+        $this->device_repo->shouldNotReceive('revokeAllForUser');
+        $this->audit_service->shouldNotReceive('log');
     }
 
     public function testConsoleActorNeedsNoPassword(): void
     {
         $user = $this->buildUser(1);
         $user->shouldNotReceive('checkPassword');
-        $this->expectFullDisable($user);
+        $this->expectFullDisable($user, null, 'console');
+
+        $this->service->disableTwoFactor($user, null, null);
+    }
+
+    public function testConsoleActorMayResetAGroupEnforcedUser(): void
+    {
+        $user = $this->buildUser(1, true);
+        $this->expectFullDisable($user, null, 'console');
 
         $this->service->disableTwoFactor($user, null, null);
     }
@@ -107,8 +136,18 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         $user = $this->buildUser(1);
         $user->shouldNotReceive('checkPassword');
         $admin = $this->buildUser(2);
-        $this->expectFullDisable($user);
+        $this->expectFullDisable($user, 2, 'admin');
 
+        $this->service->disableTwoFactor($user, null, $admin);
+    }
+
+    public function testAdminActorCannotDisableAGroupEnforcedUser(): void
+    {
+        $user = $this->buildUser(1, true);
+        $admin = $this->buildUser(2);
+        $this->expectNothingChanges($user);
+
+        $this->expectException(ValidationException::class);
         $this->service->disableTwoFactor($user, null, $admin);
     }
 
@@ -116,7 +155,7 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
     {
         $user = $this->buildUser(1);
         $user->shouldReceive('checkPassword')->once()->with('secret')->andReturn(true);
-        $this->expectFullDisable($user);
+        $this->expectFullDisable($user, 1, 'self');
 
         $this->service->disableTwoFactor($user, ' secret ', $user);
     }
@@ -125,21 +164,48 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
     {
         $user = $this->buildUser(1);
         $user->shouldReceive('checkPassword')->once()->andReturn(false);
-        $user->shouldNotReceive('disable2FA');
-        $this->tx_service->shouldNotReceive('transaction');
-        $this->code_repo->shouldNotReceive('deleteAllForUser');
-        $this->device_repo->shouldNotReceive('revokeAllForUser');
-        $this->audit_service->shouldNotReceive('log');
+        $this->expectNothingChanges($user);
 
         $this->expectException(ValidationException::class);
         $this->service->disableTwoFactor($user, 'wrong', $user);
     }
 
-    public function testSelfServiceWithoutPasswordIsRejected(): void
+    public function testSelfServiceOnAGroupEnforcedUserIsRefusedBeforeCheckingThePassword(): void
     {
-        $user = $this->buildUser(1);
-        $user->shouldReceive('checkPassword')->once()->with('')->andReturn(false);
-        $user->shouldNotReceive('disable2FA');
+        $user = $this->buildUser(1, true);
+        $user->shouldNotReceive('checkPassword');
+        $this->expectNothingChanges($user);
+
+        $this->expectException(ValidationException::class);
+        $this->service->disableTwoFactor($user, 'secret', $user);
+    }
+
+    public function testSelfServiceWithoutPasswordOutsideTheEnrollmentWindowIsRejected(): void
+    {
+        Session::forget(MFAConstants::SESSION_KEY_COMPLETED_AT);
+        $user = $this->buildUser(1, false, false);
+        $user->shouldNotReceive('checkPassword');
+        $this->expectNothingChanges($user);
+
+        $this->expectException(ValidationException::class);
+        $this->service->disableTwoFactor($user, null, $user);
+    }
+
+    public function testSelfServiceWithoutPasswordInsideTheEnrollmentWindow(): void
+    {
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => 1, 'at' => time() - 30]);
+        $user = $this->buildUser(1, false, false);
+        $user->shouldNotReceive('checkPassword');
+        $this->expectFullDisable($user, 1, 'self');
+
+        $this->service->disableTwoFactor($user, null, $user);
+    }
+
+    public function testSelfServiceWithoutPasswordAndAWindowOfAnotherUserIsRejected(): void
+    {
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => 99, 'at' => time() - 30]);
+        $user = $this->buildUser(1, false, false);
+        $this->expectNothingChanges($user);
 
         $this->expectException(ValidationException::class);
         $this->service->disableTwoFactor($user, null, $user);
@@ -148,7 +214,9 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
     public function testAuditFailureDoesNotFailTheOperation(): void
     {
         $user = $this->buildUser(1);
+        $this->code_repo->shouldReceive('lockUserRow')->once();
         $user->shouldReceive('disable2FA')->once();
+        $user->shouldReceive('setRecoveryCodesAcknowledgedAt')->once();
         $this->user_repo->shouldReceive('add')->once();
         $this->code_repo->shouldReceive('deleteAllForUser')->once()->andReturn(0);
         $this->device_repo->shouldReceive('revokeAllForUser')->once();

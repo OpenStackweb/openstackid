@@ -75,10 +75,16 @@ final class DisableTwoFactorIntegrationTest extends BrowserKitTestCase
             $this->assertSame(1, (int)$device->is_revoked);
         }
 
-        $this->assertSame(1, DB::table('two_factor_audit_log')
+        $audit = DB::table('two_factor_audit_log')
             ->where('user_id', $this->user->getId())
-            ->where('event_type', TwoFactorAuditLog::EventDeviceRevoked)
-            ->count());
+            ->where('event_type', TwoFactorAuditLog::EventEnrollmentChanged)
+            ->orderByDesc('id')
+            ->first();
+        $this->assertNotNull($audit);
+        $metadata = json_decode($audit->metadata, true);
+        $this->assertFalse($metadata['enabled']);
+        $this->assertNull($metadata['actor_id']);
+        $this->assertSame('console', $metadata['reason']);
         // settings_changed is the caller's responsibility
         $this->assertSame(0, DB::table('two_factor_audit_log')
             ->where('user_id', $this->user->getId())

@@ -2459,13 +2459,27 @@ SQL;
         if (!config('two_factor.enabled', true)) {
             return false;
         }
+        if ($this->isTwoFactorEnforcedByGroup()) {
+            return true;
+        }
+        return (bool) $this->two_factor_enabled;
+    }
+
+    /**
+     * Whether the user belongs to any of the groups listed in
+     * config('two_factor.enforced_groups'). Group enforcement does not depend on the
+     * stored two_factor_enabled flag, so it cannot be switched off by disabling it.
+     * Unlike shouldRequire2FA() this ignores the global two_factor.enabled kill-switch.
+     */
+    public function isTwoFactorEnforcedByGroup(): bool
+    {
         $enforcedGroups = config('two_factor.enforced_groups', []);
         foreach ($enforcedGroups as $slug) {
-            if($this->belongToGroup($slug)) {
+            if ($this->belongToGroup($slug)) {
                 return true;
             }
         }
-        return (bool) $this->two_factor_enabled;
+        return false;
     }
 
     /**
