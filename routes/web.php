@@ -198,10 +198,11 @@ Route::group([
             Route::put('', "UserApiController@updateMe");
             Route::put('pic',  "UserApiController@updateMyPic");
             Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
-            Route::post('recovery-codes/regenerate', ['middleware' => ['csrf'], 'uses' => "UserApiController@regenerateRecoveryCodes"]);
+            Route::post('recovery-codes/regenerate', ['middleware' => ['csrf', '2fa.rate:password_confirm'], 'uses' => "UserApiController@regenerateRecoveryCodes"]);
             Route::post('recovery-codes/enroll', ['middleware' => ['csrf', '2fa.rate:enroll'], 'uses' => "UserApiController@enrollRecoveryCodes"]);
             Route::post('recovery-codes/acknowledge', ['middleware' => ['csrf'], 'uses' => "UserApiController@acknowledgeRecoveryCodes"]);
             Route::post('2fa/enable', ['middleware' => ['csrf'], 'uses' => "UserApiController@enableTwoFactor"]);
+            Route::post('2fa/disable', ['middleware' => ['csrf', '2fa.rate:password_confirm'], 'uses' => "UserApiController@disableTwoFactor"]);
         });
 
         Route::get('access-tokens', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);

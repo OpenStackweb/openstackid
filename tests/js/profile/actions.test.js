@@ -11,6 +11,7 @@ jest.mock("superagent", () => ({
 import request from "superagent";
 import {
     enableTwoFactor,
+    disableTwoFactor,
     regenerateRecoveryCodes,
     enrollRecoveryCodes,
     acknowledgeRecoveryCodes,
@@ -31,6 +32,7 @@ describe("profile/actions (unmocked request layer)", () => {
     beforeEach(() => {
         request.post.mockReset();
         window.ENABLE_TWO_FACTOR_ENDPOINT = "https://idp.test/api/v2/users/me/2fa/enable";
+        window.DISABLE_TWO_FACTOR_ENDPOINT = "https://idp.test/admin/api/v1/users/me/2fa/disable";
         window.REGENERATE_RECOVERY_CODES_ENDPOINT = "https://idp.test/api/v2/users/me/2fa/recovery-codes";
         window.ENROLL_RECOVERY_CODES_ENDPOINT = "https://idp.test/admin/api/v1/users/me/recovery-codes/enroll";
         window.ACKNOWLEDGE_RECOVERY_CODES_ENDPOINT = "https://idp.test/admin/api/v1/users/me/recovery-codes/acknowledge";
@@ -47,6 +49,29 @@ describe("profile/actions (unmocked request layer)", () => {
         expect(req.send).toHaveBeenCalledWith({ method: "email_otp" });
         expect(req.set).toHaveBeenCalledWith({ "X-CSRF-TOKEN": "test-csrf-token" });
         expect(response.recovery_codes).toEqual(["ABCD-1234"]);
+    });
+
+    it("disableTwoFactor sends current_password only in the request body, asking for JSON", async () => {
+        const req = makeChainableRequest({ body: { two_factor_enabled: false } });
+        request.post.mockReturnValue(req);
+
+        const { response } = await disableTwoFactor("super-secret-password");
+
+        const calledUrl = request.post.mock.calls[0][0];
+        expect(calledUrl).toBe(window.DISABLE_TWO_FACTOR_ENDPOINT);
+        expect(calledUrl).not.toContain("super-secret-password");
+        expect(req.send).toHaveBeenCalledWith({ current_password: "super-secret-password" });
+        expect(req.set).toHaveBeenCalledWith({ "X-CSRF-TOKEN": "test-csrf-token", Accept: "application/json" });
+        expect(response.two_factor_enabled).toBe(false);
+    });
+
+    it("disableTwoFactor without a password sends an empty body (passwordless disable inside the window)", async () => {
+        const req = makeChainableRequest({ body: { two_factor_enabled: false } });
+        request.post.mockReturnValue(req);
+
+        await disableTwoFactor();
+
+        expect(req.send).toHaveBeenCalledWith({});
     });
 
     it("regenerateRecoveryCodes sends current_password only in the request body, never in the URL", async () => {

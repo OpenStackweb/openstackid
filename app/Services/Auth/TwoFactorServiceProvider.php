@@ -96,7 +96,7 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
         // state: a pending-user subject would resolve to nothing and the
         // middleware would let every request through unthrottled. The subject
         // is the authenticated user instead.
-        RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionEnroll), function () use ($rateLimitService, $respondRateLimited) {
+        $byAuthenticatedUser = function (string $action) use ($rateLimitService, $respondRateLimited) {
             $userId = Auth::id();
 
             if (is_null($userId)) {
@@ -105,10 +105,17 @@ final class TwoFactorServiceProvider extends ServiceProvider implements Deferrab
 
             return (new Limit(
                 (int) $userId,
-                $rateLimitService->getLimit(ITwoFactorRateLimitService::ActionEnroll),
-                $rateLimitService->getWindowSeconds(ITwoFactorRateLimitService::ActionEnroll)
+                $rateLimitService->getLimit($action),
+                $rateLimitService->getWindowSeconds($action)
             ))->response($respondRateLimited);
-        });
+        };
+
+        RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionEnroll), fn () => $byAuthenticatedUser(ITwoFactorRateLimitService::ActionEnroll));
+
+        // Password confirmation of 2FA changes (disable, regenerate recovery codes):
+        // keyed by the authenticated user, one counter for both routes so password
+        // guesses cannot move from one to the other.
+        RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionPasswordConfirm), fn () => $byAuthenticatedUser(ITwoFactorRateLimitService::ActionPasswordConfirm));
 
         RateLimiter::for($limiterName(ITwoFactorRateLimitService::ActionOtp), function (Request $request) use ($rateLimitService, $respondRateLimited) {
             $username = strtolower(trim($request->input('username', '')));

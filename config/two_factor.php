@@ -105,5 +105,11 @@ return [
         // authenticated user; every request counts (SDS idp-mfa.md §4.12).
         'max_enroll_requests'   => env('TWO_FACTOR_MAX_ENROLL_REQUESTS', 5),
         'enroll_window_minutes' => env('TWO_FACTOR_ENROLL_WINDOW_MINUTES', 15),
+
+        // Password confirmation of the authenticated user's 2FA changes (POST
+        // 2fa/disable and recovery-codes/regenerate), keyed by the authenticated
+        // user and shared by both routes; only failed requests count.
+        'max_password_confirm_attempts'   => env('TWO_FACTOR_MAX_PASSWORD_CONFIRM_ATTEMPTS', 5),
+        'password_confirm_window_minutes' => env('TWO_FACTOR_PASSWORD_CONFIRM_WINDOW_MINUTES', 15),
     ],
 ];

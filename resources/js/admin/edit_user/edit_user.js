@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useRef, useState} from "react";
 import ReactDOM from "react-dom";
 import ArrowBack from '@material-ui/icons/ArrowBack';
 import Button from "@material-ui/core/Button";
@@ -9,6 +9,7 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import Checkbox from "@material-ui/core/Checkbox";
 import Grid from "@material-ui/core/Grid";
 import GroupsInput from "./components/groups_input";
+import TwoFactorCheckbox from "./components/two_factor_checkbox";
 import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
@@ -41,6 +42,7 @@ const EditUserPage = ({
                           csrfToken,
                           fetchGroupsURL,
                           initialValues,
+                          isOwnAccount = false,
                           languages,
                           menuConfig,
                           passwordPolicy,
@@ -73,12 +75,17 @@ const EditUserPage = ({
         });
     }
 
+    // 2FA flag as last loaded/saved: save() sends two_factor_enabled only when it differs
+    const twoFactorBaseline = useRef(!!initialValues?.two_factor_enabled);
+
     const formik = useFormik({
         initialValues: initialValues,
         validationSchema: buildValidationSchema(),
         onSubmit: (values) => {
             setLoading(true);
-            save({...values, groups: selectedGroups}, pic , csrfToken).then((res) => {
+            const twoFactorSubmitted = !!values.two_factor_enabled;
+            save({...values, groups: selectedGroups}, pic , csrfToken, twoFactorBaseline.current).then((res) => {
+                twoFactorBaseline.current = twoFactorSubmitted;
                 setLoading(false);
                 Swal("User saved", "The user has been saved successfully", "success");
             }).catch((err) => {
@@ -733,6 +740,12 @@ const EditUserPage = ({
                                                        color="primary"/>}
                                     label="Email Verified?"
                                 />
+                                <TwoFactorCheckbox
+                                    enabled={formik.values.two_factor_enabled}
+                                    enforced={formik.values.two_factor_enforced}
+                                    enforcedAt={formik.values.two_factor_enforced_at}
+                                    ownAccount={isOwnAccount}
+                                    onChange={formik.handleChange}/>
                             </Grid>
                             <Grid item xs={12}>
                                 <TextField

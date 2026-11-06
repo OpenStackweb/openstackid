@@ -113,6 +113,13 @@ export const enableTwoFactor = async (method) => {
     return postRawRequestFull(window.ENABLE_TWO_FACTOR_ENDPOINT)(params, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
+// currentPassword is optional: a user without a password (social-only account) disables
+// inside the recovery enrollment window instead of confirming one.
+export const disableTwoFactor = async (currentPassword = null) => {
+    const params = currentPassword ? {current_password: currentPassword} : {};
+    return postRawRequestFull(window.DISABLE_TWO_FACTOR_ENDPOINT)(params, jsonHeaders());
+}
+
 const normalizeEntity = (entity) => {
     entity.public_profile_show_photo = entity.public_profile_show_photo ? 1 : 0;
     entity.public_profile_show_fullname = entity.public_profile_show_fullname ? 1 : 0;

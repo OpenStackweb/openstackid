@@ -47,6 +47,7 @@ const ProfilePage = ({
                          passwordPolicy,
                          redirectUri,
                          twoFactorEnabled,
+                         twoFactorEnforced,
                          recoveryCodesRemaining,
                          recoveryCodesTotal,
                          recoveryCodesLowThreshold,
@@ -792,6 +793,7 @@ const ProfilePage = ({
                                     </Typography>
                                     <TwoFactorSection
                                         twoFactorEnabled={twoFactorEnabled}
+                                        twoFactorEnforced={twoFactorEnforced}
                                         recoveryCodesRemaining={recoveryCodesRemaining}
                                         recoveryCodesTotal={recoveryCodesTotal}
                                         recoveryCodesLowThreshold={recoveryCodesLowThreshold}
