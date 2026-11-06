@@ -13,8 +13,10 @@
  **/
 
 use App\Services\Auth\IUserService;
-use Illuminate\Log\Events\MessageLogged;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
+use Monolog\Handler\TestHandler;
+use Monolog\Level;
+use Monolog\LogRecord;
 
 /**
  * Class UserServiceRegisterLoggingTest
@@ -31,25 +33,34 @@ final class UserServiceRegisterLoggingTest extends BrowserKitTestCase
         $captcha  = 'turnstile-token-must-not-be-logged';
         $csrf     = 'csrf-token-must-not-be-logged';
 
-        $logged = [];
-        Event::listen(MessageLogged::class, function (MessageLogged $event) use (&$logged) {
-            $logged[] = $event->message . ' ' . json_encode($event->context);
-        });
+        // Capture on the logger UserService writes to (the default channel, via the Log facade),
+        // at debug level, whatever level the channel's own handlers are configured with. The
+        // test handler keeps records in memory, so the secrets are never written to disk.
+        $capture = new TestHandler(Level::Debug);
+        $logger  = Log::getLogger();
+        $logger->pushHandler($capture);
 
-        $user = $this->app->make(IUserService::class)->registerUser([
-            'first_name'            => 'Log',
-            'last_name'             => 'Safe',
-            'email'                 => $email,
-            'country_iso_code'      => 'US',
-            'password'              => $password,
-            'password_confirmation' => $password,
-            'cf-turnstile-response' => $captcha,
-            '_token'                => $csrf,
-        ]);
+        try {
+            $user = $this->app->make(IUserService::class)->registerUser([
+                'first_name'            => 'Log',
+                'last_name'             => 'Safe',
+                'email'                 => $email,
+                'country_iso_code'      => 'US',
+                'password'              => $password,
+                'password_confirmation' => $password,
+                'cf-turnstile-response' => $captcha,
+                '_token'                => $csrf,
+            ]);
+        } finally {
+            $logger->popHandler();
+        }
 
         $this->assertSame($email, $user->getEmail());
 
-        $log = implode("\n", $logged);
+        $log = implode("\n", array_map(
+            fn (LogRecord $record) => $record->message . ' ' . json_encode($record->context),
+            $capture->getRecords()
+        ));
         $this->assertStringContainsString(
             'UserService::registerUser',
             $log,
