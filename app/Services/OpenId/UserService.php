@@ -23,6 +23,7 @@ use App\libs\Auth\Repositories\IGroupRepository;
 use App\libs\Utils\FileSystem\FileNameSanitizer;
 use App\Mail\MonitoredSecurityGroupNotificationEmail;
 use App\Services\AbstractService;
+use App\Services\Auth\IRecoveryCodeService;
 use App\Services\Auth\IUserIdentifierGeneratorService;
 use Auth\Group;
 use Auth\IUserNameGeneratorService;
@@ -96,6 +97,11 @@ final class UserService extends AbstractService implements IUserService
     private $identifier_service;
 
     /**
+     * @var IRecoveryCodeService
+     */
+    private $recovery_code_service;
+
+    /**
      * UserService constructor.
      * @param IUserRepository $repository
      * @param IGroupRepository $group_repository
@@ -105,6 +111,8 @@ final class UserService extends AbstractService implements IUserService
      * @param ILogService $log_service
      * @param IResourceServerContext $server_ctx
      * @param IUserIdentifierGeneratorService $identifier_service
+     * @param IClientRepository $client_repository
+     * @param IRecoveryCodeService $recovery_code_service
      */
     public function __construct
     (
@@ -116,10 +124,12 @@ final class UserService extends AbstractService implements IUserService
         ILogService $log_service,
         IResourceServerContext $server_ctx,
         IUserIdentifierGeneratorService $identifier_service,
-        IClientRepository $client_repository
+        IClientRepository $client_repository,
+        IRecoveryCodeService $recovery_code_service
     )
     {
         parent::__construct($tx_service);
+        $this->recovery_code_service = $recovery_code_service;
         $this->repository = $repository;
         $this->group_repository = $group_repository;
         $this->user_name_generator = $user_name_generator;
@@ -295,8 +305,10 @@ final class UserService extends AbstractService implements IUserService
     public function update(int $id, array $payload): IEntity
     {
         $password_changed = false;
+        $two_factor_change = null;
+        $acting_admin = null;
 
-        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed) {
+        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed, &$two_factor_change, &$acting_admin) {
 
             $user = $this->repository->getById($id);
 
@@ -334,6 +346,25 @@ final class UserService extends AbstractService implements IUserService
                 $former_user = $this->repository->getByIdentifier(trim($payload["identifier"]));
                 if (!is_null($former_user) && $former_user->getId() != $id)
                     throw new ValidationException(sprintf("identifier %s already belongs to another user", $payload["identifier"]));
+            }
+
+            // 2FA is managed here and not in UserFactory::populate: it needs the acting user.
+            // Only a server admin editing ANOTHER user may change it, and only when the value
+            // differs from the stored one (the admin form submits the whole entity on every
+            // save). Anyone else, including PUT /users/me, has the key ignored: turning 2FA
+            // off needs the password and goes through POST /users/me/2fa/disable.
+            if (isset($payload['two_factor_enabled'])
+                && !is_null($current_user)
+                && $current_user->getId() != $user->getId()
+                && ($current_user->isAdmin() || $current_user->isSuperAdmin())) {
+                $requested = boolval($payload['two_factor_enabled']);
+                if ($requested !== $user->isTwoFactorEnabled()) {
+                    // checked before anything is saved: the whole update is rolled back
+                    if (!$requested && $user->isTwoFactorEnforcedByGroup())
+                        throw new ValidationException("Two-factor authentication is enforced by group membership and cannot be disabled.");
+                    $two_factor_change = $requested;
+                    $acting_admin = $current_user;
+                }
             }
 
             $user = UserFactory::populate($user, $payload);
@@ -385,6 +416,14 @@ final class UserService extends AbstractService implements IUserService
         if ($password_changed) {
             Session::regenerate();
             Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
+        }
+
+        // after the update transaction: the recovery code service runs its own
+        if (!is_null($two_factor_change)) {
+            if ($two_factor_change)
+                $this->recovery_code_service->enableTwoFactorForUser($user, User::MFAMethod_OTP, $acting_admin);
+            else
+                $this->recovery_code_service->disableTwoFactor($user, null, $acting_admin);
         }
 
         try {

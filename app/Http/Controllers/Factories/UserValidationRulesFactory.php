@@ -58,6 +58,8 @@ final class UserValidationRulesFactory
                 // admin fields
                 'email_verified' => 'nullable|boolean',
                 'active' => 'nullable|boolean',
+                // honoured only for a server admin editing ANOTHER user (UserService::update)
+                'two_factor_enabled' => 'nullable|boolean',
                 'groups' => 'sometimes|int_array',
                 'public_profile_show_photo' => 'sometimes|boolean',
                 'public_profile_show_fullname' => 'sometimes|boolean',
