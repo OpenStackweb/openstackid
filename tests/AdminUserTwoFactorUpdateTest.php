@@ -45,14 +45,14 @@ final class AdminUserTwoFactorUpdateTest extends BrowserKitTestCase
         Session::start();
     }
 
-    private function plainUser(bool $enrolled): User
+    private function plainUser(bool $enrolled, bool $email_verified = true): User
     {
         $user = UserFactory::build([
             'first_name'     => 'Plain',
             'last_name'      => 'Target',
             'email'          => 'target.' . uniqid() . '@test.invalid',
             'active'         => true,
-            'email_verified' => true,
+            'email_verified' => $email_verified,
             'identifier'     => 'target.' . uniqid(),
             'password'       => '1Qaz2wsx!',
             'password_enc'   => AuthHelper::AlgSHA1_V2_4,
@@ -136,6 +136,30 @@ final class AdminUserTwoFactorUpdateTest extends BrowserKitTestCase
         $this->assertSame('Plain', $this->row($user)->first_name, 'the rest of the update must be rolled back');
         $this->assertSame(1, (int)$this->row($user)->two_factor_enabled);
         $this->assertSame(10, DB::table('user_recovery_codes')->where('user_id', $user->getId())->count());
+    }
+
+    public function testEnablingForAnUnverifiedEmailReturns412AndSavesNothing(): void
+    {
+        $user = $this->plainUser(false, false);
+
+        $this->updateUser($user, ['two_factor_enabled' => 1, 'first_name' => 'Renamed']);
+
+        $this->assertResponseStatus(412);
+        EntityManager::clear();
+        $this->assertSame('Plain', $this->row($user)->first_name, 'the rest of the update must be rolled back');
+        $this->assertSame(0, (int)$this->row($user)->two_factor_enabled);
+        Mail::assertNotQueued(TwoFactorEnabledByAdminMail::class);
+    }
+
+    public function testEnablingTogetherWithEmailVerifiedInTheSameSaveSucceeds(): void
+    {
+        $user = $this->plainUser(false, false);
+
+        $this->updateUser($user, ['two_factor_enabled' => 1, 'email_verified' => 1]);
+
+        $this->assertResponseStatus(201);
+        $this->assertSame(1, (int)$this->row($user)->two_factor_enabled);
+        Mail::assertQueued(TwoFactorEnabledByAdminMail::class, 1);
     }
 
     public function testAPayloadWithoutTheKeyLeavesTwoFactorUntouched(): void
