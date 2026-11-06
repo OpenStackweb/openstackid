@@ -33,7 +33,9 @@ use Illuminate\Support\Facades\RateLimiter;
  *
  *  - every request reserves an attempt atomically before the controller runs.
  *  - verify / recovery: the attempt is refunded unless the response is a failure.
- *  - resend / otp:      every request counts.
+ *  - password_confirm:  the attempt is refunded when the request succeeds (2xx),
+ *                       so only rejected password confirmations count.
+ *  - resend / otp / enroll: every request counts.
  *
  * @package App\Http\Middleware
  */
@@ -54,7 +56,7 @@ final class TwoFactorRateLimitMiddleware
     /**
      * @param \Illuminate\Http\Request $request
      * @param Closure $next
-     * @param string $action one of verify|recovery|resend|otp
+     * @param string $action one of verify|recovery|resend|otp|enroll|password_confirm
      * @return mixed
      */
     public function handle($request, Closure $next, string $action = ITwoFactorRateLimitService::ActionVerify)
@@ -96,6 +98,13 @@ final class TwoFactorRateLimitMiddleware
             || $action === ITwoFactorRateLimitService::ActionRecovery;
 
         if ($countsOnlyFailures && !$this->isFailure($response)) {
+            $this->rate_limit_service->refund($action, $subject);
+        }
+
+        // password confirmation: the controller answers a wrong password with a plain
+        // 412 (no error_code), so any non-2xx response counts as a failed attempt
+        if ($action === ITwoFactorRateLimitService::ActionPasswordConfirm
+            && method_exists($response, 'isSuccessful') && $response->isSuccessful()) {
             $this->rate_limit_service->refund($action, $subject);
         }
 
