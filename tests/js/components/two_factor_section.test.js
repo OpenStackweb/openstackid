@@ -30,6 +30,15 @@ describe('TwoFactorSection', () => {
         expect(screen.getByTestId('recovery-codes-count')).toHaveTextContent('Recovery Codes: 7 of 10 remaining');
     });
 
+    it('treats a group-enforced user as enabled even when the stored flag is off', () => {
+        render(
+            <TwoFactorSection twoFactorEnabled={false} twoFactorEnforced={true} recoveryCodesRemaining={0}
+                               recoveryCodesTotal={0} recoveryCodesAcknowledged={true} email="admin@test.com"/>
+        );
+        expect(screen.queryByTestId('enable-two-factor-button')).not.toBeInTheDocument();
+        expect(screen.getByTestId('recovery-codes-count')).toBeInTheDocument();
+    });
+
     it('shows "not set up yet" instead of a count when the user requires enrollment', () => {
         render(
             <TwoFactorSection twoFactorEnabled={true} recoveryCodesRemaining={10} recoveryCodesTotal={10}
