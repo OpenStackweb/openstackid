@@ -40,6 +40,9 @@ const TwoFactorSection = ({
 
     const [confirmingDisable, setConfirmingDisable] = useState(false);
     const [currentPassword, setCurrentPassword] = useState("");
+    // Shown inside the dialog: a SweetAlert opens below a MUI Dialog (z-index 1060 vs 1300),
+    // so the usual error popup would be hidden behind it.
+    const [disableError, setDisableError] = useState(null);
 
     const handleEnable = () => {
         setLoading(true);
@@ -56,12 +59,14 @@ const TwoFactorSection = ({
     const closeDisableDialog = () => {
         setConfirmingDisable(false);
         setCurrentPassword("");
+        setDisableError(null);
     };
 
     // A user without a password sends none: the server accepts the request only inside
     // the recovery enrollment window.
     const handleDisable = () => {
         setLoading(true);
+        setDisableError(null);
         disableTwoFactor(hasPassword ? currentPassword : null).then(() => {
             setLoading(false);
             closeDisableDialog();
@@ -70,7 +75,9 @@ const TwoFactorSection = ({
         }).catch((err) => {
             setLoading(false);
             // the dialog stays open so a mistyped password can be retried
-            handleErrorResponse(err);
+            handleErrorResponse(err, (title, message) => {
+                setDisableError(Array.isArray(message) ? message.join(" ") : (message || title));
+            });
         });
     };
 
@@ -128,7 +135,10 @@ const TwoFactorSection = ({
                         autoFocus
                         label="Current Password"
                         value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        onChange={(e) => {
+                            setCurrentPassword(e.target.value);
+                            setDisableError(null);
+                        }}
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {
                                 e.preventDefault();
@@ -138,6 +148,12 @@ const TwoFactorSection = ({
                         inputProps={{form: "disable-two-factor-detached-form", autoComplete: "off"}}
                         data-testid="disable-two-factor-current-password"
                     />
+                }
+                {
+                    disableError &&
+                    <Typography variant="body2" color="error" role="alert" data-testid="disable-two-factor-error">
+                        {disableError}
+                    </Typography>
                 }
             </DialogContent>
             <DialogActions>
