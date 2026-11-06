@@ -120,10 +120,19 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
         throw new AuthenticationException("Invalid recovery code.");
     }
 
-    protected function storePendingState(int $userId, bool $remember): void
+    /**
+     * @param int $userId
+     * @param bool $remember
+     * @param int|null $pendingAt epoch seconds the challenge was issued at; pass the
+     *                            code's own creation time so the pending session is
+     *                            measured on the same clock as the code's expiry and
+     *                            a slow issuance cannot leave the code valid for a
+     *                            few seconds after the session expired. Defaults to now.
+     */
+    protected function storePendingState(int $userId, bool $remember, ?int $pendingAt = null): void
     {
         Session::put(self::KEY_USER_ID,    $userId);
-        Session::put(self::KEY_PENDING_AT, time());
+        Session::put(self::KEY_PENDING_AT, $pendingAt ?? time());
         Session::put(self::KEY_REMEMBER,   $remember);
     }
 

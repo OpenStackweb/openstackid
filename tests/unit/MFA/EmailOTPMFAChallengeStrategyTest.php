@@ -123,6 +123,57 @@ class EmailOTPMFAChallengeStrategyTest extends TestCase
         $this->assertSame(450, $result['otp_lifetime']);
     }
 
+    public function testIssueChallenge_anchorsPendingSessionToTheCodeCreationTime(): void
+    {
+        // Issuing the code (mail transport included) can take seconds. The pending
+        // session must be measured from the code's own created_at, the clock
+        // isAlive() uses, or it expires while the code is still valid.
+        $user = $this->buildUser(42, 'user@example.com');
+
+        $createdAt = new \DateTime('now', new \DateTimeZone('UTC'));
+        $createdAt->modify('+3 seconds'); // creation lands after issueChallenge() started
+
+        $otp = \Mockery::mock(OAuth2OTP::class);
+        $otp->shouldReceive('getLength')->andReturn(6);
+        $otp->shouldReceive('getLifetime')->andReturn(600);
+        $otp->shouldReceive('getCreatedAt')->andReturn($createdAt);
+
+        $this->tokenService
+            ->shouldReceive('createOTPFromPayload')
+            ->once()
+            ->andReturnUsing(function () use ($otp) {
+                $this->assertNull(
+                    Session::get(MFAConstants::SESSION_KEY_PENDING_AT),
+                    'no pending state before the code exists'
+                );
+                return $otp;
+            });
+
+        $result = $this->strategy->issueChallenge($user, null, false);
+
+        $this->assertSame($createdAt->getTimestamp(), Session::get(MFAConstants::SESSION_KEY_PENDING_AT));
+        $this->assertSame($createdAt->getTimestamp(), $result['otp_issued_at']);
+        $this->assertNotNull($this->strategy->getPendingState());
+    }
+
+    public function testIssueChallenge_leavesNoPendingState_whenIssuanceThrows(): void
+    {
+        $user = $this->buildUser(42, 'user@example.com');
+
+        $this->tokenService
+            ->shouldReceive('createOTPFromPayload')
+            ->once()
+            ->andThrow(new \RuntimeException('mailer down'));
+
+        try {
+            $this->strategy->issueChallenge($user, null, false);
+            $this->fail('expected the issuance failure to propagate');
+        } catch (\RuntimeException $ex) {
+            $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_USER_ID));
+            $this->assertNull(Session::get(MFAConstants::SESSION_KEY_PENDING_AT));
+        }
+    }
+
     public function testIssueChallenge_fallsBackToDefaultLifetime_whenConfigIsNonPositive(): void
     {
         // A second factor must always expire: a 0/negative config value is a
