@@ -202,6 +202,7 @@ Route::group([
             Route::post('recovery-codes/enroll', ['middleware' => ['csrf', '2fa.rate:enroll'], 'uses' => "UserApiController@enrollRecoveryCodes"]);
             Route::post('recovery-codes/acknowledge', ['middleware' => ['csrf'], 'uses' => "UserApiController@acknowledgeRecoveryCodes"]);
             Route::post('2fa/enable', ['middleware' => ['csrf'], 'uses' => "UserApiController@enableTwoFactor"]);
+            Route::post('2fa/disable', ['middleware' => ['csrf'], 'uses' => "UserApiController@disableTwoFactor"]);
         });
 
         Route::get('access-tokens', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);
