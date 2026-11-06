@@ -9,6 +9,7 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import Checkbox from "@material-ui/core/Checkbox";
 import Grid from "@material-ui/core/Grid";
 import GroupsInput from "./components/groups_input";
+import TwoFactorCheckbox from "./components/two_factor_checkbox";
 import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
@@ -733,6 +734,11 @@ const EditUserPage = ({
                                                        color="primary"/>}
                                     label="Email Verified?"
                                 />
+                                <TwoFactorCheckbox
+                                    enabled={formik.values.two_factor_enabled}
+                                    enforced={formik.values.two_factor_enforced}
+                                    enforcedAt={formik.values.two_factor_enforced_at}
+                                    onChange={formik.handleChange}/>
                             </Grid>
                             <Grid item xs={12}>
                                 <TextField
