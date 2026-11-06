@@ -86,13 +86,45 @@ class AbstractMFAChallengeStrategyTest extends TestCase
 
     public function testGetPendingState_honorsConfiguredSessionTtl(): void
     {
+        // Both knobs lowered: the session TTL is the effective limit.
         Config::set('two_factor.session_ttl', 120);
+        Config::set('two_factor.otp_lifetime', 120);
 
         Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, 99);
         Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time() - 121);
         Session::put(MFAConstants::SESSION_KEY_REMEMBER, false);
 
         $this->assertNull($this->strategy->getPendingState());
+    }
+
+    public function testGetPendingState_neverExpiresBeforeTheCode(): void
+    {
+        // Regression: a longer code lifetime with an untouched (or lower)
+        // session_ttl must not expire the challenge while the code, and its UI
+        // countdown, are still valid.
+        Config::set('two_factor.session_ttl', 60);
+        Config::set('two_factor.otp_lifetime', 900);
+
+        Session::put(MFAConstants::SESSION_KEY_PENDING_USER_ID, 99);
+        Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time() - 601);
+        Session::put(MFAConstants::SESSION_KEY_REMEMBER, false);
+
+        $this->assertNotNull($this->strategy->getPendingState(), 'pending state must live as long as the code');
+        $this->assertSame(900, AbstractMFAChallengeStrategy::resolvePendingSessionTtl());
+
+        Session::put(MFAConstants::SESSION_KEY_PENDING_AT, time() - 901);
+        $this->assertNull($this->strategy->getPendingState(), 'and no longer than the code');
+    }
+
+    public function testResolvePendingSessionTtl_usesTheEffectiveOtpLifetime(): void
+    {
+        // otp_lifetime 0 falls back to 600 for the code, so the session must
+        // cover those 600 s even when session_ttl says less.
+        Config::set('two_factor.session_ttl', 60);
+        Config::set('two_factor.otp_lifetime', 0);
+
+        $this->assertSame(600, AbstractMFAChallengeStrategy::resolveOtpLifetime());
+        $this->assertSame(600, AbstractMFAChallengeStrategy::resolvePendingSessionTtl());
     }
 
     public function testGetPendingState_withMissingSession_returnsNull(): void

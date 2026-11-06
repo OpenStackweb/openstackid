@@ -4,21 +4,12 @@ use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
 use Auth\Exceptions\AuthenticationException;
 use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Log;
 use Models\OAuth2\Client;
 use OAuth2\OAuth2Protocol;
 use OAuth2\Services\ITokenService;
 
 final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
 {
-    /**
-     * Fallback when two_factor.otp_lifetime is missing or non-positive.
-     * Matches the two_factor.session_ttl default so the pending session never
-     * outlives the code (SDS idp-mfa.md §4.14).
-     */
-    private const DEFAULT_OTP_LIFETIME = 600;
-
     public function __construct(
         IUserRecoveryCodeRepository $recovery_code_repository,
         private readonly ITokenService $token_service,
@@ -105,28 +96,5 @@ final class EmailOTPMFAChallengeStrategy extends AbstractMFAChallengeStrategy
     public function resendChallenge(User $user, ?Client $client, bool $remember): array
     {
         return $this->issueChallenge($user, $client, $remember);
-    }
-
-    /**
-     * Lifetime (seconds) of every MFA email code. A non-positive value is a
-     * misconfiguration (a second factor must always expire), so it falls back
-     * to the default instead of issuing a never-expiring code.
-     *
-     * @return int
-     */
-    public static function resolveOtpLifetime(): int
-    {
-        $lifetime = intval(Config::get('two_factor.otp_lifetime', self::DEFAULT_OTP_LIFETIME));
-
-        if ($lifetime <= 0) {
-            Log::warning(sprintf(
-                "EmailOTPMFAChallengeStrategy::resolveOtpLifetime two_factor.otp_lifetime is %d, falling back to %d seconds",
-                $lifetime,
-                self::DEFAULT_OTP_LIFETIME
-            ));
-            $lifetime = self::DEFAULT_OTP_LIFETIME;
-        }
-
-        return $lifetime;
     }
 }

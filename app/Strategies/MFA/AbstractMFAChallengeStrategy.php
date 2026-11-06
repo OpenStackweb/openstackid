@@ -6,6 +6,7 @@ use Auth\Repositories\IUserRecoveryCodeRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Models\OAuth2\Client;
 
@@ -15,6 +16,13 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
     private const KEY_PENDING_AT        = MFAConstants::SESSION_KEY_PENDING_AT;
     private const KEY_REMEMBER          = MFAConstants::SESSION_KEY_REMEMBER;
     private const KEY_RECOVERY_ATTEMPTS = MFAConstants::SESSION_KEY_RECOVERY_ATTEMPTS;
+
+    /**
+     * Fallback for two_factor.otp_lifetime (missing or non-positive) and the
+     * default of two_factor.session_ttl, so the pending session never
+     * outlives the code (SDS idp-mfa.md §4.14).
+     */
+    protected const DEFAULT_OTP_LIFETIME = 600;
 
     public function __construct(protected IUserRecoveryCodeRepository $recovery_code_repository) {}
 
@@ -27,7 +35,7 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
             return null;
         }
 
-        if ((time() - $pending_at) > (int) Config::get('two_factor.session_ttl', 600)) {
+        if ((time() - $pending_at) > self::resolvePendingSessionTtl()) {
             $this->clearPendingState();
             return null;
         }
@@ -45,6 +53,45 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
         Session::remove(self::KEY_PENDING_AT);
         Session::remove(self::KEY_REMEMBER);
         Session::remove(self::KEY_RECOVERY_ATTEMPTS);
+    }
+
+    /**
+     * Lifetime (seconds) of every MFA challenge code. A non-positive value is a
+     * misconfiguration (a second factor must always expire), so it falls back
+     * to the default instead of issuing a never-expiring code.
+     *
+     * @return int
+     */
+    public static function resolveOtpLifetime(): int
+    {
+        $lifetime = intval(Config::get('two_factor.otp_lifetime', self::DEFAULT_OTP_LIFETIME));
+
+        if ($lifetime <= 0) {
+            Log::warning(sprintf(
+                "AbstractMFAChallengeStrategy::resolveOtpLifetime two_factor.otp_lifetime is %d, falling back to %d seconds",
+                $lifetime,
+                self::DEFAULT_OTP_LIFETIME
+            ));
+            $lifetime = self::DEFAULT_OTP_LIFETIME;
+        }
+
+        return $lifetime;
+    }
+
+    /**
+     * Seconds a pending challenge stays valid in the session: two_factor.session_ttl,
+     * raised to the effective code lifetime so a configuration that lengthens the
+     * code (or lowers the session TTL) can never expire the challenge while the
+     * code, and its UI countdown, are still valid.
+     *
+     * @return int
+     */
+    public static function resolvePendingSessionTtl(): int
+    {
+        return max(
+            intval(Config::get('two_factor.session_ttl', self::DEFAULT_OTP_LIFETIME)),
+            self::resolveOtpLifetime()
+        );
     }
 
     public function verifyRecoveryCode(User $user, string $code): void
