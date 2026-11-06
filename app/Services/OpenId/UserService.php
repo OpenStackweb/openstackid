@@ -382,9 +382,10 @@ final class UserService extends AbstractService implements IUserService
 
             // 2FA is managed here and not in UserFactory::populate: it needs the acting user.
             // Only a server admin editing ANOTHER user may change it, and only when the value
-            // differs from the stored one (the admin form submits the whole entity on every
-            // save). Anyone else, including PUT /users/me, has the key ignored: turning 2FA
-            // off needs the password and goes through POST /users/me/2fa/disable.
+            // differs from the stored one (the admin form sends the key only when the admin
+            // changed the box; other API clients may still send it on every save). Anyone
+            // else, including PUT /users/me, has the key ignored: turning 2FA off needs the
+            // password and goes through POST /users/me/2fa/disable.
             if (isset($payload['two_factor_enabled'])
                 && !is_null($current_user)
                 && $current_user->getId() != $user->getId()
@@ -426,22 +427,28 @@ final class UserService extends AbstractService implements IUserService
             Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
         }
 
-        // after the update transaction: the recovery code service runs its own
-        if (!is_null($two_factor_change)) {
-            if ($two_factor_change)
-                $this->recovery_code_service->enableTwoFactorForUser($user, User::MFAMethod_OTP, $acting_admin);
-            else
-                $this->recovery_code_service->disableTwoFactor($user, null, $acting_admin);
-        }
-
+        // after the update transaction: the recovery code service runs its own (it locks the
+        // users row and re-hydrates $user, and DoctrineTransactionService does not nest).
+        // Every business rule that could refuse the change was checked inside the update
+        // transaction above, so only an infrastructure failure gets here; the profile
+        // changes are committed by then, so they are still published and audited.
         try {
-            if (Config::get("queue.enable_message_broker", false) == true)
-                PublishUserUpdated::dispatch($user)->onConnection('message_broker');
-        } catch (\Exception $ex) {
-            Log::warning($ex);
-        }
+            if (!is_null($two_factor_change)) {
+                if ($two_factor_change)
+                    $this->recovery_code_service->enableTwoFactorForUser($user, User::MFAMethod_OTP, $acting_admin);
+                else
+                    $this->recovery_code_service->disableTwoFactor($user, null, $acting_admin);
+            }
+        } finally {
+            try {
+                if (Config::get("queue.enable_message_broker", false) == true)
+                    PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+            } catch (\Exception $ex) {
+                Log::warning($ex);
+            }
 
-        $this->addUserCRUDAction($user, $payload, "UPDATE");
+            $this->addUserCRUDAction($user, $payload, "UPDATE");
+        }
 
         return $user;
     }
