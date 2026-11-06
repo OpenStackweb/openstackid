@@ -1,5 +1,4 @@
 import React from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
@@ -12,6 +11,7 @@ import IconButton from "@material-ui/core/IconButton";
 import ExistingAccountActions from "./existing_account_actions";
 import styles from "../login.module.scss";
 import HTMLRender from "../../shared/HTMLRender";
+import { TurnstileCaptcha, useTurnstileCaptcha } from "../../components/turnstile_captcha";
 
 const PasswordInputForm = ({
   formAction,
@@ -27,9 +27,6 @@ const PasswordInputForm = ({
   csrfToken,
   shouldShowCaptcha,
   captchaPublicKey,
-  onChangeCaptchaProvider,
-  onExpireCaptchaProvider,
-  onErrorCaptchaProvider,
   handleEmitOtpAction,
   forgotPasswordAction,
   loginAttempts,
@@ -41,8 +38,11 @@ const PasswordInputForm = ({
   // their save/update prompt off the browser's real submit event, and the backend
   // login strategies respond with a redirect + flashed session state that only a
   // top-level navigation consumes correctly.
+  // The captcha only applies once the failed-attempts threshold is reached.
+  const captcha = useTurnstileCaptcha(shouldShowCaptcha() ? captchaPublicKey : "");
+
   const handleSubmit = (ev) => {
-    if (!onAuthenticate(ev.target)) {
+    if (!captcha.ensureToken() || !onAuthenticate(ev.target)) {
       ev.preventDefault();
     }
   };
@@ -166,16 +166,11 @@ const PasswordInputForm = ({
         id="login_attempts"
         name="login_attempts"
       />
-      {shouldShowCaptcha() && captchaPublicKey && (
-        <Turnstile
-          className={styles.turnstile}
-          siteKey={captchaPublicKey}
-          options={{ responseFieldName: "cf-turnstile-response" }}
-          onSuccess={onChangeCaptchaProvider}
-          onExpire={onExpireCaptchaProvider}
-          onError={onErrorCaptchaProvider}
-        />
-      )}
+      <TurnstileCaptcha
+        captcha={captcha}
+        className={styles.turnstile}
+        errorClassName={styles.error_label}
+      />
       <ExistingAccountActions
         emitOtpAction={handleEmitOtpAction}
         userName={userNameValue}
