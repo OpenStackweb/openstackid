@@ -40,6 +40,9 @@ interface ITwoFactorRateLimitService
     public const ActionResend   = 'resend';
     public const ActionOtp      = 'otp';
     public const ActionEnroll   = 'enroll';
+    // password confirmation of the authenticated user's 2FA changes (disable 2FA,
+    // regenerate recovery codes): one budget shared by both routes
+    public const ActionPasswordConfirm = 'password_confirm';
 
     public const RATE_LIMIT_ERROR_CODE = MFAConstants::ERROR_CODE_RATE_LIMIT;
     public const RATE_LIMIT_MESSAGE    = 'Too many attempts. Please try again later.';
