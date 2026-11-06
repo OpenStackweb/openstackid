@@ -80,13 +80,18 @@ final class OTPFactory
      * @param array $payload
      * @param IdentifierGenerator $identifier_generator
      * @param Client|null $client
+     * @param int|null $lifetime_override seconds; when given it wins over both the
+     *                                    global otp.lifetime and the client's own
+     *                                    passwordless otp_lifetime (MFA codes must
+     *                                    never inherit a client's "0 = never expires")
      * @return OAuth2OTP
      */
     static public function buildFromPayload
     (
         array $payload,
         IdentifierGenerator $identifier_generator,
-        ?Client $client = null
+        ?Client $client = null,
+        ?int $lifetime_override = null
     ):OAuth2OTP{
 
         $lifetime = Config::get("otp.lifetime", 120);
@@ -95,6 +100,19 @@ final class OTPFactory
         if (!is_null($client)) {
             $lifetime = $client->getOtpLifetime();
             $length = $client->getOtpLength();
+        }
+
+        if (!is_null($lifetime_override)) {
+            // An explicit override exists to guarantee expiry; 0 would re-create
+            // the "never expires" code this parameter was added to prevent, and
+            // silently falling back could land on a client's 0 again.
+            if ($lifetime_override <= 0) {
+                throw new \InvalidArgumentException(sprintf(
+                    "OTPFactory::buildFromPayload lifetime override must be positive, %d given",
+                    $lifetime_override
+                ));
+            }
+            $lifetime = $lifetime_override;
         }
 
         $otp = new OAuth2OTP($length, $lifetime);

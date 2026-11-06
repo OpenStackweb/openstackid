@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import Button from '@material-ui/core/Button';
 import Link from '@material-ui/core/Link';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
@@ -26,13 +26,19 @@ const TwoFactorForm = ({
 
     const {secondsLeft, expired} = useOtpCountdown(otpLifetime, codeVersion);
     const [cooldown, setCooldown] = useState(0);
+    // A failed resend may resolve after the parent swapped this form out
+    // (session expired -> password flow); don't touch state once unmounted.
+    const mounted = useRef(true);
 
     // 1s ticker for the resend cooldown (the expiry countdown lives in the hook).
     useEffect(() => {
         const timer = setInterval(() => {
             setCooldown(prev => (prev > 0 ? prev - 1 : 0));
         }, 1000);
-        return () => clearInterval(timer);
+        return () => {
+            clearInterval(timer);
+            mounted.current = false;
+        };
     }, []);
 
     const handleSubmit = (ev) => {
@@ -46,10 +52,14 @@ const TwoFactorForm = ({
         if (cooldown > 0 || disableInput) return;
         setCooldown(RESEND_COOLDOWN_SECONDS);
         // A successful resend resets the expiry countdown through the parent's
-        // codeVersion bump; failures are surfaced by the parent as well.
+        // codeVersion bump. A failed one is surfaced inline by the parent, so
+        // release the link right away instead of locking it for a cooldown
+        // that only makes sense when a code was actually sent.
         const result = onResend();
         if (result && typeof result.catch === 'function') {
-            result.catch(() => {});
+            result.catch(() => {
+                if (mounted.current) setCooldown(0);
+            });
         }
     };
 

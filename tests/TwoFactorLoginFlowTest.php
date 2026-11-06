@@ -1334,6 +1334,43 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->completeConsentAndGetAuthCode();
     }
 
+    public function testOIDCFlowMFACodeIgnoresClientPasswordlessLifetime(): void
+    {
+        // Regression: a client whose passwordless otp_lifetime is 0 ("never
+        // expires") made every MFA code it triggered come out with lifetime 0,
+        // which the login screen renders as already expired - VERIFY stayed
+        // disabled and resends (200, still lifetime 0) could not recover it.
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['client_id' => self::OIDC_CLIENT_ID]);
+        $this->assertInstanceOf(Client::class, $client);
+        $originalLifetime = $client->getOtpLifetime();
+        $client->setOtpLifetime(0);
+        EntityManager::persist($client);
+        EntityManager::flush();
+
+        try {
+            $this->startOIDCFlowUpToChallenge();
+
+            $expected = intval(Config::get('two_factor.otp_lifetime'));
+            $this->assertGreaterThan(0, $expected);
+
+            EntityManager::clear();
+            $otps = App::make(IOAuth2OTPRepository::class)->getByUserNameNotRedeemed(self::ADMIN_EMAIL);
+            $this->assertNotEmpty($otps);
+            $this->assertSame($expected, end($otps)->getLifetime(), 'the MFA code must not inherit the client passwordless lifetime');
+            $this->assertSame($expected, intval(Session::get('otp_lifetime')), 'the countdown seed persisted for refreshes must match');
+
+            $response = $this->action('POST', 'UserController@resend2FA', ['method' => User::MFAMethod_OTP]);
+            $this->assertResponseStatus(200);
+            $payload = json_decode($response->getContent(), true);
+            $this->assertSame($expected, $payload['otp_lifetime'], 'a resend must return the same positive lifetime');
+        } finally {
+            $client = EntityManager::getRepository(Client::class)->findOneBy(['client_id' => self::OIDC_CLIENT_ID]);
+            $client->setOtpLifetime($originalLifetime);
+            EntityManager::persist($client);
+            EntityManager::flush();
+        }
+    }
+
     public function testFullOIDCFlowWithRecoveryCodeAndConsentDeliversAuthCode(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);

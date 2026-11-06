@@ -205,10 +205,11 @@ interface ITokenService {
     /**
      * @param array $payload
      * @param Client|null $client
+     * @param int|null $lifetime_override seconds; overrides the client/global OTP lifetime when given
      * @return OAuth2OTP
      * @throws \Exception
      */
-    public function createOTPFromPayload(array $payload, ?Client $client):OAuth2OTP;
+    public function createOTPFromPayload(array $payload, ?Client $client, ?int $lifetime_override = null):OAuth2OTP;
 
     /**
      * @param OAuth2OTP $otp

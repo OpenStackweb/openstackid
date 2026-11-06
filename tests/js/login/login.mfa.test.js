@@ -22,7 +22,7 @@ delete window.location;
 window.location = { href: '', reload: jest.fn() };
 
 import { LoginPage } from '../../../resources/js/login/login';
-import { verifyRecoveryCode, cancelLogin } from '../../../resources/js/login/actions';
+import { verifyRecoveryCode, cancelLogin, resend2FA } from '../../../resources/js/login/actions';
 
 // ─── Minimal props that satisfy the LoginPage constructor ────────────────────
 
@@ -84,6 +84,69 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('LoginPage', () => {
+
+  describe('onResend2FA', () => {
+    let inst;
+
+    beforeEach(() => {
+      inst = makeInstance();
+      inst.state = { ...inst.state, authFlow: FLOW.MFA, otpLifetime: 0, codeVersion: 0 };
+    });
+
+    it('200 — bumps codeVersion, takes the fresh lifetime and clears the inline error', async () => {
+      inst.state = { ...inst.state, errors: { ...inst.state.errors, twofactor: 'stale' } };
+      resend2FA.mockReturnValue(Promise.resolve({ response: { otp_length: 6, otp_lifetime: 600 } }));
+
+      inst.onResend2FA();
+      await flush();
+
+      expect(inst.state.codeVersion).toBe(1);
+      expect(inst.state.otpLifetime).toBe(600);
+      expect(inst.state.errors.twofactor).toBe('');
+      expect(inst.showAlert).toHaveBeenCalledWith(expect.any(String), 'success');
+    });
+
+    it('429 — surfaces the server message INLINE and leaves the code untouched', async () => {
+      const msg = 'Too many codes requested. Try again in 10 minutes.';
+      resend2FA.mockReturnValue(
+        Promise.reject(makeError(HTTP_CODES.TOO_MANY_REQUESTS, { error_code: 'mfa_rate_limit', error_message: msg })),
+      );
+
+      const promise = inst.onResend2FA();
+      await promise.catch(() => {});
+
+      expect(inst.state.errors.twofactor).toBe(msg);
+      expect(inst.state.codeVersion).toBe(0);
+      expect(inst.showAlert).not.toHaveBeenCalled();
+      expect(inst.resetToPasswordFlow).not.toHaveBeenCalled();
+    });
+
+    it('500 — inline error plus snackbar, code untouched', async () => {
+      resend2FA.mockReturnValue(Promise.reject(makeError(500, { message: 'boom' })));
+
+      const promise = inst.onResend2FA();
+      await promise.catch(() => {});
+
+      expect(inst.state.errors.twofactor).toBe("We couldn't send a new code. Please try again.");
+      expect(inst.state.codeVersion).toBe(0);
+      expect(inst.showAlert).toHaveBeenCalledWith(expect.any(String), 'error');
+    });
+
+    it('401 + mfa_session_expired — back to the password flow with a warning', async () => {
+      resend2FA.mockReturnValue(
+        Promise.reject(makeError(HTTP_CODES.UNAUTHORIZED, { error_code: MFA_ERROR_CODE.MFA_SESSION_EXPIRED })),
+      );
+
+      const promise = inst.onResend2FA();
+      await promise.catch(() => {});
+
+      expect(inst.resetToPasswordFlow).toHaveBeenCalledTimes(1);
+      expect(inst.showAlert).toHaveBeenCalledWith(
+        'Your verification session has expired. Please sign in again.',
+        'warning',
+      );
+    });
+  });
 
   describe('handleMfaError', () => {
     let inst;

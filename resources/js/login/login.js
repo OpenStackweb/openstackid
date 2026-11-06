@@ -514,14 +514,28 @@ class LoginPage extends React.Component {
           );
           return;
         }
+        // Failures are surfaced INLINE, like handleMfaError() does for verify:
+        // a snackbar auto-hides in seconds and leaves the screen looking as if
+        // the resend had worked (the link keeps counting down, the old expiry
+        // text stays) with no hint of what happened.
         if (status === HTTP_CODES.TOO_MANY_REQUESTS) {
           const msg =
             body && body.error_message
               ? body.error_message
               : "Too many attempts. Please try again later.";
-          this.showAlert(msg, "warning");
+          this.setState({
+            ...this.state,
+            errors: { ...this.state.errors, twofactor: msg },
+          });
           return;
         }
+        this.setState({
+          ...this.state,
+          errors: {
+            ...this.state.errors,
+            twofactor: "We couldn't send a new code. Please try again.",
+          },
+        });
         this.showAlert(
           "Oops... Something went wrong while resending the code.",
           "error",
@@ -529,7 +543,8 @@ class LoginPage extends React.Component {
       },
     );
 
-    // Returned so the form can reset its expiry countdown once the resend resolves.
+    // Returned so the form can reset its expiry countdown once the resend
+    // resolves, and release the resend link if it fails.
     return promise;
   }
 
