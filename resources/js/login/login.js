@@ -1,5 +1,4 @@
 import React from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
 import ReactDOM from "react-dom";
 import Avatar from "@material-ui/core/Avatar";
 import Button from "@material-ui/core/Button";
@@ -72,7 +71,6 @@ class LoginPage extends React.Component {
         message: null,
         severity: "info",
       },
-      captcha_value: "",
       showPassword: false,
       disableInput: false,
       authFlow: props.flow,
@@ -122,9 +120,6 @@ class LoginPage extends React.Component {
     this.onValidateEmail = this.onValidateEmail.bind(this);
     this.handleDelete = this.handleDelete.bind(this);
     this.onAuthenticate = this.onAuthenticate.bind(this);
-    this.onChangeCaptchaProvider = this.onChangeCaptchaProvider.bind(this);
-    this.onExpireCaptchaProvider = this.onExpireCaptchaProvider.bind(this);
-    this.onErrorCaptchaProvider = this.onErrorCaptchaProvider.bind(this);
     this.onUserPasswordChange = this.onUserPasswordChange.bind(this);
     this.onOTPCodeChange = this.onOTPCodeChange.bind(this);
     this.shouldShowCaptcha = this.shouldShowCaptcha.bind(this);
@@ -255,15 +250,6 @@ class LoginPage extends React.Component {
           });
           return false;
         }
-
-        if (this.state.captcha_value == "" && this.shouldShowCaptcha()) {
-          this.setState({
-            ...this.state,
-            disableInput: false,
-            errors: { ...this.state.errors, password: "you must check CAPTCHA" },
-          });
-          return false;
-        }
     }
 
     return true;
@@ -283,18 +269,6 @@ class LoginPage extends React.Component {
     this.setState({ ...this.state, disableInput: true });
 
     return true;
-  }
-
-  onChangeCaptchaProvider(value) {
-    this.setState({ ...this.state, captcha_value: value });
-  }
-
-  onExpireCaptchaProvider() {
-    this.setState({ ...this.state, captcha_value: "" });
-  }
-
-  onErrorCaptchaProvider() {
-    this.setState({ ...this.state, captcha_value: "" });
   }
 
   onHandleUserNameChange(ev) {
@@ -797,19 +771,6 @@ class LoginPage extends React.Component {
     });
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      this.state.user_verified &&
-      this.existingUserCanContinue() &&
-      prevState.authFlow !== this.state.authFlow
-    ) {
-      this.setState({
-        ...this.state,
-        captcha_value: "",
-      });
-    }
-  }
-
   render() {
     const showTwoFactorForm = this.state.authFlow === FLOW.MFA;
     const showRecoveryForm = this.state.authFlow === FLOW.RECOVERY;
@@ -940,9 +901,6 @@ class LoginPage extends React.Component {
                   handleClickShowPassword={this.handleClickShowPassword}
                   handleMouseDownPassword={this.handleMouseDownPassword}
                   shouldShowCaptcha={this.shouldShowCaptcha}
-                  onChangeCaptchaProvider={this.onChangeCaptchaProvider}
-                  onExpireCaptchaProvider={this.onExpireCaptchaProvider}
-                  onErrorCaptchaProvider={this.onErrorCaptchaProvider}
                   handleEmitOtpAction={this.handleEmitOtpAction}
                 />
                 <HelpLinks
@@ -976,9 +934,6 @@ class LoginPage extends React.Component {
                   loginAttempts={this.props?.loginAttempts}
                   onCodeChange={this.onOTPCodeChange}
                   shouldShowCaptcha={this.shouldShowCaptcha}
-                  onChangeCaptchaProvider={this.onChangeCaptchaProvider}
-                  onExpireCaptchaProvider={this.onExpireCaptchaProvider}
-                  onErrorCaptchaProvider={this.onErrorCaptchaProvider}
                   onReset={this.handleDelete}
                   onAuthenticate={this.onAuthenticate}
                 />
