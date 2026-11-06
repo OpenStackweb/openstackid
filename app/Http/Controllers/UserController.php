@@ -770,6 +770,7 @@ final class UserController extends OpenIdController
 
             // Second factor verified: establish the session.
             $this->auth_service->loginUser($user, $pending->shouldRemember());
+            $this->markMFACompleted($user);
 
             if ($trust_device) {
                 // Best-effort: the OTP is already redeemed and the session
@@ -806,8 +807,21 @@ final class UserController extends OpenIdController
             // code with no way to recover it client-side. A real top-level navigation to
             // this URL lets the browser complete that chain natively instead - CORS never
             // applies to page navigations, only to XHR/fetch.
+            // The recovery-codes standing rides along so the login page knows when
+            // to show the enrollment modal (recovery_codes_enrollment_required).
             $redirect = $this->login_strategy->postLogin();
-            return $this->ok(['redirect_url' => $redirect->getTargetUrl()]);
+            return $this->ok(array_merge(
+                [
+                    'redirect_url' => $redirect->getTargetUrl(),
+                    // Auth::login() regenerates the session id AND its CSRF token
+                    // (SessionGuard::updateSession() -> Store::regenerate()), so the
+                    // token the login page was rendered with is stale from here on.
+                    // The enrollment calls the page makes next (enroll / acknowledge)
+                    // must send this one.
+                    'csrf_token'   => csrf_token(),
+                ],
+                $this->recovery_code_service->getStatus($user)->toArray()
+            ));
         } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412($ex->getMessages());
@@ -881,6 +895,7 @@ final class UserController extends OpenIdController
             }
 
             $this->auth_service->loginUser($user, $pending->shouldRemember());
+            $this->markMFACompleted($user);
             $strategy->clearPendingState();
             $this->clearMFAUISessionState();
 
@@ -904,7 +919,15 @@ final class UserController extends OpenIdController
             // when they've just burned into their last few codes (see RecoveryCodesStatus).
             $redirect = $this->login_strategy->postLogin();
             return $this->ok(array_merge(
-                ['redirect_url' => $redirect->getTargetUrl()],
+                [
+                    'redirect_url' => $redirect->getTargetUrl(),
+                    // Auth::login() regenerates the session id AND its CSRF token
+                    // (SessionGuard::updateSession() -> Store::regenerate()), so the
+                    // token the login page was rendered with is stale from here on.
+                    // The enrollment calls the page makes next (enroll / acknowledge)
+                    // must send this one.
+                    'csrf_token'   => csrf_token(),
+                ],
                 $this->recovery_code_service->getStatus($user)->toArray()
             ));
         } catch (ValidationException $ex) {
@@ -914,6 +937,23 @@ final class UserController extends OpenIdController
             Log::error($ex);
             return $this->error500($ex);
         }
+    }
+
+    /**
+     * Records that this session just completed a real 2FA challenge for the user
+     * (SDS idp-mfa.md §4.10.3). Called only by verify2FA / verify2FARecovery,
+     * after AuthService::loginUser() succeeded: Auth::login() migrates the
+     * session id but keeps its data, so the key survives, and writing it before a
+     * failed login would leave a stale marker. It bounds the window in which the
+     * enrollment endpoint may generate a batch without the password. Trusted-device
+     * sign-ins and every other session establishment never write it.
+     */
+    private function markMFACompleted(User $user): void
+    {
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, [
+            'user_id' => $user->getId(),
+            'at'      => time(),
+        ]);
     }
 
     /**
@@ -1163,6 +1203,9 @@ final class UserController extends OpenIdController
                 $lang2Code[] = $lang;
         }
 
+        $status = $this->recovery_code_service->getStatus($user);
+        $window_open = $this->recovery_code_service->isWithinEnrollmentWindow($user);
+
         return View::make("profile", array_merge([
             'user' => json_encode(SerializerRegistry::getInstance()->getSerializer(
                 $user, SerializerRegistry::SerializerType_Private)->serialize()),
@@ -1172,7 +1215,12 @@ final class UserController extends OpenIdController
             'countries' => CountryList::getCountries(),
             'languages' => $lang2Code,
             'two_factor_enabled' => $user->shouldRequire2FA(),
-        ], $this->recovery_code_service->getStatus($user)->toArray()));
+            // The session completed a 2FA challenge within the enrollment window:
+            // a batch can be generated without the password.
+            'recovery_codes_window_open' => $window_open,
+            // Enrollment is required AND reachable now: the panel offers "Set up recovery codes".
+            'recovery_codes_enrollment_available' => $status->isEnrollmentRequired() && $window_open,
+        ], $status->toArray()));
     }
 
     public function deleteTrustedSite($id)

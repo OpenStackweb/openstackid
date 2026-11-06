@@ -107,7 +107,11 @@
             twoFactorEnabled: {{ $two_factor_enabled ? 'true' : 'false' }},
             recoveryCodesRemaining: {{ (int) $recovery_codes_remaining }},
             recoveryCodesTotal: {{ (int) $recovery_codes_total }},
-            recoveryCodesLowThreshold: {{ (int) $recovery_codes_low_threshold }}
+            recoveryCodesLowThreshold: {{ (int) $recovery_codes_low_threshold }},
+            recoveryCodesAcknowledged: {{ $recovery_codes_acknowledged ? 'true' : 'false' }},
+            recoveryCodesEnrollmentRequired: {{ $recovery_codes_enrollment_required ? 'true' : 'false' }},
+            recoveryCodesEnrollmentAvailable: {{ $recovery_codes_enrollment_available ? 'true' : 'false' }},
+            recoveryCodesWindowOpen: {{ $recovery_codes_window_open ? 'true' : 'false' }}
         }
 
         window.GET_USER_ACTIONS_ENDPOINT = '{{URL::action("Api\UserActionApiController@getActionsByCurrentUser")}}';
@@ -121,6 +125,8 @@
         window.GET_TRUSTED_DEVICES_ENDPOINT = '{!!URL::action("Api\UserApiController@getMyTrustedDevices")!!}';
         window.REVOKE_TRUSTED_DEVICE_ENDPOINT = '{!!URL::action("Api\UserApiController@revokeMyTrustedDevice", ["id"=>"@id"])!!}';
         window.REVOKE_ALL_TRUSTED_DEVICES_ENDPOINT = '{!!URL::action("Api\UserApiController@revokeAllMyTrustedDevices")!!}';
+        window.ENROLL_RECOVERY_CODES_ENDPOINT = '{!!URL::action("Api\UserApiController@enrollRecoveryCodes")!!}';
+        window.ACKNOWLEDGE_RECOVERY_CODES_ENDPOINT = '{!!URL::action("Api\UserApiController@acknowledgeRecoveryCodes")!!}';
         window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;
     </script>
     {!! script_to('assets/profile.js') !!}

@@ -16,6 +16,7 @@ namespace Tests\unit;
  **/
 
 use App\Services\Auth\IDeviceTrustService;
+use App\Services\Auth\IRecoveryCodeService;
 use App\Services\Auth\MFAGateService;
 use Auth\User;
 use Mockery;
@@ -32,11 +33,17 @@ final class MFAGateServiceTest extends TestCase
 
     private MockInterface&IDeviceTrustService $deviceTrustService;
 
+    private MockInterface&IRecoveryCodeService $recoveryCodeService;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->deviceTrustService = Mockery::mock(IDeviceTrustService::class);
-        $this->service = new MFAGateService($this->deviceTrustService);
+        $this->recoveryCodeService = Mockery::mock(IRecoveryCodeService::class);
+        // Default: the user already has an acknowledged, usable batch, so the
+        // pre-existing device-trust cases below keep their meaning.
+        $this->recoveryCodeService->shouldReceive('requiresRecoveryCodeEnrollment')->andReturn(false)->byDefault();
+        $this->service = new MFAGateService($this->deviceTrustService, $this->recoveryCodeService);
     }
 
     protected function tearDown(): void
@@ -109,6 +116,41 @@ final class MFAGateServiceTest extends TestCase
         $this->deviceTrustService->shouldReceive('isDeviceTrusted')->once()->with($user, '')->andReturn(false);
 
         $this->assertTrue($this->service->requiresChallenge($user, ''));
+    }
+
+    // -------------------------------------------------------------------------
+    // Recovery-code enrollment (SDS idp-mfa.md §4.2 step 4): a user with no
+    // usable batch is challenged even on a trusted device, and the device row
+    // is not consulted (so its last_seen_at is not touched)
+    // -------------------------------------------------------------------------
+
+    public function testRequiresChallengeReturnsTrueOnTrustedDeviceWhenEnrollmentRequired(): void
+    {
+        $user = Mockery::mock(User::class);
+        $user->shouldReceive('shouldRequire2FA')->once()->andReturn(true);
+        $this->recoveryCodeService->shouldReceive('requiresRecoveryCodeEnrollment')->once()->with($user)->andReturn(true);
+        $this->deviceTrustService->shouldNotReceive('isDeviceTrusted');
+
+        $this->assertTrue($this->service->requiresChallenge($user, 'valid-token'));
+    }
+
+    public function testRequiresChallengeSkipsOnTrustedDeviceOnceBatchIsAcknowledged(): void
+    {
+        $user = Mockery::mock(User::class);
+        $user->shouldReceive('shouldRequire2FA')->once()->andReturn(true);
+        $this->recoveryCodeService->shouldReceive('requiresRecoveryCodeEnrollment')->once()->with($user)->andReturn(false);
+        $this->deviceTrustService->shouldReceive('isDeviceTrusted')->once()->with($user, 'valid-token')->andReturn(true);
+
+        $this->assertFalse($this->service->requiresChallenge($user, 'valid-token'));
+    }
+
+    public function testEnrollmentIsNotEvaluatedForUsersThatDoNotRequire2FA(): void
+    {
+        $user = Mockery::mock(User::class);
+        $user->shouldReceive('shouldRequire2FA')->once()->andReturn(false);
+        $this->recoveryCodeService->shouldNotReceive('requiresRecoveryCodeEnrollment');
+
+        $this->assertFalse($this->service->requiresChallenge($user, 'valid-token'));
     }
 
     // -------------------------------------------------------------------------
