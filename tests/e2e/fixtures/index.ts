@@ -42,6 +42,8 @@ export const test = base.extend<E2EFixtures>({
         'RESEND_2FA_ENDPOINT',
         'CANCEL_LOGIN_ENDPOINT',
         'RECOVERY_2FA_ENDPOINT',
+        'ENROLL_RECOVERY_CODES_ENDPOINT',
+        'ACKNOWLEDGE_RECOVERY_CODES_ENDPOINT',
         'FORM_ACTION_ENDPOINT',
       ];
       await page.addInitScript(({ endpoints, internalUrl }) => {

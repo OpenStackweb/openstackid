@@ -17,6 +17,7 @@ use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
 use App\ModelSerializers\SerializerRegistry;
 use App\Services\Auth\IRecoveryCodeService;
+use App\Services\Auth\RecoveryCodesBatch;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Exception;
@@ -282,13 +283,18 @@ final class UserApiController extends APICRUDController
             $user = Auth::user();
             $method = $data['method'];
 
-            if ($user->isTwoFactorEnabled()) {
-                return $this->error412(['method' => ['Two-factor authentication is already enabled. Use the regenerate recovery codes endpoint to rotate your codes.']]);
+            // shouldRequire2FA() covers both a stored two_factor_enabled flag and
+            // group enforcement. An enforced admin must not mint a batch here without
+            // the password (and would leave two_factor_enabled=true behind, keeping
+            // them enrolled after leaving the group): they get codes through enroll
+            // (inside the enrollment window) or regenerate (with the password).
+            if ($user->shouldRequire2FA()) {
+                return $this->error412(['method' => ['Two-factor authentication is already required for this account. Use the recovery codes section to set up or regenerate your codes.']]);
             }
 
-            $codes = $this->recovery_code_service->enableTwoFactorAndGenerateCodes($user, $method);
+            $batch = $this->recovery_code_service->enableTwoFactorAndGenerateCodes($user, $method);
 
-            return $this->ok(['recovery_codes' => $codes]);
+            return $this->ok($this->batchPayload($user, $batch));
         });
     }
 
@@ -305,18 +311,97 @@ final class UserApiController extends APICRUDController
 
         return $this->processRequest(function () {
             $data = Request::all();
+            // current_password is enforced by the service: required for a user
+            // with a password; a user without one is accepted instead inside the
+            // enrollment window (SDS idp-mfa.md §4.10.3).
             $validator = Validator::make($data, [
-                'current_password' => 'required|string',
+                'current_password' => 'sometimes|nullable|string',
             ]);
 
             if (!$validator->passes()) {
                 return $this->error412($validator->getMessageBag()->getMessages());
             }
 
-            $codes = $this->recovery_code_service->regenerateRecoveryCodes(Auth::user(), $data['current_password']);
+            $user = Auth::user();
+            $batch = $this->recovery_code_service->regenerateRecoveryCodes($user, $data['current_password'] ?? null);
 
-            return $this->ok(['recovery_codes' => $codes]);
+            return $this->ok($this->batchPayload($user, $batch));
         });
+    }
+
+    /**
+     * Generates a recovery-code batch without the password for a user who
+     * requires enrollment, right after a real 2FA challenge (SDS idp-mfa.md
+     * §4.10.3). Rate limited by 2fa.rate:enroll, keyed by the authenticated user.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function enrollRecoveryCodes()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $user = Auth::user();
+
+            if (!$this->recovery_code_service->requiresRecoveryCodeEnrollment($user)) {
+                return $this->error412(['recovery_codes' => ['Recovery codes enrollment is not required for this account.']]);
+            }
+
+            if (!$this->recovery_code_service->isWithinEnrollmentWindow($user)) {
+                return $this->error412(['recovery_codes' => ['Your last two-factor verification is too old. Sign out and sign in again, then set up your recovery codes.']]);
+            }
+
+            $batch = $this->recovery_code_service->generateRecoveryCodes($user);
+
+            return $this->ok($this->batchPayload($user, $batch));
+        });
+    }
+
+    /**
+     * Confirms that the user saved the batch they were shown ("I've Saved These
+     * Codes"). The confirmation is bound to the exact batch.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function acknowledgeRecoveryCodes()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $validator = Validator::make(Request::all(), [
+                'batch_id' => 'required|integer',
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+
+            $user = Auth::user();
+
+            if (!$this->recovery_code_service->acknowledgeRecoveryCodes($user, (int)Request::input('batch_id'))) {
+                return $this->error412(['batch_id' => ['This is not your current batch of recovery codes. Generate a new one.']]);
+            }
+
+            return $this->ok($this->recovery_code_service->getStatus($user)->toArray());
+        });
+    }
+
+    /**
+     * 200 body of every generation endpoint: the plaintext codes, the batch
+     * identifier produced by the generating transaction and the recovery-codes
+     * standing (RecoveryCodesStatus keys), so the UI updates without a reload.
+     */
+    private function batchPayload(User $user, RecoveryCodesBatch $batch): array
+    {
+        return array_merge(
+            [
+                'recovery_codes' => $batch->getCodes(),
+                'batch_id'       => $batch->getBatchId(),
+            ],
+            $this->recovery_code_service->getStatus($user)->toArray()
+        );
     }
 
     public function revokeAllMyTokens()

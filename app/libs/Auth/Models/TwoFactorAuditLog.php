@@ -30,6 +30,7 @@ class TwoFactorAuditLog extends BaseEntity
     public const EventRecoveryUsed = 'recovery_used';
     public const EventSettingsChanged = 'settings_changed';
     public const EventRecoveryCodesGenerated = 'recovery_codes_generated';
+    public const EventRecoveryCodesAcknowledged = 'recovery_codes_acknowledged';
 
     public const MethodEmailOtp = 'email_otp';
     public const MethodSmsOtp = 'sms_otp';
@@ -48,6 +49,7 @@ class TwoFactorAuditLog extends BaseEntity
         self::EventRecoveryUsed,
         self::EventSettingsChanged,
         self::EventRecoveryCodesGenerated,
+        self::EventRecoveryCodesAcknowledged,
     ];
 
     private const ALLOWED_METHODS = [

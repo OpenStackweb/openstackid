@@ -49,7 +49,11 @@ const ProfilePage = ({
                          twoFactorEnabled,
                          recoveryCodesRemaining,
                          recoveryCodesTotal,
-                         recoveryCodesLowThreshold
+                         recoveryCodesLowThreshold,
+                         recoveryCodesAcknowledged,
+                         recoveryCodesEnrollmentRequired,
+                         recoveryCodesEnrollmentAvailable,
+                         recoveryCodesWindowOpen
                      }) => {
     const [pic, setPic] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -791,6 +795,11 @@ const ProfilePage = ({
                                         recoveryCodesRemaining={recoveryCodesRemaining}
                                         recoveryCodesTotal={recoveryCodesTotal}
                                         recoveryCodesLowThreshold={recoveryCodesLowThreshold}
+                                        recoveryCodesAcknowledged={recoveryCodesAcknowledged}
+                                        recoveryCodesEnrollmentRequired={recoveryCodesEnrollmentRequired}
+                                        recoveryCodesEnrollmentAvailable={recoveryCodesEnrollmentAvailable}
+                                        recoveryCodesWindowOpen={recoveryCodesWindowOpen}
+                                        hasPassword={initialValues.has_password_set}
                                         email={initialValues.email}
                                         appName={appName}/>
                                 </Box>

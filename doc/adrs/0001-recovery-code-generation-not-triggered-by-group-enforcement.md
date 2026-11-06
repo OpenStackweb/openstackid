@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-07-08
+Superseded by 0002
 
 ## Context
 

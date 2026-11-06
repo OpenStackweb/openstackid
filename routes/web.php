@@ -199,6 +199,8 @@ Route::group([
             Route::put('pic',  "UserApiController@updateMyPic");
             Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
             Route::post('recovery-codes/regenerate', ['middleware' => ['csrf'], 'uses' => "UserApiController@regenerateRecoveryCodes"]);
+            Route::post('recovery-codes/enroll', ['middleware' => ['csrf', '2fa.rate:enroll'], 'uses' => "UserApiController@enrollRecoveryCodes"]);
+            Route::post('recovery-codes/acknowledge', ['middleware' => ['csrf'], 'uses' => "UserApiController@acknowledgeRecoveryCodes"]);
             Route::post('2fa/enable', ['middleware' => ['csrf'], 'uses' => "UserApiController@enableTwoFactor"]);
         });
 
