@@ -18,9 +18,16 @@ export const ACKNOWLEDGE_URL = '**/admin/api/v1/users/me/recovery-codes/acknowle
  * The page navigates as soon as the acknowledgment succeeds, which evicts the
  * response body from the browser; the body is captured through a route instead.
  *
+ * The login page navigates once the batch is acknowledged (profile panel: it does not). Pass
+ * `expectNavigation` there and this waits for that navigation to finish, so a `page.goto`
+ * issued right after cannot race the page's own navigation.
+ *
  * @returns the acknowledge response status and JSON body, so callers can assert on them.
  */
-export async function acknowledgeRecoveryCodesModal(page: Page): Promise<{ status: number; body: any }> {
+export async function acknowledgeRecoveryCodesModal(
+  page: Page,
+  { expectNavigation = false }: { expectNavigation?: boolean } = {},
+): Promise<{ status: number; body: any }> {
   await expect(page.locator('[data-testid="recovery-code-modal"]')).toBeVisible({ timeout: 15000 });
 
   let captured: { status: number; body: any } | undefined;
@@ -32,8 +39,12 @@ export async function acknowledgeRecoveryCodesModal(page: Page): Promise<{ statu
 
   const acknowledge = page.locator('[data-testid="acknowledge-codes-button"]');
   await expect(acknowledge).toBeEnabled({ timeout: 15000 });
+
+  // Registered before the click: the navigation starts as soon as the response is handled.
+  const navigated = expectNavigation ? page.waitForEvent('load', { timeout: 15000 }) : null;
   await acknowledge.click();
 
   await expect.poll(() => captured, { timeout: 15000 }).toBeTruthy();
+  if (navigated) await navigated;
   return captured!;
 }

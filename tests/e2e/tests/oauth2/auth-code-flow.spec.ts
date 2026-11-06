@@ -95,9 +95,11 @@ async function verifyOtpAndFollowRedirect(page: Page, loginPage: LoginPage, otp:
   // Seeded MFA-enforced accounts start without recovery codes, so the page now
   // enrolls a batch and holds the navigation until the user confirms it (the
   // modal replaces the redirect). Confirming also lets a trusted device skip the
-  // challenge at the next sign-in, which the trust-device test below relies on.
+  // challenge at the next sign-in, which the trust-device test below relies on. The page then
+  // navigates on its own (to the same URL, as redirect_url is nulled above); wait for that to
+  // finish so the goto below cannot race it.
   if (verifyPayload!.recovery_codes_enrollment_required) {
-    await acknowledgeRecoveryCodesModal(page);
+    await acknowledgeRecoveryCodesModal(page, { expectNavigation: true });
   }
 
   await page.goto(sameOriginUrl(page, verifyPayload!.redirect_url!));
