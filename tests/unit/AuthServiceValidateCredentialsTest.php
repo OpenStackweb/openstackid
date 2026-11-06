@@ -1,0 +1,282 @@
+<?php namespace Tests;
+/**
+ * Copyright 2026 OpenStack Foundation
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
+
+use App\libs\OAuth2\Repositories\IOAuth2OTPRepository;
+use Auth\AuthService;
+use Auth\CustomAuthProvider;
+use Auth\Exceptions\AuthenticationException;
+use Auth\Exceptions\UnverifiedEmailMemberException;
+use Auth\Repositories\IUserRepository;
+use Mockery;
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use OAuth2\Services\IPrincipalService;
+use OAuth2\Services\ISecurityContextService;
+use OpenId\Services\IUserService;
+use App\Services\Auth\IUserService as IAuthUserService;
+use PHPUnit\Framework\TestCase as PHPUnitTestCase;
+use Services\IUserActionService;
+use Utils\Db\ITransactionService;
+use Utils\Services\ICacheService;
+
+/**
+ * Class AuthServiceValidateCredentialsTest
+ * Verifies that AuthService::validateCredentials() validates the password
+ * WITHOUT establishing a session, and that AuthService::loginUser() registers
+ * the OIDC principal (clear + register with auth time) and calls Auth::login()
+ * for the 2FA completion step.
+ */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+final class AuthServiceValidateCredentialsTest extends PHPUnitTestCase
+{
+    use MockeryPHPUnitIntegration;
+
+    private AuthService $service;
+
+    private $mock_user_repository;
+    private $mock_principal_service;
+
+    // Facade aliases
+    private $auth_mock;
+    private $log_mock;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->mock_user_repository = $this->createMock(IUserRepository::class);
+        $mock_otp_repository = $this->createMock(IOAuth2OTPRepository::class);
+        $this->mock_principal_service = $this->createMock(IPrincipalService::class);
+        $mock_user_service = $this->createMock(IUserService::class);
+        $mock_user_action_service = $this->createMock(IUserActionService::class);
+        $mock_cache_service = $this->createMock(ICacheService::class);
+        $mock_auth_user_service = $this->createMock(IAuthUserService::class);
+        $mock_security_context_service = $this->createMock(ISecurityContextService::class);
+        $mock_tx_service = $this->createMock(ITransactionService::class);
+
+        $this->auth_mock = Mockery::mock('alias:Illuminate\Support\Facades\Auth');
+        $this->log_mock = Mockery::mock('alias:Illuminate\Support\Facades\Log');
+
+        $this->log_mock->shouldReceive('debug')->zeroOrMoreTimes();
+        $this->log_mock->shouldReceive('warning')->zeroOrMoreTimes();
+
+        $this->service = new AuthService(
+            $this->mock_user_repository,
+            $mock_otp_repository,
+            $this->mock_principal_service,
+            $mock_user_service,
+            $mock_user_action_service,
+            $mock_cache_service,
+            $mock_auth_user_service,
+            $mock_security_context_service,
+            $mock_tx_service
+        );
+    }
+
+    /**
+     * Valid credentials return the User WITHOUT establishing a session.
+     * Auth::login() and Auth::attempt() must NEVER be called.
+     */
+    public function testValidCredentials_returnsUser_withoutEstablishingSession(): void
+    {
+        $username = 'jane.doe';
+        $password = 'Str0ng!Pass';
+
+        $resolved_user = Mockery::mock('Auth\User');
+        $resolved_user->shouldReceive('canLogin')->once()->andReturn(true);
+
+        $provider_mock = Mockery::mock(CustomAuthProvider::class);
+        $provider_mock->shouldReceive('retrieveByCredentials')
+            ->once()
+            ->with(['username' => $username, 'password' => $password])
+            ->andReturn($resolved_user);
+
+        $this->auth_mock->shouldReceive('getProvider')->once()->andReturn($provider_mock);
+        $this->auth_mock->shouldNotReceive('login');
+        $this->auth_mock->shouldNotReceive('attempt');
+
+        $returned = $this->service->validateCredentials($username, $password);
+
+        $this->assertSame($resolved_user, $returned);
+    }
+
+    /**
+     * Invalid credentials (provider returns null) throw AuthenticationException
+     * and do NOT establish a session.
+     */
+    public function testInvalidCredentials_throwsAuthenticationException(): void
+    {
+        $username = 'jane.doe';
+        $password = 'wrong';
+
+        $provider_mock = Mockery::mock(CustomAuthProvider::class);
+        $provider_mock->shouldReceive('retrieveByCredentials')
+            ->once()
+            ->with(['username' => $username, 'password' => $password])
+            ->andReturn(null);
+
+        $this->auth_mock->shouldReceive('getProvider')->once()->andReturn($provider_mock);
+        $this->auth_mock->shouldNotReceive('login');
+        $this->auth_mock->shouldNotReceive('attempt');
+
+        $this->expectException(AuthenticationException::class);
+
+        $this->service->validateCredentials($username, $password);
+    }
+
+    /**
+     * loginUser(user, true) delegates to Auth::login with the remember flag set.
+     */
+    public function testLoginUser_callsAuthLogin_withRememberTrue(): void
+    {
+        $user = Mockery::mock('Auth\User');
+        $user->shouldReceive('canLogin')->andReturn(true);
+        $user->shouldReceive('getId')->andReturn(123);
+
+        $this->auth_mock
+            ->shouldReceive('login')
+            ->once()
+            ->with($user, true);
+
+        $this->service->loginUser($user, true);
+    }
+
+    /**
+     * loginUser(user, false) delegates to Auth::login with remember disabled.
+     */
+    public function testLoginUser_callsAuthLogin_withRememberFalse(): void
+    {
+        $user = Mockery::mock('Auth\User');
+        $user->shouldReceive('canLogin')->andReturn(true);
+        $user->shouldReceive('getId')->andReturn(123);
+
+        $this->auth_mock
+            ->shouldReceive('login')
+            ->once()
+            ->with($user, false);
+
+        $this->service->loginUser($user, false);
+    }
+
+    /**
+     * Regression: loginUser() MUST register the OIDC principal before establishing
+     * the session, mirroring AuthService::login(). Without this, the principal has
+     * no auth_time, so the id_token auth_time claim is wrong and
+     * InteractiveGrantType::shouldForceReLogin() silently skips max_age / prompt=login
+     * enforcement for every password / 2FA / recovery login.
+     */
+    public function testLoginUser_registersPrincipal_withAuthTime(): void
+    {
+        $user = Mockery::mock('Auth\User');
+        $user->shouldReceive('canLogin')->andReturn(true);
+        $user->shouldReceive('getId')->andReturn(123);
+
+        $this->mock_principal_service->expects($this->once())->method('clear');
+        $this->mock_principal_service->expects($this->once())
+            ->method('register')
+            ->with(123, $this->greaterThan(0));
+
+        $this->auth_mock
+            ->shouldReceive('login')
+            ->once()
+            ->with($user, true);
+
+        $this->service->loginUser($user, true);
+    }
+
+    /**
+     * Regression: when the user cannot log in, loginUser() must throw BEFORE
+     * touching the principal — no clear()/register() and no Auth::login().
+     */
+    public function testLoginUser_doesNotRegisterPrincipal_whenCannotLogin(): void
+    {
+        $user = Mockery::mock('Auth\User');
+        $user->shouldReceive('canLogin')->andReturn(false);
+
+        $this->mock_principal_service->expects($this->never())->method('clear');
+        $this->mock_principal_service->expects($this->never())->method('register');
+        $this->auth_mock->shouldNotReceive('login');
+
+        $this->expectException(AuthenticationException::class);
+
+        $this->service->loginUser($user, true);
+    }
+
+    /**
+     * loginUser(user, [true|false]) and isActive or canLogin false throws an Exception.
+     */
+    public function testLoginUser_throwsException_whenIsNotActive(): void
+    {
+        $user = Mockery::mock('Auth\User');
+        $user->shouldReceive('canLogin')->andReturn(false);
+
+        $this->auth_mock->shouldNotReceive('login');
+
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessageMatches('/User is not active or cannot login\./');
+
+        $this->service->loginUser($user, true);
+    }
+
+    /**
+     * UnverifiedEmailMemberException from the provider propagates to the caller
+     * so UserController::postLogin() can handle it with a specific UI message.
+     */
+    public function testUnverifiedUser_throwsUnverifiedEmailMemberException(): void
+    {
+        $username = 'unverified@example.com';
+        $password = 'any';
+
+        $provider_mock = Mockery::mock(CustomAuthProvider::class);
+        $provider_mock->shouldReceive('retrieveByCredentials')
+            ->once()
+            ->with(['username' => $username, 'password' => $password])
+            ->andThrow(new UnverifiedEmailMemberException('Email not verified.'));
+
+        $this->auth_mock->shouldReceive('getProvider')->once()->andReturn($provider_mock);
+        $this->auth_mock->shouldNotReceive('login');
+
+        $this->expectException(UnverifiedEmailMemberException::class);
+        $this->expectExceptionMessage('Email not verified.');
+
+        $this->service->validateCredentials($username, $password);
+    }
+
+    /**
+     * Provider returns a valid User but canLogin() is false (locked/inactive):
+     * must throw AuthenticationException — not silently return the user.
+     */
+    public function testUserCannotLogin_throwsAuthenticationException(): void
+    {
+        $username = 'locked@example.com';
+        $password = 'any';
+
+        $locked_user = Mockery::mock('Auth\User');
+        $locked_user->shouldReceive('canLogin')->once()->andReturn(false);
+
+        $provider_mock = Mockery::mock(CustomAuthProvider::class);
+        $provider_mock->shouldReceive('retrieveByCredentials')
+            ->once()
+            ->with(['username' => $username, 'password' => $password])
+            ->andReturn($locked_user);
+
+        $this->auth_mock->shouldReceive('getProvider')->once()->andReturn($provider_mock);
+        $this->auth_mock->shouldNotReceive('login');
+
+        $this->expectException(AuthenticationException::class);
+
+        $this->service->validateCredentials($username, $password);
+    }
+
+}
