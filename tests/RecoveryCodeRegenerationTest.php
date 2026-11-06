@@ -12,12 +12,16 @@
  * limitations under the License.
  **/
 
+use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserRecoveryCode;
+use Auth\AuthHelper;
+use Auth\MFAConstants;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use App\Services\Auth\IRecoveryCodeService;
 use Strategies\MFA\MFAChallengeStrategyFactory;
 use Utils\Services\IAuthService;
 
@@ -105,24 +109,50 @@ final class RecoveryCodeRegenerationTest extends BrowserKitTestCase
 
     public function testEnableTwoFactorGeneratesRecoveryCodes(): void
     {
-        $admin = $this->admin();
+        // A non-enforced user: group-enforced admins are rejected (see
+        // testEnableTwoFactorRejectsGroupEnforcedAdmin).
+        $user = $this->createPlainUser();
+        $this->be($user);
 
         $response = $this->enableTwoFactor('email_otp');
 
         $this->assertResponseStatus(200);
         $payload = json_decode($response->getContent(), true);
         $this->assertArrayHasKey('recovery_codes', $payload);
+        $this->assertIsInt($payload['batch_id']);
+        $this->assertFalse($payload['recovery_codes_acknowledged']);
+        $this->assertTrue($payload['recovery_codes_enrollment_required']);
 
         $expectedCount = (int)config('auth.recovery_codes.count', 10);
         $this->assertCount($expectedCount, $payload['recovery_codes']);
+        $this->assertSame($expectedCount, $payload['recovery_codes_remaining']);
 
         EntityManager::clear();
-        $reloaded = EntityManager::getRepository(User::class)->find($admin->getId());
+        $reloaded = EntityManager::getRepository(User::class)->find($user->getId());
         $this->assertTrue($reloaded->isTwoFactorEnabled(), '2FA must be enabled on the user after enrollment');
 
         $remaining = EntityManager::getRepository(UserRecoveryCode::class)
-            ->findBy(['user' => $admin->getId(), 'used_at' => null]);
+            ->findBy(['user' => $user->getId(), 'used_at' => null]);
         $this->assertCount($expectedCount, $remaining);
+        $this->assertSame($payload['batch_id'], min(array_map(fn($c) => $c->getId(), $remaining)));
+    }
+
+    public function testEnableTwoFactorRejectsGroupEnforcedAdmin(): void
+    {
+        $admin = $this->admin();
+
+        $this->enableTwoFactor('email_otp');
+
+        $this->assertResponseStatus(412);
+
+        EntityManager::clear();
+        $reloaded = EntityManager::getRepository(User::class)->find($admin->getId());
+        $this->assertFalse($reloaded->isTwoFactorEnabled(), 'the stored flag must stay untouched for an enforced admin');
+        $this->assertCount(
+            0,
+            EntityManager::getRepository(UserRecoveryCode::class)->findBy(['user' => $admin->getId()]),
+            'no codes may be minted for an enforced admin'
+        );
     }
 
     public function testDisplayedRecoveryCodeRedeemsThroughVerifyRecoveryCode(): void
@@ -161,23 +191,28 @@ final class RecoveryCodeRegenerationTest extends BrowserKitTestCase
 
     public function testEnableTwoFactorRejectsWhenAlreadyEnabled(): void
     {
+        $user = $this->createPlainUser();
+        $this->be($user);
+
         $this->enableTwoFactor('email_otp');
         $this->assertResponseStatus(200);
 
-        $response = $this->enableTwoFactor('email_otp');
+        $this->enableTwoFactor('email_otp');
 
         $this->assertResponseStatus(412);
 
         EntityManager::clear();
-        $admin = $this->admin();
-        $this->assertTrue($admin->isTwoFactorEnabled(), '2FA must remain enabled after the rejected second call');
+        $reloaded = EntityManager::getRepository(User::class)->find($user->getId());
+        $this->assertTrue($reloaded->isTwoFactorEnabled(), '2FA must remain enabled after the rejected second call');
     }
 
     public function testEnableTwoFactorRejectsUnavailableMethod(): void
     {
         // sms_otp is a stub in Phase I (isPhoneNumberVerified() is hardcoded false),
-        // so enable2FA() must reject it regardless of the requesting user.
-        $response = $this->enableTwoFactor('sms_otp');
+        // so enable2FA() must reject it for a user that is allowed to self-enroll.
+        $this->be($this->createPlainUser());
+
+        $this->enableTwoFactor('sms_otp');
 
         $this->assertResponseStatus(412);
     }
@@ -191,14 +226,93 @@ final class RecoveryCodeRegenerationTest extends BrowserKitTestCase
 
     public function testEnableTwoFactorLogsEnrollmentAuditEvent(): void
     {
-        $admin = $this->admin();
+        $user = $this->createPlainUser();
+        $this->be($user);
 
-        $this->enableTwoFactor('email_otp');
+        $response = $this->enableTwoFactor('email_otp');
+        $payload = json_decode($response->getContent(), true);
 
         EntityManager::clear();
-        $entries = EntityManager::getRepository(TwoFactorAuditLog::class)
-            ->findBy(['user' => $admin->getId(), 'event_type' => TwoFactorAuditLog::EventEnrollmentChanged]);
+        $repo = EntityManager::getRepository(TwoFactorAuditLog::class);
+        $entries = $repo->findBy(['user' => $user->getId(), 'event_type' => TwoFactorAuditLog::EventEnrollmentChanged]);
         $this->assertNotEmpty($entries, 'an enrollment_changed audit entry must be recorded');
+
+        $generated = $repo->findBy(['user' => $user->getId(), 'event_type' => TwoFactorAuditLog::EventRecoveryCodesGenerated]);
+        $this->assertCount(1, $generated);
+        $this->assertSame(['batch_id' => $payload['batch_id']], $generated[0]->getMetadata());
+    }
+
+    public function testRegenerateReturnsBatchIdAndResetsAcknowledgment(): void
+    {
+        $admin = $this->admin();
+        $service = app(IRecoveryCodeService::class);
+        $first = $service->generateRecoveryCodes($admin);
+        $this->assertTrue($service->acknowledgeRecoveryCodes($admin, $first->getBatchId()));
+
+        $response = $this->regenerate(self::SEED_PASSWORD);
+
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertIsInt($payload['batch_id']);
+        $this->assertGreaterThan($first->getBatchId(), $payload['batch_id']);
+        $this->assertFalse($payload['recovery_codes_acknowledged'], 'a new batch is unacknowledged until the user confirms it');
+
+        EntityManager::clear();
+        $reloaded = EntityManager::getRepository(User::class)->find($admin->getId());
+        $this->assertNull($reloaded->getRecoveryCodesAcknowledgedAt());
+    }
+
+    public function testRegenerateWithoutPasswordIsRejectedForUserWithPassword(): void
+    {
+        $this->action('POST', 'Api\\UserApiController@regenerateRecoveryCodes', [], [], [], []);
+
+        $this->assertResponseStatus(412);
+    }
+
+    public function testRegenerateForUserWithoutPasswordIsAcceptedInsideTheWindow(): void
+    {
+        $user = $this->createPlainUser(false);
+        $this->be($user);
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => $user->getId(), 'at' => time() - 30]);
+
+        $response = $this->action('POST', 'Api\\UserApiController@regenerateRecoveryCodes', [], [], [], []);
+
+        $this->assertResponseStatus(200);
+        $payload = json_decode($response->getContent(), true);
+        $this->assertCount((int)config('auth.recovery_codes.count', 10), $payload['recovery_codes']);
+    }
+
+    public function testRegenerateForUserWithoutPasswordIsRejectedOutsideTheWindow(): void
+    {
+        $user = $this->createPlainUser(false);
+        $this->be($user);
+        $window = (int)config('two_factor.recovery_enrollment_window', 600);
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => $user->getId(), 'at' => time() - $window - 5]);
+
+        $this->action('POST', 'Api\\UserApiController@regenerateRecoveryCodes', [], [], [], []);
+
+        $this->assertResponseStatus(412);
+        $this->assertCount(0, EntityManager::getRepository(UserRecoveryCode::class)->findBy(['user' => $user->getId()]));
+    }
+
+    public function testRegenerateForUserWithoutPasswordIsRejectedWithAnotherUsersMarker(): void
+    {
+        $user = $this->createPlainUser(false);
+        $this->be($user);
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => $user->getId() + 1000, 'at' => time()]);
+
+        $this->action('POST', 'Api\\UserApiController@regenerateRecoveryCodes', [], [], [], []);
+
+        $this->assertResponseStatus(412);
+    }
+
+    public function testRegenerateForUserWithoutPasswordIsRejectedWithoutMarker(): void
+    {
+        $this->be($this->createPlainUser(false));
+
+        $this->action('POST', 'Api\\UserApiController@regenerateRecoveryCodes', [], [], [], []);
+
+        $this->assertResponseStatus(412);
     }
 
     private function enableTwoFactor(string $method)
@@ -220,6 +334,26 @@ final class RecoveryCodeRegenerationTest extends BrowserKitTestCase
         return $this->action('POST', 'Api\\UserApiController@regenerateRecoveryCodes', [
             'current_password' => $password,
         ], [], [], []);
+    }
+
+    private function createPlainUser(bool $withPassword = true): User
+    {
+        $payload = [
+            'first_name'     => 'Plain',
+            'last_name'      => 'User',
+            'email'          => 'plain.' . uniqid() . '@test.invalid',
+            'active'         => true,
+            'email_verified' => true,
+            'identifier'     => 'plain.' . uniqid(),
+        ];
+        if ($withPassword) {
+            $payload['password']     = self::SEED_PASSWORD;
+            $payload['password_enc'] = AuthHelper::AlgSHA1_V2_4;
+        }
+        $user = UserFactory::build($payload);
+        EntityManager::persist($user);
+        EntityManager::flush();
+        return $user;
     }
 
     private function createRecoveryCode(User $user, string $plain, bool $used): int

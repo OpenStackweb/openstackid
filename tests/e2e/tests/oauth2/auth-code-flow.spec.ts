@@ -1,5 +1,6 @@
 import { test, expect } from '../../fixtures';
 import { getLatestOtp } from '../../utils/otp';
+import { acknowledgeRecoveryCodesModal } from '../../utils/recovery_enrollment';
 import type { Page, APIRequestContext } from '@playwright/test';
 import type { LoginPage } from '../../pages/LoginPage';
 
@@ -66,7 +67,7 @@ async function loginToMfaChallenge(loginPage: LoginPage, email: string): Promise
  * becomes a harmless same-URL no-op.
  */
 async function verifyOtpAndFollowRedirect(page: Page, loginPage: LoginPage, otp: string): Promise<void> {
-  let verifyPayload: { redirect_url?: string } | undefined;
+  let verifyPayload: { redirect_url?: string; recovery_codes_enrollment_required?: boolean } | undefined;
   await page.route(VERIFY_URL, async (route) => {
     const req = route.request();
     const response = await page.request.fetch(req.url(), {
@@ -90,6 +91,15 @@ async function verifyOtpAndFollowRedirect(page: Page, loginPage: LoginPage, otp:
   // default poll timeout - especially the first request against a
   // just-started stack.
   await expect.poll(() => verifyPayload, { timeout: 15000 }).toBeTruthy();
+
+  // Seeded MFA-enforced accounts start without recovery codes, so the page now
+  // enrolls a batch and holds the navigation until the user confirms it (the
+  // modal replaces the redirect). Confirming also lets a trusted device skip the
+  // challenge at the next sign-in, which the trust-device test below relies on.
+  if (verifyPayload!.recovery_codes_enrollment_required) {
+    await acknowledgeRecoveryCodesModal(page);
+  }
+
   await page.goto(sameOriginUrl(page, verifyPayload!.redirect_url!));
 }
 

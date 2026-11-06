@@ -12,22 +12,25 @@ const TwoFactorSection = ({
                               recoveryCodesRemaining,
                               recoveryCodesTotal,
                               recoveryCodesLowThreshold,
+                              recoveryCodesAcknowledged = true,
+                              recoveryCodesEnrollmentRequired = false,
+                              recoveryCodesEnrollmentAvailable = false,
+                              recoveryCodesWindowOpen = false,
+                              hasPassword = true,
                               email,
                               appName
                           }) => {
     const [enabled, setEnabled] = useState(twoFactorEnabled);
     const [loading, setLoading] = useState(false);
-    const [remaining, setRemaining] = useState(recoveryCodesRemaining);
-    const [total, setTotal] = useState(recoveryCodesTotal);
-    const [enrollmentCodes, setEnrollmentCodes] = useState(null);
+    // Standing and first batch returned by "Enable": the panel is mounted with them and
+    // asks the user to confirm the batch before it counts as usable.
+    const [enrollment, setEnrollment] = useState(null);
 
     const handleEnable = () => {
         setLoading(true);
         enableTwoFactor(DEFAULT_METHOD).then(({response}) => {
             setLoading(false);
-            setRemaining(response.recovery_codes.length);
-            setTotal(response.recovery_codes.length);
-            setEnrollmentCodes(response.recovery_codes);
+            setEnrollment(response);
             setEnabled(true);
         }).catch((err) => {
             setLoading(false);
@@ -54,14 +57,35 @@ const TwoFactorSection = ({
         );
     }
 
+    if (enrollment) {
+        return (
+            <RecoveryCodesPanel
+                recoveryCodesRemaining={enrollment.recovery_codes_remaining}
+                recoveryCodesTotal={enrollment.recovery_codes_total}
+                recoveryCodesAcknowledged={enrollment.recovery_codes_acknowledged}
+                recoveryCodesEnrollmentRequired={enrollment.recovery_codes_enrollment_required}
+                recoveryCodesEnrollmentAvailable={false}
+                recoveryCodesWindowOpen={false}
+                hasPassword={hasPassword}
+                lowCodeThreshold={enrollment.recovery_codes_low_threshold ?? recoveryCodesLowThreshold}
+                email={email}
+                appName={appName}
+                initialBatch={{codes: enrollment.recovery_codes, batchId: enrollment.batch_id}}/>
+        );
+    }
+
     return (
         <RecoveryCodesPanel
-            recoveryCodesRemaining={remaining}
-            recoveryCodesTotal={total}
+            recoveryCodesRemaining={recoveryCodesRemaining}
+            recoveryCodesTotal={recoveryCodesTotal}
+            recoveryCodesAcknowledged={recoveryCodesAcknowledged}
+            recoveryCodesEnrollmentRequired={recoveryCodesEnrollmentRequired}
+            recoveryCodesEnrollmentAvailable={recoveryCodesEnrollmentAvailable}
+            recoveryCodesWindowOpen={recoveryCodesWindowOpen}
+            hasPassword={hasPassword}
             lowCodeThreshold={recoveryCodesLowThreshold}
             email={email}
-            appName={appName}
-            initialCodes={enrollmentCodes}/>
+            appName={appName}/>
     );
 };
 

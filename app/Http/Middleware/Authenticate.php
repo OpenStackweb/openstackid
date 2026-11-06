@@ -56,6 +56,15 @@ class Authenticate
                 $current_user->getGroupsNice()
             )
         );
+        // An XHR that expects JSON must reach its controller: the first
+        // authenticated request after a deep-link sign-in would otherwise be
+        // answered with a 302 to backurl, and the caller would read an HTML page
+        // instead of its JSON (e.g. the recovery-code enrollment call made by
+        // the login page). backurl stays in the session for the real navigation.
+        if ($request->expectsJson()) {
+            return $next($request);
+        }
+
         $redirect = Session::get('backurl');
         if (!empty($redirect)) {
             Session::forget('backurl');

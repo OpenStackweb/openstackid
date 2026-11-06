@@ -15,6 +15,8 @@ import {
   verify2FA,
   resend2FA,
   verifyRecoveryCode,
+  enrollRecoveryCodes,
+  acknowledgeRecoveryCodes,
   cancelLogin,
 } from "./actions";
 import { emailValidator } from "../validator";
@@ -31,6 +33,7 @@ import EmailErrorActions from "./components/email_error_actions";
 import ThirdPartyIdentityProviders from "./components/third_party_identity_providers";
 import TwoFactorForm from "./components/two_factor_form";
 import RecoveryCodeForm from "./components/recovery_code_form";
+import RecoveryCodeModal from "../components/recovery_code_modal";
 import {
   RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY,
   DEFAULT_RECOVERY_CODES_LOW_THRESHOLD,
@@ -103,6 +106,11 @@ class LoginPage extends React.Component {
       // this is the only point where the SPA still controls the page (see
       // onVerifyRecovery()/onContinueAfterLowRecoveryCodes() below).
       lowRecoveryCodesWarning: null,
+      // Set while the recovery-code enrollment modal is up after a 2FA
+      // verification that reported recovery_codes_enrollment_required:
+      // {codes, batchId, redirectUrl, csrfToken, busy, error}. Navigation to redirectUrl
+      // waits until the batch is acknowledged (SDS idp-mfa.md §4.10.1).
+      recoveryEnrollment: null,
     };
 
     if (props.authError != "" && !this.state.user_fullname) {
@@ -141,6 +149,7 @@ class LoginPage extends React.Component {
     this.onResend2FA = this.onResend2FA.bind(this);
     this.onVerifyRecovery = this.onVerifyRecovery.bind(this);
     this.onContinueAfterLowRecoveryCodes = this.onContinueAfterLowRecoveryCodes.bind(this);
+    this.onAcknowledgeRecoveryCodes = this.onAcknowledgeRecoveryCodes.bind(this);
     this.onUseRecovery = this.onUseRecovery.bind(this);
     this.onBackToOtp = this.onBackToOtp.bind(this);
     this.resetToPasswordFlow = this.resetToPasswordFlow.bind(this);
@@ -465,8 +474,13 @@ class LoginPage extends React.Component {
         // to it lets the browser complete any further hop natively, cross-origin
         // included, which this XHR never could.
         const { response } = payload;
-        window.location.href =
+        const redirectUrl =
           (response && response.redirect_url) || window.location.href;
+        if (response && response.recovery_codes_enrollment_required === true) {
+          this.startRecoveryEnrollment(redirectUrl, response.csrf_token);
+          return;
+        }
+        window.location.href = redirectUrl;
       },
       (error) => {
         this.handleMfaError(error, "twofactor");
@@ -569,6 +583,12 @@ class LoginPage extends React.Component {
         const { response } = payload;
         const redirectUrl =
           (response && response.redirect_url) || window.location.href;
+        // The enrollment modal replaces the low-code banner: a user who has to
+        // enroll gets a fresh batch instead of a warning about the old one.
+        if (response && response.recovery_codes_enrollment_required === true) {
+          this.startRecoveryEnrollment(redirectUrl, response.csrf_token);
+          return;
+        }
         const remaining = response && response.recovery_codes_remaining;
         const threshold =
           (response && response.recovery_codes_low_threshold) ??
@@ -589,6 +609,93 @@ class LoginPage extends React.Component {
       },
       (error) => {
         this.handleMfaError(error, "recovery");
+      },
+    );
+  }
+
+  /**
+   * A well-formed enroll response carries a non-empty recovery_codes array and
+   * an integer batch_id; anything else is treated as an enrollment failure.
+   */
+  isValidBatchResponse(response) {
+    return (
+      !!response &&
+      Array.isArray(response.recovery_codes) &&
+      response.recovery_codes.length > 0 &&
+      Number.isInteger(response.batch_id)
+    );
+  }
+
+  /**
+   * Generates the user's recovery-code batch and shows it in the non-dismissable
+   * modal. Never blocks the sign-in: when enrollment fails for any reason (412,
+   * 429, network, malformed body) the page navigates to redirectUrl anyway; the
+   * next sign-in is challenged again while enrollment is still required
+   * (SDS idp-mfa.md §4.2 step 4, §4.10.1).
+   *
+   * @param {string} redirectUrl post-login destination returned by verify
+   * @param {string} [csrfToken] the session's CSRF token after sign-in: Auth::login()
+   *   rotates it, so the one this page was rendered with (props.token) is stale
+   */
+  startRecoveryEnrollment(redirectUrl, csrfToken) {
+    const token = csrfToken || this.props.token;
+    enrollRecoveryCodes(token).then(
+      (payload) => {
+        const { response } = payload;
+        if (!this.isValidBatchResponse(response)) {
+          window.location.href = redirectUrl;
+          return;
+        }
+        this.setState({
+          ...this.state,
+          recoveryEnrollment: {
+            codes: response.recovery_codes,
+            batchId: response.batch_id,
+            redirectUrl,
+            csrfToken: token,
+            busy: false,
+            error: null,
+          },
+        });
+      },
+      () => {
+        window.location.href = redirectUrl;
+      },
+    );
+  }
+
+  /**
+   * "I've Saved These Codes" (and Retry): confirms the displayed batch and only
+   * then navigates. A 412 means the batch was replaced meanwhile: enroll again
+   * and show the new one. Any other failure keeps the modal open with the error.
+   */
+  onAcknowledgeRecoveryCodes() {
+    const enrollment = this.state.recoveryEnrollment;
+    if (!enrollment || enrollment.busy) return;
+
+    this.setState({
+      ...this.state,
+      recoveryEnrollment: { ...enrollment, busy: true, error: null },
+    });
+
+    acknowledgeRecoveryCodes(enrollment.batchId, enrollment.csrfToken).then(
+      () => {
+        window.location.href = enrollment.redirectUrl;
+      },
+      (error) => {
+        if (error && error.status === HTTP_CODES.PRECONDITION_FAILED) {
+          this.startRecoveryEnrollment(enrollment.redirectUrl, enrollment.csrfToken);
+          return;
+        }
+        this.setState({
+          ...this.state,
+          recoveryEnrollment: {
+            ...enrollment,
+            busy: false,
+            error:
+              "We could not confirm your recovery codes. Please try again.",
+          },
+        });
       },
     );
   }
@@ -838,6 +945,18 @@ class LoginPage extends React.Component {
         className={styles.main_container}
       >
         <CssBaseline />
+        {this.state.recoveryEnrollment && (
+          <RecoveryCodeModal
+            open
+            codes={this.state.recoveryEnrollment.codes}
+            email={this.state.user_name}
+            appName={this.props.appName}
+            busy={this.state.recoveryEnrollment.busy}
+            error={this.state.recoveryEnrollment.error}
+            onAcknowledge={this.onAcknowledgeRecoveryCodes}
+            onRetry={this.onAcknowledgeRecoveryCodes}
+          />
+        )}
         {this.state.showInfoBanner && (
           <Banner infoBannerContent={this.state.infoBannerContent} />
         )}
