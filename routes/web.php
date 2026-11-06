@@ -205,6 +205,7 @@ Route::group([
             Route::get('2fa/devices', "UserApiController@getMyTrustedDevices");
             Route::delete('2fa/devices', ['middleware' => ['csrf'], 'uses' => "UserApiController@revokeAllMyTrustedDevices"]);
             Route::delete('2fa/devices/{id}', ['middleware' => ['csrf'], 'uses' => "UserApiController@revokeMyTrustedDevice"]);
+            Route::post('2fa/disable', ['middleware' => ['csrf'], 'uses' => "UserApiController@disableTwoFactor"]);
         });
 
         Route::get('access-tokens', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);
