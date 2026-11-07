@@ -45,4 +45,11 @@ interface IUserRepository extends IBaseRepository
     public function getByVerificationEmailToken(string $token):?User;
 
     public function getByIdWithGroups(int $id): ?User;
+
+    /**
+     * @param string $provider
+     * @param string $external_id
+     * @return User|null
+     */
+    public function getByExternalId(string $provider, string $external_id): ?User;
 } 
