@@ -135,4 +135,19 @@ interface IRecoveryCodeService
      *         and the session is outside the enrollment window
      */
     public function disableTwoFactor(User $user, ?string $currentPassword, ?User $actor): void;
+
+    /**
+     * Enables 2FA for a user on behalf of an administrator (support path). Unlike
+     * enableTwoFactorAndGenerateCodes() no recovery codes are generated: codes are shown
+     * once and only to their owner, who is told by email to generate them from their
+     * profile. Audited as enrollment_changed with {enabled: true, actor_id, reason: admin}.
+     * The email and the audit row are best-effort once 2FA is enabled.
+     *
+     * @param User $user
+     * @param string $method one of User::ValidMFAMethods
+     * @param User $actor the administrator performing the change
+     * @return void
+     * @throws ValidationException if $method is not valid or not available
+     */
+    public function enableTwoFactorForUser(User $user, string $method, User $actor): void;
 }

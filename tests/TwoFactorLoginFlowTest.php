@@ -80,7 +80,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         if ($admin) {
             $userId = $admin->getId();
             $prefix = ITwoFactorRateLimitService::RATE_LIMIT_CACHE_KEY_PREFIX;
-            foreach (['verify', 'recovery', 'resend', 'enroll'] as $action) {
+            foreach (['verify', 'recovery', 'resend', 'enroll', 'password_confirm'] as $action) {
                 Cache::forget("{$prefix}{$action}:{$userId}");
                 // RateLimiter::hit() also writes a companion ":timer" key holding
                 // the window's reset timestamp - must be cleared too, or a stale
@@ -189,6 +189,44 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(302);
         $this->assertTrue(Auth::check(), 'a non-MFA user must get an authenticated session');
+    }
+
+    public function testPasswordLoginNoLongerHitsTheChallengeAfterTheUserDisabledTwoFactor(): void
+    {
+        $email = $this->createPlainUser();
+        $user = $this->user($email);
+        $recovery = $this->app->make(IRecoveryCodeService::class);
+        $recovery->enableTwoFactorAndGenerateCodes($user, User::MFAMethod_OTP);
+
+        // control: enrolled, the password alone does not log in
+        $this->postLogin($email, self::SEED_PASSWORD);
+        $this->assertFalse(Auth::check());
+        $this->assertSame('2fa', Session::get('flow'));
+        $this->resetLogin();
+
+        $recovery->disableTwoFactor($user, self::SEED_PASSWORD, $user);
+
+        $this->postLogin($email, self::SEED_PASSWORD);
+
+        $this->assertResponseStatus(302);
+        $this->assertTrue(Auth::check(), 'with 2FA off the password alone must log the user in');
+        $this->assertNotSame('2fa', Session::get('flow'), 'no 2FA screen must be pending');
+    }
+
+    public function testGroupEnforcedUserIsStillChallengedAfterARefusedDisable(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+
+        try {
+            $this->app->make(IRecoveryCodeService::class)->disableTwoFactor($admin, self::SEED_PASSWORD, $admin);
+            $this->fail('a group-enforced user must not be able to disable 2FA');
+        } catch (\models\exceptions\ValidationException $ex) {
+        }
+
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $this->assertFalse(Auth::check(), 'enforcement does not depend on the stored flag');
+        $this->assertSame('2fa', Session::get('flow'));
     }
 
     // -------------------------------------------------------------------------
@@ -1224,6 +1262,31 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         $this->assertSame((string)$max, $response->headers->get('X-RateLimit-Limit'));
     }
 
+    public function testPasswordConfirmationRateLimitIsSharedByDisableAndRegenerateAndCountsOnlyFailures(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->be($admin);
+        $max = (int)config('two_factor.rate_limit.max_password_confirm_attempts', 5);
+
+        // a successful confirmation gives its attempt back
+        $this->assertEquals(200, $this->regenerate(self::SEED_PASSWORD)->getStatusCode());
+        $this->assertSame(0, (int)Cache::get(ITwoFactorRateLimitService::RATE_LIMIT_CACHE_KEY_PREFIX . 'password_confirm:' . $admin->getId(), 0));
+
+        // failures on either route draw from the same budget
+        for ($i = 0; $i < $max; $i++) {
+            $response = $i % 2 === 0
+                ? $this->regenerate('not-the-password')
+                : $this->disableTwoFactor('not-the-password');
+            $this->assertEquals(412, $response->getStatusCode(), "attempt #" . ($i + 1) . " must reach the controller");
+        }
+
+        // the right password no longer gets through, on either route
+        $response = $this->regenerate(self::SEED_PASSWORD);
+        $this->assertEquals(429, $response->getStatusCode());
+        $this->assertSame((string)$max, $response->headers->get('X-RateLimit-Limit'));
+        $this->assertEquals(429, $this->disableTwoFactor(self::SEED_PASSWORD)->getStatusCode());
+    }
+
     public function testAcknowledgeWithAnEarlierBatchIdIsRejectedAndLeavesTheColumnUnchanged(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
@@ -1323,6 +1386,22 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     private function enroll()
     {
         return $this->action('POST', 'Api\\UserApiController@enrollRecoveryCodes', [], ['_token' => Session::token()]);
+    }
+
+    private function regenerate(string $password)
+    {
+        return $this->action('POST', 'Api\\UserApiController@regenerateRecoveryCodes', [], [
+            'current_password' => $password,
+            '_token'           => Session::token(),
+        ]);
+    }
+
+    private function disableTwoFactor(string $password)
+    {
+        return $this->action('POST', 'Api\\UserApiController@disableTwoFactor', [], [
+            'current_password' => $password,
+            '_token'           => Session::token(),
+        ]);
     }
 
     private function acknowledge(int $batchId)

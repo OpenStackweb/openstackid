@@ -23,6 +23,8 @@ use Auth\User;
 use Exception;
 use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Validator;
@@ -158,7 +160,7 @@ final class UserApiController extends APICRUDController
 
     protected function getAllSerializerType(): string
     {
-        return SerializerRegistry::SerializerType_Private;
+        return SerializerRegistry::SerializerType_Admin;
     }
 
     /**
@@ -295,6 +297,54 @@ final class UserApiController extends APICRUDController
             $batch = $this->recovery_code_service->enableTwoFactorAndGenerateCodes($user, $method);
 
             return $this->ok($this->batchPayload($user, $batch));
+        });
+    }
+
+    /**
+     * Disables 2FA for the current user (SDS idp-mfa.md §5.6). Deletes their recovery
+     * codes and revokes every trusted device, so the device trust cookie is expired too.
+     * Requires the current password, or for a user without one a session inside the
+     * recovery enrollment window (SDS rev 2.6 §4.10.3). Refused for group-enforced users.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function disableTwoFactor()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $data = Request::all();
+            $validator = Validator::make($data, [
+                'current_password' => 'sometimes|nullable|string',
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+
+            $user = Auth::user();
+
+            if ($user->isTwoFactorEnforcedByGroup()) {
+                return $this->error412(['two_factor' => ['Two-factor authentication is required for members of an administrator group and cannot be turned off.']]);
+            }
+
+            if (!$user->isTwoFactorEnabled()) {
+                return $this->error412(['two_factor' => ['Two-factor authentication is not enabled for this account.']]);
+            }
+
+            // the service enforces current_password / the enrollment window for the
+            // self-service actor and throws ValidationException (-> 412)
+            $this->recovery_code_service->disableTwoFactor($user, $data['current_password'] ?? null, $user);
+
+            // every trusted device was just revoked
+            Cookie::queue(Cookie::forget(
+                Config::get('two_factor.cookie_name', 'device_trust_token'),
+                Config::get('session.path'),
+                Config::get('session.domain')
+            ));
+
+            return $this->ok(['two_factor_enabled' => false]);
         });
     }
 
@@ -438,6 +488,6 @@ final class UserApiController extends APICRUDController
 
     protected function serializerType(): string
     {
-        return SerializerRegistry::SerializerType_Private;
+        return SerializerRegistry::SerializerType_Admin;
     }
 }

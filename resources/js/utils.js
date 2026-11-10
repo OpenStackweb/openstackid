@@ -23,6 +23,11 @@ const createErrorHandler = (customHandler = null) => {
             }
             return showMessage("Validation error", messageLines, "warning");
         }
+        if (err.status === 429) {
+            // rate limited (e.g. too many failed password confirmations)
+            const message = err.response?.body?.error_message || "Too many attempts. Please try again later.";
+            return showMessage("Too many attempts", message, "warning");
+        }
         return showMessage("Something went wrong!", null, "error");
     };
 };

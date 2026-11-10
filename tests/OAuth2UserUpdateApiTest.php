@@ -13,9 +13,13 @@
  **/
 
 use App\libs\Auth\Models\IGroupSlugs;
+use App\libs\Auth\Factories\UserFactory;
 use App\libs\OAuth2\IUserScopes;
+use App\Services\Auth\IRecoveryCodeService;
+use Auth\AuthHelper;
 use Auth\Group;
 use Auth\User;
+use Illuminate\Support\Facades\DB;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 
 /**
@@ -105,6 +109,50 @@ final class OAuth2UserUpdateApiTest extends OAuth2ProtectedApiTestCase
         $content = $response->getContent();
         $response = json_decode($content);
         $this->assertTrue($response->first_name == $new_first_name);
+    }
+
+    /**
+     * The token owner is a super admin, but 2FA must not be manageable by an OAuth2 client:
+     * the key is dropped from the payload and the rest of the update goes through.
+     */
+    public function testUserUpdateIgnoresTwoFactorEnabled()
+    {
+        $target = UserFactory::build([
+            'first_name'     => 'Plain',
+            'last_name'      => 'Target',
+            'email'          => 'target.' . uniqid() . '@test.invalid',
+            'active'         => true,
+            'email_verified' => true,
+            'identifier'     => 'target.' . uniqid(),
+            'password'       => '1Qaz2wsx!',
+            'password_enc'   => AuthHelper::AlgSHA1_V2_4,
+        ]);
+        EntityManager::persist($target);
+        EntityManager::flush();
+        $this->app->make(IRecoveryCodeService::class)->enableTwoFactorAndGenerateCodes($target, User::MFAMethod_OTP);
+
+        $headers = [
+            "HTTP_Authorization" => " Bearer " . $this->access_token,
+            "CONTENT_TYPE"       => "application/json"
+        ];
+
+        $this->action
+        (
+            "PUT",
+            "Api\\OAuth2\\OAuth2UserApiController@update",
+            ['id' => $target->getId()],
+            [],
+            [],
+            [],
+            $headers,
+            json_encode(['first_name' => 'Renamed', 'two_factor_enabled' => false])
+        );
+
+        $this->assertResponseStatus(201);
+        $row = DB::table('users')->where('id', $target->getId())->first();
+        $this->assertSame('Renamed', $row->first_name);
+        $this->assertSame(1, (int)$row->two_factor_enabled);
+        $this->assertSame(10, DB::table('user_recovery_codes')->where('user_id', $target->getId())->count());
     }
 
     protected function getScopes()

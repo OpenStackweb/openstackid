@@ -14,6 +14,7 @@ namespace App\Services\Auth;
  **/
 
 use App\libs\Auth\Models\TwoFactorAuditLog;
+use App\Mail\TwoFactorEnabledByAdminMail;
 use App\libs\Auth\Models\UserRecoveryCode;
 use Auth\MFAConstants;
 use Auth\Repositories\IUserRecoveryCodeRepository;
@@ -22,6 +23,7 @@ use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Laminas\Math\Rand;
 use models\exceptions\ValidationException;
@@ -289,6 +291,41 @@ final class RecoveryCodeService implements IRecoveryCodeService
                     'reason'   => $is_self ? 'self' : (is_null($actor) ? 'console' : 'admin'),
                 ]
             );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function enableTwoFactorForUser(User $user, string $method, User $actor): void
+    {
+        $this->tx_service->transaction(function () use ($user, $method) {
+            // the lock re-hydrates $user, so it must precede enable2FA()
+            $this->repository->lockUserRow($user);
+            $user->enable2FA($method);
+            $this->user_repository->add($user, false);
+        });
+
+        try {
+            $this->audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventEnrollmentChanged,
+                $method,
+                IPHelper::getUserIp(),
+                [
+                    'enabled'  => true,
+                    'actor_id' => $actor->getId(),
+                    'reason'   => 'admin',
+                ]
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
+
+        try {
+            Mail::queue(new TwoFactorEnabledByAdminMail($user));
         } catch (\Throwable $ex) {
             Log::warning($ex);
         }
