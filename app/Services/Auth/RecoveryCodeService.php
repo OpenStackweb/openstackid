@@ -138,24 +138,29 @@ final class RecoveryCodeService implements IRecoveryCodeService
         // a single transaction() call: nesting another one (e.g. through the audit
         // service) inside it would let an inner failure close the entity manager
         // under this still-running outer transaction
-        $this->tx_service->transaction(function () use ($user) {
+        $revoked_devices = $this->tx_service->transaction(function () use ($user) {
             $user->disable2FA();
             $this->user_repository->add($user, false);
             $this->repository->deleteAllForUser($user);
-            $this->trusted_device_repository->revokeAllForUser($user);
+            return $this->trusted_device_repository->revokeAllActiveForUser($user);
         });
 
         // Best-effort: 2FA is already disabled and the codes and devices are gone,
         // an audit-logging failure must not make the caller believe it did not happen.
-        try {
-            $this->audit_service->log(
-                $user,
-                TwoFactorAuditLog::EventDeviceRevoked,
-                $user->getTwoFactorMethod(),
-                IPHelper::getUserIp()
-            );
-        } catch (\Throwable $ex) {
-            Log::warning($ex);
+        // One device_revoked event per device actually revoked, with its device_id
+        // (same semantics as DeviceTrustService::removeTrustedDevices).
+        foreach ($revoked_devices as $device) {
+            try {
+                $this->audit_service->log(
+                    $user,
+                    TwoFactorAuditLog::EventDeviceRevoked,
+                    $user->getTwoFactorMethod(),
+                    IPHelper::getUserIp(),
+                    ['device_id' => $device->getId()]
+                );
+            } catch (\Throwable $ex) {
+                Log::warning($ex);
+            }
         }
     }
 
