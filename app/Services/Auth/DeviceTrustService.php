@@ -131,12 +131,7 @@ final class DeviceTrustService implements IDeviceTrustService
     public function removeTrustedDevices(User $user): array
     {
         $devices = $this->tx_service->transaction(function () use ($user) {
-            $devices = $this->repository->getActiveByUser($user);
-            foreach ($devices as $device) {
-                $device->setIsRevoked(true);
-                $this->repository->add($device, false);
-            }
-            return $devices;
+            return $this->repository->revokeAllActiveForUser($user);
         });
 
         foreach ($devices as $device) {

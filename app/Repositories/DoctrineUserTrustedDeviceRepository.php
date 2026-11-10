@@ -75,4 +75,14 @@ final class DoctrineUserTrustedDeviceRepository
 
         return $this->matching($criteria)->toArray();
     }
+
+    public function revokeAllActiveForUser(User $user): array
+    {
+        $devices = $this->getActiveByUser($user);
+        foreach ($devices as $device) {
+            $device->setIsRevoked(true);
+            $this->add($device, false);
+        }
+        return $devices;
+    }
 }

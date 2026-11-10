@@ -288,11 +288,15 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
         ];
 
         $this->repo
-            ->shouldReceive('getActiveByUser')
+            ->shouldReceive('revokeAllActiveForUser')
             ->once()
             ->with($user)
-            ->andReturn($devices);
-        $this->repo->shouldReceive('add')->twice();
+            ->andReturnUsing(function () use ($devices) {
+                foreach ($devices as $device) {
+                    $device->setIsRevoked(true);
+                }
+                return $devices;
+            });
 
         $this->audit_service
             ->shouldReceive('log')
@@ -311,8 +315,7 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     {
         $user = Mockery::mock(User::class);
 
-        $this->repo->shouldReceive('getActiveByUser')->once()->with($user)->andReturn([]);
-        $this->repo->shouldNotReceive('add');
+        $this->repo->shouldReceive('revokeAllActiveForUser')->once()->with($user)->andReturn([]);
         $this->audit_service->shouldNotReceive('log');
 
         $this->assertSame([], $this->service->removeTrustedDevices($user));
@@ -324,8 +327,10 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
         $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
         $device = $this->makeDevice(expired: false, revoked: false);
-        $this->repo->shouldReceive('getActiveByUser')->once()->andReturn([$device]);
-        $this->repo->shouldReceive('add')->once();
+        $this->repo->shouldReceive('revokeAllActiveForUser')->once()->andReturnUsing(function () use ($device) {
+            $device->setIsRevoked(true);
+            return [$device];
+        });
         $this->audit_service->shouldReceive('log')->once()->andThrow(new \RuntimeException('audit down'));
 
         $revoked = $this->service->removeTrustedDevices($user);

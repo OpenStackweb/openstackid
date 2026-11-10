@@ -37,4 +37,14 @@ interface IUserTrustedDeviceRepository extends IBaseRepository
      * @return UserTrustedDevice[]
      */
     public function getActiveByUser(User $user): array;
+
+    /**
+     * Marks every active (non-revoked, non-expired) trusted device of the user as revoked
+     * and returns them. Revokes entity by entity and opens no transaction of its own:
+     * the caller owns the transaction and logs one audit event per returned device
+     * after it commits.
+     *
+     * @return UserTrustedDevice[]
+     */
+    public function revokeAllActiveForUser(User $user): array;
 }
