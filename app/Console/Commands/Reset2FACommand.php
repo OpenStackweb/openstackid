@@ -72,7 +72,7 @@ final class Reset2FACommand extends Command
         // the service owns the side effects (flags, codes, devices) in one transaction
         $recovery_code_service->disableTwoFactor($user, null, null);
 
-        $operator = sprintf('%s@%s', get_current_user(), gethostname());
+        $operator = sprintf('%s@%s', self::processUser(), gethostname());
 
         try {
             $audit_service->log(
@@ -107,5 +107,19 @@ final class Reset2FACommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The OS user running this process. get_current_user() is not used: it
+     * returns the owner of the artisan script file, not who ran the command.
+     */
+    private static function processUser(): string
+    {
+        if (function_exists('posix_geteuid')) {
+            $uid = posix_geteuid();
+            $info = function_exists('posix_getpwuid') ? posix_getpwuid($uid) : false;
+            return is_array($info) && !empty($info['name']) ? $info['name'] : (string)$uid;
+        }
+        return get_current_user();
     }
 }
