@@ -42,19 +42,6 @@ final class DoctrineUserTrustedDeviceRepository
         return $result instanceof UserTrustedDevice ? $result : null;
     }
 
-    public function revokeAllForUser(User $user): void
-    {
-        $this->getEntityManager()
-            ->createQueryBuilder()
-            ->update($this->getBaseEntity(), 'd')
-            ->set('d.is_revoked', ':revoked')
-            ->where('d.user = :user')
-            ->setParameter('revoked', true)
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->execute();
-    }
-
     public function getActiveByUserAndIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice
     {
         $criteria = Criteria::create()
@@ -76,5 +63,15 @@ final class DoctrineUserTrustedDeviceRepository
             ->andWhere($this->buildActiveExpiryExpr());
 
         return $this->matching($criteria)->toArray();
+    }
+
+    public function revokeAllActiveForUser(User $user): array
+    {
+        $devices = $this->getActiveByUser($user);
+        foreach ($devices as $device) {
+            $device->setIsRevoked(true);
+            $this->add($device, false);
+        }
+        return $devices;
     }
 }

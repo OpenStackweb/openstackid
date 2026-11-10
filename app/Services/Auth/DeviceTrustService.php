@@ -20,6 +20,7 @@ use Auth\User;
 use DateTime;
 use DateInterval;
 use DateTimeZone;
+use Illuminate\Support\Facades\Log;
 use Utils\IPHelper;
 use Utils\Db\ITransactionService;
 
@@ -98,13 +99,32 @@ final class DeviceTrustService implements IDeviceTrustService
 
     public function removeTrustedDevices(User $user): void
     {
-        $this->repository->revokeAllForUser($user);
+        $devices = $this->tx_service->transaction(function () use ($user) {
+            return $this->repository->revokeAllActiveForUser($user);
+        });
 
-        $this->audit_service->log(
-            $user,
-            TwoFactorAuditLog::EventDeviceRevoked,
-            $user->getTwoFactorMethod(),
-            IPHelper::getUserIp()
-        );
+        foreach ($devices as $device) {
+            $this->logDeviceRevoked($user, $device);
+        }
+    }
+
+    /**
+     * Best-effort, after the revocation is committed: an audit failure must not
+     * fail an operation whose devices are already revoked, and audit_service->log()
+     * opens its own transaction, which cannot be nested inside ours.
+     */
+    private function logDeviceRevoked(User $user, UserTrustedDevice $device): void
+    {
+        try {
+            $this->audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventDeviceRevoked,
+                $user->getTwoFactorMethod(),
+                IPHelper::getUserIp(),
+                ['device_id' => $device->getId()]
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
     }
 }
