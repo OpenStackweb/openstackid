@@ -17,6 +17,7 @@ use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserRecoveryCode;
 use Auth\MFAConstants;
 use Auth\Repositories\IUserRecoveryCodeRepository;
+use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
@@ -42,6 +43,7 @@ final class RecoveryCodeService implements IRecoveryCodeService
     public function __construct(
         private readonly IUserRecoveryCodeRepository $repository,
         private readonly IUserRepository $user_repository,
+        private readonly IUserTrustedDeviceRepository $trusted_device_repository,
         private readonly ITransactionService $tx_service,
         private readonly ITwoFactorAuditService $audit_service,
     ) {
@@ -224,6 +226,68 @@ final class RecoveryCodeService implements IRecoveryCodeService
                 TwoFactorAuditLog::MethodRecovery,
                 IPHelper::getUserIp(),
                 ['batch_id' => $batch->getBatchId()]
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function disableTwoFactor(User $user, ?string $currentPassword, ?User $actor): void
+    {
+        // Group enforcement does not depend on the stored flag: disabling would only
+        // delete the recovery codes and trusted devices of a user who is still
+        // challenged at login. The console (null actor) is the manual recovery path
+        // (idp:reset-2fa) and stays allowed.
+        if (!is_null($actor) && $user->isTwoFactorEnforcedByGroup()) {
+            throw new ValidationException('Two-factor authentication is enforced by group membership and cannot be disabled.');
+        }
+
+        $is_self = !is_null($actor) && $actor->getId() === $user->getId();
+
+        if ($is_self) {
+            if ($user->hasPasswordSet()) {
+                if (!$user->checkPassword(trim((string)$currentPassword))) {
+                    throw new ValidationException('current_password is not correct.');
+                }
+            } elseif (!$this->isWithinEnrollmentWindow($user)) {
+                // Social-only account: no password to confirm. Proof of identity is a
+                // real 2FA challenge completed moments ago in this session.
+                throw new ValidationException(
+                    'Sign out and sign in again, then turn off two-factor authentication right after the sign-in.'
+                );
+            }
+        }
+
+        // a single transaction() call: nesting another one (e.g. through the audit
+        // service) inside it would let an inner failure close the entity manager
+        // under this still-running outer transaction
+        $this->tx_service->transaction(function () use ($user) {
+            // serializes with a concurrent regenerate: it also deletes and inserts
+            // codes. The lock re-hydrates $user, so it must precede disable2FA().
+            $this->repository->lockUserRow($user);
+            $user->disable2FA();
+            $user->setRecoveryCodesAcknowledgedAt(null);
+            $this->user_repository->add($user, false);
+            $this->repository->deleteAllForUser($user);
+            $this->trusted_device_repository->revokeAllForUser($user);
+        });
+
+        // Best-effort: 2FA is already disabled and the codes and devices are gone,
+        // an audit-logging failure must not make the caller believe it did not happen.
+        try {
+            $this->audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventEnrollmentChanged,
+                $user->getTwoFactorMethod(),
+                IPHelper::getUserIp(),
+                [
+                    'enabled'  => false,
+                    'actor_id' => $actor?->getId(),
+                    'reason'   => $is_self ? 'self' : (is_null($actor) ? 'console' : 'admin'),
+                ]
             );
         } catch (\Throwable $ex) {
             Log::warning($ex);

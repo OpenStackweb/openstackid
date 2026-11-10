@@ -105,4 +105,34 @@ interface IRecoveryCodeService
      * @return RecoveryCodesStatus remaining/total/low-threshold/acknowledged/enrollment-required standing
      */
     public function getStatus(User $user): RecoveryCodesStatus;
+
+    /**
+     * Disables 2FA for the user: clears two_factor_enabled, two_factor_enforced_at and
+     * recovery_codes_acknowledged_at, deletes every recovery code and revokes every
+     * trusted device, all in a single transaction under the users-row lock. An
+     * enrollment_changed audit event with metadata {enabled: false, actor_id, reason}
+     * is recorded best-effort afterwards; reason is self, admin or console.
+     *
+     * $actor identifies who performs the operation:
+     *  - null: a system/console operation (e.g. idp:reset-2fa), nothing is required;
+     *  - the same user: self-service. With a password, $currentPassword must match.
+     *    Without one (social-only, !hasPasswordSet()) the session must be inside the
+     *    recovery enrollment window (isWithinEnrollmentWindow());
+     *  - another user: an administrator acting on the account, no password is required.
+     *    Authorizing the administrator is the caller's responsibility.
+     *
+     * Group-enforced users cannot be disabled by a user or an administrator: enforcement
+     * is derived from group membership (User::isTwoFactorEnforcedByGroup()), so the call
+     * is refused. The console path is allowed (manual recovery); such a user is still
+     * challenged at login afterwards.
+     *
+     * @param User $user
+     * @param string|null $currentPassword
+     * @param User|null $actor
+     * @return void
+     * @throws ValidationException if the user is enforced by group and $actor is not null, if
+     *         the actor is the user and the password does not match, or the user has no password
+     *         and the session is outside the enrollment window
+     */
+    public function disableTwoFactor(User $user, ?string $currentPassword, ?User $actor): void;
 }
