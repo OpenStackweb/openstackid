@@ -275,20 +275,33 @@ final class DeviceTrustServiceTest extends BrowserKitTestCase
     // removeTrustedDevices
     // -------------------------------------------------------------------------
 
-    public function testRemoveTrustedDevicesRevokesAll(): void
+    public function testRemoveTrustedDevicesRevokesAllAndLogsOneEventPerDevice(): void
     {
         $user = Mockery::mock(User::class);
         $user->shouldReceive('getTwoFactorMethod')->andReturn(User::MFAMethod_OTP);
 
+        $devices = [new UserTrustedDevice(), new UserTrustedDevice()];
+
         $this->repo
-            ->shouldReceive('revokeAllForUser')
+            ->shouldReceive('revokeAllActiveForUser')
             ->once()
-            ->with($user);
+            ->with($user)
+            ->andReturn($devices);
 
         $this->audit_service
             ->shouldReceive('log')
-            ->once()
-            ->with($user, \App\libs\Auth\Models\TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'));
+            ->twice()
+            ->with($user, \App\libs\Auth\Models\TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'), Mockery::type('array'));
+
+        $this->service->removeTrustedDevices($user);
+    }
+
+    public function testRemoveTrustedDevicesWithoutActiveDevicesLogsNothing(): void
+    {
+        $user = Mockery::mock(User::class);
+
+        $this->repo->shouldReceive('revokeAllActiveForUser')->once()->with($user)->andReturn([]);
+        $this->audit_service->shouldNotReceive('log');
 
         $this->service->removeTrustedDevices($user);
     }

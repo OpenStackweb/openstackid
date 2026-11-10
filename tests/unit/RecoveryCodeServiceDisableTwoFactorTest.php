@@ -13,6 +13,7 @@
  **/
 
 use App\libs\Auth\Models\TwoFactorAuditLog;
+use App\libs\Auth\Models\UserTrustedDevice;
 use App\Services\Auth\ITwoFactorAuditService;
 use App\Services\Auth\RecoveryCodeService;
 use Auth\Repositories\IUserRecoveryCodeRepository;
@@ -87,10 +88,11 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         $user->shouldReceive('disable2FA')->once();
         $this->user_repo->shouldReceive('add')->once()->with($user, false);
         $this->code_repo->shouldReceive('deleteAllForUser')->once()->with($user)->andReturn(10);
-        $this->device_repo->shouldReceive('revokeAllForUser')->once()->with($user);
+        $this->device_repo->shouldReceive('revokeAllActiveForUser')->once()->with($user)
+            ->andReturn([new UserTrustedDevice(), new UserTrustedDevice()]);
         $this->audit_service->shouldReceive('log')
-            ->once()
-            ->with($user, TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'));
+            ->twice()
+            ->with($user, TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'), Mockery::type('array'));
     }
 
     public function testConsoleActorNeedsNoPassword(): void
@@ -128,7 +130,7 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         $user->shouldNotReceive('disable2FA');
         $this->tx_service->shouldNotReceive('transaction');
         $this->code_repo->shouldNotReceive('deleteAllForUser');
-        $this->device_repo->shouldNotReceive('revokeAllForUser');
+        $this->device_repo->shouldNotReceive('revokeAllActiveForUser');
         $this->audit_service->shouldNotReceive('log');
 
         $this->expectException(ValidationException::class);
@@ -160,11 +162,23 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         $user->shouldNotReceive('disable2FA');
         $this->tx_service->shouldNotReceive('transaction');
         $this->code_repo->shouldNotReceive('deleteAllForUser');
-        $this->device_repo->shouldNotReceive('revokeAllForUser');
+        $this->device_repo->shouldNotReceive('revokeAllActiveForUser');
         $this->audit_service->shouldNotReceive('log');
 
         $this->expectException(ValidationException::class);
         $this->service->disableTwoFactor($user, 'anything', $user);
+    }
+
+    public function testNoActiveDevicesLogsNoDeviceRevokedEvent(): void
+    {
+        $user = $this->buildUser(1);
+        $user->shouldReceive('disable2FA')->once();
+        $this->user_repo->shouldReceive('add')->once();
+        $this->code_repo->shouldReceive('deleteAllForUser')->once()->andReturn(0);
+        $this->device_repo->shouldReceive('revokeAllActiveForUser')->once()->andReturn([]);
+        $this->audit_service->shouldNotReceive('log');
+
+        $this->service->disableTwoFactor($user, null, null);
     }
 
     public function testAuditFailureDoesNotFailTheOperation(): void
@@ -173,7 +187,7 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         $user->shouldReceive('disable2FA')->once();
         $this->user_repo->shouldReceive('add')->once();
         $this->code_repo->shouldReceive('deleteAllForUser')->once()->andReturn(0);
-        $this->device_repo->shouldReceive('revokeAllForUser')->once();
+        $this->device_repo->shouldReceive('revokeAllActiveForUser')->once()->andReturn([new UserTrustedDevice()]);
         $this->audit_service->shouldReceive('log')->once()->andThrow(new \RuntimeException('audit down'));
 
         $this->service->disableTwoFactor($user, null, null);
