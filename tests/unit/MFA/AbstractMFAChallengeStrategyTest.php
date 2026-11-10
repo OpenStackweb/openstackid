@@ -163,7 +163,9 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $recoveryCode->shouldReceive('markUsed')->once();
 
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
-        $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
+        // Lock order: the users row is locked before any code is read (SDS idp-mfa.md §3.5).
+        $repo->shouldReceive('lockUserRow')->with($user)->once()->ordered();
+        $repo->shouldReceive('getUnusedByUser')->with($user)->ordered()->andReturn([$recoveryCode]);
         // Lock is taken before mutating (regression guard for 3357348455).
         $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once()->andReturn(true);
 
@@ -193,6 +195,8 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $recoveryCode->shouldNotReceive('markUsed');
 
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
+        // Lock order: the users row is locked before any code is read (SDS idp-mfa.md §3.5).
+        $repo->shouldReceive('lockUserRow')->with($user)->once()->ordered();
         $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
         $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once()->andReturn(true);
         $repo->shouldNotReceive('add');
@@ -222,6 +226,8 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $recoveryCode->shouldNotReceive('markUsed');
 
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
+        // Lock order: the users row is locked before any code is read (SDS idp-mfa.md §3.5).
+        $repo->shouldReceive('lockUserRow')->with($user)->once()->ordered();
         $repo->shouldReceive('getUnusedByUser')->with($user)->andReturn([$recoveryCode]);
         $repo->shouldReceive('refreshExclusiveLock')->with($recoveryCode)->once()->andReturn(false);
 
@@ -245,6 +251,8 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $recoveryCode->shouldNotReceive('markUsed');
 
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
+        // Lock order: the users row is locked before any code is read (SDS idp-mfa.md §3.5).
+        $repo->shouldReceive('lockUserRow')->with($user)->once()->ordered();
         $repo->shouldReceive('getUnusedByUser')->andReturn([$recoveryCode]);
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {
@@ -263,6 +271,8 @@ class AbstractMFAChallengeStrategyTest extends TestCase
         $user = new User();
 
         $repo = \Mockery::mock(IUserRecoveryCodeRepository::class);
+        // Lock order: the users row is locked before any code is read (SDS idp-mfa.md §3.5).
+        $repo->shouldReceive('lockUserRow')->with($user)->once()->ordered();
         $repo->shouldReceive('getUnusedByUser')->andReturn([]);
 
         $strategy = new class($repo) extends AbstractMFAChallengeStrategy {

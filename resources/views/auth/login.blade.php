@@ -38,6 +38,8 @@
             resend2faAction: '{{ URL::action("UserController@resend2FA") }}',
             cancelLogin: '{{ URL::action("UserController@resetLogin") }}',
             recovery2faAction: '{{ URL::action("UserController@verify2FARecovery") }}',
+            enrollRecoveryCodesAction: '{{ URL::action("Api\\UserApiController@enrollRecoveryCodes") }}',
+            acknowledgeRecoveryCodesAction: '{{ URL::action("Api\\UserApiController@acknowledgeRecoveryCodes") }}',
             mfaMethod: '{{ Session::has("mfa_method") ? Session::get("mfa_method") : "email_otp" }}',
             authError: authError,
             captchaPublicKey: '{{ Config::get("services.turnstile.key") }}',
@@ -106,6 +108,8 @@
         window.RESEND_2FA_ENDPOINT = config.resend2faAction;
         window.CANCEL_LOGIN_ENDPOINT = config.cancelLogin;
         window.RECOVERY_2FA_ENDPOINT = config.recovery2faAction;
+        window.ENROLL_RECOVERY_CODES_ENDPOINT = config.enrollRecoveryCodesAction;
+        window.ACKNOWLEDGE_RECOVERY_CODES_ENDPOINT = config.acknowledgeRecoveryCodesAction;
     </script>
     {!! script_to('assets/login.js') !!}
 @append

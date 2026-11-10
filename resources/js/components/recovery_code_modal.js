@@ -13,8 +13,12 @@ import styles from "./recovery_codes.module.scss";
 
 const ACK_DELAY_SECONDS = 5;
 
-const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge}) => {
+const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge, error = null, busy = false, onRetry}) => {
     const [secondsLeft, setSecondsLeft] = useState(ACK_DELAY_SECONDS);
+    // Identity of the displayed batch. A different batch shown while the modal stays open
+    // (the login page re-enrolls after a 412) must get its own full delay: keyed by the
+    // codes' content, so a parent re-rendering with an equal array does not restart it.
+    const batchKey = codes ? codes.join("|") : "";
 
     useEffect(() => {
         if (!open) return undefined;
@@ -25,7 +29,7 @@ const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge}) => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [open]);
+    }, [open, batchKey]);
 
     return (
         <Dialog
@@ -45,12 +49,28 @@ const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge}) => {
                     </Typography>
                 </Box>
                 {codes && <RecoveryCodeDisplay codes={codes} email={email} appName={appName}/>}
+                {error && (
+                    <Typography variant="body2" color="error" role="alert" data-testid="recovery-code-modal-error">
+                        {error}
+                    </Typography>
+                )}
             </DialogContent>
             <DialogActions>
+                {error && onRetry && (
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        disabled={busy}
+                        onClick={onRetry}
+                        data-testid="retry-acknowledge-button"
+                    >
+                        Retry
+                    </Button>
+                )}
                 <Button
                     variant="contained"
                     color="primary"
-                    disabled={secondsLeft > 0}
+                    disabled={secondsLeft > 0 || busy}
                     onClick={onAcknowledge}
                     data-testid="acknowledge-codes-button"
                 >

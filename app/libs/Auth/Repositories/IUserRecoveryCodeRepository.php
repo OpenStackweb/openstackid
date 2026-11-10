@@ -38,4 +38,23 @@ interface IUserRecoveryCodeRepository extends IBaseRepository
      * Delete every recovery code for a user (used when regenerating).
      */
     public function deleteAllForUser(User $user): int;
+
+    /**
+     * Takes a PESSIMISTIC_WRITE lock on the user's `users` row and re-hydrates
+     * the entity from it, so state read afterwards (recovery_codes_acknowledged_at)
+     * is current. Every path that writes or deletes the user's recovery codes
+     * calls this first, inside its transaction, and only then touches
+     * user_recovery_codes: one lock order everywhere (users row, then codes)
+     * rules out deadlocks (SDS idp-mfa.md §3.5). Must run inside a transaction.
+     */
+    public function lockUserRow(User $user): void;
+
+    /**
+     * Identifier of the user's current batch: MIN(id) over all of the user's
+     * rows (used and unused), or null when the user has none. Regeneration
+     * deletes every previous row under the user lock, so this always identifies
+     * the current batch. Flushes pending inserts first so a batch created in the
+     * caller's transaction is visible.
+     */
+    public function getCurrentBatchId(User $user): ?int;
 }

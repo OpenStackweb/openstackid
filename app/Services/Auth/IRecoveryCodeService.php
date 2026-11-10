@@ -26,23 +26,26 @@ interface IRecoveryCodeService
      * Invalidates every existing recovery code for the user and generates a fresh
      * batch. Plaintext codes are returned once and are never persisted/exposed again.
      *
+     * A user with a password must confirm it. A user without one (social-only
+     * accounts) is accepted instead while the session is inside the enrollment
+     * window (isWithinEnrollmentWindow()).
+     *
      * @param User $user
-     * @param string $currentPassword
-     * @return string[] plaintext codes formatted as XXXX-XXXX
-     * @throws ValidationException if $currentPassword does not match the user's password
+     * @param string|null $currentPassword
+     * @return RecoveryCodesBatch codes formatted as XXXX-XXXX plus the batch identifier
+     * @throws ValidationException if the password does not match, or a passwordless user is outside the window
      */
-    public function regenerateRecoveryCodes(User $user, string $currentPassword): array;
+    public function regenerateRecoveryCodes(User $user, ?string $currentPassword): RecoveryCodesBatch;
 
     /**
      * Invalidates every existing recovery code for the user and generates a fresh
-     * batch, without requiring password confirmation. Intended for first-time
-     * generation right after 2FA enrollment, where the user's identity is already
-     * established by the current session.
+     * batch, without requiring password confirmation. Callers must already have
+     * established the user's identity (enrollment endpoint: recent 2FA challenge).
      *
      * @param User $user
-     * @return string[] plaintext codes formatted as XXXX-XXXX
+     * @return RecoveryCodesBatch codes formatted as XXXX-XXXX plus the batch identifier
      */
-    public function generateRecoveryCodes(User $user): array;
+    public function generateRecoveryCodes(User $user): RecoveryCodesBatch;
 
     /**
      * Enrolls the user into the given 2FA method and generates the first batch
@@ -51,10 +54,45 @@ interface IRecoveryCodeService
      *
      * @param User $user
      * @param string $method
-     * @return string[] plaintext codes formatted as XXXX-XXXX
+     * @return RecoveryCodesBatch codes formatted as XXXX-XXXX plus the batch identifier
      * @throws ValidationException if $method is not a valid/enabled 2FA method
      */
-    public function enableTwoFactorAndGenerateCodes(User $user, string $method): array;
+    public function enableTwoFactorAndGenerateCodes(User $user, string $method): RecoveryCodesBatch;
+
+    /**
+     * Confirms that the user saved the batch they were shown. Runs under the
+     * users-row lock: the confirmation is bound to the exact batch.
+     *
+     * @param User $user
+     * @param int $batchId identifier returned when the batch was generated
+     * @return bool false when $batchId is not the user's current batch (nothing
+     *              changes; the controller answers 412). True otherwise, also when
+     *              the batch was already acknowledged (no second audit row).
+     */
+    public function acknowledgeRecoveryCodes(User $user, int $batchId): bool;
+
+    /**
+     * @param User $user
+     * @return int|null smallest id of the user's recovery-code rows, null when none
+     */
+    public function getCurrentBatchId(User $user): ?int;
+
+    /**
+     * shouldRequire2FA() AND (no unused codes OR the batch is unacknowledged).
+     *
+     * @param User $user
+     * @return bool
+     */
+    public function requiresRecoveryCodeEnrollment(User $user): bool;
+
+    /**
+     * Whether the session completed a real 2FA challenge for this user within
+     * two_factor.recovery_enrollment_window seconds (MFAConstants::SESSION_KEY_COMPLETED_AT).
+     *
+     * @param User $user
+     * @return bool
+     */
+    public function isWithinEnrollmentWindow(User $user): bool;
 
     /**
      * @param User $user
@@ -64,7 +102,7 @@ interface IRecoveryCodeService
 
     /**
      * @param User $user
-     * @return RecoveryCodesStatus remaining/total/low-threshold standing for the user
+     * @return RecoveryCodesStatus remaining/total/low-threshold/acknowledged/enrollment-required standing
      */
     public function getStatus(User $user): RecoveryCodesStatus;
 }

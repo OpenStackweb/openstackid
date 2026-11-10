@@ -39,6 +39,7 @@ interface ITwoFactorRateLimitService
     public const ActionRecovery = 'recovery';
     public const ActionResend   = 'resend';
     public const ActionOtp      = 'otp';
+    public const ActionEnroll   = 'enroll';
 
     public const RATE_LIMIT_ERROR_CODE = MFAConstants::ERROR_CODE_RATE_LIMIT;
     public const RATE_LIMIT_MESSAGE    = 'Too many attempts. Please try again later.';
