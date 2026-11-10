@@ -145,6 +145,28 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         $this->service->disableTwoFactor($user, null, $user);
     }
 
+    /**
+     * A passwordless (social-only) user can never satisfy the self-service
+     * password check: checkPassword() is false for an empty password, whatever
+     * is supplied. The caller must obtain another proof of identity (a recent
+     * 2FA challenge) and call this service as console/admin instead.
+     * See the IRecoveryCodeService::disableTwoFactor PHPDoc.
+     */
+    public function testSelfServiceForPasswordlessUserIsRejectedAndChangesNothing(): void
+    {
+        $user = $this->buildUser(1);
+        $user->shouldReceive('hasPasswordSet')->andReturn(false);
+        $user->shouldReceive('checkPassword')->once()->andReturn(false);
+        $user->shouldNotReceive('disable2FA');
+        $this->tx_service->shouldNotReceive('transaction');
+        $this->code_repo->shouldNotReceive('deleteAllForUser');
+        $this->device_repo->shouldNotReceive('revokeAllForUser');
+        $this->audit_service->shouldNotReceive('log');
+
+        $this->expectException(ValidationException::class);
+        $this->service->disableTwoFactor($user, 'anything', $user);
+    }
+
     public function testAuditFailureDoesNotFailTheOperation(): void
     {
         $user = $this->buildUser(1);

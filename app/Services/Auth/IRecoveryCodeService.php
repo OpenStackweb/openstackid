@@ -79,6 +79,13 @@ interface IRecoveryCodeService
      *  - another user: an administrator acting on the account, no password is required.
      *    Authorizing the administrator is the caller's responsibility.
      *
+     * Passwordless users (social-only accounts, !$user->hasPasswordSet()) can never
+     * pass the self-service password check, as User::checkPassword() returns false
+     * for an empty password, so self-service always throws for them. Such a caller
+     * must first require another proof of identity (under SDS rev 2.5, a recent 2FA
+     * challenge: MFAConstants::SESSION_KEY_COMPLETED_AT) and only then invoke this
+     * method on the user's behalf with $actor = null.
+     *
      * The caller is responsible for emitting the settings_changed audit event, as only
      * it knows the context (reason, actor, operator).
      *
