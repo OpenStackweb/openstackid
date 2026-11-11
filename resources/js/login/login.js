@@ -992,7 +992,12 @@ class LoginPage extends React.Component {
                   variant="outlined"
                   className={styles.valid_user_name_chip}
                   label={this.state.user_name}
-                  onDelete={this.handleDelete}
+                  // The sign-in already completed server-side while the low
+                  // recovery-codes warning is pending, so switching accounts
+                  // there would only strand the user beside a stale redirect.
+                  onDelete={
+                    this.state.lowRecoveryCodesWarning ? undefined : this.handleDelete
+                  }
                 />
               )}
             </Typography>
@@ -1026,6 +1031,7 @@ class LoginPage extends React.Component {
             )}
             {this.state.lowRecoveryCodesWarning && (
               <div
+                role="alert"
                 className={recoveryCodesStyles.low_code_warning}
                 data-testid="low-recovery-codes-warning"
               >
@@ -1036,6 +1042,9 @@ class LoginPage extends React.Component {
                   locked out.
                 </Typography>
                 <Button
+                  // The verify form that held focus unmounts when the warning
+                  // appears; move keyboard focus to the only way forward.
+                  autoFocus
                   variant="contained"
                   color="primary"
                   onClick={this.onContinueAfterLowRecoveryCodes}

@@ -21,6 +21,7 @@ jest.mock('../../../resources/js/login/actions', () => ({
 delete window.location;
 window.location = { href: '', reload: jest.fn() };
 
+import { render, screen, act } from '@testing-library/react';
 import { LoginPage } from '../../../resources/js/login/login';
 import { verify2FA, verifyRecoveryCode, cancelLogin, resend2FA } from '../../../resources/js/login/actions';
 
@@ -328,6 +329,61 @@ describe('LoginPage', () => {
       await flush();
       expect(window.location.href).toBe('https://idp.test/authorize');
       expect(inst.state.lowRecoveryCodesWarning).toBeNull();
+    });
+  });
+
+  // ─── Low recovery-codes warning — rendered transition ──────────────────────
+
+  describe('low recovery-codes warning — rendered', () => {
+    beforeEach(() => {
+      window.location.href = '';
+      verify2FA.mockReset();
+      sessionStorage.clear();
+    });
+
+    async function renderAndVerifyOtp() {
+      verify2FA.mockReturnValue(
+        Promise.resolve({
+          response: { redirect_url: 'https://idp.test/authorize', recovery_codes_remaining: 1 },
+        }),
+      );
+      const ref = React.createRef();
+      render(
+        <LoginPage
+          {...PROPS}
+          ref={ref}
+          flow={FLOW.MFA}
+          userName="user@example.com"
+          user_fullname="Test User"
+        />,
+      );
+      // Baseline: before verification the account chip can be removed.
+      expect(document.querySelector('.MuiChip-deleteIcon')).not.toBeNull();
+      await act(async () => {
+        ref.current.setState({ twoFactorCode: '123456' });
+      });
+      await act(async () => {
+        ref.current.onVerify2FA();
+        await flush();
+      });
+      return ref;
+    }
+
+    it('announces the warning and moves focus to Continue when the OTP form unmounts', async () => {
+      await renderAndVerifyOtp();
+
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveAttribute('data-testid', 'low-recovery-codes-warning');
+      expect(screen.getByTestId('continue-after-low-recovery-codes')).toHaveFocus();
+      expect(window.location.href).toBe('');
+    });
+
+    it('hides the account chip delete action while the warning is pending', async () => {
+      await renderAndVerifyOtp();
+
+      // MUI renders the Chip delete icon only when onDelete is provided.
+      expect(document.querySelector('.MuiChip-deleteIcon')).toBeNull();
+      expect(cancelLogin).not.toHaveBeenCalled();
     });
   });
 
