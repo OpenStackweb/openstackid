@@ -200,6 +200,9 @@ Route::group([
             Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
             Route::post('recovery-codes/regenerate', ['middleware' => ['csrf'], 'uses' => "UserApiController@regenerateRecoveryCodes"]);
             Route::post('2fa/enable', ['middleware' => ['csrf'], 'uses' => "UserApiController@enableTwoFactor"]);
+            Route::get('2fa/devices', "UserApiController@getMyTrustedDevices");
+            Route::delete('2fa/devices', ['middleware' => ['csrf'], 'uses' => "UserApiController@revokeAllMyTrustedDevices"]);
+            Route::delete('2fa/devices/{id}', ['middleware' => ['csrf'], 'uses' => "UserApiController@revokeMyTrustedDevice"]);
         });
 
         Route::get('access-tokens', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);
