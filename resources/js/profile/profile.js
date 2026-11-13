@@ -29,6 +29,7 @@ import Divider from "@material-ui/core/Divider";
 import Link from "@material-ui/core/Link";
 import PasswordChangePanel from "../components/password_change_panel";
 import TwoFactorSection from "../components/two_factor_section";
+import TrustedDevicesSection from "../components/trusted_devices_section";
 import LoadingIndicator from "../components/loading_indicator";
 import TopLogo from "../components/top_logo/top_logo";
 import {handleErrorResponse} from "../utils";
@@ -795,6 +796,17 @@ const ProfilePage = ({
                                         appName={appName}/>
                                 </Box>
                             </Grid>
+                            {twoFactorEnabled && (
+                                <Grid item xs={12}>
+                                    <Box className={styles.recovery_codes_section}>
+                                        <Typography variant="subtitle1"
+                                                    className={styles.recovery_codes_section_title}>
+                                            Trusted Devices
+                                        </Typography>
+                                        <TrustedDevicesSection/>
+                                    </Box>
+                                </Grid>
+                            )}
                             <Grid item spacing={2} container direction="row">
                                 <Grid item xs={6}>
                                     <FormControlLabel

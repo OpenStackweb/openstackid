@@ -220,6 +220,38 @@ class TwoFactorRepositoriesTest extends TestCase
         if ($stale) { EntityManager::remove($stale); EntityManager::flush(); }
     }
 
+    public function testRevokeAllActiveForUserRevokesOnlyActiveDevicesAndReturnsThem(): void
+    {
+        $repo    = App::make(IUserTrustedDeviceRepository::class);
+        $now     = new \DateTime('now', new \DateTimeZone('UTC'));
+        $future  = (clone $now)->modify('+30 days');
+        $past    = (clone $now)->modify('-1 day');
+
+        $active  = $this->buildDevice(hash('sha256', 'ra-active-' . uniqid()), $now, $future);
+        $expired = $this->buildDevice(hash('sha256', 'ra-expired-' . uniqid()), $now, $past);
+        $revoked = $this->buildDevice(hash('sha256', 'ra-revoked-' . uniqid()), $now, $future);
+        $revoked->setIsRevoked(true);
+        foreach ([$active, $expired, $revoked] as $d) { EntityManager::persist($d); }
+        EntityManager::flush();
+        $ids = array_map(fn($d) => $d->getId(), [$active, $expired, $revoked]);
+        EntityManager::clear();
+
+        $result = $repo->revokeAllActiveForUser($this->user);
+        EntityManager::flush();
+
+        $this->assertCount(1, $result);
+        $this->assertSame($ids[0], $result[0]->getId());
+        $this->assertTrue($result[0]->isRevoked());
+        $this->assertSame([], $repo->getActiveByUser($this->user));
+
+        EntityManager::clear();
+        foreach ($ids as $id) {
+            $stale = EntityManager::find(UserTrustedDevice::class, $id);
+            if ($stale) { EntityManager::remove($stale); }
+        }
+        EntityManager::flush();
+    }
+
     public function testDuplicateDeviceIdentifierCannotOccur(): void
     {
         $connection = EntityManager::getConnection();

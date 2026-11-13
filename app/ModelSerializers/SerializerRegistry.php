@@ -16,6 +16,7 @@ use App\ModelSerializers\Auth\PublicGroupSerializer;
 use App\ModelSerializers\Auth\PublicUserSerializer;
 use App\ModelSerializers\Auth\UserActionSerializer;
 use App\ModelSerializers\Auth\UserRegistrationRequestSerializer;
+use App\ModelSerializers\Auth\UserTrustedDeviceSerializer;
 use App\ModelSerializers\OAuth2\AccessTokenSerializer;
 use App\ModelSerializers\OAuth2\ApiEndpointSerializer;
 use App\ModelSerializers\OAuth2\ApiScopeGroupSerializer;
@@ -82,6 +83,8 @@ final class SerializerRegistry
         ];
 
         $this->registry["UserAction"] = UserActionSerializer::class;
+
+        $this->registry["UserTrustedDevice"] = UserTrustedDeviceSerializer::class;
 
         $this->registry["UserRegistrationRequest"] = UserRegistrationRequestSerializer::class;
 
