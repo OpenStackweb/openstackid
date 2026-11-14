@@ -560,4 +560,54 @@ class ClientApiTest extends BrowserKitTestCase {
         $this->assertResponseStatus(412);
     }
 
+    public function testUpdateIgnoresCredentialsAndOwner(){
+
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_test_app']);
+        $id         = $client->id;
+        $client_id  = $client->getClientId();
+        $secret     = $client->getClientSecret();
+        $expires_at = $client->getClientSecretExpiration();
+        $owner_id   = $client->getOwner()->getId();
+
+        $this->action("PUT", "Api\\ClientApiController@update",
+            [
+                'id'                       => $id,
+                'app_name'                 => 'oauth2_test_app',
+                'application_type'         => $client->getApplicationType(),
+                'client_id'                => 'hijacked.client.id',
+                'client_secret'            => 'short',
+                'client_secret_expires_at' => time() + 31536000,
+                'owner'                    => '123',
+            ],
+            [], [], []);
+
+        $this->assertResponseStatus(201);
+
+        EntityManager::clear();
+        $client = EntityManager::getRepository(Client::class)->find($id);
+        $this->assertEquals($client_id, $client->getClientId());
+        $this->assertEquals($secret, $client->getClientSecret());
+        $this->assertEquals($expires_at, $client->getClientSecretExpiration());
+        $this->assertEquals($owner_id, $client->getOwner()->getId());
+    }
+
+    public function testRegenerateClientSecretStillRotatesAndDispatchesEvent(){
+
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_test_app']);
+        $id        = $client->id;
+        $client_id = $client->getClientId();
+        $old       = $client->getClientSecret();
+
+        $dispatched = [];
+        \Illuminate\Support\Facades\Event::listen('oauth2.client.regenerate.secret', function ($cid) use (&$dispatched) {
+            $dispatched[] = $cid;
+        });
+
+        $new_client = App::make(ClientService::class)->regenerateClientSecret($id);
+
+        $this->assertNotEquals($old, $new_client->getClientSecret());
+        $this->assertEquals(64, strlen($new_client->getClientSecret()));
+        $this->assertEquals([$client_id], $dispatched);
+    }
+
 }
