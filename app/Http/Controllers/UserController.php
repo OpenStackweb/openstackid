@@ -806,8 +806,14 @@ final class UserController extends OpenIdController
             // code with no way to recover it client-side. A real top-level navigation to
             // this URL lets the browser complete that chain natively instead - CORS never
             // applies to page navigations, only to XHR/fetch.
+            //
+            // The recovery-codes standing rides along (same as verify2FARecovery()) so
+            // the login page can warn the user when they are running low on codes.
             $redirect = $this->login_strategy->postLogin();
-            return $this->ok(['redirect_url' => $redirect->getTargetUrl()]);
+            return $this->ok(array_merge(
+                ['redirect_url' => $redirect->getTargetUrl()],
+                $this->recoveryCodesStatusOrEmpty($user)
+            ));
         } catch (ValidationException $ex) {
             Log::warning($ex);
             return $this->error412($ex->getMessages());
@@ -905,7 +911,7 @@ final class UserController extends OpenIdController
             $redirect = $this->login_strategy->postLogin();
             return $this->ok(array_merge(
                 ['redirect_url' => $redirect->getTargetUrl()],
-                $this->recovery_code_service->getStatus($user)->toArray()
+                $this->recoveryCodesStatusOrEmpty($user)
             ));
         } catch (ValidationException $ex) {
             Log::warning($ex);
@@ -1004,6 +1010,26 @@ final class UserController extends OpenIdController
      *
      * @return void
      */
+    /**
+     * Recovery-codes standing for the post-verification response, best-effort.
+     * Callers only reach this once the second factor is redeemed, the session is
+     * established and postLogin() may already have consumed the OAuth2 memento,
+     * so a failure here must not turn the sign-in into a 500 that drops
+     * redirect_url. The login page navigates directly when the fields are absent.
+     *
+     * @param User $user
+     * @return array<string,int> RecoveryCodesStatus::toArray(), or [] on failure
+     */
+    private function recoveryCodesStatusOrEmpty(User $user): array
+    {
+        try {
+            return $this->recovery_code_service->getStatus($user)->toArray();
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+            return [];
+        }
+    }
+
     private function clearMFAUISessionState(): void
     {
         Session::forget('flow');
