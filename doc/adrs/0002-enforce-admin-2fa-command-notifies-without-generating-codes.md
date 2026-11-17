@@ -22,8 +22,9 @@ later run (they already had unused codes) and never notified.
 
 - **Only notifies.** It sends `TwoFactorEnforcedMail` to every user of the enforced groups. It never generates
   recovery codes and never touches `two_factor_enabled`, `two_factor_method` or `two_factor_enforced_at`.
-  Users get their codes from the profile ("Enable Two-Factor Authentication" generates the first batch,
-  "Regenerate Codes" replaces it), as stated in ADR 0001. The mail links to the profile and carries no codes.
+  Users get their codes from the profile with "Regenerate Codes" (group-enforced users never see "Enable
+  Two-Factor Authentication": `two_factor_enabled` reflects `shouldRequire2FA()`), as stated in ADR 0001.
+  The mail links to the profile and carries no codes.
 - **The audit row is the "already notified" marker.** After `Mail::send` succeeds it writes an
   `enrollment_changed` event with metadata `source=enforce-admin-2fa`. Users with such a row are skipped.
   Because the row is written only after the mail was sent, a re-run retries exactly the users whose mail failed.
