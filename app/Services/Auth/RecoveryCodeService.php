@@ -16,6 +16,7 @@ namespace App\Services\Auth;
 use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserRecoveryCode;
 use Auth\Repositories\IUserRecoveryCodeRepository;
+use Auth\Repositories\IUserTrustedDeviceRepository;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
@@ -36,6 +37,7 @@ final class RecoveryCodeService implements IRecoveryCodeService
     public function __construct(
         private readonly IUserRecoveryCodeRepository $repository,
         private readonly IUserRepository $user_repository,
+        private readonly IUserTrustedDeviceRepository $trusted_device_repository,
         private readonly ITransactionService $tx_service,
         private readonly ITwoFactorAuditService $audit_service,
     ) {
@@ -119,6 +121,47 @@ final class RecoveryCodeService implements IRecoveryCodeService
         }
 
         return $codes;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function disableTwoFactor(User $user, ?string $currentPassword, ?User $actor): void
+    {
+        // self-service requires the current password; console and admin
+        // operations do not (see IRecoveryCodeService::disableTwoFactor)
+        if (!is_null($actor) && $actor->getId() === $user->getId()
+            && !$user->checkPassword(trim((string)$currentPassword))) {
+            throw new ValidationException('current_password is not correct.');
+        }
+
+        // a single transaction() call: nesting another one (e.g. through the audit
+        // service) inside it would let an inner failure close the entity manager
+        // under this still-running outer transaction
+        $revoked_devices = $this->tx_service->transaction(function () use ($user) {
+            $user->disable2FA();
+            $this->user_repository->add($user, false);
+            $this->repository->deleteAllForUser($user);
+            return $this->trusted_device_repository->revokeAllActiveForUser($user);
+        });
+
+        // Best-effort: 2FA is already disabled and the codes and devices are gone,
+        // an audit-logging failure must not make the caller believe it did not happen.
+        // One device_revoked event per device actually revoked, with its device_id
+        // (same semantics as DeviceTrustService::removeTrustedDevices).
+        foreach ($revoked_devices as $device) {
+            try {
+                $this->audit_service->log(
+                    $user,
+                    TwoFactorAuditLog::EventDeviceRevoked,
+                    $user->getTwoFactorMethod(),
+                    IPHelper::getUserIp(),
+                    ['device_id' => $device->getId()]
+                );
+            } catch (\Throwable $ex) {
+                Log::warning($ex);
+            }
+        }
     }
 
     /**
