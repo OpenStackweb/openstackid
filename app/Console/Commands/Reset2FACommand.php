@@ -101,8 +101,8 @@ final class Reset2FACommand extends Command
         if ($user->shouldRequire2FA()) {
             $this->warn(
                 'This user belongs to a 2FA enforced group: they will still be challenged at the next login. ' .
-                'They have no recovery codes now and must regenerate them from the profile Security section ' .
-                'after logging in with the email OTP.'
+                'They have no recovery codes now: after the email OTP at their next sign-in they will be ' .
+                'shown a new set to save.'
             );
         }
 
