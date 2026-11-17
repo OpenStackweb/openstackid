@@ -80,6 +80,8 @@ class Kernel extends HttpKernel
         'oauth2.currentuser.serveradmin.json' => \App\Http\Middleware\CurrentUserIsOAuth2ServerAdminJson::class,
         'openstackid.currentuser.serveradmin' => \App\Http\Middleware\CurrentUserIsOpenIdServerAdmin::class,
         'openstackid.currentuser.serveradmin.json' => \App\Http\Middleware\CurrentUserIsOpenIdServerAdminJson::class,
+        'oauth2.console.access' => \App\Http\Middleware\CurrentUserCanAccessOAuth2Console::class,
+        'oauth2.console.access.json' => \App\Http\Middleware\CurrentUserCanAccessOAuth2ConsoleJson::class,
         'oauth2.currentuser.allow.client.edition' => \App\Http\Middleware\CurrentUserCanEditOAuth2Client::class,
         'oauth2.currentuser.owns.client' => \App\Http\Middleware\CurrentUserOwnsOAuth2Client::class,
         'service.account' => \App\Http\Middleware\EnsureServiceAccount::class,
