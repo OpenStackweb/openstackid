@@ -17,6 +17,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Class UserEmailVerificationSuccess
@@ -62,6 +63,11 @@ class UserEmailVerificationSuccess extends Mailable
     public $user_is_complete;
 
     /**
+     * @var string
+     */
+    public $profile_link;
+
+    /**
      * UserEmailVerificationSuccess constructor.
      * @param User $user
      * @param string|null $reset_password_link
@@ -80,6 +86,7 @@ class UserEmailVerificationSuccess extends Mailable
             !empty($user->getLastName()) &&
             !empty($user->getCompany()) &&
             !empty($user->getCountry());
+        $this->profile_link = URL::signedRoute('auth.profile-link', ['user_id' => $user->getId()]);
     }
 
     /**

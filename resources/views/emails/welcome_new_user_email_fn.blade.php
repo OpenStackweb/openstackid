@@ -18,7 +18,7 @@
         @if(!$user_is_complete)
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">
-                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">If you have not entered your first name, last name, company, and country please <a href="{!! URL::action("UserController@getLogin") !!}" target="_blank">do so in your profile now</a>. You may also update your photo, add a bio, and provide other information you wish to share.</div>
+                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">If you have not entered your first name, last name, company, and country please <a href="{!! $profile_link !!}" target="_blank">do so in your profile now</a>. You may also update your photo, add a bio, and provide other information you wish to share.</div>
             </td>
         </tr>
         @endif

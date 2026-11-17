@@ -19,7 +19,7 @@
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;padding-right:16px;padding-left:25px;word-break:break-word;">
                 <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1;text-align:center;color:#000000;">
-                    To edit your profile just click <a href="{!! $bio_link  !!}" target="_blank">here</a>. You may update your photo, add a bio, and other information you wish to share.
+                    To edit your profile just click <a href="{!! $profile_link  !!}" target="_blank">here</a>. You may update your photo, add a bio, and other information you wish to share.
                 </div>
             </td>
         </tr>
