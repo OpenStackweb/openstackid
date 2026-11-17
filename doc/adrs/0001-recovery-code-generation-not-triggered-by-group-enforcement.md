@@ -2,7 +2,7 @@
 
 ## Status
 
-Superseded by 0002
+Superseded by 0003
 
 ## Context
 

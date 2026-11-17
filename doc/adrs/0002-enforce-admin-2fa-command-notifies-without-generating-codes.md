@@ -3,7 +3,8 @@
 ## Status
 
 Accepted — 2026-11-05. Complements [ADR 0001](0001-recovery-code-generation-not-triggered-by-group-enforcement.md),
-which remains in force.
+which is superseded by [ADR 0003](0003-recovery-code-enrollment-at-next-2fa-challenge.md). The command itself is
+unchanged; only the "Regenerate Codes" guidance below is replaced by enrollment at the next 2FA challenge (0003).
 
 ## Context
 

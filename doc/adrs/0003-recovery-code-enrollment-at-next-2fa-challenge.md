@@ -1,4 +1,4 @@
-# 0002. Recovery codes are enrolled at the next 2FA challenge and counted only once acknowledged
+# 0003. Recovery codes are enrolled at the next 2FA challenge and counted only once acknowledged
 
 ## Status
 
