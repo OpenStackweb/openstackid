@@ -95,4 +95,16 @@ describe('RecoveryCodeModal', () => {
 
         expect(screen.queryByText('Save Your Recovery Codes')).not.toBeInTheDocument();
     });
+
+    it('shows the replaced notice and a generate button instead of the codes', () => {
+        const onGenerateNew = jest.fn();
+        render(<RecoveryCodeModal open={true} codes={null} replaced={true} onGenerateNew={onGenerateNew} onAcknowledge={jest.fn()}/>);
+
+        expect(screen.getByTestId('recovery-code-replaced')).toHaveTextContent('replaced by a newer batch');
+        expect(screen.queryByTestId('recovery-code-warning')).toBeNull();
+        expect(screen.queryByTestId('acknowledge-codes-button')).toBeNull();
+
+        fireEvent.click(screen.getByTestId('generate-new-codes-button'));
+        expect(onGenerateNew).toHaveBeenCalledTimes(1);
+    });
 });

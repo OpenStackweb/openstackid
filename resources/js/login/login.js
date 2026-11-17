@@ -150,6 +150,7 @@ class LoginPage extends React.Component {
     this.onVerifyRecovery = this.onVerifyRecovery.bind(this);
     this.onContinueAfterLowRecoveryCodes = this.onContinueAfterLowRecoveryCodes.bind(this);
     this.onAcknowledgeRecoveryCodes = this.onAcknowledgeRecoveryCodes.bind(this);
+    this.onGenerateNewRecoveryCodes = this.onGenerateNewRecoveryCodes.bind(this);
     this.onUseRecovery = this.onUseRecovery.bind(this);
     this.onBackToOtp = this.onBackToOtp.bind(this);
     this.resetToPasswordFlow = this.resetToPasswordFlow.bind(this);
@@ -666,8 +667,10 @@ class LoginPage extends React.Component {
 
   /**
    * "I've Saved These Codes" (and Retry): confirms the displayed batch and only
-   * then navigates. A 412 means the batch was replaced meanwhile: enroll again
-   * and show the new one. Any other failure keeps the modal open with the error.
+   * then navigates. A 412 means the batch was replaced meanwhile (another
+   * sign-in generated a newer one): the dead codes are dropped and the modal
+   * asks the user to generate new ones; this page never enrolls again on its
+   * own (SDS idp-mfa.md §4.10.1). Any other failure keeps the modal open with the error.
    */
   onAcknowledgeRecoveryCodes() {
     const enrollment = this.state.recoveryEnrollment;
@@ -684,7 +687,16 @@ class LoginPage extends React.Component {
       },
       (error) => {
         if (error && error.status === HTTP_CODES.PRECONDITION_FAILED) {
-          this.startRecoveryEnrollment(enrollment.redirectUrl, enrollment.csrfToken);
+          this.setState({
+            ...this.state,
+            recoveryEnrollment: {
+              ...enrollment,
+              codes: null,
+              replaced: true,
+              busy: false,
+              error: null,
+            },
+          });
           return;
         }
         this.setState({
@@ -698,6 +710,21 @@ class LoginPage extends React.Component {
         });
       },
     );
+  }
+
+  /**
+   * "Generate new codes" after a 412: the user's explicit action. Enrolls once;
+   * when that fails startRecoveryEnrollment navigates to redirectUrl.
+   */
+  onGenerateNewRecoveryCodes() {
+    const enrollment = this.state.recoveryEnrollment;
+    if (!enrollment || !enrollment.replaced || enrollment.busy) return;
+
+    this.setState({
+      ...this.state,
+      recoveryEnrollment: { ...enrollment, busy: true },
+    });
+    this.startRecoveryEnrollment(enrollment.redirectUrl, enrollment.csrfToken);
   }
 
   onContinueAfterLowRecoveryCodes() {
@@ -955,6 +982,8 @@ class LoginPage extends React.Component {
             error={this.state.recoveryEnrollment.error}
             onAcknowledge={this.onAcknowledgeRecoveryCodes}
             onRetry={this.onAcknowledgeRecoveryCodes}
+            replaced={!!this.state.recoveryEnrollment.replaced}
+            onGenerateNew={this.onGenerateNewRecoveryCodes}
           />
         )}
         {this.state.showInfoBanner && (

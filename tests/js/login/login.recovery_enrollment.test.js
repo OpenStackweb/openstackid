@@ -220,13 +220,31 @@ describe('LoginPage recovery-code enrollment after 2FA', () => {
       expect(acknowledgeRecoveryCodes).toHaveBeenCalledTimes(1);
     });
 
-    it('412 (batch replaced) — enrolls again and shows the new batch', async () => {
+    it('412 (batch replaced) — drops the dead codes and does not enroll on its own', async () => {
+      acknowledgeRecoveryCodes.mockReturnValue(Promise.reject({ status: HTTP_CODES.PRECONDITION_FAILED }));
+
+      inst.onAcknowledgeRecoveryCodes();
+      await flush();
+
+      expect(enrollRecoveryCodes).not.toHaveBeenCalled();
+      expect(inst.state.recoveryEnrollment).toMatchObject({
+        codes: null,
+        replaced: true,
+        busy: false,
+        error: null,
+      });
+      expect(window.location.href).toBe('');
+    });
+
+    it('412 then "Generate new codes" — enrolls once and shows the new batch', async () => {
       acknowledgeRecoveryCodes.mockReturnValue(Promise.reject({ status: HTTP_CODES.PRECONDITION_FAILED }));
       enrollRecoveryCodes.mockReturnValue(
         Promise.resolve({ response: { recovery_codes: ['EEEE-FFFF'], batch_id: 77 } }),
       );
 
       inst.onAcknowledgeRecoveryCodes();
+      await flush();
+      inst.onGenerateNewRecoveryCodes();
       await flush();
 
       expect(enrollRecoveryCodes).toHaveBeenCalledTimes(1);
@@ -237,17 +255,26 @@ describe('LoginPage recovery-code enrollment after 2FA', () => {
         busy: false,
         error: null,
       });
+      expect(inst.state.recoveryEnrollment.replaced).toBeFalsy();
       expect(window.location.href).toBe('');
     });
 
-    it('412 and the second enroll fails — navigates anyway', async () => {
+    it('412 then "Generate new codes" fails — navigates anyway', async () => {
       acknowledgeRecoveryCodes.mockReturnValue(Promise.reject({ status: HTTP_CODES.PRECONDITION_FAILED }));
-      enrollRecoveryCodes.mockReturnValue(Promise.reject({ status: HTTP_CODES.PRECONDITION_FAILED }));
+      enrollRecoveryCodes.mockImplementation(() => Promise.reject({ status: HTTP_CODES.PRECONDITION_FAILED }));
 
       inst.onAcknowledgeRecoveryCodes();
       await flush();
+      inst.onGenerateNewRecoveryCodes();
+      await flush();
 
       expect(window.location.href).toBe(REDIRECT);
+    });
+
+    it('"Generate new codes" is ignored unless the batch was replaced', () => {
+      inst.onGenerateNewRecoveryCodes();
+
+      expect(enrollRecoveryCodes).not.toHaveBeenCalled();
     });
 
     it('any other failure — keeps the modal open with an error, ready to retry', async () => {
