@@ -91,7 +91,7 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
     {
         $this->code_repo->shouldReceive('lockUserRow')->once()->with($user)->ordered();
         $user->shouldReceive('disable2FA')->once()->ordered();
-        $user->shouldReceive('setRecoveryCodesAcknowledgedAt')->once()->with(null);
+        $user->shouldReceive('setRecoveryCodesAcknowledgedAt')->once()->with(null)->ordered();
         $this->user_repo->shouldReceive('add')->once()->with($user, false);
         $this->code_repo->shouldReceive('deleteAllForUser')->once()->with($user)->andReturn(10);
         $this->device_repo->shouldReceive('revokeAllActiveForUser')->once()->with($user)
