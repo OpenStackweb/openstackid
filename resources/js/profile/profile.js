@@ -34,6 +34,7 @@ import LoadingIndicator from "../components/loading_indicator";
 import TopLogo from "../components/top_logo/top_logo";
 import {handleErrorResponse} from "../utils";
 import {buildPasswordValidationSchema} from "../validator";
+import {isTwoFactorActive} from "./two_factor_state";
 
 import styles from "./profile.module.scss";
 
@@ -59,8 +60,9 @@ const ProfilePage = ({
                      }) => {
     const [pic, setPic] = useState(null);
     // follows the 2FA switch: the trusted devices section is mounted (and fetches its list)
-    // only while 2FA is on, so turning it off drops the devices the server just revoked
-    const [twoFactorOn, setTwoFactorOn] = useState(!!twoFactorEnabled);
+    // only while 2FA is on, so turning it off drops the devices the server just revoked.
+    // A group-enforced user is subject to 2FA whatever the stored flag says.
+    const [twoFactorOn, setTwoFactorOn] = useState(isTwoFactorActive(twoFactorEnabled, twoFactorEnforced));
     const [loading, setLoading] = useState(false);
     const [accessTokensListRefresh, setAccessTokensListRefresh] = useState(true);
 
