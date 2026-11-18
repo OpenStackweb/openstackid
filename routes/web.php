@@ -220,8 +220,8 @@ Route::group([
 
             Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@get"]);
             Route::delete('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@delete"]);
-            Route::put('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@update"]);
-            Route::put('pic', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@updatePic"]);
+            Route::put('', ['middleware' => ['csrf', 'openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@update"]);
+            Route::put('pic', ['middleware' => ['csrf', 'openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@updatePic"]);
             Route::group(['prefix' => 'access-tokens'], function () {
                 Route::delete('{value}',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@revokeToken"]);
             });
