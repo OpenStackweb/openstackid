@@ -46,7 +46,10 @@ final class DisableTwoFactorIntegrationTest extends BrowserKitTestCase
         $this->user = $user;
 
         // enrolled, with a code batch and two trusted devices
-        $this->service->enableTwoFactorAndGenerateCodes($user, User::MFAMethod_OTP);
+        $batch = $this->service->enableTwoFactorAndGenerateCodes($user, User::MFAMethod_OTP);
+        // the user confirmed the batch: recovery_codes_acknowledged_at is set, so the
+        // disable test can prove it is cleared (enrolling alone leaves it NULL)
+        $this->assertTrue($this->service->acknowledgeRecoveryCodes($user, $batch->getBatchId()));
         $devices = $this->app->make(IDeviceTrustService::class);
         $devices->trustDevice($user, 'agent-a', '127.0.0.1');
         $devices->trustDevice($user, 'agent-b', '127.0.0.1');
@@ -57,16 +60,29 @@ final class DisableTwoFactorIntegrationTest extends BrowserKitTestCase
         return DB::table('users')->where('id', $this->user->getId())->first();
     }
 
+    private function enrollmentEventCount(): int
+    {
+        return DB::table('two_factor_audit_log')
+            ->where('user_id', $this->user->getId())
+            ->whereIn('event_type', [TwoFactorAuditLog::EventEnrollmentChanged, TwoFactorAuditLog::EventSettingsChanged])
+            ->count();
+    }
+
     public function testDisableClearsEverything(): void
     {
         $this->assertSame(1, (int)$this->userRow()->two_factor_enabled);
         $this->assertSame(10, DB::table('user_recovery_codes')->where('user_id', $this->user->getId())->count());
+        $this->assertNotNull($this->userRow()->recovery_codes_acknowledged_at);
+
+        // enrolling in setUp already wrote its own enrollment_changed (enabled: true)
+        $events_before = $this->enrollmentEventCount();
 
         $this->service->disableTwoFactor($this->user, null, null);
 
         $row = $this->userRow();
         $this->assertSame(0, (int)$row->two_factor_enabled);
         $this->assertNull($row->two_factor_enforced_at);
+        $this->assertNull($row->recovery_codes_acknowledged_at);
         $this->assertSame(0, DB::table('user_recovery_codes')->where('user_id', $this->user->getId())->count());
 
         $devices = DB::table('user_trusted_devices')->where('user_id', $this->user->getId())->get();
@@ -80,11 +96,8 @@ final class DisableTwoFactorIntegrationTest extends BrowserKitTestCase
             ->where('user_id', $this->user->getId())
             ->where('event_type', TwoFactorAuditLog::EventDeviceRevoked)
             ->count());
-        // settings_changed is the caller's responsibility
-        $this->assertSame(0, DB::table('two_factor_audit_log')
-            ->where('user_id', $this->user->getId())
-            ->where('event_type', TwoFactorAuditLog::EventSettingsChanged)
-            ->count());
+        // the service writes no enrollment/settings event: that is the caller's responsibility
+        $this->assertSame($events_before, $this->enrollmentEventCount());
     }
 
     public function testSelfServiceWithWrongPasswordLeavesStateUntouched(): void
