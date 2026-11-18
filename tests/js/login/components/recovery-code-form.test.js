@@ -64,6 +64,17 @@ describe('RecoveryCodeForm', () => {
     expect(baseProps.onBackToOtp).not.toHaveBeenCalled();
   });
 
+  it('"Cancel" is ignored while a verification is in flight, and works again once it ends', () => {
+    const onCancel = jest.fn();
+    const { rerender } = render(<RecoveryCodeForm {...baseProps} onCancel={onCancel} disableInput={true} />);
+    fireEvent.click(screen.getByTestId('cancel-link'));
+    expect(onCancel).not.toHaveBeenCalled();
+
+    rerender(<RecoveryCodeForm {...baseProps} onCancel={onCancel} disableInput={false} />);
+    fireEvent.click(screen.getByTestId('cancel-link'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
   it('typing in the field reports the raw value to the parent', () => {
     // Normalization lives in LoginPage.onRecoveryCodeChange(); the form must
     // hand over the untouched event so that stays the single source of truth.

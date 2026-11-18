@@ -44,6 +44,17 @@ describe('TwoFactorForm', () => {
     expect(screen.queryByText(/Code expires in/)).not.toBeInTheDocument();
   });
 
+  it('"Cancel" is ignored while a verification is in flight, and works again once it ends', () => {
+    const onCancel = jest.fn();
+    const { rerender } = render(<TwoFactorForm {...baseProps} onCancel={onCancel} disableInput={true} />);
+    fireEvent.click(screen.getByTestId('cancel-link'));
+    expect(onCancel).not.toHaveBeenCalled();
+
+    rerender(<TwoFactorForm {...baseProps} onCancel={onCancel} disableInput={false} />);
+    fireEvent.click(screen.getByTestId('cancel-link'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
   it('VERIFY button is disabled when otpCode is empty', () => {
     render(<TwoFactorForm {...baseProps} otpCode="" />);
     // MUI Button spreads unknown props to its root <button>; disabled is set on the native element.

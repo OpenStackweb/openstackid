@@ -27,6 +27,9 @@ const RecoveryCodeForm = ({
 
     const handleCancel = (ev) => {
         ev.preventDefault();
+        // A verification is in flight: the sign-in may already be completing
+        // server-side, so leaving now would strand its late response.
+        if (disableInput) return;
         onCancel();
     };
 
