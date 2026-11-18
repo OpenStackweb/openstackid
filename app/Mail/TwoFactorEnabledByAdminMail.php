@@ -23,7 +23,8 @@ use Illuminate\Support\Facades\URL;
 /**
  * Class TwoFactorEnabledByAdminMail
  * Tells a user that an administrator turned two-factor authentication on for their
- * account and that they should generate their recovery codes from the profile page.
+ * account. The user gets the recovery codes at the next sign-in, in the enrollment
+ * modal shown after the verification code, or later from the profile page.
  * The mail never carries recovery codes.
  * @package App\Mail
  */

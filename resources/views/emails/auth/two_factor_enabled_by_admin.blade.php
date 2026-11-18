@@ -15,7 +15,7 @@
         </tr>
         <tr>
             <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1.4;text-align:center;color:#000000;">Please generate your recovery codes from your <a href="{{ $profile_url }}" target="_blank">profile page</a> and keep them in a safe place: they let you sign in if you cannot receive the verification code.</div>
+                <div style="font-family:open Sans Helvetica, Arial, sans-serif;font-size:16px;line-height:1.4;text-align:center;color:#000000;">The next time you sign in, after you enter the verification code, a window will show your recovery codes. They are shown only once, so save them right away and confirm with "I've Saved These Codes". You can also get a new set at any time from the Two-Factor Authentication section of your <a href="{{ $profile_url }}" target="_blank">profile page</a>.</div>
             </td>
         </tr>
         <tr>
