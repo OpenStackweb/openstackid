@@ -57,10 +57,21 @@ final class DisableTwoFactorIntegrationTest extends BrowserKitTestCase
         return DB::table('users')->where('id', $this->user->getId())->first();
     }
 
+    private function enrollmentEventCount(): int
+    {
+        return DB::table('two_factor_audit_log')
+            ->where('user_id', $this->user->getId())
+            ->whereIn('event_type', [TwoFactorAuditLog::EventEnrollmentChanged, TwoFactorAuditLog::EventSettingsChanged])
+            ->count();
+    }
+
     public function testDisableClearsEverything(): void
     {
         $this->assertSame(1, (int)$this->userRow()->two_factor_enabled);
         $this->assertSame(10, DB::table('user_recovery_codes')->where('user_id', $this->user->getId())->count());
+
+        // enrolling in setUp already wrote its own enrollment_changed (enabled: true)
+        $events_before = $this->enrollmentEventCount();
 
         $this->service->disableTwoFactor($this->user, null, null);
 
@@ -80,11 +91,8 @@ final class DisableTwoFactorIntegrationTest extends BrowserKitTestCase
             ->where('user_id', $this->user->getId())
             ->where('event_type', TwoFactorAuditLog::EventDeviceRevoked)
             ->count());
-        // settings_changed is the caller's responsibility
-        $this->assertSame(0, DB::table('two_factor_audit_log')
-            ->where('user_id', $this->user->getId())
-            ->where('event_type', TwoFactorAuditLog::EventSettingsChanged)
-            ->count());
+        // the service writes no enrollment/settings event: that is the caller's responsibility
+        $this->assertSame($events_before, $this->enrollmentEventCount());
     }
 
     public function testSelfServiceWithWrongPasswordLeavesStateUntouched(): void
