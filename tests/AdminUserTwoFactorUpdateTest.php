@@ -232,6 +232,39 @@ final class AdminUserTwoFactorUpdateTest extends BrowserKitTestCase
         Mail::assertNotQueued(TwoFactorEnabledByAdminMail::class);
     }
 
+    public function testAServerAdminWhoIsNotAnAdministratorIsRefusedAndSavesNothing(): void
+    {
+        $user = $this->plainUser(true);
+        $actor = $this->plainUser(false);
+        $group = $this->app->make(IGroupRepository::class)->getOneBySlug(IGroupSlugs::OpenIdServerAdminsGroup);
+        $actor->addToGroup($group);
+        EntityManager::flush();
+        $this->be($actor);
+
+        $this->updateUser($user, ['two_factor_enabled' => 0, 'first_name' => 'Renamed']);
+
+        $this->assertResponseStatus(412);
+        EntityManager::clear();
+        $this->assertSame('Plain', $this->row($user)->first_name, 'the rest of the update must be rolled back');
+        $this->assertSame(1, (int)$this->row($user)->two_factor_enabled);
+        $this->assertSame(10, DB::table('user_recovery_codes')->where('user_id', $user->getId())->count());
+    }
+
+    public function testAServerAdminWhoIsNotAnAdministratorMaySendAnUnchangedValue(): void
+    {
+        $user = $this->plainUser(true);
+        $actor = $this->plainUser(false);
+        $group = $this->app->make(IGroupRepository::class)->getOneBySlug(IGroupSlugs::OpenIdServerAdminsGroup);
+        $actor->addToGroup($group);
+        EntityManager::flush();
+        $this->be($actor);
+
+        $this->updateUser($user, ['two_factor_enabled' => 1, 'first_name' => 'Renamed']);
+
+        $this->assertResponseStatus(201);
+        $this->assertSame(1, (int)$this->row($user)->two_factor_enabled);
+    }
+
     public function testAUserCannotTurnOffTheirOwnTwoFactorThroughTheProfileUpdate(): void
     {
         $user = $this->plainUser(true);

@@ -391,17 +391,21 @@ final class UserService extends AbstractService implements IUserService
             }
 
             // 2FA is managed here and not in UserFactory::populate: it needs the acting user.
-            // Only a server admin editing ANOTHER user may change it, and only when the value
-            // differs from the stored one (the admin form sends the key only when the admin
-            // changed the box; other API clients may still send it on every save). Anyone
-            // else, including PUT /users/me, has the key ignored: turning 2FA off needs the
-            // password and goes through POST /users/me/2fa/disable.
+            // Only an administrator (administrators / super-admins) editing ANOTHER user may change
+            // it, and only when the value differs from the stored one (the admin form sends the key
+            // only when the admin changed the box; other API clients may still send it on every
+            // save). A server admin of the route (openid-server-admins) who is not an administrator
+            // is refused when the key would change something, instead of getting a success that
+            // silently ignored it. On one's own record, including PUT /users/me, the key is
+            // ignored: turning 2FA off needs the password and goes through
+            // POST /users/me/2fa/disable.
             if (isset($payload['two_factor_enabled'])
                 && !is_null($current_user)
-                && $current_user->getId() != $user->getId()
-                && ($current_user->isAdmin() || $current_user->isSuperAdmin())) {
+                && $current_user->getId() != $user->getId()) {
                 $requested = boolval($payload['two_factor_enabled']);
                 if ($requested !== $user->isTwoFactorEnabled()) {
+                    if (!$current_user->isAdmin() && !$current_user->isSuperAdmin())
+                        throw new ValidationException("Only an administrator can change the two-factor authentication of another user.");
                     // checked against the groups of this same update (the admin form sends
                     // them on every save) and inside the transaction: a refused change rolls
                     // the whole update back
