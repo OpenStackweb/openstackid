@@ -404,6 +404,7 @@ describe('LoginPage', () => {
       );
       // Baseline: before verification the account chip can be removed.
       expect(document.querySelector('.MuiChip-deleteIcon')).not.toBeNull();
+      expect(screen.getByTestId('two-factor-form')).toBeInTheDocument();
       await act(async () => {
         ref.current.setState({ twoFactorCode: '123456' });
       });
@@ -417,9 +418,42 @@ describe('LoginPage', () => {
     it('announces the warning and moves focus to Continue when the OTP form unmounts', async () => {
       await renderAndVerifyOtp();
 
+      // The warning replaces the OTP form instead of rendering beside it.
+      expect(screen.queryByTestId('two-factor-form')).toBeNull();
       const alert = screen.getByRole('alert');
       expect(alert).toHaveAttribute('data-testid', 'low-recovery-codes-warning');
       expect(screen.getByTestId('continue-after-low-recovery-codes')).toHaveFocus();
+      expect(window.location.href).toBe('');
+    });
+
+    it('replaces the recovery form with the warning after a recovery-code sign-in', async () => {
+      verifyRecoveryCode.mockReset();
+      verifyRecoveryCode.mockReturnValue(
+        Promise.resolve({
+          response: { redirect_url: 'https://idp.test/authorize', recovery_codes_remaining: 1 },
+        }),
+      );
+      const ref = React.createRef();
+      render(
+        <LoginPage
+          {...PROPS}
+          ref={ref}
+          flow={FLOW.RECOVERY}
+          userName="user@example.com"
+          user_fullname="Test User"
+        />,
+      );
+      expect(screen.getByTestId('recovery-form')).toBeInTheDocument();
+      await act(async () => {
+        ref.current.setState({ recoveryCode: 'ABCD1234' });
+      });
+      await act(async () => {
+        ref.current.onVerifyRecovery();
+        await flush();
+      });
+
+      expect(screen.queryByTestId('recovery-form')).toBeNull();
+      expect(screen.getByTestId('low-recovery-codes-warning')).toBeInTheDocument();
       expect(window.location.href).toBe('');
     });
 
