@@ -1454,7 +1454,16 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
     private function failRecoveryCodesStatus(): void
     {
+        // Only getStatus() fails: the login flow itself also depends on this service
+        // (e.g. MFAGateService::requiresRecoveryCodeEnrollment()), so every other
+        // method passes through to the real implementation (final, so no partial mock).
+        $real = $this->app->make(IRecoveryCodeService::class);
         $mock = \Mockery::mock(IRecoveryCodeService::class);
+        foreach ((new \ReflectionClass(IRecoveryCodeService::class))->getMethods() as $method) {
+            $name = $method->getName();
+            if ($name === 'getStatus') continue;
+            $mock->shouldReceive($name)->andReturnUsing(fn (...$args) => $real->{$name}(...$args));
+        }
         $mock->shouldReceive('getStatus')->andThrow(new \RuntimeException('recovery codes store unavailable'));
         $this->app->instance(IRecoveryCodeService::class, $mock);
     }
