@@ -698,8 +698,15 @@ class LoginPage extends React.Component {
     const threshold =
       (response && response.recovery_codes_low_threshold) ??
       DEFAULT_RECOVERY_CODES_LOW_THRESHOLD;
-    const alreadyDismissed =
-      sessionStorage.getItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY) === "1";
+    // Storage can throw (e.g. site data blocked); the sign-in already completed
+    // server-side, so treat that as "not dismissed" and never skip navigation.
+    let alreadyDismissed = false;
+    try {
+      alreadyDismissed =
+        sessionStorage.getItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY) === "1";
+    } catch (e) {
+      alreadyDismissed = false;
+    }
 
     const isLow =
       typeof remaining === "number" &&
@@ -720,7 +727,11 @@ class LoginPage extends React.Component {
   }
 
   onContinueAfterLowRecoveryCodes() {
-    sessionStorage.setItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY, "1");
+    try {
+      sessionStorage.setItem(RECOVERY_CODES_LOW_WARNING_DISMISSED_KEY, "1");
+    } catch (e) {
+      // Best-effort: the warning may show again this session, but Continue must navigate.
+    }
     window.location.href = this.state.lowRecoveryCodesWarning.redirectUrl;
   }
 

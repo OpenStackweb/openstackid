@@ -1037,14 +1037,6 @@ final class UserController extends OpenIdController
     }
 
     /**
-     * Clears the UI-restoration session keys written when a challenge is
-     * issued (see postLogin()'s mfa_required branch). Companion to
-     * IMFAChallengeStrategy::clearPendingState(), which only owns the
-     * 2fa_* pending-state keys.
-     *
-     * @return void
-     */
-    /**
      * Recovery-codes standing for the post-verification response, best-effort.
      * Callers only reach this once the second factor is redeemed, the session is
      * established and postLogin() may already have consumed the OAuth2 memento,
@@ -1064,6 +1056,14 @@ final class UserController extends OpenIdController
         }
     }
 
+    /**
+     * Clears the UI-restoration session keys written when a challenge is
+     * issued (see postLogin()'s mfa_required branch). Companion to
+     * IMFAChallengeStrategy::clearPendingState(), which only owns the
+     * 2fa_* pending-state keys.
+     *
+     * @return void
+     */
     private function clearMFAUISessionState(): void
     {
         Session::forget('flow');

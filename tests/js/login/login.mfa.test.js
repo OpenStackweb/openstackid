@@ -265,6 +265,51 @@ describe('LoginPage', () => {
       expect(inst.state.lowRecoveryCodesWarning).toBeNull();
     });
 
+    it('sessionStorage throws — still warns, and Continue still navigates', async () => {
+      const getSpy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError');
+      });
+      const setSpy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError');
+      });
+      try {
+        verify2FA.mockReturnValue(
+          Promise.resolve({
+            response: { redirect_url: 'https://idp.test/authorize', recovery_codes_remaining: 1 },
+          }),
+        );
+
+        inst.onVerify2FA();
+        await flush();
+        expect(inst.state.lowRecoveryCodesWarning).not.toBeNull();
+
+        inst.onContinueAfterLowRecoveryCodes();
+        expect(window.location.href).toBe('https://idp.test/authorize');
+      } finally {
+        getSpy.mockRestore();
+        setSpy.mockRestore();
+      }
+    });
+
+    it('sessionStorage throws and codes are not low — navigates directly', async () => {
+      const getSpy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError');
+      });
+      try {
+        verify2FA.mockReturnValue(
+          Promise.resolve({
+            response: { redirect_url: 'https://idp.test/authorize', recovery_codes_remaining: 5 },
+          }),
+        );
+
+        inst.onVerify2FA();
+        await flush();
+        expect(window.location.href).toBe('https://idp.test/authorize');
+      } finally {
+        getSpy.mockRestore();
+      }
+    });
+
     it('no unused codes left — navigates directly (user never generated codes)', async () => {
       verify2FA.mockReturnValue(
         Promise.resolve({
