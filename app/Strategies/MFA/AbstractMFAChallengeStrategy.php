@@ -101,6 +101,12 @@ abstract class AbstractMFAChallengeStrategy implements IMFAChallengeStrategy
         // or pasted exactly as displayed still matches the stored hash.
         $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code));
 
+        // Lock order shared by every path that writes or deletes the user's
+        // codes: the users row first, then user_recovery_codes (SDS idp-mfa.md
+        // §3.5). Taken before reading the codes so a concurrent regeneration
+        // or reset is fully applied or not started when we look at them.
+        $this->recovery_code_repository->lockUserRow($user);
+
         foreach ($this->recovery_code_repository->getUnusedByUser($user) as $recoveryCode) {
             if (Hash::check($code, $recoveryCode->getCodeHash())) {
                 // Concurrency: acquire a PESSIMISTIC_WRITE row lock and re-hydrate

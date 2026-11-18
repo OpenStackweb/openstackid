@@ -13,8 +13,12 @@ import styles from "./recovery_codes.module.scss";
 
 const ACK_DELAY_SECONDS = 5;
 
-const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge}) => {
+const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge, error = null, busy = false, onRetry, replaced = false, onGenerateNew}) => {
     const [secondsLeft, setSecondsLeft] = useState(ACK_DELAY_SECONDS);
+    // Identity of the displayed batch. A different batch shown while the modal stays open
+    // (the user generates new codes after a 412) must get its own full delay: keyed by the
+    // codes' content, so a parent re-rendering with an equal array does not restart it.
+    const batchKey = codes ? codes.join("|") : "";
 
     useEffect(() => {
         if (!open) return undefined;
@@ -25,7 +29,7 @@ const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge}) => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [open]);
+    }, [open, batchKey]);
 
     return (
         <Dialog
@@ -38,24 +42,60 @@ const RecoveryCodeModal = ({open, codes, email, appName, onAcknowledge}) => {
         >
             <DialogTitle>Save Your Recovery Codes</DialogTitle>
             <DialogContent>
-                <Box className={styles.warning_banner} data-testid="recovery-code-warning">
-                    <WarningRoundedIcon fontSize="small" className={styles.warning_icon}/>
-                    <Typography variant="body2">
-                        These codes will not be shown again. Copy or download them now and store them somewhere safe.
+                {replaced ? (
+                    <Box className={styles.warning_banner} data-testid="recovery-code-replaced">
+                        <WarningRoundedIcon fontSize="small" className={styles.warning_icon}/>
+                        <Typography variant="body2">
+                            Your recovery codes were replaced by a newer batch. The codes shown before are no longer valid.
+                        </Typography>
+                    </Box>
+                ) : (
+                    <Box className={styles.warning_banner} data-testid="recovery-code-warning">
+                        <WarningRoundedIcon fontSize="small" className={styles.warning_icon}/>
+                        <Typography variant="body2">
+                            These codes will not be shown again. Copy or download them now and store them somewhere safe.
+                        </Typography>
+                    </Box>
+                )}
+                {!replaced && codes && <RecoveryCodeDisplay codes={codes} email={email} appName={appName}/>}
+                {error && (
+                    <Typography variant="body2" color="error" role="alert" data-testid="recovery-code-modal-error">
+                        {error}
                     </Typography>
-                </Box>
-                {codes && <RecoveryCodeDisplay codes={codes} email={email} appName={appName}/>}
+                )}
             </DialogContent>
             <DialogActions>
-                <Button
+                {replaced && (
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={busy}
+                        onClick={onGenerateNew}
+                        data-testid="generate-new-codes-button"
+                    >
+                        Generate new codes
+                    </Button>
+                )}
+                {!replaced && error && onRetry && (
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        disabled={busy}
+                        onClick={onRetry}
+                        data-testid="retry-acknowledge-button"
+                    >
+                        Retry
+                    </Button>
+                )}
+                {!replaced && <Button
                     variant="contained"
                     color="primary"
-                    disabled={secondsLeft > 0}
+                    disabled={secondsLeft > 0 || busy}
                     onClick={onAcknowledge}
                     data-testid="acknowledge-codes-button"
                 >
                     {secondsLeft > 0 ? `I've Saved These Codes (${secondsLeft})` : "I've Saved These Codes"}
-                </Button>
+                </Button>}
             </DialogActions>
         </Dialog>
     );

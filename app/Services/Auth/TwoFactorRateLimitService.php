@@ -96,6 +96,13 @@ final class TwoFactorRateLimitService implements ITwoFactorRateLimitService
             ];
         }
 
+        if ($action === self::ActionEnroll) {
+            return [
+                (int) Config::get('two_factor.rate_limit.max_enroll_requests', 5),
+                (int) Config::get('two_factor.rate_limit.enroll_window_minutes', 15) * 60,
+            ];
+        }
+
         return [
             (int) Config::get('two_factor.rate_limit.max_attempts', 3),
             (int) Config::get('two_factor.rate_limit.window_seconds', 900),

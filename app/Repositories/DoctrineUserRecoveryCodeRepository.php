@@ -60,4 +60,38 @@ final class DoctrineUserRecoveryCodeRepository
             ->setParameter('user', $user);
         return (int) $qb->getQuery()->execute();
     }
+
+    public function lockUserRow(User $user): void
+    {
+        // SELECT ... FOR UPDATE with HINT_REFRESH: re-hydrates the managed User
+        // from the locked row. EntityManager::lock() alone takes the lock but
+        // leaves the in-memory state untouched, so a value changed by a
+        // concurrent transaction (recovery_codes_acknowledged_at) would be stale.
+        $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('u')
+            ->from(User::class, 'u')
+            ->where('u.id = :id')
+            ->setParameter('id', $user->getId())
+            ->getQuery()
+            ->setLockMode(\Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE)
+            ->setHint(\Doctrine\ORM\Query::HINT_REFRESH, true)
+            ->getOneOrNullResult();
+    }
+
+    public function getCurrentBatchId(User $user): ?int
+    {
+        $em = $this->getEntityManager();
+        $em->flush();
+
+        $id = $em->createQueryBuilder()
+            ->select('MIN(c.id)')
+            ->from(UserRecoveryCode::class, 'c')
+            ->where('c.user = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return is_null($id) ? null : (int) $id;
+    }
 }

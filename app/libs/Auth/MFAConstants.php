@@ -41,4 +41,12 @@ final class MFAConstants
     public const SESSION_KEY_PENDING_AT         = '2fa_pending_at';
     public const SESSION_KEY_REMEMBER           = '2fa_remember';
     public const SESSION_KEY_RECOVERY_ATTEMPTS  = '2fa_recovery_attempts';
+
+    /**
+     * Completion marker of a real 2FA challenge: ['user_id' => int, 'at' => epoch seconds].
+     * Written only by UserController::verify2FA / verify2FARecovery, right after
+     * the session is established (SDS idp-mfa.md §4.10.3). It bounds the window in
+     * which a recovery-code batch can be generated without the password.
+     */
+    public const SESSION_KEY_COMPLETED_AT       = '2fa_completed_at';
 }

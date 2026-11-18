@@ -332,6 +332,15 @@ class User extends BaseEntity
     private $two_factor_enforced_at;
 
     /**
+     * When the user confirmed ("I've Saved These Codes") the current batch of
+     * recovery codes; NULL while the batch is unacknowledged or absent
+     * (SDS idp-mfa.md §3.1, §3.5).
+     * @var \DateTime|null
+     */
+    #[ORM\Column(name: 'recovery_codes_acknowledged_at', nullable: true, type: 'datetime')]
+    private $recovery_codes_acknowledged_at;
+
+    /**
      * @var string
      */
     #[ORM\Column(name: 'language', nullable: true, type: 'string')]
@@ -488,6 +497,7 @@ class User extends BaseEntity
         $this->two_factor_enabled = false;
         $this->two_factor_method = self::MFAMethod_OTP;
         $this->two_factor_enforced_at = null;
+        $this->recovery_codes_acknowledged_at = null;
         // user profile settings
         $this->public_profile_show_photo = false;
         $this->public_profile_show_email = false;
@@ -2423,6 +2433,16 @@ SQL;
     public function setTwoFactorEnforcedAt(?\DateTime $at): void
     {
         $this->two_factor_enforced_at = $at;
+    }
+
+    public function getRecoveryCodesAcknowledgedAt(): ?\DateTime
+    {
+        return $this->recovery_codes_acknowledged_at;
+    }
+
+    public function setRecoveryCodesAcknowledgedAt(?\DateTime $at): void
+    {
+        $this->recovery_codes_acknowledged_at = $at;
     }
 
     /**

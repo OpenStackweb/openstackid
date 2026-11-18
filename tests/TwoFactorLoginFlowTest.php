@@ -18,6 +18,7 @@ use App\libs\Auth\Models\UserRecoveryCode;
 use App\libs\Auth\Models\UserTrustedDevice;
 use App\Mail\OAuth2PasswordlessOTPMail;
 use App\Services\Auth\IDeviceTrustService;
+use App\Services\Auth\IRecoveryCodeService;
 use App\Services\Auth\ITwoFactorAuditService;
 use App\Services\Auth\ITwoFactorRateLimitService;
 use Auth\AuthHelper;
@@ -79,7 +80,7 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
         if ($admin) {
             $userId = $admin->getId();
             $prefix = ITwoFactorRateLimitService::RATE_LIMIT_CACHE_KEY_PREFIX;
-            foreach (['verify', 'recovery', 'resend'] as $action) {
+            foreach (['verify', 'recovery', 'resend', 'enroll'] as $action) {
                 Cache::forget("{$prefix}{$action}:{$userId}");
                 // RateLimiter::hit() also writes a companion ":timer" key holding
                 // the window's reset timestamp - must be cleared too, or a stale
@@ -995,6 +996,9 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
     public function testTrustedDeviceCookieBypassesMFA(): void
     {
         $admin = $this->user(self::ADMIN_EMAIL);
+        // A trusted device skips the challenge only for a user who already holds an
+        // acknowledged batch of recovery codes (SDS idp-mfa.md §4.2 step 4).
+        $this->giveUserAcknowledgedBatch($admin);
 
         /** @var IDeviceTrustService $deviceTrust */
         $deviceTrust = App::make(IDeviceTrustService::class);
@@ -1009,6 +1013,333 @@ final class TwoFactorLoginFlowTest extends OpenStackIDBaseTestCase
 
         $this->assertResponseStatus(302);
         $this->assertTrue(Auth::check(), 'a valid trusted-device cookie must bypass MFA');
+    }
+
+    public function testTrustedDeviceCookieDoesNotBypassMFAWhenUserHasNoRecoveryCodes(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->assertSame(0, App::make(IRecoveryCodeService::class)->countUnusedRecoveryCodes($admin));
+
+        $rawToken = App::make(IDeviceTrustService::class)->trustDevice($admin, 'Mozilla/5.0 (test)', '127.0.0.1');
+
+        $this->postLogin(
+            self::ADMIN_EMAIL,
+            self::SEED_PASSWORD,
+            [Config::get('two_factor.cookie_name') => $rawToken]
+        );
+
+        $this->assertFalse(Auth::check(), 'enrollment is required: the trusted device must not skip the challenge');
+        $this->assertSame('2fa', Session::get('flow'), 'the 2FA screen must be shown');
+    }
+
+    public function testTrustedDeviceCookieDoesNotBypassMFAWhenBatchIsUnacknowledged(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        // Generated but never confirmed with "I've Saved These Codes".
+        App::make(IRecoveryCodeService::class)->generateRecoveryCodes($admin);
+
+        $rawToken = App::make(IDeviceTrustService::class)->trustDevice($admin, 'Mozilla/5.0 (test)', '127.0.0.1');
+
+        $this->postLogin(
+            self::ADMIN_EMAIL,
+            self::SEED_PASSWORD,
+            [Config::get('two_factor.cookie_name') => $rawToken]
+        );
+
+        $this->assertFalse(Auth::check(), 'an unacknowledged batch is not usable: the challenge must still be required');
+        $this->assertSame('2fa', Session::get('flow'));
+    }
+
+    // -------------------------------------------------------------------------
+    // Recovery-code enrollment right after a 2FA challenge (SDS idp-mfa.md §4.10.3)
+    // -------------------------------------------------------------------------
+
+    public function testVerify2FAWritesTheCompletionMarkerAndReportsEnrollmentRequired(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_COMPLETED_AT), 'no marker before the challenge is completed');
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $response = $this->verify($code);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $payload = json_decode($response->getContent(), true);
+        $this->assertTrue($payload['recovery_codes_enrollment_required']);
+        $this->assertFalse($payload['recovery_codes_acknowledged']);
+        $this->assertSame(0, $payload['recovery_codes_remaining']);
+        $this->assertArrayHasKey('redirect_url', $payload);
+
+        $marker = Session::get(MFAConstants::SESSION_KEY_COMPLETED_AT);
+        $this->assertSame($admin->getId(), $marker['user_id']);
+        $this->assertEqualsWithDelta(time(), $marker['at'], 5);
+    }
+
+    public function testFailedVerify2FADoesNotWriteTheCompletionMarker(): void
+    {
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $this->verify('000000');
+
+        $this->assertNull(Session::get(MFAConstants::SESSION_KEY_COMPLETED_AT));
+    }
+
+    public function testVerify2FARotatesTheSessionCsrfTokenAndReturnsTheNewOne(): void
+    {
+        // Auth::login() regenerates the session id AND its CSRF token. The login page
+        // was rendered with the old one, so verify2FA must hand over the current token
+        // for the enroll / acknowledge calls that follow (VerifyCsrfToken is skipped in
+        // unit tests, so what can be proven here is the token the response carries).
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $before = Session::token();
+        $code = $this->latestOtpCode(self::ADMIN_EMAIL);
+
+        $response = $this->verify($code);
+
+        $payload = json_decode($response->getContent(), true);
+        $this->assertNotSame($before, Session::token(), 'sign-in rotates the token: the page-rendered one is stale');
+        $this->assertSame(Session::token(), $payload['csrf_token']);
+    }
+
+    public function testVerify2FARecoveryReturnsTheCurrentCsrfToken(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->createRecoveryCode($admin, 'ONLYCODE', false);
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $response = $this->recovery('ONLYCODE');
+
+        $payload = json_decode($response->getContent(), true);
+        $this->assertSame(Session::token(), $payload['csrf_token']);
+    }
+
+    public function testEnrollRightAfterVerify2FAReturnsABatchThenAcknowledgeCompletesIt(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $this->verify($this->latestOtpCode(self::ADMIN_EMAIL));
+
+        $response = $this->enroll();
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $batch = json_decode($response->getContent(), true);
+        $this->assertCount((int)config('auth.recovery_codes.count', 10), $batch['recovery_codes']);
+        $this->assertIsInt($batch['batch_id']);
+        $this->assertFalse($batch['recovery_codes_acknowledged']);
+        $this->assertTrue($batch['recovery_codes_enrollment_required']);
+
+        $response = $this->acknowledge($batch['batch_id']);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $status = json_decode($response->getContent(), true);
+        $this->assertTrue($status['recovery_codes_acknowledged']);
+        $this->assertFalse($status['recovery_codes_enrollment_required']);
+        $this->assertSame((int)config('auth.recovery_codes.count', 10), $status['recovery_codes_remaining']);
+
+        EntityManager::clear();
+        $this->assertNotNull(EntityManager::getRepository(User::class)->find($admin->getId())->getRecoveryCodesAcknowledgedAt());
+        $this->assertSame(1, $this->countAudit($admin->getId(), TwoFactorAuditLog::EventRecoveryCodesAcknowledged));
+
+        // Once acknowledged the batch is usable: enrollment is no longer required.
+        $this->assertEquals(412, $this->enroll()->getStatusCode());
+    }
+
+    public function testEnrollAfterRecoveryCodeSignInThatExhaustedTheCodes(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $plain = 'LASTCODE';
+        $this->createRecoveryCode($admin, $plain, false);
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+
+        $response = $this->recovery($plain);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $payload = json_decode($response->getContent(), true);
+        $this->assertTrue($payload['recovery_codes_enrollment_required']);
+        $this->assertSame(0, $payload['recovery_codes_remaining']);
+
+        $response = $this->enroll();
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $batch = json_decode($response->getContent(), true);
+        // The old (used) batch is replaced by the new one.
+        $this->assertCount((int)config('auth.recovery_codes.count', 10), $batch['recovery_codes']);
+    }
+
+    public function testEnrollIsRejectedForASessionThatNeverPassedVerify(): void
+    {
+        $this->be($this->user(self::ADMIN_EMAIL));
+
+        $response = $this->enroll();
+
+        $this->assertEquals(412, $response->getStatusCode());
+        $this->assertSame(0, App::make(IRecoveryCodeService::class)->countUnusedRecoveryCodes($this->user(self::ADMIN_EMAIL)));
+    }
+
+    public function testEnrollIsRejectedOutsideTheWindow(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->be($admin);
+        $window = (int)config('two_factor.recovery_enrollment_window', 600);
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => $admin->getId(), 'at' => time() - $window - 5]);
+
+        $this->assertEquals(412, $this->enroll()->getStatusCode());
+    }
+
+    public function testEnrollIsRejectedWithAnotherUsersMarker(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->be($admin);
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => $admin->getId() + 1000, 'at' => time()]);
+
+        $this->assertEquals(412, $this->enroll()->getStatusCode());
+    }
+
+    public function testEnrollIsRejectedForAUserWhoDoesNotRequireEnrollment(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $this->giveUserAcknowledgedBatch($admin);
+        $this->be($admin);
+        Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => $admin->getId(), 'at' => time()]);
+
+        $this->assertEquals(412, $this->enroll()->getStatusCode());
+    }
+
+    public function testEnrollRateLimitIsKeyedByTheAuthenticatedUserAndAppliesRightAfterVerify2FA(): void
+    {
+        // verify2FA has already cleared the pending-user state: a limiter keyed by it
+        // would resolve no subject and let every request through.
+        $this->postLogin(self::ADMIN_EMAIL, self::SEED_PASSWORD);
+        $this->verify($this->latestOtpCode(self::ADMIN_EMAIL));
+        $this->assertNull(Session::get(ITwoFactorRateLimitService::PENDING_USER_SESSION_KEY));
+
+        $max = (int)config('two_factor.rate_limit.max_enroll_requests', 5);
+        for ($i = 0; $i < $max; $i++) {
+            $this->assertEquals(200, $this->enroll()->getStatusCode(), "request #" . ($i + 1) . " must be accepted");
+        }
+
+        $response = $this->enroll();
+
+        $this->assertEquals(429, $response->getStatusCode());
+        $this->assertSame((string)$max, $response->headers->get('X-RateLimit-Limit'));
+    }
+
+    public function testAcknowledgeWithAnEarlierBatchIdIsRejectedAndLeavesTheColumnUnchanged(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $service = App::make(IRecoveryCodeService::class);
+        $first = $service->generateRecoveryCodes($admin);
+        $second = $service->generateRecoveryCodes($admin);
+        $this->assertNotSame($first->getBatchId(), $second->getBatchId());
+        $this->be($admin);
+
+        $this->assertEquals(412, $this->acknowledge($first->getBatchId())->getStatusCode());
+
+        EntityManager::clear();
+        $this->assertNull(EntityManager::getRepository(User::class)->find($admin->getId())->getRecoveryCodesAcknowledgedAt());
+        $this->assertSame(0, $this->countAudit($admin->getId(), TwoFactorAuditLog::EventRecoveryCodesAcknowledged));
+    }
+
+    public function testAcknowledgingTheCurrentBatchTwiceSucceedsAndWritesOneAuditRow(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $batch = App::make(IRecoveryCodeService::class)->generateRecoveryCodes($admin);
+        $this->be($admin);
+
+        $this->assertEquals(200, $this->acknowledge($batch->getBatchId())->getStatusCode());
+        $this->assertEquals(200, $this->acknowledge($batch->getBatchId())->getStatusCode());
+
+        $this->assertSame(1, $this->countAudit($admin->getId(), TwoFactorAuditLog::EventRecoveryCodesAcknowledged));
+        EntityManager::clear();
+        $entries = EntityManager::getRepository(TwoFactorAuditLog::class)
+            ->findBy(['user' => $admin->getId(), 'event_type' => TwoFactorAuditLog::EventRecoveryCodesAcknowledged]);
+        $this->assertSame(['batch_id' => $batch->getBatchId()], $entries[0]->getMetadata());
+    }
+
+    public function testAcknowledgeRequiresAnIntegerBatchId(): void
+    {
+        $this->be($this->user(self::ADMIN_EMAIL));
+
+        $response = $this->action('POST', 'Api\\UserApiController@acknowledgeRecoveryCodes', [], [
+            'batch_id' => 'abc',
+            '_token'   => Session::token(),
+        ]);
+
+        $this->assertEquals(412, $response->getStatusCode());
+    }
+
+    public function testRegeneratingResetsTheAcknowledgmentAndTheGenerationAuditCarriesTheBatchId(): void
+    {
+        $admin = $this->user(self::ADMIN_EMAIL);
+        $service = App::make(IRecoveryCodeService::class);
+        $first = $service->generateRecoveryCodes($admin);
+        $service->acknowledgeRecoveryCodes($admin, $first->getBatchId());
+
+        $second = $service->generateRecoveryCodes($admin);
+
+        $this->assertGreaterThan($first->getBatchId(), $second->getBatchId());
+        $this->assertSame($second->getBatchId(), $service->getCurrentBatchId($admin));
+        $this->assertNull($admin->getRecoveryCodesAcknowledgedAt());
+        $this->assertTrue($service->requiresRecoveryCodeEnrollment($admin));
+
+        EntityManager::clear();
+        $generated = EntityManager::getRepository(TwoFactorAuditLog::class)
+            ->findBy(['user' => $admin->getId(), 'event_type' => TwoFactorAuditLog::EventRecoveryCodesGenerated]);
+        $ids = array_map(fn($e) => $e->getMetadata()['batch_id'], $generated);
+        sort($ids);
+        $this->assertSame([$first->getBatchId(), $second->getBatchId()], $ids);
+    }
+
+    // -------------------------------------------------------------------------
+    // Authenticate middleware: backurl and JSON requests
+    // -------------------------------------------------------------------------
+
+    public function testJsonRequestIgnoresTheSessionBackurl(): void
+    {
+        $this->be($this->user(self::ADMIN_EMAIL));
+        Session::put('backurl', 'https://example.test/deep/link');
+
+        $response = $this->action(
+            'GET', 'Api\\UserActionApiController@getActionsByCurrentUser', [], [], [], [],
+            ['HTTP_ACCEPT' => 'application/json', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest']
+        );
+
+        $this->assertNotEquals(302, $response->getStatusCode(), 'an XHR must reach its controller, not be redirected to backurl');
+        $this->assertSame('https://example.test/deep/link', Session::get('backurl'), 'backurl must stay for the real navigation');
+    }
+
+    public function testNonJsonRequestStillFollowsTheSessionBackurl(): void
+    {
+        $this->be($this->user(self::ADMIN_EMAIL));
+        Session::put('backurl', 'https://example.test/deep/link');
+
+        $response = $this->action('GET', 'Api\\UserActionApiController@getActionsByCurrentUser');
+
+        $this->assertEquals(302, $response->getStatusCode());
+        $this->assertSame('https://example.test/deep/link', $response->headers->get('Location'));
+        $this->assertNull(Session::get('backurl'));
+    }
+
+    private function enroll()
+    {
+        return $this->action('POST', 'Api\\UserApiController@enrollRecoveryCodes', [], ['_token' => Session::token()]);
+    }
+
+    private function acknowledge(int $batchId)
+    {
+        return $this->action('POST', 'Api\\UserApiController@acknowledgeRecoveryCodes', [], [
+            'batch_id' => $batchId,
+            '_token'   => Session::token(),
+        ]);
+    }
+
+    private function giveUserAcknowledgedBatch(User $user): int
+    {
+        /** @var IRecoveryCodeService $service */
+        $service = App::make(IRecoveryCodeService::class);
+        $batch = $service->generateRecoveryCodes($user);
+        $this->assertTrue($service->acknowledgeRecoveryCodes($user, $batch->getBatchId()));
+        return $batch->getBatchId();
     }
 
     // -------------------------------------------------------------------------

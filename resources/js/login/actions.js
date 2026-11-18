@@ -58,6 +58,23 @@ export const verifyRecoveryCode = (recoveryCode, token) => {
     return postRawRequestFull(window.RECOVERY_2FA_ENDPOINT)(params, {'X-CSRF-TOKEN': token});
 }
 
+// Recovery-code enrollment, called by the login page right after a successful
+// 2FA verification (SDS idp-mfa.md §4.10.1). Accept: application/json makes the
+// `auth` middleware answer with JSON instead of redirecting to the session
+// backurl. postRawRequestFull(): no params on the query string.
+const JSON_HEADERS = (token) => ({
+    'X-CSRF-TOKEN': token,
+    'Accept': 'application/json',
+});
+
+export const enrollRecoveryCodes = (token) => {
+    return postRawRequestFull(window.ENROLL_RECOVERY_CODES_ENDPOINT)({}, JSON_HEADERS(token));
+}
+
+export const acknowledgeRecoveryCodes = (batchId, token) => {
+    return postRawRequestFull(window.ACKNOWLEDGE_RECOVERY_CODES_ENDPOINT)({batch_id: batchId}, JSON_HEADERS(token));
+}
+
 export const cancelLogin = (token) => {
     return postRawRequest(window.CANCEL_LOGIN_ENDPOINT)({}, {'X-CSRF-TOKEN': token});
 }

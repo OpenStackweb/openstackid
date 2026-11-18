@@ -29,6 +29,8 @@ final class RecoveryCodesStatus
         private readonly int $remaining,
         private readonly int $total,
         private readonly int $low_threshold,
+        private readonly bool $acknowledged,
+        private readonly bool $enrollment_required,
     ) {}
 
     public function getRemaining(): int
@@ -47,7 +49,24 @@ final class RecoveryCodesStatus
     }
 
     /**
-     * @return array<string,int>
+     * Whether the user confirmed the current batch ("I've Saved These Codes").
+     */
+    public function isAcknowledged(): bool
+    {
+        return $this->acknowledged;
+    }
+
+    /**
+     * Whether the user requires 2FA but has no usable batch (none, exhausted
+     * or unacknowledged): they must be challenged and get the enrollment modal.
+     */
+    public function isEnrollmentRequired(): bool
+    {
+        return $this->enrollment_required;
+    }
+
+    /**
+     * @return array<string,int|bool>
      */
     public function toArray(): array
     {
@@ -55,6 +74,8 @@ final class RecoveryCodesStatus
             'recovery_codes_remaining'     => $this->remaining,
             'recovery_codes_total'         => $this->total,
             'recovery_codes_low_threshold' => $this->low_threshold,
+            'recovery_codes_acknowledged'  => $this->acknowledged,
+            'recovery_codes_enrollment_required' => $this->enrollment_required,
         ];
     }
 }

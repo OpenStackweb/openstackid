@@ -24,7 +24,8 @@ use Auth\User;
 final class MFAGateService implements ITwoFactorGateService
 {
     public function __construct(
-        private readonly IDeviceTrustService $deviceTrustService
+        private readonly IDeviceTrustService $deviceTrustService,
+        private readonly IRecoveryCodeService $recoveryCodeService
     ) {
     }
 
@@ -37,6 +38,17 @@ final class MFAGateService implements ITwoFactorGateService
         if (!$user->shouldRequire2FA()) {
             return false;
         }
+
+        // A user with no usable batch (none, exhausted or unacknowledged) is
+        // challenged at every sign-in, trusted device included, so the
+        // recovery-code enrollment modal that follows the challenge is always
+        // reachable - also for accounts without a password. Checked before
+        // device trust, so a trusted device row is not even touched
+        // (SDS idp-mfa.md §4.2 step 4).
+        if ($this->recoveryCodeService->requiresRecoveryCodeEnrollment($user)) {
+            return true;
+        }
+
         return !$this->deviceTrustService->isDeviceTrusted($user, $cookieToken);
     }
 }
