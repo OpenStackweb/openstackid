@@ -75,14 +75,17 @@ export const fetchGroups = async (url, query) => {
 /**
  * @param twoFactorBaseline the 2FA flag the form was last loaded/saved with: the flag is sent
  *                          only when the admin changed it (see normalizeEntity)
+ * @returns the saved user as returned by the server
  */
 export const save = async (entity, pic, token, twoFactorBaseline) => {
     return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity, twoFactorBaseline), {} ,{'X-CSRF-TOKEN': token})
-        .then((res) => {
+        .then(({response}) => {
+                // the saved user (admin serializer), so the form can pick up the 2FA state the
+                // server computed: the enforcement depends on the groups saved with this request
                 if (pic) {
-                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token});
+                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token}).then(() => response);
                 }
-                return Promise.resolve()
+                return response;
             }
         );
 }

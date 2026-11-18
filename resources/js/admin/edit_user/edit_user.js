@@ -84,8 +84,17 @@ const EditUserPage = ({
         onSubmit: (values) => {
             setLoading(true);
             const twoFactorSubmitted = !!values.two_factor_enabled;
-            save({...values, groups: selectedGroups}, pic , csrfToken, twoFactorBaseline.current).then((res) => {
-                twoFactorBaseline.current = twoFactorSubmitted;
+            save({...values, groups: selectedGroups}, pic , csrfToken, twoFactorBaseline.current).then((user) => {
+                if (user) {
+                    // the server state wins: the enforcement follows the groups just saved, so
+                    // the checkbox must not keep the one the page was loaded with
+                    twoFactorBaseline.current = !!user.two_factor_enabled;
+                    formik.setFieldValue('two_factor_enabled', user.two_factor_enabled, false);
+                    formik.setFieldValue('two_factor_enforced', user.two_factor_enforced, false);
+                    formik.setFieldValue('two_factor_enforced_at', user.two_factor_enforced_at ?? null, false);
+                } else {
+                    twoFactorBaseline.current = twoFactorSubmitted;
+                }
                 setLoading(false);
                 Swal("User saved", "The user has been saved successfully", "success");
             }).catch((err) => {
