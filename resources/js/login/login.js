@@ -1003,11 +1003,16 @@ class LoginPage extends React.Component {
                   variant="outlined"
                   className={styles.valid_user_name_chip}
                   label={this.state.user_name}
-                  // The sign-in already completed server-side while the low
-                  // recovery-codes warning is pending, so switching accounts
-                  // there would only strand the user beside a stale redirect.
+                  // Switching accounts is not allowed while a verification is
+                  // in flight (disableInput) - its late response would land on
+                  // the password step or navigate somewhere the user already
+                  // left - nor once the low recovery-codes warning is pending,
+                  // since the sign-in already completed server-side and a
+                  // switch would only strand the user beside a stale redirect.
                   onDelete={
-                    this.state.lowRecoveryCodesWarning ? undefined : this.handleDelete
+                    this.state.lowRecoveryCodesWarning || this.state.disableInput
+                      ? undefined
+                      : this.handleDelete
                   }
                 />
               )}

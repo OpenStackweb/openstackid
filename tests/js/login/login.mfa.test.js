@@ -464,6 +464,79 @@ describe('LoginPage', () => {
       expect(document.querySelector('.MuiChip-deleteIcon')).toBeNull();
       expect(cancelLogin).not.toHaveBeenCalled();
     });
+
+    describe('account chip while a verification is in flight', () => {
+      beforeEach(() => {
+        cancelLogin.mockReset();
+        verifyRecoveryCode.mockReset();
+      });
+
+      it('is not deletable while verify2FA is pending, and is again after a failed verification', async () => {
+        let rejectVerify;
+        verify2FA.mockReturnValue(new Promise((_, reject) => { rejectVerify = reject; }));
+        const ref = React.createRef();
+        render(
+          <LoginPage
+            {...PROPS}
+            ref={ref}
+            flow={FLOW.MFA}
+            userName="user@example.com"
+            user_fullname="Test User"
+          />,
+        );
+        expect(document.querySelector('.MuiChip-deleteIcon')).not.toBeNull();
+        await act(async () => {
+          ref.current.setState({ twoFactorCode: '123456' });
+        });
+        await act(async () => {
+          ref.current.onVerify2FA();
+          await flush();
+        });
+
+        expect(document.querySelector('.MuiChip-deleteIcon')).toBeNull();
+        expect(cancelLogin).not.toHaveBeenCalled();
+
+        await act(async () => {
+          rejectVerify(makeError(HTTP_CODES.UNAUTHORIZED, { error_code: 'mfa_verification_failed' }));
+          await flush();
+        });
+
+        expect(document.querySelector('.MuiChip-deleteIcon')).not.toBeNull();
+      });
+
+      it('is not deletable while verifyRecoveryCode is pending, and is again after a failed verification', async () => {
+        let rejectVerify;
+        verifyRecoveryCode.mockReturnValue(new Promise((_, reject) => { rejectVerify = reject; }));
+        const ref = React.createRef();
+        render(
+          <LoginPage
+            {...PROPS}
+            ref={ref}
+            flow={FLOW.RECOVERY}
+            userName="user@example.com"
+            user_fullname="Test User"
+          />,
+        );
+        expect(document.querySelector('.MuiChip-deleteIcon')).not.toBeNull();
+        await act(async () => {
+          ref.current.setState({ recoveryCode: 'ABCD1234' });
+        });
+        await act(async () => {
+          ref.current.onVerifyRecovery();
+          await flush();
+        });
+
+        expect(document.querySelector('.MuiChip-deleteIcon')).toBeNull();
+        expect(cancelLogin).not.toHaveBeenCalled();
+
+        await act(async () => {
+          rejectVerify(makeError(HTTP_CODES.UNAUTHORIZED, { error_code: 'mfa_invalid_recovery' }));
+          await flush();
+        });
+
+        expect(document.querySelector('.MuiChip-deleteIcon')).not.toBeNull();
+      });
+    });
   });
 
   // ─── Recovery-code login flow (CU-86ba2zp4f) ───────────────────────────────
