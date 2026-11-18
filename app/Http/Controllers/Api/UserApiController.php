@@ -16,11 +16,13 @@ use App\Http\Controllers\APICRUDController;
 use App\Http\Controllers\Traits\MFACookieManager;
 use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
+use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Models\UserTrustedDevice;
 use App\ModelSerializers\Auth\UserTrustedDeviceSerializer;
 use App\ModelSerializers\SerializerRegistry;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\IRecoveryCodeService;
+use App\Services\Auth\ITwoFactorAuditService;
 use App\Services\Auth\RecoveryCodesBatch;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
@@ -36,6 +38,7 @@ use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\Services\ITokenService;
 use OpenId\Services\IUserService;
+use Utils\IPHelper;
 use Utils\Services\ILogService;
 
 /**
@@ -65,6 +68,11 @@ final class UserApiController extends APICRUDController
     private $device_trust_service;
 
     /**
+     * @var ITwoFactorAuditService
+     */
+    private $two_factor_audit_service;
+
+    /**
      * UserApiController constructor.
      * @param IUserRepository $user_repository
      * @param ILogService $log_service
@@ -72,6 +80,7 @@ final class UserApiController extends APICRUDController
      * @param ITokenService $token_service
      * @param IRecoveryCodeService $recovery_code_service
      * @param IDeviceTrustService $device_trust_service
+     * @param ITwoFactorAuditService $two_factor_audit_service
      */
     public function __construct
     (
@@ -80,10 +89,12 @@ final class UserApiController extends APICRUDController
         IUserService    $user_service,
         ITokenService   $token_service,
         IRecoveryCodeService $recovery_code_service,
-        IDeviceTrustService  $device_trust_service
+        IDeviceTrustService  $device_trust_service,
+        ITwoFactorAuditService $two_factor_audit_service
     )
     {
         parent::__construct($user_repository, $user_service, $log_service);
+        $this->two_factor_audit_service = $two_factor_audit_service;
         $this->token_service = $token_service;
         $this->recovery_code_service = $recovery_code_service;
         $this->device_trust_service = $device_trust_service;
@@ -350,6 +361,20 @@ final class UserApiController extends APICRUDController
             // the service enforces current_password / the enrollment window for the
             // self-service actor and throws ValidationException (-> 412)
             $this->recovery_code_service->disableTwoFactor($user, $data['current_password'] ?? null, $user);
+
+            // the service does not audit the enrollment change: the caller owns the event.
+            // Best-effort, 2FA is already disabled and must not be reported as failed.
+            try {
+                $this->two_factor_audit_service->log(
+                    $user,
+                    TwoFactorAuditLog::EventEnrollmentChanged,
+                    $user->getTwoFactorMethod(),
+                    IPHelper::getUserIp(),
+                    ['enabled' => false, 'actor_id' => $user->getId(), 'reason' => 'self']
+                );
+            } catch (\Throwable $ex) {
+                Log::warning($ex);
+            }
 
             // every trusted device was just revoked
             Cookie::queue(Cookie::forget(

@@ -87,7 +87,7 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         return $user;
     }
 
-    private function expectFullDisable(\Mockery\MockInterface $user, ?string $reason = null, ?int $actor_id = null): void
+    private function expectFullDisable(\Mockery\MockInterface $user): void
     {
         $this->code_repo->shouldReceive('lockUserRow')->once()->with($user)->ordered();
         $user->shouldReceive('disable2FA')->once()->ordered();
@@ -99,18 +99,6 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         $this->audit_service->shouldReceive('log')
             ->twice()
             ->with($user, TwoFactorAuditLog::EventDeviceRevoked, User::MFAMethod_OTP, Mockery::type('string'), Mockery::type('array'));
-        // the console (no reason) logs its own settings_changed event outside the service
-        if (!is_null($reason)) {
-            $this->audit_service->shouldReceive('log')
-                ->once()
-                ->with(
-                    $user,
-                    TwoFactorAuditLog::EventEnrollmentChanged,
-                    User::MFAMethod_OTP,
-                    Mockery::type('string'),
-                    ['enabled' => false, 'actor_id' => $actor_id, 'reason' => $reason]
-                );
-        }
     }
 
     private function expectNothingChanges(\Mockery\MockInterface $user): void
@@ -144,7 +132,7 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         $user = $this->buildUser(1);
         $user->shouldNotReceive('checkPassword');
         $admin = $this->buildUser(2);
-        $this->expectFullDisable($user, 'admin', 2);
+        $this->expectFullDisable($user);
 
         $this->service->disableTwoFactor($user, null, $admin);
     }
@@ -163,7 +151,7 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
     {
         $user = $this->buildUser(1);
         $user->shouldReceive('checkPassword')->once()->with('secret')->andReturn(true);
-        $this->expectFullDisable($user, 'self', 1);
+        $this->expectFullDisable($user);
 
         $this->service->disableTwoFactor($user, ' secret ', $user);
     }
@@ -204,7 +192,7 @@ final class RecoveryCodeServiceDisableTwoFactorTest extends BrowserKitTestCase
         Session::put(MFAConstants::SESSION_KEY_COMPLETED_AT, ['user_id' => 1, 'at' => time() - 30]);
         $user = $this->buildUser(1, false, false);
         $user->shouldNotReceive('checkPassword');
-        $this->expectFullDisable($user, 'self', 1);
+        $this->expectFullDisable($user);
 
         $this->service->disableTwoFactor($user, null, $user);
     }

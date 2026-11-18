@@ -19,11 +19,13 @@ use App\Jobs\RevokeUserGrantsOnSessionRevocation;
 use App\Jobs\PublishUserDeleted;
 use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
+use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\libs\Utils\FileSystem\FileNameSanitizer;
 use App\Mail\MonitoredSecurityGroupNotificationEmail;
 use App\Services\AbstractService;
 use App\Services\Auth\IRecoveryCodeService;
+use App\Services\Auth\ITwoFactorAuditService;
 use App\Services\Auth\IUserIdentifierGeneratorService;
 use Auth\Group;
 use Auth\IUserNameGeneratorService;
@@ -102,6 +104,11 @@ final class UserService extends AbstractService implements IUserService
     private $recovery_code_service;
 
     /**
+     * @var ITwoFactorAuditService
+     */
+    private $two_factor_audit_service;
+
+    /**
      * UserService constructor.
      * @param IUserRepository $repository
      * @param IGroupRepository $group_repository
@@ -113,6 +120,7 @@ final class UserService extends AbstractService implements IUserService
      * @param IUserIdentifierGeneratorService $identifier_service
      * @param IClientRepository $client_repository
      * @param IRecoveryCodeService $recovery_code_service
+     * @param ITwoFactorAuditService $two_factor_audit_service
      */
     public function __construct
     (
@@ -125,11 +133,13 @@ final class UserService extends AbstractService implements IUserService
         IResourceServerContext $server_ctx,
         IUserIdentifierGeneratorService $identifier_service,
         IClientRepository $client_repository,
-        IRecoveryCodeService $recovery_code_service
+        IRecoveryCodeService $recovery_code_service,
+        ITwoFactorAuditService $two_factor_audit_service
     )
     {
         parent::__construct($tx_service);
         $this->recovery_code_service = $recovery_code_service;
+        $this->two_factor_audit_service = $two_factor_audit_service;
         $this->repository = $repository;
         $this->group_repository = $group_repository;
         $this->user_name_generator = $user_name_generator;
@@ -436,8 +446,10 @@ final class UserService extends AbstractService implements IUserService
             if (!is_null($two_factor_change)) {
                 if ($two_factor_change)
                     $this->recovery_code_service->enableTwoFactorForUser($user, User::MFAMethod_OTP, $acting_admin);
-                else
+                else {
                     $this->recovery_code_service->disableTwoFactor($user, null, $acting_admin);
+                    $this->auditTwoFactorDisabledByAdmin($user, $acting_admin);
+                }
             }
         } finally {
             try {
@@ -451,6 +463,27 @@ final class UserService extends AbstractService implements IUserService
         }
 
         return $user;
+    }
+
+    /**
+     * The recovery code service does not audit the enrollment change: the caller owns the event.
+     * Best-effort, 2FA is already disabled and the update must not be reported as failed.
+     * @param User $user
+     * @param User $acting_admin
+     */
+    private function auditTwoFactorDisabledByAdmin(User $user, User $acting_admin): void
+    {
+        try {
+            $this->two_factor_audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventEnrollmentChanged,
+                $user->getTwoFactorMethod(),
+                IPHelper::getUserIp(),
+                ['enabled' => false, 'actor_id' => $acting_admin->getId(), 'reason' => 'admin']
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
     }
 
     /**

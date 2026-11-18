@@ -263,9 +263,6 @@ final class RecoveryCodeService implements IRecoveryCodeService
             }
         }
 
-        // read before the transaction: the audit rows below are written after it
-        $method = $user->getTwoFactorMethod();
-
         // a single transaction() call: nesting another one (e.g. through the audit
         // service) inside it would let an inner failure close the entity manager
         // under this still-running outer transaction
@@ -283,34 +280,15 @@ final class RecoveryCodeService implements IRecoveryCodeService
         // Best-effort: 2FA is already disabled and the codes and devices are gone,
         // an audit-logging failure must not make the caller believe it did not happen.
         // One device_revoked event per device actually revoked, with its device_id
-        // (same semantics as DeviceTrustService::removeTrustedDevices).
-        // enrollment_changed is logged here for the self-service and admin actors, the
-        // mirror of enableTwoFactorForUser. The console (null actor) logs its own
-        // settings_changed event with the operator and the reason.
-        if (!is_null($actor)) {
-            try {
-                $this->audit_service->log(
-                    $user,
-                    TwoFactorAuditLog::EventEnrollmentChanged,
-                    $method,
-                    IPHelper::getUserIp(),
-                    [
-                        'enabled'  => false,
-                        'actor_id' => $actor->getId(),
-                        'reason'   => $is_self ? 'self' : 'admin',
-                    ]
-                );
-            } catch (\Throwable $ex) {
-                Log::warning($ex);
-            }
-        }
-
+        // (same semantics as DeviceTrustService::removeTrustedDevices). The
+        // enrollment_changed / settings_changed event is the caller's: only it
+        // knows the actor and the reason.
         foreach ($revoked_devices as $device) {
             try {
                 $this->audit_service->log(
                     $user,
                     TwoFactorAuditLog::EventDeviceRevoked,
-                    $method,
+                    $user->getTwoFactorMethod(),
                     IPHelper::getUserIp(),
                     ['device_id' => $device->getId()]
                 );
