@@ -30,7 +30,8 @@ const TwoFactorSection = ({
                               recoveryCodesWindowOpen = false,
                               hasPassword = true,
                               email,
-                              appName
+                              appName,
+                              onTwoFactorChange = null
                           }) => {
     const [enabled, setEnabled] = useState(twoFactorEnabled || twoFactorEnforced);
     const [loading, setLoading] = useState(false);
@@ -50,6 +51,7 @@ const TwoFactorSection = ({
             setLoading(false);
             setEnrollment(response);
             setEnabled(true);
+            if (onTwoFactorChange) onTwoFactorChange(true);
         }).catch((err) => {
             setLoading(false);
             handleErrorResponse(err);
@@ -72,6 +74,7 @@ const TwoFactorSection = ({
             closeDisableDialog();
             setEnrollment(null);
             setEnabled(false);
+            if (onTwoFactorChange) onTwoFactorChange(false);
         }).catch((err) => {
             setLoading(false);
             // the dialog stays open so a mistyped password can be retried

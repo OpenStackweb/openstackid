@@ -83,6 +83,19 @@ describe('TwoFactorSection', () => {
         expect(screen.queryByTestId('recovery-codes-count')).not.toBeInTheDocument();
     });
 
+    it('tells the parent when 2FA was enabled', async () => {
+        enableTwoFactor.mockResolvedValue({response: {recovery_codes: ['AAAA-1111'], batch_id: 1}});
+        const onTwoFactorChange = jest.fn();
+        render(
+            <TwoFactorSection twoFactorEnabled={false} recoveryCodesRemaining={0} recoveryCodesTotal={0}
+                               email="user@test.com" onTwoFactorChange={onTwoFactorChange}/>
+        );
+
+        fireEvent.click(screen.getByTestId('two-factor-switch'));
+
+        await waitFor(() => expect(onTwoFactorChange).toHaveBeenCalledWith(true));
+    });
+
     it('renders the switch checked and disabled with the explanation for a group-enforced user', () => {
         render(
             <TwoFactorSection twoFactorEnabled={false} twoFactorEnforced={true} recoveryCodesRemaining={0}
@@ -128,6 +141,33 @@ describe('TwoFactorSection', () => {
         await waitFor(() => expect(screen.queryByTestId('recovery-codes-count')).not.toBeInTheDocument());
         expect(screen.getByTestId('two-factor-switch')).not.toBeChecked();
         expect(screen.getByTestId('two-factor-disabled-message')).toBeInTheDocument();
+    });
+
+    it('tells the parent when 2FA was disabled, and not when the password is rejected', async () => {
+        const onTwoFactorChange = jest.fn();
+        const renderSection = () => render(
+            <TwoFactorSection twoFactorEnabled={true} recoveryCodesRemaining={7} recoveryCodesTotal={10}
+                               hasPassword={true} email="user@test.com" onTwoFactorChange={onTwoFactorChange}/>
+        );
+        const confirmWith = async (password) => {
+            fireEvent.click(screen.getByTestId('two-factor-switch'));
+            await screen.findByTestId('disable-two-factor-dialog');
+            fireEvent.change(screen.getByTestId('disable-two-factor-current-password').querySelector('input'),
+                {target: {value: password}});
+            fireEvent.click(screen.getByTestId('confirm-disable-two-factor-button'));
+        };
+
+        disableTwoFactor.mockRejectedValue({status: 412});
+        const first = renderSection();
+        await confirmWith('wrong');
+        await waitFor(() => expect(disableTwoFactor).toHaveBeenCalledWith('wrong'));
+        expect(onTwoFactorChange).not.toHaveBeenCalled();
+        first.unmount();
+
+        disableTwoFactor.mockResolvedValue({response: {two_factor_enabled: false}});
+        renderSection();
+        await confirmWith('secret');
+        await waitFor(() => expect(onTwoFactorChange).toHaveBeenCalledWith(false));
     });
 
     it('keeps the dialog open, shows the error inside it and keeps 2FA on when the password is rejected', async () => {

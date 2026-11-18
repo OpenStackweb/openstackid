@@ -58,6 +58,9 @@ const ProfilePage = ({
                          recoveryCodesWindowOpen
                      }) => {
     const [pic, setPic] = useState(null);
+    // follows the 2FA switch: the trusted devices section is mounted (and fetches its list)
+    // only while 2FA is on, so turning it off drops the devices the server just revoked
+    const [twoFactorOn, setTwoFactorOn] = useState(!!twoFactorEnabled);
     const [loading, setLoading] = useState(false);
     const [accessTokensListRefresh, setAccessTokensListRefresh] = useState(true);
 
@@ -804,10 +807,11 @@ const ProfilePage = ({
                                         recoveryCodesWindowOpen={recoveryCodesWindowOpen}
                                         hasPassword={initialValues.has_password_set}
                                         email={initialValues.email}
-                                        appName={appName}/>
+                                        appName={appName}
+                                        onTwoFactorChange={setTwoFactorOn}/>
                                 </Box>
                             </Grid>
-                            {twoFactorEnabled && (
+                            {twoFactorOn && (
                                 <Grid item xs={12}>
                                     <Box className={styles.recovery_codes_section}>
                                         <Typography variant="subtitle1"
