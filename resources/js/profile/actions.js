@@ -68,9 +68,9 @@ export const getUserAccessTokens = async (page = 1, order = 'created_at', orderD
 
 export const save = async (entity, pic, token) => {
 
-    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {'X-CSRF-TOKEN': token}).then(() => {
+    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': token}).then(() => {
         if (pic) {
-            return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token});
+            return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {}, {'X-CSRF-TOKEN': token});
         }
         return Promise.resolve();
     });

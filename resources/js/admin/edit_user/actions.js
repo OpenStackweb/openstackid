@@ -83,7 +83,7 @@ export const save = async (entity, pic, token, twoFactorBaseline) => {
                 // the saved user (admin serializer), so the form can pick up the 2FA state the
                 // server computed: the enforcement depends on the groups saved with this request
                 if (pic) {
-                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token}).then(() => response);
+                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {}, {'X-CSRF-TOKEN': token}).then(() => response);
                 }
                 return response;
             }

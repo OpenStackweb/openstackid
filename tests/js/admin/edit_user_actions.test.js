@@ -66,4 +66,9 @@ describe('admin edit user save', () => {
         await expect(save(entity(), {name: 'pic.png'}, 'token', false)).resolves.toEqual(savedUser);
         expect(sendFile).toHaveBeenCalledTimes(1);
     });
+
+    it('sends the CSRF token as a header of the picture upload, not as a multipart field', async () => {
+        await save(entity(), {name: 'pic.png'}, 'token', false);
+        expect(sendFile).toHaveBeenCalledWith({name: 'pic.png'}, 'pic', {}, {'X-CSRF-TOKEN': 'token'});
+    });
 });

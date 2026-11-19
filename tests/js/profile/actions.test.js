@@ -8,6 +8,7 @@ jest.mock("superagent", () => ({
     post: jest.fn(),
     get: jest.fn(),
     delete: jest.fn(),
+    put: jest.fn(),
 }));
 
 import request from "superagent";
@@ -20,12 +21,15 @@ import {
     revokeAllTrustedDevices,
     enrollRecoveryCodes,
     acknowledgeRecoveryCodes,
+    save,
 } from "profile/actions";
 
 function makeChainableRequest({ body = {}, error = null } = {}) {
     const req = {};
     req.set = jest.fn(() => req);
     req.send = jest.fn(() => req);
+    req.attach = jest.fn(() => req);
+    req.field = jest.fn(() => req);
     req.timeout = jest.fn(() => req);
     req.then = (onFulfilled, onRejected) =>
         (error ? Promise.reject(error) : Promise.resolve({ body })).then(onFulfilled, onRejected);
@@ -38,6 +42,9 @@ describe("profile/actions (unmocked request layer)", () => {
         request.post.mockReset();
         request.get.mockReset();
         request.delete.mockReset();
+        request.put.mockReset();
+        window.SAVE_PROFILE_ENDPOINT = "https://idp.test/admin/api/v1/users/me";
+        window.SAVE_PIC_ENDPOINT = "https://idp.test/admin/api/v1/users/me/pic";
         window.ENABLE_TWO_FACTOR_ENDPOINT = "https://idp.test/api/v2/users/me/2fa/enable";
         window.DISABLE_TWO_FACTOR_ENDPOINT = "https://idp.test/admin/api/v1/users/me/2fa/disable";
         window.REGENERATE_RECOVERY_CODES_ENDPOINT = "https://idp.test/api/v2/users/me/2fa/recovery-codes";
@@ -157,5 +164,21 @@ describe("profile/actions (unmocked request layer)", () => {
         expect(req.send).toHaveBeenCalledWith({ batch_id: 9 });
         expect(req.set).toHaveBeenCalledWith({ "X-CSRF-TOKEN": "test-csrf-token", Accept: "application/json" });
         expect(response.recovery_codes_acknowledged).toBe(true);
+    });
+
+    it("save sends the CSRF token as a header of the profile PUT and the picture PUT, never as a query param or multipart field", async () => {
+        const profileReq = makeChainableRequest({ body: {} });
+        const picReq = makeChainableRequest({ body: {} });
+        request.put.mockReturnValueOnce(profileReq).mockReturnValueOnce(picReq);
+        const pic = { name: "pic.png" };
+
+        await save({ first_name: "John" }, pic, "csrf-xyz");
+
+        expect(request.put).toHaveBeenNthCalledWith(1, window.SAVE_PROFILE_ENDPOINT);
+        expect(profileReq.set).toHaveBeenCalledWith({ "X-CSRF-TOKEN": "csrf-xyz" });
+        expect(String(request.put.mock.calls[1][0])).toBe(window.SAVE_PIC_ENDPOINT);
+        expect(picReq.attach).toHaveBeenCalledWith("pic", pic);
+        expect(picReq.field).not.toHaveBeenCalled();
+        expect(picReq.set).toHaveBeenCalledWith({ "X-CSRF-TOKEN": "csrf-xyz" });
     });
 });
