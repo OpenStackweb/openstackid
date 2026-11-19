@@ -409,8 +409,13 @@ final class UserService extends AbstractService implements IUserService
                     // checked against the groups of this same update (the admin form sends
                     // them on every save) and inside the transaction: a refused change rolls
                     // the whole update back
-                    if (!$requested && $user->isTwoFactorEnforcedByGroup())
-                        throw new ValidationException("Two-factor authentication is enforced by group membership and cannot be disabled.");
+                    // an enforced user is neither switched off (the enforcement does not depend on
+                    // the stored flag) nor switched on: the flag would outlive the group
+                    // membership and keep them enrolled after leaving it (SDS idp-mfa.md §3.6)
+                    if ($user->isTwoFactorEnforcedByGroup())
+                        throw new ValidationException($requested
+                            ? "Two-factor authentication is already enforced by group membership."
+                            : "Two-factor authentication is enforced by group membership and cannot be disabled.");
                     $two_factor_change = $requested;
                     $acting_admin = $current_user;
                 }
