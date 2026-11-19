@@ -88,6 +88,7 @@
             languages: languages,
             menuConfig: menuConfig,
             passwordPolicy: passwordPolicy,
+            twoFactorGloballyEnabled: {{ $two_factor_globally_enabled ? 'true' : 'false' }},
             usersListURL: '{!! URL::action("AdminController@listUsers") !!}'
         }
 

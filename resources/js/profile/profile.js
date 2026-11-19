@@ -50,6 +50,7 @@ const ProfilePage = ({
                          redirectUri,
                          twoFactorEnabled,
                          twoFactorEnforced,
+                         twoFactorGloballyEnabled = true,
                          recoveryCodesRemaining,
                          recoveryCodesTotal,
                          recoveryCodesLowThreshold,
@@ -800,6 +801,7 @@ const ProfilePage = ({
                                     <TwoFactorSection
                                         twoFactorEnabled={twoFactorEnabled}
                                         twoFactorEnforced={twoFactorEnforced}
+                                        twoFactorGloballyEnabled={twoFactorGloballyEnabled}
                                         recoveryCodesRemaining={recoveryCodesRemaining}
                                         recoveryCodesTotal={recoveryCodesTotal}
                                         recoveryCodesLowThreshold={recoveryCodesLowThreshold}

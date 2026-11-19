@@ -1218,6 +1218,9 @@ final class UserController extends OpenIdController
             // self-enrolled user (can turn it off) from one enforced by group (cannot)
             'two_factor_enabled' => $user->isTwoFactorEnabled(),
             'two_factor_enforced' => $user->isTwoFactorEnforcedByGroup(),
+            // the global kill-switch: while it is off no sign-in is challenged and the profile
+            // says so instead of presenting the stored setting as in force
+            'two_factor_globally_enabled' => (bool) config('two_factor.enabled', true),
             // The session completed a 2FA challenge within the enrollment window:
             // a batch can be generated without the password.
             'recovery_codes_window_open' => $window_open,

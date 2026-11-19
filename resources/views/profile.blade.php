@@ -106,6 +106,7 @@
             passwordPolicy: passwordPolicy,
             twoFactorEnabled: {{ $two_factor_enabled ? 'true' : 'false' }},
             twoFactorEnforced: {{ $two_factor_enforced ? 'true' : 'false' }},
+            twoFactorGloballyEnabled: {{ $two_factor_globally_enabled ? 'true' : 'false' }},
             recoveryCodesRemaining: {{ (int) $recovery_codes_remaining }},
             recoveryCodesTotal: {{ (int) $recovery_codes_total }},
             recoveryCodesLowThreshold: {{ (int) $recovery_codes_low_threshold }},

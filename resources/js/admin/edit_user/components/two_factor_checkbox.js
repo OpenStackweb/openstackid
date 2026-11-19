@@ -5,6 +5,8 @@ import FormControlLabel from "@material-ui/core/FormControlLabel";
 import FormHelperText from "@material-ui/core/FormHelperText";
 
 export const ENFORCED_BY_GROUP_TEXT = "Enforced by group membership";
+export const GLOBALLY_DISABLED_TEXT =
+    "Two-factor authentication is temporarily turned off for all accounts. The setting applies again when it is turned back on.";
 export const OWN_ACCOUNT_TEXT = "Manage your own two-factor authentication from your profile";
 
 /**
@@ -14,7 +16,7 @@ export const OWN_ACCOUNT_TEXT = "Manage your own two-factor authentication from 
  * On the admin's own account it is read only too: the user CRUD ignores the key when an
  * admin edits themselves, so turning 2FA off must go through the profile (password).
  */
-const TwoFactorCheckbox = ({enabled, enforced = false, enforcedAt = null, ownAccount = false, onChange}) => {
+const TwoFactorCheckbox = ({enabled, enforced = false, enforcedAt = null, ownAccount = false, globallyEnabled = true, onChange}) => {
     const readOnly = !!enforced || !!ownAccount;
     return (
     <>
@@ -28,6 +30,10 @@ const TwoFactorCheckbox = ({enabled, enforced = false, enforcedAt = null, ownAcc
                                color="primary"/>}
             label="Two-Factor Authentication (Email OTP)"
         />
+        {
+            !globallyEnabled && (!!enabled || !!enforced) &&
+            <FormHelperText data-testid="two-factor-globally-disabled-text">{GLOBALLY_DISABLED_TEXT}</FormHelperText>
+        }
         {
             enforced &&
             <FormHelperText data-testid="two-factor-enforced-text">{ENFORCED_BY_GROUP_TEXT}</FormHelperText>

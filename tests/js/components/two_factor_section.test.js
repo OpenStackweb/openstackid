@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import TwoFactorSection from '../../../resources/js/components/two_factor_section';
+import TwoFactorSection, {ENFORCED_MESSAGE, GLOBALLY_DISABLED_MESSAGE} from '../../../resources/js/components/two_factor_section';
 import {enableTwoFactor, disableTwoFactor} from '../../../resources/js/profile/actions';
 import {handleErrorResponse} from '../../../resources/js/utils';
 
@@ -44,6 +44,41 @@ describe('TwoFactorSection', () => {
         expect(screen.getByTestId('two-factor-switch')).toBeChecked();
         expect(screen.getByTestId('two-factor-switch')).toBeDisabled();
         expect(screen.getByTestId('recovery-codes-count')).toBeInTheDocument();
+    });
+
+    describe('with the global kill-switch off', () => {
+        const base = {recoveryCodesRemaining: 7, recoveryCodesTotal: 10, recoveryCodesAcknowledged: true, email: 'u@test.com'};
+
+        it('shows the notice to a user whose stored switch is on, keeping the switch and the codes panel', () => {
+            render(<TwoFactorSection {...base} twoFactorEnabled={true} twoFactorGloballyEnabled={false}/>);
+            expect(screen.getByTestId('two-factor-globally-disabled-message')).toHaveTextContent(GLOBALLY_DISABLED_MESSAGE);
+            expect(GLOBALLY_DISABLED_MESSAGE).toBe(
+                'Two-factor authentication is temporarily turned off for all accounts. Your setting applies again when it is turned back on.');
+            expect(screen.getByTestId('two-factor-switch')).toBeChecked();
+            expect(screen.getByTestId('two-factor-switch')).not.toBeDisabled();
+            expect(screen.getByTestId('recovery-codes-count')).toBeInTheDocument();
+        });
+
+        it('replaces the enforcement text with the notice for a group-enforced user, switch still on and disabled', () => {
+            render(<TwoFactorSection {...base} twoFactorEnabled={false} twoFactorEnforced={true}
+                                      twoFactorGloballyEnabled={false}/>);
+            expect(screen.getByTestId('two-factor-globally-disabled-message')).toBeInTheDocument();
+            expect(screen.queryByTestId('two-factor-enforced-message')).not.toBeInTheDocument();
+            expect(screen.getByTestId('two-factor-switch')).toBeChecked();
+            expect(screen.getByTestId('two-factor-switch')).toBeDisabled();
+        });
+
+        it('shows no notice to a user whose switch is off', () => {
+            render(<TwoFactorSection {...base} twoFactorEnabled={false} twoFactorGloballyEnabled={false}/>);
+            expect(screen.queryByTestId('two-factor-globally-disabled-message')).not.toBeInTheDocument();
+            expect(screen.getByTestId('two-factor-switch')).not.toBeChecked();
+        });
+
+        it('keeps the enforcement text, and no notice, while the kill-switch is on', () => {
+            render(<TwoFactorSection {...base} twoFactorEnabled={false} twoFactorEnforced={true}/>);
+            expect(screen.getByTestId('two-factor-enforced-message')).toHaveTextContent(ENFORCED_MESSAGE);
+            expect(screen.queryByTestId('two-factor-globally-disabled-message')).not.toBeInTheDocument();
+        });
     });
 
     it('shows "not set up yet" instead of a count when the user requires enrollment', () => {

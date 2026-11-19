@@ -18,9 +18,15 @@ const DEFAULT_METHOD = "email_otp";
 export const ENFORCED_MESSAGE =
     "Two-factor authentication is required for members of an administrator group and cannot be turned off.";
 
+// Shown while the global kill-switch is off (two_factor.enabled=false), in place of the
+// enforcement text and to every user whose switch is on.
+export const GLOBALLY_DISABLED_MESSAGE =
+    "Two-factor authentication is temporarily turned off for all accounts. Your setting applies again when it is turned back on.";
+
 const TwoFactorSection = ({
                               twoFactorEnabled,
                               twoFactorEnforced = false,
+                              twoFactorGloballyEnabled = true,
                               recoveryCodesRemaining,
                               recoveryCodesTotal,
                               recoveryCodesLowThreshold,
@@ -108,7 +114,13 @@ const TwoFactorSection = ({
                 label="Two-Factor Authentication (Email OTP)"
             />
             {
-                twoFactorEnforced &&
+                !twoFactorGloballyEnabled && enabled &&
+                <Typography variant="body2" data-testid="two-factor-globally-disabled-message">
+                    {GLOBALLY_DISABLED_MESSAGE}
+                </Typography>
+            }
+            {
+                twoFactorGloballyEnabled && twoFactorEnforced &&
                 <Typography variant="body2" data-testid="two-factor-enforced-message">
                     {ENFORCED_MESSAGE}
                 </Typography>

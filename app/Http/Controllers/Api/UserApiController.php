@@ -310,12 +310,14 @@ final class UserApiController extends APICRUDController
             $user = Auth::user();
             $method = $data['method'];
 
-            // shouldRequire2FA() covers both a stored two_factor_enabled flag and
-            // group enforcement. An enforced admin must not mint a batch here without
-            // the password (and would leave two_factor_enabled=true behind, keeping
-            // them enrolled after leaving the group): they get codes through enroll
-            // (inside the enrollment window) or regenerate (with the password).
-            if ($user->shouldRequire2FA()) {
+            // The stored flag and group enforcement, not shouldRequire2FA(): that one is
+            // false for everyone while the global kill-switch is off, and then a session
+            // could replace the batch of an account that already has 2FA without the
+            // password. An enforced admin must not mint a batch here either (and would
+            // leave two_factor_enabled=true behind, keeping them enrolled after leaving
+            // the group): they get codes through enroll (inside the enrollment window)
+            // or regenerate (with the password).
+            if ($user->isTwoFactorEnabled() || $user->isTwoFactorEnforcedByGroup()) {
                 return $this->error412(['method' => ['Two-factor authentication is already required for this account. Use the recovery codes section to set up or regenerate your codes.']]);
             }
 

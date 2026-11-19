@@ -46,6 +46,7 @@ const EditUserPage = ({
                           languages,
                           menuConfig,
                           passwordPolicy,
+                          twoFactorGloballyEnabled = true,
                           usersListURL
                       }) => {
     const [pic, setPic] = useState(null);
@@ -754,6 +755,7 @@ const EditUserPage = ({
                                     enforced={formik.values.two_factor_enforced}
                                     enforcedAt={formik.values.two_factor_enforced_at}
                                     ownAccount={isOwnAccount}
+                                    globallyEnabled={twoFactorGloballyEnabled}
                                     onChange={formik.handleChange}/>
                             </Grid>
                             <Grid item xs={12}>

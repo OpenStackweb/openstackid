@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import TwoFactorCheckbox, {ENFORCED_BY_GROUP_TEXT, OWN_ACCOUNT_TEXT} from '../../../resources/js/admin/edit_user/components/two_factor_checkbox';
+import TwoFactorCheckbox, {ENFORCED_BY_GROUP_TEXT, OWN_ACCOUNT_TEXT, GLOBALLY_DISABLED_TEXT} from '../../../resources/js/admin/edit_user/components/two_factor_checkbox';
 
 describe('admin edit user TwoFactorCheckbox', () => {
     it('reflects the stored flag and can be toggled', () => {
@@ -31,6 +31,26 @@ describe('admin edit user TwoFactorCheckbox', () => {
 
         fireEvent.click(box);
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('shows the kill-switch notice when the box is on and 2FA is globally off, enforcement text kept', () => {
+        const {rerender} = render(<TwoFactorCheckbox enabled={true} globallyEnabled={false} onChange={jest.fn()}/>);
+        expect(screen.getByTestId('two-factor-globally-disabled-text')).toHaveTextContent(GLOBALLY_DISABLED_TEXT);
+        expect(screen.getByTestId('two-factor-checkbox')).toBeChecked();
+        expect(screen.getByTestId('two-factor-checkbox')).not.toBeDisabled();
+
+        rerender(<TwoFactorCheckbox enabled={false} enforced={true} globallyEnabled={false} onChange={jest.fn()}/>);
+        expect(screen.getByTestId('two-factor-globally-disabled-text')).toBeInTheDocument();
+        expect(screen.getByTestId('two-factor-enforced-text')).toBeInTheDocument();
+        expect(screen.getByTestId('two-factor-checkbox')).toBeDisabled();
+    });
+
+    it('shows no kill-switch notice when the box is off or 2FA is globally on', () => {
+        const {rerender} = render(<TwoFactorCheckbox enabled={false} globallyEnabled={false} onChange={jest.fn()}/>);
+        expect(screen.queryByTestId('two-factor-globally-disabled-text')).not.toBeInTheDocument();
+
+        rerender(<TwoFactorCheckbox enabled={true} onChange={jest.fn()}/>);
+        expect(screen.queryByTestId('two-factor-globally-disabled-text')).not.toBeInTheDocument();
     });
 
     it('is read only on the admin own account, keeping the stored value', () => {

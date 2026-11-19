@@ -663,6 +663,8 @@ class AdminController extends Controller {
                 // a server admin manages their own 2FA from the profile (it asks for the
                 // password); UserService::update ignores the key when editing oneself
                 'is_own_account' => $this->auth_service->getCurrentUser()?->getId() == $user->getId(),
+                // the global kill-switch: while it is off the form says that no sign-in is challenged
+                'two_factor_globally_enabled' => (bool) config('two_factor.enabled', true),
                 'user' => json_encode(SerializerRegistry::getInstance()
                     ->getSerializer($user, SerializerRegistry::SerializerType_Admin)->serialize('groups')),
                 'countries' => CountryList::getCountries(),
