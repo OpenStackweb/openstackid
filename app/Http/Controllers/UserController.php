@@ -820,7 +820,7 @@ final class UserController extends OpenIdController
                     // must send this one.
                     'csrf_token'   => csrf_token(),
                 ],
-                $this->recovery_code_service->getStatus($user)->toArray()
+                $this->recoveryCodesStatusOrEmpty($user)
             ));
         } catch (ValidationException $ex) {
             Log::warning($ex);
@@ -928,7 +928,7 @@ final class UserController extends OpenIdController
                     // must send this one.
                     'csrf_token'   => csrf_token(),
                 ],
-                $this->recovery_code_service->getStatus($user)->toArray()
+                $this->recoveryCodesStatusOrEmpty($user)
             ));
         } catch (ValidationException $ex) {
             Log::warning($ex);
@@ -1034,6 +1034,26 @@ final class UserController extends OpenIdController
     {
         $this->clearMFAUISessionState();
         return $this->unauthorized(['error_code' => MFAConstants::ERROR_CODE_SESSION_EXPIRED]);
+    }
+
+    /**
+     * Recovery-codes standing for the post-verification response, best-effort.
+     * Callers only reach this once the second factor is redeemed, the session is
+     * established and postLogin() may already have consumed the OAuth2 memento,
+     * so a failure here must not turn the sign-in into a 500 that drops
+     * redirect_url. The login page navigates directly when the fields are absent.
+     *
+     * @param User $user
+     * @return array<string,int> RecoveryCodesStatus::toArray(), or [] on failure
+     */
+    private function recoveryCodesStatusOrEmpty(User $user): array
+    {
+        try {
+            return $this->recovery_code_service->getStatus($user)->toArray();
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+            return [];
+        }
     }
 
     /**
