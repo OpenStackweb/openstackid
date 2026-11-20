@@ -34,6 +34,7 @@ import LoadingIndicator from "../components/loading_indicator";
 import TopLogo from "../components/top_logo/top_logo";
 import {handleErrorResponse} from "../utils";
 import {buildPasswordValidationSchema} from "../validator";
+import {isTwoFactorActive} from "./two_factor_state";
 
 import styles from "./profile.module.scss";
 
@@ -48,6 +49,8 @@ const ProfilePage = ({
                          passwordPolicy,
                          redirectUri,
                          twoFactorEnabled,
+                         twoFactorEnforced,
+                         twoFactorGloballyEnabled = true,
                          recoveryCodesRemaining,
                          recoveryCodesTotal,
                          recoveryCodesLowThreshold,
@@ -57,6 +60,10 @@ const ProfilePage = ({
                          recoveryCodesWindowOpen
                      }) => {
     const [pic, setPic] = useState(null);
+    // follows the 2FA switch: the trusted devices section is mounted (and fetches its list)
+    // only while 2FA is on, so turning it off drops the devices the server just revoked.
+    // A group-enforced user is subject to 2FA whatever the stored flag says.
+    const [twoFactorOn, setTwoFactorOn] = useState(isTwoFactorActive(twoFactorEnabled, twoFactorEnforced));
     const [loading, setLoading] = useState(false);
     const [accessTokensListRefresh, setAccessTokensListRefresh] = useState(true);
 
@@ -793,6 +800,8 @@ const ProfilePage = ({
                                     </Typography>
                                     <TwoFactorSection
                                         twoFactorEnabled={twoFactorEnabled}
+                                        twoFactorEnforced={twoFactorEnforced}
+                                        twoFactorGloballyEnabled={twoFactorGloballyEnabled}
                                         recoveryCodesRemaining={recoveryCodesRemaining}
                                         recoveryCodesTotal={recoveryCodesTotal}
                                         recoveryCodesLowThreshold={recoveryCodesLowThreshold}
@@ -802,10 +811,11 @@ const ProfilePage = ({
                                         recoveryCodesWindowOpen={recoveryCodesWindowOpen}
                                         hasPassword={initialValues.has_password_set}
                                         email={initialValues.email}
-                                        appName={appName}/>
+                                        appName={appName}
+                                        onTwoFactorChange={setTwoFactorOn}/>
                                 </Box>
                             </Grid>
-                            {twoFactorEnabled && (
+                            {twoFactorOn && (
                                 <Grid item xs={12}>
                                     <Box className={styles.recovery_codes_section}>
                                         <Typography variant="subtitle1"

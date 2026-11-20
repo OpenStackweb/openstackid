@@ -105,6 +105,8 @@
             menuConfig: menuConfig,
             passwordPolicy: passwordPolicy,
             twoFactorEnabled: {{ $two_factor_enabled ? 'true' : 'false' }},
+            twoFactorEnforced: {{ $two_factor_enforced ? 'true' : 'false' }},
+            twoFactorGloballyEnabled: {{ $two_factor_globally_enabled ? 'true' : 'false' }},
             recoveryCodesRemaining: {{ (int) $recovery_codes_remaining }},
             recoveryCodesTotal: {{ (int) $recovery_codes_total }},
             recoveryCodesLowThreshold: {{ (int) $recovery_codes_low_threshold }},
@@ -125,6 +127,7 @@
         window.GET_TRUSTED_DEVICES_ENDPOINT = '{!!URL::action("Api\UserApiController@getMyTrustedDevices")!!}';
         window.REVOKE_TRUSTED_DEVICE_ENDPOINT = '{!!URL::action("Api\UserApiController@revokeMyTrustedDevice", ["id"=>"@id"])!!}';
         window.REVOKE_ALL_TRUSTED_DEVICES_ENDPOINT = '{!!URL::action("Api\UserApiController@revokeAllMyTrustedDevices")!!}';
+        window.DISABLE_TWO_FACTOR_ENDPOINT = '{!!URL::action("Api\UserApiController@disableTwoFactor")!!}';
         window.ENROLL_RECOVERY_CODES_ENDPOINT = '{!!URL::action("Api\UserApiController@enrollRecoveryCodes")!!}';
         window.ACKNOWLEDGE_RECOVERY_CODES_ENDPOINT = '{!!URL::action("Api\UserApiController@acknowledgeRecoveryCodes")!!}';
         window.CSFR_TOKEN = document.head.querySelector('meta[name="csrf-token"]').content;

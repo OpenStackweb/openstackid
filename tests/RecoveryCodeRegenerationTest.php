@@ -19,6 +19,7 @@ use Auth\AuthHelper;
 use Auth\MFAConstants;
 use Auth\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 use App\Services\Auth\IRecoveryCodeService;
@@ -206,6 +207,57 @@ final class RecoveryCodeRegenerationTest extends BrowserKitTestCase
         $this->assertTrue($reloaded->isTwoFactorEnabled(), '2FA must remain enabled after the rejected second call');
     }
 
+    /**
+     * With the global kill-switch off shouldRequire2FA() is false for everyone, so the guard
+     * must go by the stored flag and the group enforcement: otherwise a session replaces,
+     * without the password, the batch of an account that already has 2FA.
+     */
+    public function testEnableTwoFactorRejectsStoredFlagUserWhileKillSwitchIsOff(): void
+    {
+        $user = $this->createPlainUser();
+        $this->be($user);
+        $this->enableTwoFactor('email_otp');
+        $this->assertResponseStatus(200);
+        $before = $this->unusedCodes($user);
+        $this->assertCount(10, $before);
+
+        config(['two_factor.enabled' => false]);
+        $this->enableTwoFactor('email_otp');
+
+        $this->assertResponseStatus(412);
+        $this->assertSame($before, $this->unusedCodes($user), 'the batch must not be replaced');
+    }
+
+    public function testEnableTwoFactorRejectsGroupEnforcedUserWhileKillSwitchIsOff(): void
+    {
+        $admin = $this->admin();
+        $this->assertTrue($admin->isTwoFactorEnforcedByGroup(), 'seeded admin must be in an enforced group');
+        $this->be($admin);
+
+        config(['two_factor.enabled' => false]);
+        $this->enableTwoFactor('email_otp');
+
+        $this->assertResponseStatus(412);
+        EntityManager::clear();
+        $reloaded = EntityManager::getRepository(User::class)->find($admin->getId());
+        $this->assertFalse($reloaded->isTwoFactorEnabled(), 'the stored flag must not be left behind');
+        $this->assertSame([], $this->unusedCodes($admin), 'no batch must be generated');
+    }
+
+    public function testProfileViewCarriesTheKillSwitchState(): void
+    {
+        $this->be($this->createPlainUser());
+
+        $this->action('GET', 'UserController@getProfile');
+        $this->assertResponseStatus(200);
+        $this->assertViewHas('two_factor_globally_enabled', true);
+
+        config(['two_factor.enabled' => false]);
+        $this->action('GET', 'UserController@getProfile');
+        $this->assertResponseStatus(200);
+        $this->assertViewHas('two_factor_globally_enabled', false);
+    }
+
     public function testEnableTwoFactorRejectsUnavailableMethod(): void
     {
         // sms_otp is a stub in Phase I (isPhoneNumberVerified() is hardcoded false),
@@ -313,6 +365,16 @@ final class RecoveryCodeRegenerationTest extends BrowserKitTestCase
         $this->action('POST', 'Api\\UserApiController@regenerateRecoveryCodes', [], [], [], []);
 
         $this->assertResponseStatus(412);
+    }
+
+    /** @return int[] ids of the unused recovery codes of the user, sorted */
+    private function unusedCodes(User $user): array
+    {
+        $ids = DB::table('user_recovery_codes')
+            ->where('user_id', $user->getId())->whereNull('used_at')->pluck('id')
+            ->map(fn($id) => (int)$id)->all();
+        sort($ids);
+        return $ids;
     }
 
     private function enableTwoFactor(string $method)

@@ -68,9 +68,9 @@ export const getUserAccessTokens = async (page = 1, order = 'created_at', orderD
 
 export const save = async (entity, pic, token) => {
 
-    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {'X-CSRF-TOKEN': token}).then(() => {
+    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': token}).then(() => {
         if (pic) {
-            return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token});
+            return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {}, {'X-CSRF-TOKEN': token});
         }
         return Promise.resolve();
     });
@@ -123,6 +123,13 @@ export const revokeTrustedDevice = async (id) => {
 
 export const revokeAllTrustedDevices = async () => {
     return deleteRawRequest(window.REVOKE_ALL_TRUSTED_DEVICES_ENDPOINT)({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+}
+
+// currentPassword is optional: a user without a password (social-only account) disables
+// inside the recovery enrollment window instead of confirming one.
+export const disableTwoFactor = async (currentPassword = null) => {
+    const params = currentPassword ? {current_password: currentPassword} : {};
+    return postRawRequestFull(window.DISABLE_TWO_FACTOR_ENDPOINT)(params, jsonHeaders());
 }
 
 const normalizeEntity = (entity) => {

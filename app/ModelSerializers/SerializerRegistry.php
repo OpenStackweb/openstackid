@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+use App\ModelSerializers\Auth\AdminUserSerializer;
 use App\ModelSerializers\Auth\PrivateUserSerializer;
 use App\ModelSerializers\Auth\PublicGroupSerializer;
 use App\ModelSerializers\Auth\PublicUserSerializer;
@@ -44,6 +45,7 @@ final class SerializerRegistry
 
     const SerializerType_Public  = 'PUBLIC';
     const SerializerType_Private = 'PRIVATE';
+    const SerializerType_Admin   = 'ADMIN';
 
     private function __clone(){}
 
@@ -80,6 +82,7 @@ final class SerializerRegistry
         $this->registry["User"] = [
             self::SerializerType_Public => PublicUserSerializer::class,
             self::SerializerType_Private => PrivateUserSerializer::class,
+            self::SerializerType_Admin => AdminUserSerializer::class,
         ];
 
         $this->registry["UserAction"] = UserActionSerializer::class;

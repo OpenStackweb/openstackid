@@ -43,11 +43,14 @@ final class TwoFactorProfileRoutesCsrfTest extends TestCase
     {
         return [
             'enable 2fa'                 => ['/admin/api/v1/users/me/2fa/enable'],
+            'disable 2fa'                => ['/admin/api/v1/users/me/2fa/disable'],
             'regenerate recovery codes'  => ['/admin/api/v1/users/me/recovery-codes/regenerate'],
             'enroll recovery codes'      => ['/admin/api/v1/users/me/recovery-codes/enroll'],
             'acknowledge recovery codes' => ['/admin/api/v1/users/me/recovery-codes/acknowledge'],
             'revoke trusted device'      => ['/admin/api/v1/users/me/2fa/devices/1', 'DELETE'],
             'revoke all trusted devices' => ['/admin/api/v1/users/me/2fa/devices', 'DELETE'],
+            'admin update user (2fa flag)' => ['/admin/api/v1/users/1', 'PUT'],
+            'admin update user picture'  => ['/admin/api/v1/users/1/pic', 'PUT'],
         ];
     }
 }
