@@ -424,7 +424,6 @@ final class UserService extends AbstractService implements IUserService
             if ($former_email != $user->getEmail()) {
                 Log::warning(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email, $user->getEmail()));
                 $user->clearEmailVerification();
-                Event::dispatch(new UserEmailUpdated($user->getId()));
             }
 
             if ($former_password != $user->getPassword()) {
@@ -437,6 +436,12 @@ final class UserService extends AbstractService implements IUserService
             // a refused enable must roll back the whole update, like the group check above.
             if ($two_factor_change === true && !$user->isTwoFactorMethodEnabled(User::MFAMethod_OTP))
                 throw new ValidationException("Two-factor authentication requires a verified email address.");
+
+            // dispatched only after every refusal above: the listener flushes and queues the
+            // verification mail (and the flush queues the audit action), and a queued job
+            // survives the rollback of this transaction
+            if ($former_email != $user->getEmail())
+                Event::dispatch(new UserEmailUpdated($user->getId()));
 
             return $user;
         });

@@ -15,7 +15,9 @@
 use App\libs\Auth\Factories\UserFactory;
 use App\libs\Auth\Models\IGroupSlugs;
 use App\libs\Auth\Repositories\IGroupRepository;
+use App\Jobs\AddUserAction;
 use App\Mail\TwoFactorEnabledByAdminMail;
+use App\Mail\UserEmailVerificationRequest;
 use App\Services\Auth\IDeviceTrustService;
 use App\Services\Auth\IRecoveryCodeService;
 use Auth\AuthHelper;
@@ -23,6 +25,7 @@ use Auth\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Session;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 
@@ -250,6 +253,27 @@ final class AdminUserTwoFactorUpdateTest extends BrowserKitTestCase
         $this->assertSame('Plain', $this->row($user)->first_name, 'the rest of the update must be rolled back');
         $this->assertSame(0, (int)$this->row($user)->two_factor_enabled);
         Mail::assertNotQueued(TwoFactorEnabledByAdminMail::class);
+    }
+
+    public function testRefusedEnableTogetherWithAnEmailChangeQueuesNoVerificationMailNorAuditAction(): void
+    {
+        $user = $this->plainUser(false);
+        $former_email = $this->row($user)->email;
+        Queue::fake();
+
+        $this->updateUser($user, ['two_factor_enabled' => 1, 'email' => 'new.' . uniqid() . '@test.invalid']);
+
+        $this->assertResponseStatus(412);
+        EntityManager::clear();
+        $this->assertSame($former_email, $this->row($user)->email, 'the email change must be rolled back');
+        $this->assertSame(0, (int)$this->row($user)->two_factor_enabled);
+        // a queued job survives the rollback, so nothing may be queued before the refusal
+        Mail::assertNotQueued(UserEmailVerificationRequest::class);
+        // other audit actions may be pushed while the request is built; only the email change matters
+        Queue::assertNotPushed(AddUserAction::class, function (AddUserAction $job) {
+            $action = (new \ReflectionProperty($job, 'action'))->getValue($job);
+            return str_starts_with($action, 'USER UPDATED');
+        });
     }
 
     public function testEnablingTogetherWithEmailVerifiedInTheSameSaveSucceeds(): void
