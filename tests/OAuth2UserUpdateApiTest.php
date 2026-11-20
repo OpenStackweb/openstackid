@@ -205,7 +205,8 @@ final class OAuth2UserUpdateApiTest extends OAuth2ProtectedApiTestCase
         $this->json
         (
             "PUT",
-            "https://local.idp.com/api/v1/users/me",
+            // the bearer token audience is the app url, the request must target that host
+            $this->current_realm . "/api/v1/users/me",
             ['first_name' => 'Renamed', 'bio' => 'a non empty bio'],
             $this->getJsonHeaders()
         );
