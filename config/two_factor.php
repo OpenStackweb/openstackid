@@ -1,0 +1,130 @@
+<?php
+/**
+ * Copyright 2026 OpenStack Foundation
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
+
+use App\libs\Auth\Models\IGroupSlugs;
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Global Kill-Switch
+    |--------------------------------------------------------------------------
+    |
+    | Master switch for the whole 2FA gate (SDS idp-mfa.md §10.1 rollout plan).
+    | Defaults on; set TWO_FACTOR_ENABLED=false in a specific environment to
+    | instantly revert to password-only login with no code rollback needed.
+    |
+    */
+    'enabled' => env('TWO_FACTOR_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enforced Groups
+    |--------------------------------------------------------------------------
+    |
+    | Users that belong to any of these groups are required to complete 2FA
+    | regardless of the value of their `two_factor_enabled` flag.
+    |
+    */
+    'enforced_groups' => [
+        IGroupSlugs::SuperAdminGroup,
+        IGroupSlugs::AdminGroup,
+        IGroupSlugs::OAuth2ServerAdminGroup,
+        IGroupSlugs::OpenIdServerAdminsGroup,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Device Trust
+    |--------------------------------------------------------------------------
+    */
+    'device_trust_lifetime_days' => env('DEVICE_TRUST_LIFETIME_DAYS', 30),
+    'cookie_name' => env('DEVICE_TRUST_COOKIE_NAME', 'device_trust_token'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Challenge Code Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | Seconds an MFA email code stays valid. Applies to every challenge,
+    | including logins started from an OAuth2 client: the client's own
+    | passwordless otp_lifetime (where 0 means "never expires") is never
+    | used for a second factor. Non-positive values fall back to 600.
+    |
+    */
+    'otp_lifetime' => env('TWO_FACTOR_OTP_LIFETIME', 600),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pending Challenge Session
+    |--------------------------------------------------------------------------
+    |
+    | Seconds a pending 2FA challenge stays valid in the session after the
+    | password step (SDS idp-mfa.md §4.14). The effective TTL is
+    | max(session_ttl, effective otp_lifetime), enforced in
+    | AbstractMFAChallengeStrategy::resolvePendingSessionTtl(), so the session
+    | can never expire before the code and its UI countdown do. Raise this
+    | value only to keep the challenge alive longer than the code.
+    |
+    */
+    'session_ttl' => env('TWO_FACTOR_SESSION_TTL', 600),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Recovery-code enrollment window
+    |--------------------------------------------------------------------------
+    |
+    | Seconds after a successful 2FA challenge (verify2FA / verify2FARecovery)
+    | during which the session can generate a recovery-code batch without the
+    | current password (SDS idp-mfa.md §4.10.3, §4.14).
+    |
+    */
+    'recovery_enrollment_window' => env('TWO_FACTOR_RECOVERY_ENROLLMENT_WINDOW', 600),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limiting
+    |--------------------------------------------------------------------------
+    |
+    | Counters live in the cache (NOT the session) so they survive session
+    | cleanup and keep an independent, fixed TTL window.
+    |
+    | verify/recovery: max_attempts failed attempts per window_seconds.
+    | resend:          max_otp_requests requests per otp_window_minutes.
+    |
+    */
+    'rate_limit' => [
+        'max_attempts'       => env('TWO_FACTOR_MAX_ATTEMPTS', 3),
+        'window_seconds'     => env('TWO_FACTOR_RATE_WINDOW_SECONDS', 900),
+        'max_otp_requests'   => env('TWO_FACTOR_MAX_OTP_REQUESTS', 5),
+        'otp_window_minutes' => env('TWO_FACTOR_OTP_WINDOW_MINUTES', 15),
+
+        // Passwordless OTP issuance (POST /auth/login/otp) - anonymous, pre-auth
+        // endpoint, keyed by the submitted email rather than a session user id.
+        // Kept independent from the MFA resend keys above so ops can tune this
+        // budget separately.
+        'max_otp_email_requests'   => env('TWO_FACTOR_MAX_OTP_EMAIL_REQUESTS', 5),
+        'otp_email_window_minutes' => env('TWO_FACTOR_OTP_EMAIL_WINDOW_MINUTES', 15),
+
+        // Recovery-code enrollment (POST recovery-codes/enroll), keyed by the
+        // authenticated user; every request counts (SDS idp-mfa.md §4.12).
+        'max_enroll_requests'   => env('TWO_FACTOR_MAX_ENROLL_REQUESTS', 5),
+        'enroll_window_minutes' => env('TWO_FACTOR_ENROLL_WINDOW_MINUTES', 15),
+
+        // Password confirmation of the authenticated user's 2FA changes (POST
+        // 2fa/disable and recovery-codes/regenerate), keyed by the authenticated
+        // user and shared by both routes; only failed requests count.
+        'max_password_confirm_attempts'   => env('TWO_FACTOR_MAX_PASSWORD_CONFIRM_ATTEMPTS', 5),
+        'password_confirm_window_minutes' => env('TWO_FACTOR_PASSWORD_CONFIRM_WINDOW_MINUTES', 15),
+    ],
+];

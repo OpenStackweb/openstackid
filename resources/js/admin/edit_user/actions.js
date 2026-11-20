@@ -72,18 +72,25 @@ export const fetchGroups = async (url, query) => {
     return response.data;
 }
 
-export const save = async (entity, pic, token) => {
-    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {} ,{'X-CSRF-TOKEN': token})
-        .then((res) => {
+/**
+ * @param twoFactorBaseline the 2FA flag the form was last loaded/saved with: the flag is sent
+ *                          only when the admin changed it (see normalizeEntity)
+ * @returns the saved user as returned by the server
+ */
+export const save = async (entity, pic, token, twoFactorBaseline) => {
+    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity, twoFactorBaseline), {} ,{'X-CSRF-TOKEN': token})
+        .then(({response}) => {
+                // the saved user (admin serializer), so the form can pick up the 2FA state the
+                // server computed: the enforcement depends on the groups saved with this request
                 if (pic) {
-                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token});
+                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {}, {'X-CSRF-TOKEN': token}).then(() => response);
                 }
-                return Promise.resolve()
+                return response;
             }
         );
 }
 
-const normalizeEntity = (entity) => {
+export const normalizeEntity = (entity, twoFactorBaseline) => {
 
     entity.public_profile_show_photo = entity.public_profile_show_photo ? 1 : 0;
     entity.public_profile_show_fullname = entity.public_profile_show_fullname ? 1 : 0;
@@ -91,6 +98,17 @@ const normalizeEntity = (entity) => {
     entity.public_profile_allow_chat_with_me = entity.public_profile_allow_chat_with_me ? 1 : 0;
     entity.active = entity.active ? 1 : 0;
     entity.email_verified = entity.email_verified ? 1 : 0;
+    // 1/0 like the other checkboxes, but only when the admin changed the box during this
+    // form session: a stale form (2FA turned on by the user after the page loaded) must not
+    // send the old value on an unrelated save, the server would disable 2FA. The rest of
+    // the 2FA state is read only.
+    if (!!entity.two_factor_enabled === !!twoFactorBaseline)
+        delete entity.two_factor_enabled;
+    else
+        entity.two_factor_enabled = entity.two_factor_enabled ? 1 : 0;
+    delete entity.two_factor_enforced;
+    delete entity.two_factor_enforced_at;
+    delete entity.two_factor_method;
     entity.post_code = entity.post_code.toString();
 
     if (entity.birthday) {

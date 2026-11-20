@@ -23,6 +23,11 @@ const createErrorHandler = (customHandler = null) => {
             }
             return showMessage("Validation error", messageLines, "warning");
         }
+        if (err.status === 429) {
+            // rate limited (e.g. too many failed password confirmations)
+            const message = err.response?.body?.error_message || "Too many attempts. Please try again later.";
+            return showMessage("Too many attempts", message, "warning");
+        }
         return showMessage("Something went wrong!", null, "error");
     };
 };
@@ -81,6 +86,18 @@ export const formatTime = (timeInSeconds) => {
     }
     return res;
 }
+
+export const downloadTextFile = (filename, content) => {
+    const blob = new Blob([content], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
 
 export const decodeHtmlEntities = (text) => {
   const textarea = document.createElement('textarea');

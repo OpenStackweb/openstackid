@@ -45,12 +45,18 @@ Route::group(array('middleware' => ['ssl']), function () {
         Route::group(array('prefix' => 'login'), function () {
             Route::get('', "UserController@getLogin");
             Route::post('account-verify', [ 'middleware' => ['csrf'], 'uses' => 'UserController@getAccount']);
-            Route::post('otp', ['middleware' => ['csrf'], 'uses' => 'UserController@emitOTP']);
+            Route::post('otp', ['middleware' => ['csrf', '2fa.rate:otp'], 'uses' => 'UserController@emitOTP']);
             Route::group(array('prefix' => 'verification'), function () {
                 Route::post('resend', ['middleware' => ['csrf'], 'uses' => 'UserController@resendVerificationEmail']);
             });
+            Route::group(array('prefix' => '2fa'), function () {
+                Route::post('verify',   ['middleware' => ['csrf', '2fa.rate:verify'],   'uses' => 'UserController@verify2FA']);
+                Route::post('recovery', ['middleware' => ['csrf', '2fa.rate:recovery'], 'uses' => 'UserController@verify2FARecovery']);
+                Route::post('resend',   ['middleware' => ['csrf', '2fa.rate:resend'],   'uses' => 'UserController@resend2FA']);
+            });
             Route::post('', ['middleware' => 'csrf', 'uses' => 'UserController@postLogin']);
             Route::get('cancel', "UserController@cancelLogin");
+            Route::post('reset', ['middleware' => 'csrf', 'uses' => 'UserController@resetLogin']);
             Route::group(array('prefix' => '{provider}'), function () {
                 Route::get('', 'SocialLoginController@redirect')->name("social_login");
                 Route::any('callback','SocialLoginController@callback')->name("social_login_callback");
@@ -192,6 +198,14 @@ Route::group([
             Route::put('', "UserApiController@updateMe");
             Route::put('pic',  "UserApiController@updateMyPic");
             Route::get('actions', "UserActionApiController@getActionsByCurrentUser");
+            Route::post('recovery-codes/regenerate', ['middleware' => ['csrf', '2fa.rate:password_confirm'], 'uses' => "UserApiController@regenerateRecoveryCodes"]);
+            Route::post('recovery-codes/enroll', ['middleware' => ['csrf', '2fa.rate:enroll'], 'uses' => "UserApiController@enrollRecoveryCodes"]);
+            Route::post('recovery-codes/acknowledge', ['middleware' => ['csrf'], 'uses' => "UserApiController@acknowledgeRecoveryCodes"]);
+            Route::post('2fa/enable', ['middleware' => ['csrf'], 'uses' => "UserApiController@enableTwoFactor"]);
+            Route::get('2fa/devices', "UserApiController@getMyTrustedDevices");
+            Route::delete('2fa/devices', ['middleware' => ['csrf'], 'uses' => "UserApiController@revokeAllMyTrustedDevices"]);
+            Route::delete('2fa/devices/{id}', ['middleware' => ['csrf'], 'uses' => "UserApiController@revokeMyTrustedDevice"]);
+            Route::post('2fa/disable', ['middleware' => ['csrf', '2fa.rate:password_confirm'], 'uses' => "UserApiController@disableTwoFactor"]);
         });
 
         Route::get('access-tokens', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => 'ClientApiController@getAllAccessTokens']);
@@ -206,8 +220,8 @@ Route::group([
 
             Route::get('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@get"]);
             Route::delete('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@delete"]);
-            Route::put('', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@update"]);
-            Route::put('pic', ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@updatePic"]);
+            Route::put('', ['middleware' => ['csrf', 'openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@update"]);
+            Route::put('pic', ['middleware' => ['csrf', 'openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@updatePic"]);
             Route::group(['prefix' => 'access-tokens'], function () {
                 Route::delete('{value}',  ['middleware' => ['openstackid.currentuser.serveradmin.json'], 'uses' => "UserApiController@revokeToken"]);
             });

@@ -83,6 +83,40 @@ class OTPModelTest extends BrowserKitTestCase
         $this->assertTrue(strlen($otp->getValue()) == $client->getOtpLength());
     }
 
+    public function testCreateFromPayloadLifetimeOverrideWinsOverClientLifetime(){
+        $client_repository = EntityManager::getRepository(Client::class);
+        $client = $client_repository->findAll()[0];
+        $this->assertInstanceOf(Client::class, $client);
+
+        $client->enablePasswordless();
+        $client->setOtpLifetime(0); // passwordless "never expires"
+        $client->setOtpLength(6);
+        EntityManager::persist($client);
+
+        $payload = [
+            OAuth2Protocol::OAuth2Protocol_ResponseType => OAuth2Protocol::OAuth2Protocol_ResponseType_OTP,
+            OAuth2Protocol::OAuth2PasswordlessConnection => OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
+            OAuth2Protocol::OAuth2PasswordlessSend => OAuth2Protocol::OAuth2PasswordlessSendCode,
+            OAuth2Protocol::OAuth2PasswordlessEmail => "override@test.com",
+        ];
+
+        $otp = OTPFactory::buildFromPayload($payload, App::make(IdentifierGenerator::class), $client, 450);
+        $this->assertSame(450, $otp->getLifetime());
+        $this->assertSame(6, strlen($otp->getValue()), 'length still comes from the client');
+    }
+
+    public function testCreateFromPayloadRejectsNonPositiveLifetimeOverride(){
+        $payload = [
+            OAuth2Protocol::OAuth2Protocol_ResponseType => OAuth2Protocol::OAuth2Protocol_ResponseType_OTP,
+            OAuth2Protocol::OAuth2PasswordlessConnection => OAuth2Protocol::OAuth2PasswordlessConnectionEmail,
+            OAuth2Protocol::OAuth2PasswordlessSend => OAuth2Protocol::OAuth2PasswordlessSendCode,
+            OAuth2Protocol::OAuth2PasswordlessEmail => "override@test.com",
+        ];
+
+        $this->expectException(\InvalidArgumentException::class);
+        OTPFactory::buildFromPayload($payload, App::make(IdentifierGenerator::class), null, 0);
+    }
+
     public function testCreateFromPayloadNoClient(){
         $payload =
             [

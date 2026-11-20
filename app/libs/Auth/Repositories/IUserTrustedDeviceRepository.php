@@ -1,0 +1,50 @@
+<?php namespace Auth\Repositories;
+/**
+ * Copyright 2026 OpenStack Foundation
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
+use App\libs\Auth\Models\UserTrustedDevice;
+use Auth\User;
+use models\utils\IBaseRepository;
+
+interface IUserTrustedDeviceRepository extends IBaseRepository
+{
+    /**
+     * Look up a trusted device record by user and hashed identifier (no revoked/expiry filter).
+     */
+    public function getByUserAndDeviceIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice;
+
+    /**
+     * Look up a trusted device record by id, scoped to its owner (no revoked/expiry filter).
+     * Returns null when the id does not exist or belongs to another user.
+     */
+    public function getByIdAndUser(int $id, User $user): ?UserTrustedDevice;
+
+    /**
+     * Look up an active (non-revoked, non-expired) trusted device for a user by its hashed identifier.
+     */
+    public function getActiveByUserAndIdentifier(User $user, string $deviceIdentifier): ?UserTrustedDevice;
+
+    /**
+     * @return UserTrustedDevice[]
+     */
+    public function getActiveByUser(User $user): array;
+
+    /**
+     * Marks every active (non-revoked, non-expired) trusted device of the user as revoked
+     * and returns them. Revokes entity by entity and opens no transaction of its own:
+     * the caller owns the transaction and logs one audit event per returned device
+     * after it commits.
+     *
+     * @return UserTrustedDevice[]
+     */
+    public function revokeAllActiveForUser(User $user): array;
+}

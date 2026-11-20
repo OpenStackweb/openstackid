@@ -57,10 +57,6 @@ final class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by(optional($request->user())->id ?: $request->ip());
         });
 
-        RateLimiter::for('otp', function (Request $request) {
-            return Limit::perMinute(10)->by(optional($request->user())->id ?: $request->ip());
-        });
-
         RateLimiter::for('oauth2', function (Request $request) {
             $maxAttempts = App::environment() == "testing" ? PHP_INT_MAX : 50;
             return Limit::perMinute($maxAttempts)->by(optional($request->user())->id ?: $request->ip());

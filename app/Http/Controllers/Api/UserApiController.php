@@ -13,20 +13,32 @@
  **/
 
 use App\Http\Controllers\APICRUDController;
+use App\Http\Controllers\Traits\MFACookieManager;
 use App\Http\Controllers\Traits\RequestProcessor;
 use App\Http\Controllers\UserValidationRulesFactory;
+use App\libs\Auth\Models\TwoFactorAuditLog;
+use App\libs\Auth\Models\UserTrustedDevice;
+use App\ModelSerializers\Auth\UserTrustedDeviceSerializer;
 use App\ModelSerializers\SerializerRegistry;
+use App\Services\Auth\IDeviceTrustService;
+use App\Services\Auth\IRecoveryCodeService;
+use App\Services\Auth\ITwoFactorAuditService;
+use App\Services\Auth\RecoveryCodesBatch;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
 use Exception;
 use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Validator;
 use models\exceptions\EntityNotFoundException;
 use models\exceptions\ValidationException;
 use OAuth2\Services\ITokenService;
 use OpenId\Services\IUserService;
+use Utils\IPHelper;
 use Utils\Services\ILogService;
 
 /**
@@ -38,10 +50,27 @@ final class UserApiController extends APICRUDController
 
     use RequestProcessor;
 
+    use MFACookieManager;
+
     /**
      * @var ITokenService
      */
     private $token_service;
+
+    /**
+     * @var IRecoveryCodeService
+     */
+    private $recovery_code_service;
+
+    /**
+     * @var IDeviceTrustService
+     */
+    private $device_trust_service;
+
+    /**
+     * @var ITwoFactorAuditService
+     */
+    private $two_factor_audit_service;
 
     /**
      * UserApiController constructor.
@@ -49,17 +78,26 @@ final class UserApiController extends APICRUDController
      * @param ILogService $log_service
      * @param IUserService $user_service
      * @param ITokenService $token_service
+     * @param IRecoveryCodeService $recovery_code_service
+     * @param IDeviceTrustService $device_trust_service
+     * @param ITwoFactorAuditService $two_factor_audit_service
      */
     public function __construct
     (
         IUserRepository $user_repository,
         ILogService     $log_service,
         IUserService    $user_service,
-        ITokenService   $token_service
+        ITokenService   $token_service,
+        IRecoveryCodeService $recovery_code_service,
+        IDeviceTrustService  $device_trust_service,
+        ITwoFactorAuditService $two_factor_audit_service
     )
     {
         parent::__construct($user_repository, $user_service, $log_service);
+        $this->two_factor_audit_service = $two_factor_audit_service;
         $this->token_service = $token_service;
+        $this->recovery_code_service = $recovery_code_service;
+        $this->device_trust_service = $device_trust_service;
     }
 
     /**
@@ -147,7 +185,7 @@ final class UserApiController extends APICRUDController
 
     protected function getAllSerializerType(): string
     {
-        return SerializerRegistry::SerializerType_Private;
+        return SerializerRegistry::SerializerType_Admin;
     }
 
     /**
@@ -247,6 +285,308 @@ final class UserApiController extends APICRUDController
         return $this->update(Auth::user()->getId());
     }
 
+    /**
+     * Enables a 2FA method for the current user and generates the first batch of
+     * recovery codes for them. Plaintext codes are returned once in the response
+     * and never persisted.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function enableTwoFactor()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $data = Request::all();
+            $validator = Validator::make($data, [
+                'method' => 'required|string|in:' . implode(',', User::ValidMFAMethods),
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+
+            $user = Auth::user();
+            $method = $data['method'];
+
+            // The stored flag and group enforcement, not shouldRequire2FA(): that one is
+            // false for everyone while the global kill-switch is off, and then a session
+            // could replace the batch of an account that already has 2FA without the
+            // password. An enforced admin must not mint a batch here either (and would
+            // leave two_factor_enabled=true behind, keeping them enrolled after leaving
+            // the group): they get codes through enroll (inside the enrollment window)
+            // or regenerate (with the password).
+            if ($user->isTwoFactorEnabled() || $user->isTwoFactorEnforcedByGroup()) {
+                return $this->error412(['method' => ['Two-factor authentication is already required for this account. Use the recovery codes section to set up or regenerate your codes.']]);
+            }
+
+            $batch = $this->recovery_code_service->enableTwoFactorAndGenerateCodes($user, $method);
+
+            return $this->ok($this->batchPayload($user, $batch));
+        });
+    }
+
+    /**
+     * Disables 2FA for the current user (SDS idp-mfa.md §5.6). Deletes their recovery
+     * codes and revokes every trusted device, so the device trust cookie is expired too.
+     * Requires the current password, or for a user without one a session inside the
+     * recovery enrollment window (SDS rev 2.6 §4.10.3). Refused for group-enforced users.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function disableTwoFactor()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $data = Request::all();
+            $validator = Validator::make($data, [
+                'current_password' => 'sometimes|nullable|string',
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+
+            $user = Auth::user();
+
+            if ($user->isTwoFactorEnforcedByGroup()) {
+                return $this->error412(['two_factor' => ['Two-factor authentication is required for members of an administrator group and cannot be turned off.']]);
+            }
+
+            if (!$user->isTwoFactorEnabled()) {
+                return $this->error412(['two_factor' => ['Two-factor authentication is not enabled for this account.']]);
+            }
+
+            // the service enforces current_password / the enrollment window for the
+            // self-service actor and throws ValidationException (-> 412)
+            $this->recovery_code_service->disableTwoFactor($user, $data['current_password'] ?? null, $user);
+
+            // the service does not audit the enrollment change: the caller owns the event.
+            // Best-effort, 2FA is already disabled and must not be reported as failed.
+            try {
+                $this->two_factor_audit_service->log(
+                    $user,
+                    TwoFactorAuditLog::EventEnrollmentChanged,
+                    $user->getTwoFactorMethod(),
+                    IPHelper::getUserIp(),
+                    ['enabled' => false, 'actor_id' => $user->getId(), 'reason' => 'self']
+                );
+            } catch (\Throwable $ex) {
+                Log::warning($ex);
+            }
+
+            // every trusted device was just revoked
+            Cookie::queue(Cookie::forget(
+                Config::get('two_factor.cookie_name', 'device_trust_token'),
+                Config::get('session.path'),
+                Config::get('session.domain')
+            ));
+
+            return $this->ok(['two_factor_enabled' => false]);
+        });
+    }
+
+    /**
+     * Invalidates the current user's recovery codes and generates a fresh batch.
+     * Plaintext codes are returned once in the response and never persisted.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function regenerateRecoveryCodes()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $data = Request::all();
+            // current_password is enforced by the service: required for a user
+            // with a password; a user without one is accepted instead inside the
+            // enrollment window (SDS idp-mfa.md §4.10.3).
+            $validator = Validator::make($data, [
+                'current_password' => 'sometimes|nullable|string',
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+
+            $user = Auth::user();
+            $batch = $this->recovery_code_service->regenerateRecoveryCodes($user, $data['current_password'] ?? null);
+
+            return $this->ok($this->batchPayload($user, $batch));
+        });
+    }
+
+    /**
+     * Generates a recovery-code batch without the password for a user who
+     * requires enrollment, right after a real 2FA challenge (SDS idp-mfa.md
+     * §4.10.3). Rate limited by 2fa.rate:enroll, keyed by the authenticated user.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function enrollRecoveryCodes()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $user = Auth::user();
+
+            if (!$this->recovery_code_service->requiresRecoveryCodeEnrollment($user)) {
+                return $this->error412(['recovery_codes' => ['Recovery codes enrollment is not required for this account.']]);
+            }
+
+            if (!$this->recovery_code_service->isWithinEnrollmentWindow($user)) {
+                return $this->error412(['recovery_codes' => ['Your last two-factor verification is too old. Sign out and sign in again, then set up your recovery codes.']]);
+            }
+
+            $batch = $this->recovery_code_service->generateRecoveryCodes($user);
+
+            return $this->ok($this->batchPayload($user, $batch));
+        });
+    }
+
+    /**
+     * Confirms that the user saved the batch they were shown ("I've Saved These
+     * Codes"). The confirmation is bound to the exact batch.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function acknowledgeRecoveryCodes()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $validator = Validator::make(Request::all(), [
+                'batch_id' => 'required|integer',
+            ]);
+
+            if (!$validator->passes()) {
+                return $this->error412($validator->getMessageBag()->getMessages());
+            }
+
+            $user = Auth::user();
+
+            if (!$this->recovery_code_service->acknowledgeRecoveryCodes($user, (int)Request::input('batch_id'))) {
+                return $this->error412(['batch_id' => ['This is not your current batch of recovery codes. Generate a new one.']]);
+            }
+
+            return $this->ok($this->recovery_code_service->getStatus($user)->toArray());
+        });
+    }
+
+    /**
+     * 200 body of every generation endpoint: the plaintext codes, the batch
+     * identifier produced by the generating transaction and the recovery-codes
+     * standing (RecoveryCodesStatus keys), so the UI updates without a reload.
+     */
+    private function batchPayload(User $user, RecoveryCodesBatch $batch): array
+    {
+        return array_merge(
+            [
+                'recovery_codes' => $batch->getCodes(),
+                'batch_id'       => $batch->getBatchId(),
+            ],
+            $this->recovery_code_service->getStatus($user)->toArray()
+        );
+    }
+
+    /**
+     * Lists the current user's active trusted devices. "is_current" flags the
+     * device whose device-trust cookie came with this request.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function getMyTrustedDevices()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $params = [
+                UserTrustedDeviceSerializer::ParamCurrentDeviceIdentifier => $this->getCurrentDeviceIdentifier(),
+            ];
+
+            $data = array_map(
+                fn(UserTrustedDevice $device) => SerializerRegistry::getInstance()
+                    ->getSerializer($device)
+                    ->serialize(null, [], [], $params),
+                $this->device_trust_service->getActiveTrustedDevices(Auth::user())
+            );
+
+            return $this->ok(['data' => array_values($data)]);
+        });
+    }
+
+    /**
+     * Revokes one of the current user's trusted devices. Only the MFA bypass is
+     * removed; the current session stays active.
+     *
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function revokeMyTrustedDevice($id)
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () use ($id) {
+            $device = $this->device_trust_service->revokeTrustedDevice(Auth::user(), intval($id));
+
+            if ($this->isCurrentDevice($device)) {
+                $this->expireDeviceTrustCookie();
+            }
+
+            return $this->deleted();
+        });
+    }
+
+    /**
+     * Revokes all of the current user's active trusted devices. Only the MFA
+     * bypass is removed; the current session stays active.
+     *
+     * @return \Illuminate\Http\JsonResponse|mixed
+     */
+    public function revokeAllMyTrustedDevices()
+    {
+        if (!Auth::check())
+            return $this->error403();
+
+        return $this->processRequest(function () {
+            $devices = $this->device_trust_service->removeTrustedDevices(Auth::user());
+
+            foreach ($devices as $device) {
+                if ($this->isCurrentDevice($device)) {
+                    $this->expireDeviceTrustCookie();
+                    break;
+                }
+            }
+
+            return $this->deleted();
+        });
+    }
+
+    /**
+     * Hashed identifier of the device-trust cookie sent with this request, or
+     * null when there is none.
+     */
+    private function getCurrentDeviceIdentifier(): ?string
+    {
+        $token = $this->getCookieToken();
+        if (empty($token)) return null;
+        return $this->device_trust_service->generateDeviceIdentifier($token);
+    }
+
+    private function isCurrentDevice(UserTrustedDevice $device): bool
+    {
+        $current = $this->getCurrentDeviceIdentifier();
+        return !is_null($current) && hash_equals($device->getDeviceIdentifier(), $current);
+    }
+
     public function revokeAllMyTokens()
     {
         if (!Auth::check())
@@ -281,6 +621,6 @@ final class UserApiController extends APICRUDController
 
     protected function serializerType(): string
     {
-        return SerializerRegistry::SerializerType_Private;
+        return SerializerRegistry::SerializerType_Admin;
     }
 }
