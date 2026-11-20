@@ -219,11 +219,16 @@ final class DoctrineTransactionService implements ITransactionService
         if ($em->isOpen() && $em->getConnection()->isTransactionActive()) return;
 
         while (count($this->after_commit_callbacks) > 0) {
-            $callback = array_shift($this->after_commit_callbacks);
-            try {
-                $callback();
-            } catch (\Throwable $ex) {
-                Log::error($ex);
+            // detach the committed batch first: a callback that runs a transaction of its own and fails
+            // clears the shared queue, that must not discard the callbacks of this batch that are still pending
+            $batch = $this->after_commit_callbacks;
+            $this->after_commit_callbacks = [];
+            foreach ($batch as $callback) {
+                try {
+                    $callback();
+                } catch (\Throwable $ex) {
+                    Log::error($ex);
+                }
             }
         }
     }
