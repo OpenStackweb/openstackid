@@ -385,7 +385,13 @@ final class UserService extends AbstractService implements IUserService
 
         // the verification token and the email are generated once the new email is stored
         if ($email_changed) {
-            Event::dispatch(new UserEmailUpdated($user->getId()));
+            // the email change is already committed, a failure queuing the verification email must not
+            // skip the password change effects below
+            try {
+                Event::dispatch(new UserEmailUpdated($user->getId()));
+            } catch (\Exception $ex) {
+                Log::warning($ex);
+            }
         }
 
         if ($password_changed) {

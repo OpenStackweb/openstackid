@@ -12,10 +12,13 @@
  * limitations under the License.
  **/
 
+use App\Events\UserEmailUpdated;
+use App\Events\UserPasswordResetSuccessful;
 use App\libs\Auth\Factories\UserFactory;
 use App\Mail\UserEmailVerificationRequest;
 use Auth\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use LaravelDoctrine\ORM\Facades\EntityManager;
 
@@ -248,5 +251,36 @@ final class UserUpdateSpamTypeTest extends OpenStackIDBaseTestCase
         Mail::assertQueued(UserEmailVerificationRequest::class, function (UserEmailVerificationRequest $mail) use ($new_email) {
             return $mail->user_email === $new_email;
         });
+    }
+
+    /**
+     * The email change is already committed when the verification email is dispatched, a failure there
+     * must not skip the password change effects.
+     */
+    public function testAdminUpdateEmailDispatchFailureDoesNotSkipPasswordChangeEffects(): void
+    {
+        $user      = $this->buildVerifiedUser();
+        $new_email = sprintf('new.%s@test.com', strtolower(str_random(12)));
+        $old_hash  = $this->getUserRow($user->getId())->password;
+
+        Event::listen(UserEmailUpdated::class, function () {
+            throw new \RuntimeException('mail queue is down');
+        });
+        $password_effects = 0;
+        Event::listen(UserPasswordResetSuccessful::class, function () use (&$password_effects) {
+            $password_effects++;
+        });
+
+        $this->put('/admin/api/v1/users/' . $user->getId(), [
+            'email'    => $new_email,
+            'password'              => '2Wsx3edc!',
+            'password_confirmation' => '2Wsx3edc!',
+        ])->assertResponseStatus(201);
+
+        $row = $this->getUserRow($user->getId());
+        $this->assertEquals($new_email, $row->email);
+        $this->assertEquals(0, $row->email_verified);
+        $this->assertNotEquals($old_hash, $row->password);
+        $this->assertEquals(1, $password_effects);
     }
 }
