@@ -25,4 +25,13 @@ interface ITransactionService {
 	 * @throws Exception
 	 */
 	public function transaction(Closure $callback);
+
+	/**
+	 * Runs a Closure once the outermost active transaction has been committed.
+	 * If there is no active transaction the Closure runs immediately.
+	 * If the transaction is rolled back the Closure is discarded.
+	 * @param Closure $callback
+	 * @return void
+	 */
+	public function afterCommit(Closure $callback): void;
 } 

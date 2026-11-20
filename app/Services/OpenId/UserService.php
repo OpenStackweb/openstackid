@@ -295,8 +295,9 @@ final class UserService extends AbstractService implements IUserService
     public function update(int $id, array $payload): IEntity
     {
         $password_changed = false;
+        $email_changed = false;
 
-        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed) {
+        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed, &$email_changed) {
 
             $user = $this->repository->getById($id);
 
@@ -371,7 +372,7 @@ final class UserService extends AbstractService implements IUserService
             if ($former_email != $user->getEmail()) {
                 Log::warning(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email, $user->getEmail()));
                 $user->clearEmailVerification();
-                Event::dispatch(new UserEmailUpdated($user->getId()));
+                $email_changed = true;
             }
 
             if ($former_password != $user->getPassword()) {
@@ -381,6 +382,11 @@ final class UserService extends AbstractService implements IUserService
 
             return $user;
         });
+
+        // the verification token and the email are generated once the new email is stored
+        if ($email_changed) {
+            Event::dispatch(new UserEmailUpdated($user->getId()));
+        }
 
         if ($password_changed) {
             Session::regenerate();
