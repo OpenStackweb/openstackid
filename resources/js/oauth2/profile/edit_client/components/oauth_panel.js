@@ -99,8 +99,14 @@ const OauthPanel = ({
             refresh_token_lifetime: number()
                 .transform((value, originalValue) => (originalValue === '' ? null : value))
                 .nullable()
-                .integer('The refresh token lifetime must be an integer.')
-                .min(0, 'The refresh token lifetime must be greater or equal than 0.'),
+                // the input is only shown when refresh tokens are enabled: do not let a hidden
+                // invalid value block the save
+                .when('use_refresh_token', {
+                    is: (value) => !!value,
+                    then: (schema) => schema
+                        .integer('The refresh token lifetime must be an integer.')
+                        .min(0, 'The refresh token lifetime must be greater or equal than 0.'),
+                }),
         });
     }
 
