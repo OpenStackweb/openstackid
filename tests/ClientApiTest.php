@@ -171,6 +171,18 @@ class ClientApiTest extends BrowserKitTestCase {
         );
     }
 
+    public function testRefreshTokenLifetimeRejectsValueAboveSigned32BitMax(){
+
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+
+        $this->putRefreshTokenLifetime($client, 2147483648);
+        $this->assertResponseStatus(412);
+
+        $this->putRefreshTokenLifetime($client, 2147483647);
+        $this->assertResponseStatus(201);
+        $this->assertSame(2147483647, $this->getRefreshTokenLifetimeFromAdminSerializer($client));
+    }
+
     public function testRefreshTokenLifetimeRejectsNegativeValue(){
 
         $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);

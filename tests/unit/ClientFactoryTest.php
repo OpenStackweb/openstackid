@@ -101,6 +101,16 @@ class ClientFactoryTest extends BrowserKitTestCase
         }
     }
 
+    public function testRefreshTokenLifetimeUpperBound()
+    {
+        $client = new Client;
+        $client->setRefreshTokenLifetime(2147483647);
+        $this->assertSame(2147483647, $client->getRefreshTokenLifetime());
+
+        $this->expectException(\models\exceptions\ValidationException::class);
+        $client->setRefreshTokenLifetime(2147483648);
+    }
+
     public function testNegativeRefreshTokenLifetimeIsRejected()
     {
         $this->expectException(\models\exceptions\ValidationException::class);

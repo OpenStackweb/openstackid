@@ -1850,8 +1850,10 @@ class Client extends BaseEntity implements IClient
      */
     public function setRefreshTokenLifetime(?int $refresh_token_lifetime): void
     {
-        if (!is_null($refresh_token_lifetime) && $refresh_token_lifetime < 0)
-            throw new ValidationException("refresh_token_lifetime must be null or greater or equal than 0.");
+        // upper bound: oauth2_refresh_token.lifetime is a signed 32 bit int, a larger override would
+        // pass here but fail when the refresh token row is inserted
+        if (!is_null($refresh_token_lifetime) && ($refresh_token_lifetime < 0 || $refresh_token_lifetime > 2147483647))
+            throw new ValidationException("refresh_token_lifetime must be null or between 0 and 2147483647.");
         $this->refresh_token_lifetime = $refresh_token_lifetime;
     }
 

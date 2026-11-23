@@ -721,7 +721,7 @@ final class ClientApiController extends APICRUDController
             'otp_enabled'                     => 'sometimes|boolean',
             'otp_length'                      => 'sometimes|integer|min:4|max:8',
             'otp_lifetime'                    => 'sometimes|integer|min:60|max:600',
-            'refresh_token_lifetime'          => 'sometimes|nullable|integer|min:0',
+            'refresh_token_lifetime'          => 'sometimes|nullable|integer|min:0|max:2147483647',
             'max_allowed_user_sessions'       => 'sometimes|integer|min:0',
         ];
     }
@@ -740,7 +740,7 @@ final class ClientApiController extends APICRUDController
             'redirect_uris'              => 'nullable|string|custom_url_set:application_type',
             'post_logout_redirect_uris'  => 'nullable|string|custom_url_set:application_type',
             'allowed_origins'            => 'nullable|string|custom_url_set:application_type',
-            'refresh_token_lifetime'     => 'sometimes|nullable|integer|min:0',
+            'refresh_token_lifetime'     => 'sometimes|nullable|integer|min:0|max:2147483647',
         ];
     }
 
