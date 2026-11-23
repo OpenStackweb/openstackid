@@ -50,13 +50,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Yarn audit (runtime dependencies)
+      # Every group is audited: the frontend is bundled, so packages declared
+      # under devDependencies (react, superagent) also ship to the browser.
+      - name: Yarn audit
         continue-on-error: true
         run: |
           set +e
           # The exit code of yarn 1 cannot tell a failed audit from a clean one
           # (both can be 1), so the result is read from the JSON summary.
-          yarn audit --groups dependencies --json > yarn-audit.jsonl
+          yarn audit --json > yarn-audit.jsonl
           summary=$(jq -c 'select(.type == "auditSummary") | .data.vulnerabilities' yarn-audit.jsonl | tail -n 1)
           if [ -z "$summary" ]; then
             echo "yarn audit did not complete:"
@@ -65,6 +67,6 @@ jobs:
           fi
           echo "Vulnerabilities by severity: $summary"
           if [ "$(echo "$summary" | jq '.high + .critical')" -gt 0 ]; then
-            yarn audit --groups dependencies --level high
+            yarn audit --level high
             exit 1
           fi
