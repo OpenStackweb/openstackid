@@ -27,9 +27,10 @@ jobs:
           fail-on-scopes: runtime, development, unknown
 
   # Audits every dependency in the lock files.
-  # Report only for now: main still has advisories that predate this workflow, so
-  # a blocking audit would fail every pull request. Remove the two
-  # "continue-on-error" lines once those advisories are patched or accepted.
+  # The Composer audit blocks. The Yarn audit only reports for now: main still
+  # has npm advisories that predate this workflow, so a blocking audit would
+  # fail every pull request. Remove its "continue-on-error" line once those
+  # advisories are patched or accepted.
   audit:
     runs-on: ubuntu-latest
     env:
@@ -44,7 +45,6 @@ jobs:
           tools: composer:v2
           coverage: none
       - name: Composer audit
-        continue-on-error: true
         run: composer audit --locked --abandoned=report --ignore-severity=low --ignore-severity=medium
       - name: Install Node
         uses: actions/setup-node@v4
