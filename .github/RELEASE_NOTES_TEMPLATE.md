@@ -11,5 +11,5 @@ release is running in production.
 
 - Release tag: vX.Y.Z
 - Deployed to production: YYYY-MM-DD
-- Components updated: see "Dependency updates" below
+- Components updated: list them here. A grouped Dependabot pull request shows only its group name under "Dependency updates", so copy the packages from its description.
 - CVEs and advisories addressed: none
