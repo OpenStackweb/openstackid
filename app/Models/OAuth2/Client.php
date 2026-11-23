@@ -117,6 +117,14 @@ class Client extends BaseEntity implements IClient
     private $otp_lifetime;
 
     /**
+     * Per-client refresh token lifetime override (seconds).
+     * NULL = inherit global OAuth2.RefreshToken.Lifetime, 0 = never expires, N > 0 = N seconds
+     * @var int|null
+     */
+    #[ORM\Column(name: 'refresh_token_lifetime', type: 'integer', nullable: true)]
+    private $refresh_token_lifetime;
+
+    /**
      * @var bool
      */
     #[ORM\Column(name: 'locked', type: 'boolean')]
@@ -1827,6 +1835,24 @@ class Client extends BaseEntity implements IClient
     public function setOtpLifetime(int $otp_lifetime): void
     {
         $this->otp_lifetime = $otp_lifetime;
+    }
+
+    /**
+     * @return int|null null means "inherit the global OAuth2.RefreshToken.Lifetime"
+     */
+    public function getRefreshTokenLifetime(): ?int
+    {
+        return is_null($this->refresh_token_lifetime) ? null : intval($this->refresh_token_lifetime);
+    }
+
+    /**
+     * @param int|null $refresh_token_lifetime null = inherit global, 0 = never expires, N > 0 = N seconds
+     */
+    public function setRefreshTokenLifetime(?int $refresh_token_lifetime): void
+    {
+        if (!is_null($refresh_token_lifetime) && $refresh_token_lifetime < 0)
+            throw new ValidationException("refresh_token_lifetime must be null or greater or equal than 0.");
+        $this->refresh_token_lifetime = $refresh_token_lifetime;
     }
 
     public function getOTPGrantsByEmailNotRedeemed(string $email){

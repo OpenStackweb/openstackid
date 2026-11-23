@@ -119,6 +119,11 @@ const normalizeEntity = (entity, entitySection) => {
             normEntity.contacts = Array.isArray(entity.contacts) ? entity.contacts.filter(c => c).join(',') : entity.contacts;
             normEntity.use_refresh_token = entity.use_refresh_token ? 1 : 0;
             normEntity.rotate_refresh_token = entity.rotate_refresh_token ? 1 : 0;
+            // empty / null = inherit the server default, 0 = never expires
+            normEntity.refresh_token_lifetime =
+                entity.refresh_token_lifetime === '' || entity.refresh_token_lifetime == null
+                    ? null
+                    : Number(entity.refresh_token_lifetime);
             normEntity.app_name = entity.app_name;
             normEntity.app_description = entity.app_description;
             if (entity.admin_users) {

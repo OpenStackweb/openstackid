@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
 use LaravelDoctrine\ORM\Facades\EntityManager;
+use App\ModelSerializers\SerializerRegistry;
 use Services\OAuth2\ClientService;
 use Utils\Services\ILockManagerService;
 /**
@@ -97,6 +98,66 @@ class ClientApiTest extends BrowserKitTestCase {
 
         $this->assertResponseStatus(201);
         $this->assertTrue(isset($json_response->client_id) && !empty($json_response->client_id));
+    }
+
+    private function putRefreshTokenLifetime(Client $client, $value): void
+    {
+        $this->action("PUT", "Api\\ClientApiController@update",
+            [
+                'id'                     => $client->id,
+                'application_type'       => $client->getApplicationType(),
+                'refresh_token_lifetime' => $value,
+            ],
+            [],
+            [],
+            []);
+    }
+
+    /**
+     * Reads the value the way the console edit page does: the admin (private) client serializer,
+     * over a refreshed entity.
+     */
+    private function getRefreshTokenLifetimeFromAdminSerializer(Client $client)
+    {
+        // refresh (not clear): clear() would detach the authenticated user and break the next PUT
+        $fresh = EntityManager::getRepository(Client::class)->find($client->id);
+        EntityManager::refresh($fresh);
+        $values = SerializerRegistry::getInstance()
+            ->getSerializer($fresh, SerializerRegistry::SerializerType_Private)
+            ->serialize();
+        $this->assertArrayHasKey('refresh_token_lifetime', $values);
+        return $values['refresh_token_lifetime'];
+    }
+
+    public function testRefreshTokenLifetimeIsWritableAndReadableThroughAdminApi(){
+
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+
+        // unset by default => inherit global
+        $this->assertNull($this->getRefreshTokenLifetimeFromAdminSerializer($client));
+
+        $this->putRefreshTokenLifetime($client, 3600);
+        $this->assertResponseStatus(201);
+        $this->assertSame(3600, $this->getRefreshTokenLifetimeFromAdminSerializer($client));
+
+        // 0 is a real value (never expires), distinct from unset
+        $this->putRefreshTokenLifetime($client, 0);
+        $this->assertResponseStatus(201);
+        $this->assertSame(0, $this->getRefreshTokenLifetimeFromAdminSerializer($client));
+
+        // an empty value clears the override (inherit global). The test harness form-encodes the
+        // request, which drops null; JSON null (what the console UI sends) is covered in ClientFactoryTest.
+        $this->putRefreshTokenLifetime($client, '');
+        $this->assertResponseStatus(201);
+        $this->assertNull($this->getRefreshTokenLifetimeFromAdminSerializer($client));
+    }
+
+    public function testRefreshTokenLifetimeRejectsNegativeValue(){
+
+        $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
+
+        $this->putRefreshTokenLifetime($client, -1);
+        $this->assertResponseStatus(412);
     }
 
     public function testUpdateNativeClientAcceptsCustomSchemePostLogoutUrisAndAllowedOrigins(){

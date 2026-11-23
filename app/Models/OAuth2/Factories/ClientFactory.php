@@ -219,6 +219,14 @@ final class ClientFactory
             $client->setOtpLifetime(intval($payload['otp_lifetime']));
         }
 
+        // array_key_exists (not isset): an explicit null / empty value clears the override (inherit global)
+        if(array_key_exists('refresh_token_lifetime', $payload)){
+            $value = $payload['refresh_token_lifetime'];
+            $client->setRefreshTokenLifetime(
+                (is_null($value) || $value === '') ? null : intval($value)
+            );
+        }
+
         if(isset($payload['max_allowed_user_sessions'])){
             $client->setMaxAllowedUserSessions(intval($payload['max_allowed_user_sessions']));
         }

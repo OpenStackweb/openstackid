@@ -5,7 +5,7 @@ import TagsInput, {getTags} from "../../../../components/tags_input";
 import {handleErrorResponse} from "../../../../utils";
 import {CheckboxFormControl, SimpleTextFormControl} from "./form_controls";
 import {useFormik} from 'formik';
-import {object, ref, string} from 'yup';
+import {number, object, ref, string} from 'yup';
 import AssignmentIcon from "@material-ui/icons/Assignment";
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
@@ -96,6 +96,11 @@ const OauthPanel = ({
             logo_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
             tos_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
             policy_uri: string().max(SIMPLE_INPUT_MAX_LENGTH, '').nullable(),
+            refresh_token_lifetime: number()
+                .transform((value, originalValue) => (originalValue === '' ? null : value))
+                .nullable()
+                .integer('The refresh token lifetime must be an integer.')
+                .min(0, 'The refresh token lifetime must be greater or equal than 0.'),
         });
     }
 
@@ -230,6 +235,19 @@ const OauthPanel = ({
                                 value={formik.values.rotate_refresh_token}
                                 onChange={formik.handleChange}
                             />
+                            {
+                                formik.values.use_refresh_token &&
+                                <SimpleTextFormControl
+                                    id="refresh_token_lifetime"
+                                    title="Refresh Token Lifetime (Seconds, optional)"
+                                    tooltip="Overrides the server default refresh token lifetime for this client. Leave empty to use the server default. 0 means the refresh token never expires."
+                                    type="number"
+                                    value={formik.values.refresh_token_lifetime ?? ''}
+                                    touched={formik.touched.refresh_token_lifetime}
+                                    errors={formik.errors.refresh_token_lifetime}
+                                    onChange={formik.handleChange}
+                                />
+                            }
                         </>
                     }
                 </FormGroup>
