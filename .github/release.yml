@@ -1,0 +1,11 @@
+# Categories for automatically generated release notes.
+# Dependabot labels its pull requests "dependencies", so the components that a
+# release updates are listed on their own for the patch record.
+changelog:
+  categories:
+    - title: Dependency updates
+      labels:
+        - dependencies
+    - title: Other changes
+      labels:
+        - "*"

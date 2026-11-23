@@ -1,0 +1,60 @@
+name: Dependency Audit
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 6 * * 1' # Mondays at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Blocks a pull request that adds a dependency, or updates one to a version,
+  # with a known vulnerability of high or critical severity.
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v5.0.1
+        with:
+          fail-on-severity: high
+
+  # Audits every dependency in the lock files.
+  # Report only for now: main still has advisories that predate this workflow, so
+  # a blocking audit would fail every pull request. Remove the two
+  # "continue-on-error" lines once those advisories are patched or accepted.
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      PHP_VERSION: 8.3
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Install PHP
+        uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: ${{env.PHP_VERSION}}
+          tools: composer:v2
+          coverage: none
+      - name: Composer audit
+        continue-on-error: true
+        run: composer audit --locked --abandoned=report --ignore-severity=low --ignore-severity=medium
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Yarn audit (runtime dependencies)
+        continue-on-error: true
+        run: |
+          set +e
+          yarn audit --groups dependencies --level high
+          code=$?
+          # yarn 1 returns a bit mask: 8 = high, 16 = critical
+          if [ $((code & 24)) -ne 0 ]; then
+            exit 1
+          fi
