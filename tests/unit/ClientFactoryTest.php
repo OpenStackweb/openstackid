@@ -86,6 +86,21 @@ class ClientFactoryTest extends BrowserKitTestCase
         $this->assertSame(600, $client->getRefreshTokenLifetime());
     }
 
+    public function testNonNumericRefreshTokenLifetimeIsRejectedInsteadOfBecomingZero()
+    {
+        foreach (['abc', '1e3x', '12.5', [1]] as $bad_value) {
+            try {
+                ClientFactory::populate(new Client, [
+                    'application_type'       => IClient::ApplicationType_Native,
+                    'refresh_token_lifetime' => $bad_value,
+                ]);
+                $this->fail('A non numeric refresh_token_lifetime must be rejected');
+            } catch (\models\exceptions\ValidationException $ex) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
     public function testNegativeRefreshTokenLifetimeIsRejected()
     {
         $this->expectException(\models\exceptions\ValidationException::class);

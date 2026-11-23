@@ -740,6 +740,7 @@ final class ClientApiController extends APICRUDController
             'redirect_uris'              => 'nullable|string|custom_url_set:application_type',
             'post_logout_redirect_uris'  => 'nullable|string|custom_url_set:application_type',
             'allowed_origins'            => 'nullable|string|custom_url_set:application_type',
+            'refresh_token_lifetime'     => 'sometimes|nullable|integer|min:0',
         ];
     }
 

@@ -152,6 +152,25 @@ class ClientApiTest extends BrowserKitTestCase {
         $this->assertNull($this->getRefreshTokenLifetimeFromAdminSerializer($client));
     }
 
+    public function testCreateRejectsNonNumericRefreshTokenLifetime(){
+
+        $response = $this->action("POST", "Api\\ClientApiController@create",
+            [
+                'app_name'               => 'refresh_lifetime_invalid_app',
+                'app_description'        => 'refresh lifetime invalid app',
+                'application_type'       => IClient::ApplicationType_Native,
+                'refresh_token_lifetime' => 'abc',
+            ],
+            [],
+            [],
+            []);
+
+        $this->assertResponseStatus(412);
+        $this->assertNull(
+            EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'refresh_lifetime_invalid_app'])
+        );
+    }
+
     public function testRefreshTokenLifetimeRejectsNegativeValue(){
 
         $client = EntityManager::getRepository(Client::class)->findOneBy(['app_name' => 'oauth2_native_app']);
