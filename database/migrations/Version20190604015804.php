@@ -297,6 +297,7 @@ create table if not exists oauth2_client
 	otp_enabled tinyint(1) default '0' not null,
 	otp_length int default '6' not null,
 	otp_lifetime int default '120' not null,
+	refresh_token_lifetime int unsigned null,
 	resource_server_id bigint unsigned null,
 	website text null,
 	application_type enum('WEB_APPLICATION', 'JS_CLIENT', 'SERVICE', 'NATIVE') default 'WEB_APPLICATION' null,
