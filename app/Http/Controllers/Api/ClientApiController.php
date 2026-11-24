@@ -742,6 +742,23 @@ final class ClientApiController extends APICRUDController
         ];
     }
 
+    /**
+     * Credentials and ownership must never be set through the update endpoint:
+     * credentials change only via ClientCredentialGenerator (create / regenerate).
+     * @param array $payload
+     * @return array
+     */
+    protected function curateUpdatePayload(array $payload): array
+    {
+        unset(
+            $payload['client_id'],
+            $payload['client_secret'],
+            $payload['client_secret_expires_at'],
+            $payload['owner']
+        );
+        return $payload;
+    }
+
     protected function getResourceServerContext(): IResourceServerContext
     {
         // TODO: Implement getResourceServerContext() method.
