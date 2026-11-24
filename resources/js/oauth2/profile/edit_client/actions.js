@@ -11,7 +11,7 @@ export const ClientEntitySection = {
 
 export const regenerateClientSecret = async (clientId) => {
     return putRawRequest(window.REGENERATE_CLIENT_SECRET_ENDPOINT
-        .replace('@client_id', clientId))({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+        .replace('@client_id', clientId))(null, {}, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
 export const getAccessTokens = async (clientId, page = 1, perPage = PAGE_SIZE, order = 'created_at', orderDir = 'desc', filters = {}) => {
@@ -72,7 +72,7 @@ export const removeScope = async (clientId, scopeId) => {
 
 export const addPublicKey = async (clientId, entity) => {
     return postRawRequest(window.ADD_PUBLIC_KEY_ENDPOINT
-        .replace('@client_id', clientId))(normalizeEntity(entity, ClientEntitySection.PUBLIC_KEYS), {}, {'X-CSRF-TOKEN': window.CSFR_TOKEN});
+        .replace('@client_id', clientId))(normalizeEntity(entity, ClientEntitySection.PUBLIC_KEYS), {'X-CSRF-TOKEN': window.CSFR_TOKEN});
 }
 
 export const getPublicKeys = async (clientId, page = 1, perPage = PAGE_SIZE) => {

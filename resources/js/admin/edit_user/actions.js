@@ -76,7 +76,7 @@ export const save = async (entity, pic, token) => {
     return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {} ,{'X-CSRF-TOKEN': token})
         .then((res) => {
                 if (pic) {
-                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token});
+                    return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {}, {'X-CSRF-TOKEN': token});
                 }
                 return Promise.resolve()
             }
