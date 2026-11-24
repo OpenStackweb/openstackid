@@ -1,16 +1,3 @@
-// Send the CSRF token on every same-origin state-changing jQuery request.
-// The token is never attached to cross-origin requests.
-if (window.jQuery) {
-    jQuery.ajaxPrefilter(function (options, originalOptions, jqXHR) {
-        var method = (options.type || options.method || 'GET').toUpperCase();
-        if (options.crossDomain || method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return;
-        var meta = document.head.querySelector('meta[name="csrf-token"]');
-        if (meta && meta.content) {
-            jqXHR.setRequestHeader('X-CSRF-TOKEN', meta.content);
-        }
-    });
-}
-
 function ajaxError(jqXHR, textStatus, errorThrown){
     var HTTP_status = jqXHR.status;
     if(HTTP_status != 200){
