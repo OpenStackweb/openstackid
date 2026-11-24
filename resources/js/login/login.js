@@ -25,6 +25,13 @@ import CustomSnackbar from "../components/custom_snackbar";
 import Banner from '../components/banner/banner';
 import OtpInput from 'react-otp-input';
 import {handleErrorResponse, handleThirdPartyProvidersVerbiage} from '../utils';
+import {
+    classifyAccountVerifyError,
+    isSessionExpired,
+    ACCOUNT_NOT_FOUND,
+    SESSION_EXPIRED,
+    SESSION_EXPIRED_MESSAGE
+} from './error_handling';
 
 import styles from './login.module.scss'
 import "./third_party_identity_providers.scss";
@@ -453,6 +460,8 @@ class LoginPage extends React.Component {
             user_verified: props.hasOwnProperty('user_verified') ? props.user_verified : false,
             user_active: props.hasOwnProperty('user_active') ? props.user_active : null,
             email_verified: props.hasOwnProperty('email_verified') ? props.email_verified : null,
+            account_not_found: false,
+            account_verify_error: null,
             errors: {
                 email: '',
                 otp: props.authError != '' ? props.authError : '',
@@ -528,6 +537,10 @@ class LoginPage extends React.Component {
             if(status == 412){
                 const {message, errors} = response.body;
                 this.showAlert(errors[0], 'error');
+                return;
+            }
+            if (isSessionExpired(error)) {
+                this.showAlert(SESSION_EXPIRED_MESSAGE, 'error');
                 return;
             }
             this.showAlert('Oops... Something went wrong!', 'error');
@@ -628,6 +641,8 @@ class LoginPage extends React.Component {
                 user_pic: response.pic,
                 user_fullname: response.full_name,
                 user_verified: true,
+                account_not_found: false,
+                account_verify_error: null,
                 user_active: response.is_active,
                 email_verified: response.is_verified,
                 authFlow: response.has_password_set ? password_flow : otp_flow,
@@ -648,20 +663,20 @@ class LoginPage extends React.Component {
 
             let { response, status, message } = error;
 
+            const {type, message: errorMessage} = classifyAccountVerifyError(status);
+
             let newErrors = {};
 
             newErrors['password'] = '';
-            newErrors['email'] = " ";
-
-            if (status == 429) {
-                newErrors['email'] = "Too many requests. Try it later.";
-            }
+            newErrors['email'] = errorMessage;
 
             this.setState({
                 ...this.state,
                 user_pic: null,
                 user_fullname: null,
                 user_verified: false,
+                account_not_found: type === ACCOUNT_NOT_FOUND,
+                account_verify_error: type === ACCOUNT_NOT_FOUND ? null : type,
                 errors: newErrors,
                 disableInput: false
             });
@@ -686,6 +701,10 @@ class LoginPage extends React.Component {
                 'We\'ve sent you a verification email. Please check your inbox and click the link to verify your account.',
                 'success');
         }, (error) => {
+            if (isSessionExpired(error)) {
+                this.showAlert(SESSION_EXPIRED_MESSAGE, 'error');
+                return;
+            }
             handleErrorResponse(error, (title, messageLines, type) => {
                 const message = (messageLines ?? []).join(', ')
                 this.showAlert(`${title}: ${message}`, type);
@@ -701,6 +720,8 @@ class LoginPage extends React.Component {
             user_pic: null,
             user_fullname: null,
             user_verified: false,
+            account_not_found: false,
+            account_verify_error: null,
             user_active: null,
             email_verified: null,
             authFlow: "password",
@@ -728,9 +749,9 @@ class LoginPage extends React.Component {
     }
 
     getSignUpSignInTitle() {
-      const { errors, user_active } = this.state;
+      const { account_not_found } = this.state;
 
-      if (errors.email && this.existingUserCanContinue()) {
+      if (account_not_found && this.existingUserCanContinue()) {
         return 'Create an account for:';
       }
       return 'Sign in';
@@ -801,7 +822,28 @@ class LoginPage extends React.Component {
                                     // we already had an interaction and got an user error...
                                     this.state.errors.email !== '' &&
                                     <>
-                                        {this.existingUserCanContinue() &&
+                                        {this.state.account_verify_error === SESSION_EXPIRED &&
+                                            <Button variant="contained"
+                                                color="primary"
+                                                title="Reload page"
+                                                className={styles.apply_button}
+                                                onClick={() => window.location.reload()}>
+                                                Reload page
+                                            </Button>
+                                        }
+                                        {this.state.account_verify_error !== null &&
+                                            this.state.account_verify_error !== SESSION_EXPIRED &&
+                                            this.state.account_verify_error !== 'too_many_requests' &&
+                                            <Button variant="contained"
+                                                color="primary"
+                                                title="Try again"
+                                                className={styles.apply_button}
+                                                disabled={this.state.disableInput}
+                                                onClick={this.onValidateEmail}>
+                                                Try again
+                                            </Button>
+                                        }
+                                        {this.state.account_not_found && this.existingUserCanContinue() &&
                                             <EmailErrorActions
                                                 emitOtpAction={this.handleEmitOtpAction}
                                                 onValidateEmail={this.onValidateEmail}
