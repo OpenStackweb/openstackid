@@ -47,7 +47,7 @@ final class UserEmailVerificationRequest extends Mailable
     /**
      * @var string
      */
-    public $bio_link;
+    public $profile_link;
 
     /**
      * The subject of the message.
@@ -66,7 +66,7 @@ final class UserEmailVerificationRequest extends Mailable
         $this->verification_link = $verification_link;
         $this->user_email = $user->getEmail();
         $this->user_fullname = $user->getFullName();
-        $this->bio_link = URL::action("UserController@getLogin");
+        $this->profile_link = URL::signedRoute('auth.profile-link', ['user_id' => $user->getId()]);
     }
 
     /**
