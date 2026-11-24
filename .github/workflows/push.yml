@@ -59,7 +59,8 @@ jobs:
        - name: Install dependencies
          uses: "ramsey/composer-install@v3"
          env:
-           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.PAT }}"} }'
+           # Every locked package comes from a public repository, so the job token is enough.
+           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ github.token }}"} }'
        - name: 'Run Tests'
          env:
            TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
