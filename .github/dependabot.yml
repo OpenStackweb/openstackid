@@ -1,0 +1,39 @@
+# Dependabot version updates.
+#
+# Update pull requests are opened on the first day of each month, so they are ready
+# for the monthly patch cycle. Minor and patch updates are grouped into one pull
+# request per ecosystem; a major update gets its own pull request.
+#
+# Security alerts do not depend on this file: they are a repository setting.
+version: 2
+updates:
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      composer-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"

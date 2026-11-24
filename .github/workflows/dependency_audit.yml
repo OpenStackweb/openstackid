@@ -1,0 +1,72 @@
+name: Dependency Audit
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 6 * * 1' # Mondays at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Blocks a pull request that adds a dependency, or updates one to a version,
+  # with a known vulnerability of high or critical severity.
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v5.0.1
+        with:
+          fail-on-severity: high
+          # The default covers runtime dependencies only.
+          fail-on-scopes: runtime, development, unknown
+
+  # Audits every dependency in the lock files.
+  # The Composer audit blocks. The Yarn audit only reports for now: main still
+  # has npm advisories that predate this workflow, so a blocking audit would
+  # fail every pull request. Remove its "continue-on-error" line once those
+  # advisories are patched or accepted.
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      PHP_VERSION: 8.3
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Install PHP
+        uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: ${{env.PHP_VERSION}}
+          tools: composer:v2
+          coverage: none
+      - name: Composer audit
+        run: composer audit --locked --abandoned=report --ignore-severity=low --ignore-severity=medium
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Every group is audited: the frontend is bundled, so packages declared
+      # under devDependencies (react, superagent) also ship to the browser.
+      - name: Yarn audit
+        continue-on-error: true
+        run: |
+          set +e
+          # The exit code of yarn 1 cannot tell a failed audit from a clean one
+          # (both can be 1), so the result is read from the JSON summary.
+          yarn audit --json > yarn-audit.jsonl
+          summary=$(jq -c 'select(.type == "auditSummary") | .data.vulnerabilities' yarn-audit.jsonl | tail -n 1)
+          if [ -z "$summary" ]; then
+            echo "yarn audit did not complete:"
+            head -n 20 yarn-audit.jsonl
+            exit 1
+          fi
+          echo "Vulnerabilities by severity: $summary"
+          if [ "$(echo "$summary" | jq '.high + .critical')" -gt 0 ]; then
+            yarn audit --level high
+            exit 1
+          fi
