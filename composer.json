@@ -19,6 +19,7 @@
     "beberlei/doctrineextensions": "1.5.0",
     "behat/transliterator": "1.5.0",
     "darkaonline/l5-swagger": "^9.0",
+    "doctrine/orm-plugin-second-level-cache": "1.0.2",
     "ezyang/htmlpurifier": "v4.17.0",
     "firebase/php-jwt": "v7.2.1",
     "get-stream/stream-chat": "^3.10.0",
