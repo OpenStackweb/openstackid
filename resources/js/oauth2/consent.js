@@ -14,6 +14,7 @@ import Typography from "@material-ui/core/Typography";
 import Tooltip from '@material-ui/core/Tooltip';
 import {ClickAwayListener} from "@material-ui/core";
 
+import {AppName, RedirectNotice} from "./consent_components";
 import styles from "./consent.module.scss";
 
 const HtmlTooltip = withStyles((theme) => ({
@@ -36,7 +37,8 @@ const ConsentPage = (
         disclaimer,
         formAction,
         redirectURL,
-        requestedScopes
+        requestedScopes,
+        website
     }) => {
     const formEl = useRef(null);
     const trustEl = useRef(null);
@@ -74,7 +76,7 @@ const ConsentPage = (
                     <img className={styles.app_logo} alt="idpLogo" src={appLogo}/>
                 </a>
                 <h1>
-                    <a target='_blank' href={redirectURL}>{appName}</a>&nbsp;
+                    <AppName appName={appName} website={website}/>&nbsp;
                     <ClickAwayListener onClickAway={handleTooltipClose}>
                         <HtmlTooltip
                             arrow
@@ -101,9 +103,7 @@ const ConsentPage = (
                                                     {ix < contactEmails.length - 1 ? ', ' : ''}
                                                 </span>)}
                                         </div>}
-                                    <div>Clicking 'Accept' will redirect you to: <a href={redirectURL}
-                                                                                    target='_blank'>{redirectURL}</a>.
-                                    </div>
+                                    <RedirectNotice redirectURL={redirectURL}/>
                                 </React.Fragment>
                             }
                         >
