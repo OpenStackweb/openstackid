@@ -28,6 +28,7 @@ use App\Mail\UserPasswordResetMail;
 use App\Services\Auth\IUserService;
 use Auth\Repositories\IUserRepository;
 use Auth\User;
+use Utils\Db\ITransactionService;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Database\Events\MigrationsStarted;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -127,12 +128,19 @@ final class EventServiceProvider extends ServiceProvider
 
         Event::listen(UserSpamStateUpdated::class, function($event)
         {
-            $repository   = App::make(IUserRepository::class);
-            $user         = $repository->getById($event->getUserId());
-            if(is_null($user)) return;
-            if(! $user instanceof User) return;
-            $user_service = App::make(IUserService::class);
-            $user_service->recalculateUserSpamType($user);
+            // this event is also fired from User::preUpdate, while the entity manager is flushing.
+            // The re-classification opens a transaction (and flushes) of its own, doing that in the middle
+            // of a flush wipes the pending change sets of the outer one, so it must wait until the
+            // active transaction (if any) is committed.
+            $tx_service = App::make(ITransactionService::class);
+            $tx_service->afterCommit(function() use ($event) {
+                $repository   = App::make(IUserRepository::class);
+                $user         = $repository->getById($event->getUserId());
+                if(is_null($user)) return;
+                if(! $user instanceof User) return;
+                $user_service = App::make(IUserService::class);
+                $user_service->recalculateUserSpamType($user);
+            });
         });
 
         Event::listen(UserEmailUpdated::class, function($event)

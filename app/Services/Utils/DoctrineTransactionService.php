@@ -35,6 +35,13 @@ final class DoctrineTransactionService implements ITransactionService
     const MaxRetries = 10;
 
     /**
+     * Closures registered through afterCommit while a transaction is active,
+     * they run once the outermost transaction is committed.
+     * @var Closure[]
+     */
+    private $after_commit_callbacks = [];
+
+    /**
      * DoctrineTransactionService constructor.
      * @param string $manager_name
      */
@@ -151,7 +158,8 @@ final class DoctrineTransactionService implements ITransactionService
                 $done = true;
             }
             catch (Exception $ex) {
-
+                // the work of this attempt is discarded, so are its post commit actions
+                $this->after_commit_callbacks = [];
                 $retry++;
                 $em->getConnection()->close();
                 $em->close();
@@ -182,6 +190,46 @@ final class DoctrineTransactionService implements ITransactionService
             }
         }
 
+        $this->runAfterCommitCallbacks();
+
         return $result;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function afterCommit(Closure $callback): void
+    {
+        $em = Registry::getManager($this->manager_name);
+        if ($em->isOpen() && $em->getConnection()->isTransactionActive()) {
+            $this->after_commit_callbacks[] = $callback;
+            return;
+        }
+        $callback();
+    }
+
+    /**
+     * Runs the pending post commit actions, only when the outermost transaction is over.
+     * The data is already committed at this point, so a failure here is logged and does not
+     * fail (nor retry) the transaction that produced it.
+     */
+    private function runAfterCommitCallbacks(): void
+    {
+        $em = Registry::getManager($this->manager_name);
+        if ($em->isOpen() && $em->getConnection()->isTransactionActive()) return;
+
+        while (count($this->after_commit_callbacks) > 0) {
+            // detach the committed batch first: a callback that runs a transaction of its own and fails
+            // clears the shared queue, that must not discard the callbacks of this batch that are still pending
+            $batch = $this->after_commit_callbacks;
+            $this->after_commit_callbacks = [];
+            foreach ($batch as $callback) {
+                try {
+                    $callback();
+                } catch (\Throwable $ex) {
+                    Log::error($ex);
+                }
+            }
+        }
     }
 }
