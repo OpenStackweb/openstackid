@@ -1802,15 +1802,16 @@ final class TokenService extends AbstractService implements ITokenService
     /**
      * @param array $payload
      * @param Client|null $client
+     * @param int|null $lifetime_override seconds; overrides the client/global OTP lifetime when given
      * @return OAuth2OTP
      * @throws Exception
      */
-    public function createOTPFromPayload(array $payload, ?Client $client): OAuth2OTP
+    public function createOTPFromPayload(array $payload, ?Client $client, ?int $lifetime_override = null): OAuth2OTP
     {
 
-        $otp = $this->tx_service->transaction(function () use ($payload, $client) {
+        $otp = $this->tx_service->transaction(function () use ($payload, $client, $lifetime_override) {
 
-            $otp = OTPFactory::buildFromPayload($payload, $this->identifier_generator, $client);
+            $otp = OTPFactory::buildFromPayload($payload, $this->identifier_generator, $client, $lifetime_override);
 
             $user = $this->auth_service->getUserByUsername($otp->getUserName());
             if (!is_null($user)) {

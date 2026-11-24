@@ -19,10 +19,13 @@ use App\Jobs\RevokeUserGrantsOnSessionRevocation;
 use App\Jobs\PublishUserDeleted;
 use App\Jobs\PublishUserUpdated;
 use App\libs\Auth\Factories\UserFactory;
+use App\libs\Auth\Models\TwoFactorAuditLog;
 use App\libs\Auth\Repositories\IGroupRepository;
 use App\libs\Utils\FileSystem\FileNameSanitizer;
 use App\Mail\MonitoredSecurityGroupNotificationEmail;
 use App\Services\AbstractService;
+use App\Services\Auth\IRecoveryCodeService;
+use App\Services\Auth\ITwoFactorAuditService;
 use App\Services\Auth\IUserIdentifierGeneratorService;
 use Auth\Group;
 use Auth\IUserNameGeneratorService;
@@ -96,6 +99,16 @@ final class UserService extends AbstractService implements IUserService
     private $identifier_service;
 
     /**
+     * @var IRecoveryCodeService
+     */
+    private $recovery_code_service;
+
+    /**
+     * @var ITwoFactorAuditService
+     */
+    private $two_factor_audit_service;
+
+    /**
      * UserService constructor.
      * @param IUserRepository $repository
      * @param IGroupRepository $group_repository
@@ -105,6 +118,9 @@ final class UserService extends AbstractService implements IUserService
      * @param ILogService $log_service
      * @param IResourceServerContext $server_ctx
      * @param IUserIdentifierGeneratorService $identifier_service
+     * @param IClientRepository $client_repository
+     * @param IRecoveryCodeService $recovery_code_service
+     * @param ITwoFactorAuditService $two_factor_audit_service
      */
     public function __construct
     (
@@ -116,10 +132,14 @@ final class UserService extends AbstractService implements IUserService
         ILogService $log_service,
         IResourceServerContext $server_ctx,
         IUserIdentifierGeneratorService $identifier_service,
-        IClientRepository $client_repository
+        IClientRepository $client_repository,
+        IRecoveryCodeService $recovery_code_service,
+        ITwoFactorAuditService $two_factor_audit_service
     )
     {
         parent::__construct($tx_service);
+        $this->recovery_code_service = $recovery_code_service;
+        $this->two_factor_audit_service = $two_factor_audit_service;
         $this->repository = $repository;
         $this->group_repository = $group_repository;
         $this->user_name_generator = $user_name_generator;
@@ -295,8 +315,10 @@ final class UserService extends AbstractService implements IUserService
     public function update(int $id, array $payload): IEntity
     {
         $password_changed = false;
+        $two_factor_change = null;
+        $acting_admin = null;
 
-        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed) {
+        $user = $this->tx_service->transaction(function () use ($id, $payload, &$password_changed, &$two_factor_change, &$acting_admin) {
 
             $user = $this->repository->getById($id);
 
@@ -368,16 +390,58 @@ final class UserService extends AbstractService implements IUserService
                 }
             }
 
+            // 2FA is managed here and not in UserFactory::populate: it needs the acting user.
+            // Only an administrator (administrators / super-admins) editing ANOTHER user may change
+            // it, and only when the value differs from the stored one (the admin form sends the key
+            // only when the admin changed the box; other API clients may still send it on every
+            // save). A server admin of the route (openid-server-admins) who is not an administrator
+            // is refused when the key would change something, instead of getting a success that
+            // silently ignored it. On one's own record, including PUT /users/me, the key is
+            // ignored: turning 2FA off needs the password and goes through
+            // POST /users/me/2fa/disable.
+            if (isset($payload['two_factor_enabled'])
+                && !is_null($current_user)
+                && $current_user->getId() != $user->getId()) {
+                $requested = boolval($payload['two_factor_enabled']);
+                if ($requested !== $user->isTwoFactorEnabled()) {
+                    if (!$current_user->isAdmin() && !$current_user->isSuperAdmin())
+                        throw new ValidationException("Only an administrator can change the two-factor authentication of another user.");
+                    // checked against the groups of this same update (the admin form sends
+                    // them on every save) and inside the transaction: a refused change rolls
+                    // the whole update back
+                    // an enforced user is neither switched off (the enforcement does not depend on
+                    // the stored flag) nor switched on: the flag would outlive the group
+                    // membership and keep them enrolled after leaving it (SDS idp-mfa.md §3.6)
+                    if ($user->isTwoFactorEnforcedByGroup())
+                        throw new ValidationException($requested
+                            ? "Two-factor authentication is already enforced by group membership."
+                            : "Two-factor authentication is enforced by group membership and cannot be disabled.");
+                    $two_factor_change = $requested;
+                    $acting_admin = $current_user;
+                }
+            }
+
             if ($former_email != $user->getEmail()) {
                 Log::warning(sprintf("UserService::update use id %s - email changed old %s - email new %s", $id, $former_email, $user->getEmail()));
                 $user->clearEmailVerification();
-                Event::dispatch(new UserEmailUpdated($user->getId()));
             }
 
             if ($former_password != $user->getPassword()) {
                 Log::warning(sprintf("UserService::update use id %s - password changed", $id));
                 $password_changed = true;
             }
+
+            // enable2FA() runs after this transaction commits, so check its precondition here
+            // (after populate and the email change, which may set or clear email verification):
+            // a refused enable must roll back the whole update, like the group check above.
+            if ($two_factor_change === true && !$user->isTwoFactorMethodEnabled(User::MFAMethod_OTP))
+                throw new ValidationException("Two-factor authentication requires a verified email address.");
+
+            // dispatched only after every refusal above: the listener flushes and queues the
+            // verification mail (and the flush queues the audit action), and a queued job
+            // survives the rollback of this transaction
+            if ($former_email != $user->getEmail())
+                Event::dispatch(new UserEmailUpdated($user->getId()));
 
             return $user;
         });
@@ -387,16 +451,53 @@ final class UserService extends AbstractService implements IUserService
             Event::dispatch(new UserPasswordResetSuccessful($user->getId()));
         }
 
+        // after the update transaction: the recovery code service runs its own (it locks the
+        // users row and re-hydrates $user, and DoctrineTransactionService does not nest).
+        // Every business rule that could refuse the change was checked inside the update
+        // transaction above, so only an infrastructure failure gets here; the profile
+        // changes are committed by then, so they are still published and audited.
         try {
-            if (Config::get("queue.enable_message_broker", false) == true)
-                PublishUserUpdated::dispatch($user)->onConnection('message_broker');
-        } catch (\Exception $ex) {
-            Log::warning($ex);
+            if (!is_null($two_factor_change)) {
+                if ($two_factor_change)
+                    $this->recovery_code_service->enableTwoFactorForUser($user, User::MFAMethod_OTP, $acting_admin);
+                else {
+                    $this->recovery_code_service->disableTwoFactor($user, null, $acting_admin);
+                    $this->auditTwoFactorDisabledByAdmin($user, $acting_admin);
+                }
+            }
+        } finally {
+            try {
+                if (Config::get("queue.enable_message_broker", false) == true)
+                    PublishUserUpdated::dispatch($user)->onConnection('message_broker');
+            } catch (\Exception $ex) {
+                Log::warning($ex);
+            }
+
+            $this->addUserCRUDAction($user, $payload, "UPDATE");
         }
 
-        $this->addUserCRUDAction($user, $payload, "UPDATE");
-
         return $user;
+    }
+
+    /**
+     * The recovery code service does not audit the enrollment change: the caller owns the event.
+     * Best-effort, 2FA is already disabled and the update must not be reported as failed.
+     * @param User $user
+     * @param User $acting_admin
+     */
+    private function auditTwoFactorDisabledByAdmin(User $user, User $acting_admin): void
+    {
+        try {
+            $this->two_factor_audit_service->log(
+                $user,
+                TwoFactorAuditLog::EventEnrollmentChanged,
+                $user->getTwoFactorMethod(),
+                IPHelper::getUserIp(),
+                ['enabled' => false, 'actor_id' => $acting_admin->getId(), 'reason' => 'admin']
+            );
+        } catch (\Throwable $ex) {
+            Log::warning($ex);
+        }
     }
 
     /**

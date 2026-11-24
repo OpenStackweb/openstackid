@@ -43,7 +43,7 @@ final class PublicUserSerializer extends BaseUserSerializer
  * Class PrivateUserSerializer
  * @package App\ModelSerializers\Auth
  */
-final class PrivateUserSerializer extends BaseUserSerializer
+class PrivateUserSerializer extends BaseUserSerializer
 {
 
     protected static $allowed_relations = [
@@ -126,6 +126,44 @@ final class PrivateUserSerializer extends BaseUserSerializer
                     $values['groups'] = $res;
                 }
             }
+        }
+
+        return $values;
+    }
+}
+
+/**
+ * Class AdminUserSerializer
+ * The private user plus the 2FA state. For the user admin CRUD, the admin edit page and the
+ * user's own profile. Never for OAuth2 clients: they get the private serializer, whose
+ * shape does not change.
+ * @package App\ModelSerializers\Auth
+ */
+final class AdminUserSerializer extends PrivateUserSerializer
+{
+    protected static $array_mappings = [
+        'TwoFactorEnabled' => 'two_factor_enabled:json_boolean',
+        'TwoFactorMethod' => 'two_factor_method:json_string',
+        'TwoFactorEnforcedAt' => 'two_factor_enforced_at:datetime_epoch',
+    ];
+
+    /**
+     * @param null $expand
+     * @param array $fields
+     * @param array $relations
+     * @param array $params
+     * @return array
+     */
+    public function serialize($expand = null, array $fields = [], array $relations = [], array $params = [])
+    {
+        $user = $this->object;
+        if (!$user instanceof User) return [];
+
+        $values = parent::serialize($expand, $fields, $relations, $params);
+
+        // group-derived, read only: not a stored column
+        if (empty($fields) || in_array('two_factor_enforced', $fields)) {
+            $values['two_factor_enforced'] = $user->isTwoFactorEnforcedByGroup();
         }
 
         return $values;

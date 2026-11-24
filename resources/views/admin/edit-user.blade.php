@@ -84,9 +84,11 @@
             csrfToken: document.head.querySelector('meta[name="csrf-token"]').content,
             fetchGroupsURL: '{!!URL::action("Api\GroupApiController@getAll")!!}',
             initialValues: initialValues,
+            isOwnAccount: {{ $is_own_account ? 'true' : 'false' }},
             languages: languages,
             menuConfig: menuConfig,
             passwordPolicy: passwordPolicy,
+            twoFactorGloballyEnabled: {{ $two_factor_globally_enabled ? 'true' : 'false' }},
             usersListURL: '{!! URL::action("AdminController@listUsers") !!}'
         }
 

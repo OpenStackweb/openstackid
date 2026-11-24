@@ -225,7 +225,10 @@ class CustomValidator extends Validator
         if (is_null($pem)) return null;
         try {
             $key = PublicKeyLoader::load($pem, $password);
-        } catch (NoKeyLoadedException $ex) {
+        } catch (NoKeyLoadedException | \ValueError $ex) {
+            // ValueError: decrypting with a wrong password can, by chance (~1/256, valid padding),
+            // produce garbage that phpseclib's ASN.1 parser rejects with a ValueError instead of
+            // a NoKeyLoadedException
             return null;
         }
         // only RSA keys are valid here (phpseclib 2 RSA::loadKey() also accepted EC keys)
