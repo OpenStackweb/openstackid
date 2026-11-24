@@ -63,6 +63,7 @@ function DrawerComponent() {
                             {menuConfig.settingsText}
                         </Button>
                     </ListItem>
+                    {menuConfig.canAccessOAuth2Console &&
                     <ListItem>
                         <Button aria-controls="oauth-menu"
                                 aria-haspopup="true"
@@ -83,6 +84,7 @@ function DrawerComponent() {
                                 onClick={() => goTo(`${menuConfig.oauthGrantsURL}`)}>{menuConfig.oauthGrantsText}</MenuItem>
                         </Menu>
                     </ListItem>
+                    }
                     {(menuConfig.isOAuth2ServerAdmin || menuConfig.isOpenIdServerAdmin || menuConfig.isSuperAdmin) &&
                         <>
                             <ListItem>
