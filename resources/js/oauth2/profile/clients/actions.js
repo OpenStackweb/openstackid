@@ -55,7 +55,7 @@ export const getClients = async (page = 1, order = 'updated_at', orderDir = 'des
 }
 
 export const addClient = async (entity, token) => {
-    return postRawRequest(window.ADD_CLIENT_ENDPOINT)(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': token});
+    return postRawRequest(window.ADD_CLIENT_ENDPOINT)(normalizeEntity(entity), {'X-CSRF-TOKEN': token});
 }
 
 export const deleteClient = async (id, token) => {

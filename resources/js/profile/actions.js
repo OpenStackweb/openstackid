@@ -68,23 +68,23 @@ export const getUserAccessTokens = async (page = 1, order = 'created_at', orderD
 
 export const save = async (entity, pic, token) => {
 
-    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {'X-CSRF-TOKEN': token}).then(() => {
+    return putRawRequest(window.SAVE_PROFILE_ENDPOINT)(normalizeEntity(entity), {}, {'X-CSRF-TOKEN': token}).then(() => {
         if (pic) {
-            return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {'X-CSRF-TOKEN': token});
+            return putFile(window.SAVE_PIC_ENDPOINT)(pic, 'pic', {}, {'X-CSRF-TOKEN': token});
         }
         return Promise.resolve();
     });
 }
 
-export const revokeToken = async (value, hint) => {
+export const revokeToken = async (value, hint, token) => {
     return deleteRawRequest(window.REVOKE_ACCESS_TOKENS_ENDPOINT
         .replace('@value', value)
         .replace('%40hint', hint)
-    )({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+    )({'X-CSRF-TOKEN': token});
 }
 
-export const revokeAllTokens = async () => {
-    return deleteRawRequest(window.REVOKE_ALL_TOKENS_ENDPOINT)({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+export const revokeAllTokens = async (token) => {
+    return deleteRawRequest(window.REVOKE_ALL_TOKENS_ENDPOINT)({'X-CSRF-TOKEN': token});
 }
 
 const normalizeEntity = (entity) => {

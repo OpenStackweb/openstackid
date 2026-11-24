@@ -9,6 +9,7 @@
 <div class="row">
     <div class="col-md-6">
         <form method="POST" id="form-server-configuration">
+            @csrf
             <legend>General Configuration</legend>
             <div class="form-group">
                 <label for="general-max-failed-login-attempts">MaximunFailed Login Attempts&nbsp;<span class="glyphicon glyphicon-info-sign accordion-toggle" aria-hidden="true" title="in seconds"></span></label>

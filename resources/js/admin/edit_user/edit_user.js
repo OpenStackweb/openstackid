@@ -99,7 +99,7 @@ const EditUserPage = ({
             confirmButtonText: 'Yes, revoke it!'
         }).then((result) => {
             if (result.value) {
-                revokeToken(value, 'access-token').then(() => {
+                revokeToken(value, 'access-token', csrfToken).then(() => {
                     Swal(`Access token revoked`, `The access token has been revoked successfully`, "success");
                     setAccessTokensListRefresh(!accessTokensListRefresh);
                 }).catch((err) => {
