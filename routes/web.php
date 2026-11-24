@@ -133,7 +133,8 @@ Route::group(array('middleware' => ['ssl', 'auth']), function () {
     Route::any("/accounts/user/profile/trusted_site/delete/{id}", "UserController@deleteTrustedSite");
 });
 
-Route::group(['prefix' => 'admin', 'middleware' => ['ssl', 'auth']], function () {
+// state-changing admin routes authenticate with the browser session, so they need CSRF protection
+Route::group(['prefix' => 'admin', 'middleware' => ['ssl', 'auth', 'csrf']], function () {
     //client admin UI
     Route::get('clients/edit/{id}', ['middleware' => ['oauth2.currentuser.allow.client.edition'], 'uses' => 'AdminController@editRegisteredClient']);
     Route::get('clients', 'AdminController@listOAuth2Clients');
@@ -179,7 +180,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['ssl', 'auth']], function ()
 Route::group([
     'namespace' => 'Api',
     'prefix' => 'admin/api/v1',
-    'middleware' => ['ssl', 'auth']], function () {
+    'middleware' => ['ssl', 'auth', 'csrf']], function () {
 
     Route::group(['prefix' => 'users'], function () {
 
