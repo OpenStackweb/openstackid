@@ -2,7 +2,8 @@
 #
 # Update pull requests are opened on the first day of each month, so they are ready
 # for the monthly patch cycle. Minor and patch updates are grouped into one pull
-# request per ecosystem; a major update gets its own pull request.
+# request per ecosystem; a major update gets its own pull request. The Doctrine
+# packages have their own group in Composer.
 #
 # Security alerts do not depend on this file: they are a repository setting.
 version: 2
@@ -13,9 +14,19 @@ updates:
       interval: "monthly"
     open-pull-requests-limit: 5
     groups:
+      # Doctrine moves as one unit: the current releases of laravel-doctrine/* need
+      # doctrine/dbal 4, and the entity mappings are not ready for it. Kept apart so
+      # it does not block the other updates.
+      composer-doctrine:
+        patterns:
+          - "doctrine/*"
+          - "laravel-doctrine/*"
       composer-minor-and-patch:
         patterns:
           - "*"
+        exclude-patterns:
+          - "doctrine/*"
+          - "laravel-doctrine/*"
         update-types:
           - "minor"
           - "patch"
