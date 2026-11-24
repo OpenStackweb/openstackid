@@ -1882,6 +1882,11 @@
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.15.tgz#596a1747233694d50f6ad8a7869fcb6f56cf5841"
   integrity sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==
 
+"@types/less@^3.0.8":
+  version "3.0.8"
+  resolved "https://registry.yarnpkg.com/@types/less/-/less-3.0.8.tgz#c97ddd0b7bab6b7738a06a4ae85848f361fc5cbb"
+  integrity sha512-Gjm4+H9noDJgu5EdT3rUw5MhPBag46fiOy27BefvWkNL8mlZnKnCaVVVTLKj6RYXed9b62CPKnPav9govyQDzA==
+
 "@types/lodash@^4.14.175":
   version "4.17.24"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.24.tgz#4ae334fc62c0e915ca8ed8e35dcc6d4eeb29215f"
@@ -5698,12 +5703,12 @@ launch-editor@^2.6.0:
     picocolors "^1.1.1"
     shell-quote "^1.8.3"
 
-less-loader@^10.2.0:
-  version "10.2.0"
-  resolved "https://registry.yarnpkg.com/less-loader/-/less-loader-10.2.0.tgz#97286d8797dc3dc05b1d16b0ecec5f968bdd4e32"
-  integrity sha512-AV5KHWvCezW27GT90WATaDnfXBv99llDbtaj4bshq6DvAihMdNjaPDcUMa6EXKLRF+P2opFenJp89BXg91XLYg==
+less-loader@^13.1.1:
+  version "13.1.1"
+  resolved "https://registry.yarnpkg.com/less-loader/-/less-loader-13.1.1.tgz#b0ad20837890495c38086223aa3d9de2c5f98260"
+  integrity sha512-v/jsUf6w3TC6nBNVf11W7iROz7PCeMOPAy+HMjM2LZ1RLKnUlStJpyd1ev4EpUzulUvtUVzYSOlq9sPQSpDB6A==
   dependencies:
-    klona "^2.0.4"
+    "@types/less" "^3.0.8"
 
 less@^4.1.2:
   version "4.6.4"
