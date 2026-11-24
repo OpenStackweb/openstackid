@@ -42,7 +42,7 @@
     "league/flysystem-aws-s3-v3": "3.35.3",
     "php-opencloud/openstack": "3.10.0",
     "phpseclib/phpseclib": "^3.0.57",
-    "predis/predis": "v2.2.2",
+    "predis/predis": "v3.7.1",
     "ryangjchandler/laravel-cloudflare-turnstile": "~3.0.3",
     "s-ichikawa/laravel-sendgrid-driver": "^4.0",
     "smarcet/jose4php": "3.0.0-beta.2",
