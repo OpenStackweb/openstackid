@@ -101,7 +101,13 @@ jobs:
     pages-preview:
         name: Publish Swagger UI to GitHub Pages
         needs: openapi-generate
-        if: github.event_name == 'pull_request'
+        # Only for pull requests that a person opened from a branch of this repository.
+        # On a Dependabot pull request the permissions below still raise the job token, so
+        # the preview would publish output generated while unreviewed dependency code ran.
+        if: >-
+            github.event_name == 'pull_request' &&
+            github.event.pull_request.user.login != 'dependabot[bot]' &&
+            github.event.pull_request.head.repo.full_name == github.repository
         runs-on: ubuntu-latest
 
         permissions:
