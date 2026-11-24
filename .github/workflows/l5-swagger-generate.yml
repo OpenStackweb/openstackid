@@ -57,7 +57,9 @@ jobs:
             - name: Install dependencies
               uses: "ramsey/composer-install@v3"
               env:
-                  COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.PAT }}"} }'
+                  # Every locked package comes from a public repository, so the job token is enough
+                  # to authenticate the downloads. Dependabot runs receive no repository secrets.
+                  COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ github.token }}"} }'
 
             - name: Generate OpenAPI docs
               run: php artisan l5-swagger:generate
@@ -99,7 +101,14 @@ jobs:
     pages-preview:
         name: Publish Swagger UI to GitHub Pages
         needs: openapi-generate
-        if: github.event_name == 'pull_request'
+        # Only for pull requests that a person opened from a branch of this repository.
+        # On a Dependabot pull request the permissions below still raise the job token, so
+        # the preview would publish output generated while unreviewed dependency code ran.
+        # Bot accounts, Dependabot included, have the type "Bot".
+        if: >-
+            github.event_name == 'pull_request' &&
+            github.event.pull_request.user.type == 'User' &&
+            github.event.pull_request.head.repo.full_name == github.repository
         runs-on: ubuntu-latest
 
         permissions:
