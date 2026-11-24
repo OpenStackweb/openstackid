@@ -15,6 +15,7 @@
 use App\libs\Utils\EmailUtils;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use jwa\cryptographic_algorithms\DigitalSignatures_MACs_Registry;
 use jwe\IJWE;
 use jwk\exceptions\InvalidJWKAlgorithm;
 use jwk\exceptions\JWKInvalidSpecException;
@@ -534,22 +535,45 @@ abstract class InteractiveGrantType extends AbstractGrantType
                 $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is IJWS");
                 // signed by client ?
                 try {
+                    // A client that never configured id_token_signed_response_alg
+                    // (DB default 'none') can't possibly have signed this hint under
+                    // that scheme - treat it the same as "no client key found" so it
+                    // falls through to the server-key check below, instead of a fatal
+                    // TypeError on the non-nullable $alg param.
+                    $signing_alg = $client->getIdTokenResponseInfo()->getSigningAlgorithm();
+                    if (is_null($signing_alg)) {
+                        throw new RecipientKeyNotFoundException;
+                    }
+
                     $heuristic = new ClientSigningKeyFinder($this->jwk_set_reader_service);
                     $client_public_sig_key = $heuristic->find
                     (
                         $client,
-                        $client->getIdTokenResponseInfo()->getSigningAlgorithm()
+                        $signing_alg
                     );
 
                     $jwt->setKey($client_public_sig_key);
                 } catch(RecipientKeyNotFoundException $ex) {
                     // try to find the server signing key used ...
                     $this->log_service->debug_msg("InteractiveGrantType::processUserHint token hint is IJWS -> RecipientKeyNotFoundException");
+                    // The server key must be looked up by the algorithm the hint
+                    // itself declares in its JOSE header - not the requesting
+                    // client's id_token_signed_response_alg, which is an unrelated
+                    // preference for id_tokens the IDP issues to that client (and
+                    // can be unconfigured/null, or simply differ from the alg this
+                    // hint - possibly minted for a different client - was signed with).
+                    $hint_alg = DigitalSignatures_MACs_Registry::getInstance()->get
+                    (
+                        $jwt->getJOSEHeader()->getAlgorithm()->getString()
+                    );
+                    if (is_null($hint_alg)) {
+                        throw new ServerKeyNotFoundException('unsupported id_token_hint signing algorithm');
+                    }
                     $heuristic = new ServerSigningKeyFinder($this->server_private_key_repository);
                     $server_private_sig_key = $heuristic->find
                     (
                         $client,
-                        $client->getIdTokenResponseInfo()->getSigningAlgorithm(),
+                        $hint_alg,
                         $jwt->getJOSEHeader()->getKeyID()->getValue()
                     );
                     $jwt->setKey($server_private_sig_key);
