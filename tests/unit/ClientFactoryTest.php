@@ -40,4 +40,80 @@ class ClientFactoryTest extends BrowserKitTestCase
         $this->assertStringNotContainsString(', ', implode(',', $client->getPostLogoutUris()));
         $this->assertStringNotContainsString(', ', $client->getRawRedirectUris());
     }
+
+    public function testRefreshTokenLifetimeDefaultsToInheritGlobal()
+    {
+        $this->assertNull((new Client)->getRefreshTokenLifetime());
+    }
+
+    public function testPopulateSetsRefreshTokenLifetime()
+    {
+        $client = ClientFactory::populate(new Client, [
+            'application_type'       => IClient::ApplicationType_Native,
+            'refresh_token_lifetime' => '3600',
+        ]);
+        $this->assertSame(3600, $client->getRefreshTokenLifetime());
+    }
+
+    public function testPopulateKeepsZeroAsNeverExpires()
+    {
+        // 0 is a real value (infinite) and must not be confused with the unset sentinel (null)
+        $client = ClientFactory::populate(new Client, [
+            'application_type'       => IClient::ApplicationType_Native,
+            'refresh_token_lifetime' => 0,
+        ]);
+        $this->assertSame(0, $client->getRefreshTokenLifetime());
+    }
+
+    public function testPopulateClearsRefreshTokenLifetimeOnNullOrEmpty()
+    {
+        foreach ([null, ''] as $unset_value) {
+            $client = new Client;
+            $client->setRefreshTokenLifetime(600);
+            ClientFactory::populate($client, [
+                'application_type'       => IClient::ApplicationType_Native,
+                'refresh_token_lifetime' => $unset_value,
+            ]);
+            $this->assertNull($client->getRefreshTokenLifetime());
+        }
+    }
+
+    public function testPopulateWithoutKeyKeepsRefreshTokenLifetime()
+    {
+        $client = new Client;
+        $client->setRefreshTokenLifetime(600);
+        ClientFactory::populate($client, ['application_type' => IClient::ApplicationType_Native]);
+        $this->assertSame(600, $client->getRefreshTokenLifetime());
+    }
+
+    public function testNonNumericRefreshTokenLifetimeIsRejectedInsteadOfBecomingZero()
+    {
+        foreach (['abc', '1e3x', '12.5', [1]] as $bad_value) {
+            try {
+                ClientFactory::populate(new Client, [
+                    'application_type'       => IClient::ApplicationType_Native,
+                    'refresh_token_lifetime' => $bad_value,
+                ]);
+                $this->fail('A non numeric refresh_token_lifetime must be rejected');
+            } catch (\models\exceptions\ValidationException $ex) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function testRefreshTokenLifetimeUpperBound()
+    {
+        $client = new Client;
+        $client->setRefreshTokenLifetime(2147483647);
+        $this->assertSame(2147483647, $client->getRefreshTokenLifetime());
+
+        $this->expectException(\models\exceptions\ValidationException::class);
+        $client->setRefreshTokenLifetime(2147483648);
+    }
+
+    public function testNegativeRefreshTokenLifetimeIsRejected()
+    {
+        $this->expectException(\models\exceptions\ValidationException::class);
+        (new Client)->setRefreshTokenLifetime(-1);
+    }
 }

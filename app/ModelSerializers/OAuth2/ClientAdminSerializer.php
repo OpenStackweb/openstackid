@@ -96,6 +96,7 @@ final class ClientAdminSerializer extends ClientSerializer
         $values['owner_name'] = $client->getOwnerNice();
         $values['post_logout_redirect_uris'] = $client->getPostLogoutUris();
         $values['redirect_uris'] = $client->getRedirectUris();
+        $values['refresh_token_lifetime'] = $client->getRefreshTokenLifetime();
         $values['rotate_refresh_token'] = $client->useRotateRefreshTokenPolicy();
 
         $values['token_endpoint_auth_method'] = $tokenEndpointAuthInfo->getAuthenticationMethod() ?? 'none';

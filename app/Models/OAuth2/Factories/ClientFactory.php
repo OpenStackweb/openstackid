@@ -15,6 +15,7 @@
 use App\libs\Utils\URLUtils;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
+use models\exceptions\ValidationException;
 use Models\OAuth2\Client;
 use Models\OAuth2\ResourceServer;
 use OAuth2\Models\IClient;
@@ -217,6 +218,19 @@ final class ClientFactory
 
         if(isset($payload['otp_lifetime'])){
             $client->setOtpLifetime(intval($payload['otp_lifetime']));
+        }
+
+        // array_key_exists (not isset): an explicit null / empty value clears the override (inherit global)
+        if(array_key_exists('refresh_token_lifetime', $payload)){
+            $value = $payload['refresh_token_lifetime'];
+            if (is_null($value) || $value === '') {
+                $client->setRefreshTokenLifetime(null);
+            } else {
+                // never let intval() turn garbage into 0, which means "refresh token never expires"
+                if (filter_var($value, FILTER_VALIDATE_INT) === false)
+                    throw new ValidationException("refresh_token_lifetime must be an integer.");
+                $client->setRefreshTokenLifetime(intval($value));
+            }
         }
 
         if(isset($payload['max_allowed_user_sessions'])){

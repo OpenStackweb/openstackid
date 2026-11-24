@@ -960,6 +960,22 @@ final class TokenService extends AbstractService implements ITokenService
 
 
     /**
+     * Refresh token lifetime (seconds) to apply for a given client.
+     * The per-client override wins when set (0 = never expires); a null override inherits
+     * the global OAuth2.RefreshToken.Lifetime.
+     * @param string $client_id
+     * @return int
+     */
+    private function resolveRefreshTokenLifetime($client_id): int
+    {
+        $client = $this->client_repository->getClientById($client_id);
+        $client_lifetime = $client instanceof Client ? $client->getRefreshTokenLifetime() : null;
+        if (!is_null($client_lifetime))
+            return $client_lifetime;
+        return intval($this->configuration_service->getConfigValue('OAuth2.RefreshToken.Lifetime'));
+    }
+
+    /**
      * Creates a new refresh token and associate it with given access token
      * @param AccessToken $access_token
      * @param boolean $refresh_cache
@@ -970,7 +986,7 @@ final class TokenService extends AbstractService implements ITokenService
         $refresh_token = $this->identifier_generator->generate(
             RefreshToken::create(
                 $access_token,
-                $this->configuration_service->getConfigValue('OAuth2.RefreshToken.Lifetime')
+                $this->resolveRefreshTokenLifetime($access_token->getClientId())
             )
         );
 

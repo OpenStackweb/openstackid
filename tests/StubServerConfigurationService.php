@@ -28,6 +28,10 @@ class StubServerConfigurationService extends ServerConfigurationService
             return intval($_ENV['access.token.refresh.jitter']);
         }
 
+        if ($value === 'OAuth2.RefreshToken.Lifetime' && isset($_ENV['refresh.token.lifetime'])) {
+            return intval($_ENV['refresh.token.lifetime']);
+        }
+
         if ($value === 'OAuth2.IdToken.Lifetime' && isset($_ENV['id.token.lifetime'])) {
             return intval($_ENV['id.token.lifetime']);
         }
