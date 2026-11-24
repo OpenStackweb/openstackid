@@ -5,6 +5,7 @@
     <base href="{!! Config::get('app.url') !!}" target="_blank">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{!! Config::get('app.tenant_favicon') !!}"/>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     @yield('meta')
     {!! style_to('assets/css/index.css') !!}
     {!! style_to('assets/css/main.css') !!}
