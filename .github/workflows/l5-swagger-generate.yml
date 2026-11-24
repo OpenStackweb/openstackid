@@ -57,9 +57,9 @@ jobs:
             - name: Install dependencies
               uses: "ramsey/composer-install@v3"
               env:
-                  # Dependabot and fork runs do not receive secrets.PAT. An empty token makes
-                  # Composer fail to authenticate, so those runs use the read-only job token.
-                  COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.PAT || github.token }}"} }'
+                  # Every locked package comes from a public repository, so the job token is enough
+                  # to authenticate the downloads. Dependabot runs receive no repository secrets.
+                  COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ github.token }}"} }'
 
             - name: Generate OpenAPI docs
               run: php artisan l5-swagger:generate
