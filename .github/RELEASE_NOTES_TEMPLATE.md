@@ -1,9 +1,9 @@
 <!--
-Patch record of a release. Create the release with:
+Patch record of a release. Create the release as a draft:
 
-  gh release create vX.Y.Z --generate-notes --notes-file .github/RELEASE_NOTES_TEMPLATE.md
+  gh release create vX.Y.Z --draft --generate-notes --notes-file .github/RELEASE_NOTES_TEMPLATE.md
 
-Then edit the release: fill in the fields below, and add the deploy date once the
+Fill in the fields below, then publish the release. Add the deploy date once the
 release is running in production.
 -->
 
