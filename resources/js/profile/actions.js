@@ -76,15 +76,15 @@ export const save = async (entity, pic, token) => {
     });
 }
 
-export const revokeToken = async (value, hint) => {
+export const revokeToken = async (value, hint, token) => {
     return deleteRawRequest(window.REVOKE_ACCESS_TOKENS_ENDPOINT
         .replace('@value', value)
         .replace('%40hint', hint)
-    )({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+    )({'X-CSRF-TOKEN': token});
 }
 
-export const revokeAllTokens = async () => {
-    return deleteRawRequest(window.REVOKE_ALL_TOKENS_ENDPOINT)({'X-CSRF-TOKEN': window.CSFR_TOKEN});
+export const revokeAllTokens = async (token) => {
+    return deleteRawRequest(window.REVOKE_ALL_TOKENS_ENDPOINT)({'X-CSRF-TOKEN': token});
 }
 
 const normalizeEntity = (entity) => {

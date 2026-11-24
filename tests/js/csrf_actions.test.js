@@ -63,8 +63,8 @@ beforeEach(() => { mockRequests.length = 0; });
 
 const CASES = [
   ['profile: save with picture', () => profile.save(profileEntity(), PIC, TOKEN), 2],
-  ['profile: revoke token', () => profile.revokeToken('v', 'access_token'), 1],
-  ['profile: revoke all tokens', () => profile.revokeAllTokens(), 1],
+  ['profile: revoke token', () => profile.revokeToken('v', 'access_token', TOKEN), 1],
+  ['profile: revoke all tokens', () => profile.revokeAllTokens(TOKEN), 1],
   ['admin edit user: save with picture', () => editUser.save(adminUserEntity(), PIC, TOKEN), 2],
   ['clients: add', () => clients.addClient({app_name: 'x'}, TOKEN), 1],
   ['clients: delete', () => clients.deleteClient(1, TOKEN), 1],
@@ -78,6 +78,23 @@ const CASES = [
   ['edit client: add public key', () => editClient.addPublicKey(1, {kid: 'k'}), 1],
   ['edit client: remove public key', () => editClient.removePublicKey(1, 2), 1],
 ];
+
+// admin/edit-user.blade.php does not set window.CSFR_TOKEN, yet that page calls profile's revokeToken:
+// the profile actions must take the token from the caller, never from that global.
+describe('profile token revocation without window.CSFR_TOKEN (admin edit-user page)', () => {
+  let saved;
+  beforeEach(() => { saved = window.CSFR_TOKEN; delete window.CSFR_TOKEN; });
+  afterEach(() => { window.CSFR_TOKEN = saved; });
+
+  it.each([
+    ['revokeToken', () => profile.revokeToken('v', 'access-token', TOKEN)],
+    ['revokeAllTokens', () => profile.revokeAllTokens(TOKEN)],
+  ])('%s sends the token it is given', async (name, run) => {
+    await run();
+    expect(mockRequests).toHaveLength(1);
+    expect(mockRequests[0].headers['X-CSRF-TOKEN']).toBe(TOKEN);
+  });
+});
 
 describe.each(CASES)('%s', (name, run, expectedRequests) => {
   it('sends X-CSRF-TOKEN as a header on every request', async () => {
