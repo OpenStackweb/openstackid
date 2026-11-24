@@ -15,6 +15,7 @@
 use Auth\User;
 use Database\Seeders\TestSeeder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use jwa\JSONWebSignatureAndEncryptionAlgorithms;
@@ -35,6 +36,7 @@ use utils\json_types\JsonValue;
 use utils\json_types\NumericDate;
 use utils\json_types\StringOrURI;
 use Utils\Services\IAuthService;
+use Utils\Services\ICacheService;
 use Utils\Services\UtilsServiceCatalog;
 
 /**
@@ -296,5 +298,97 @@ final class OIDCColdSessionReloadTest extends OpenStackIDBaseTestCase
         $this->assertTrue(str_contains($response->getTargetUrl(), '/auth/login'),
             sprintf('a client-signed id_token_hint with an unknown jti must require login, got %s', $response->getTargetUrl()));
         $this->assertFalse(Auth::check(), 'a client-signed id_token_hint must never authenticate anyone by sub');
+    }
+
+    /**
+     * Phases A + B of the native-app handoff: the user is logged in a browser
+     * session, consents, and a cookie-less back-channel exchange mints an
+     * id_token. Returns the RP-side unwrapped id_token (a JWS), leaving the
+     * Session facade on a cold session.
+     */
+    private function mintIdTokenHint(): string
+    {
+        $this->be($this->user);
+        Session::put("openid.authorization.response", IAuthService::AuthorizationResponse_AllowOnce);
+
+        $this->action("POST", "OAuth2\OAuth2ProviderController@auth", $this->authorizeParams());
+        $this->assertResponseStatus(302);
+        parse_str(parse_url($this->response->getTargetUrl(), PHP_URL_QUERY), $query);
+        $this->assertNotEmpty($query['code'] ?? null, 'must return an auth code');
+
+        $this->startColdSession();
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@token",
+            [
+                'code'         => $query['code'],
+                'redirect_uri' => self::RedirectUri,
+                'grant_type'   => OAuth2Protocol::OAuth2Protocol_GrantType_AuthCode,
+            ],
+            [], [], [],
+            ["HTTP_Authorization" => " Basic " . base64_encode(self::ClientId . ':' . self::ClientSecret)]);
+
+        $this->assertResponseStatus(200);
+        $json = json_decode($response->getContent());
+        $id_token_hint = $json->id_token;
+        $jwt = BasicJWTFactory::build($id_token_hint);
+        if ($jwt instanceof IJWE) {
+            $recipient_key = RSAJWKFactory::build
+            (
+                new RSAJWKPEMPrivateKeySpecification
+                (
+                    TestSeeder::$client_private_key_1,
+                    RSAJWKPEMPrivateKeySpecification::WithoutPassword,
+                    $jwt->getJOSEHeader()->getAlgorithm()->getString()
+                )
+            );
+            $recipient_key->setKeyUse(JSONWebKeyPublicKeyUseValues::Encryption)->setId('recipient_public_key');
+            $jwt->setRecipientKey($recipient_key);
+            $id_token_hint = $jwt->getPlainText();
+        }
+        return $id_token_hint;
+    }
+
+    /**
+     * Logging out of the IDP must revoke the session an id_token_hint points
+     * at: the hint, presented from a cold session after the logout, can't log
+     * the user back in, and the old session id no longer resolves any data
+     * in the session store.
+     */
+    public function testLogoutRevokesIdTokenHintSessionReload()
+    {
+        $id_token_hint = $this->mintIdTokenHint();
+
+        // the browser session the hint's jti points at: the one reloadSession() would resume
+        $jti = BasicJWTFactory::build($id_token_hint)->getClaimSet()->getJWTID()->getValue();
+        $browser_session_id = Crypt::decrypt(app(ICacheService::class)->getSingleValue($jti));
+
+        // the user logs out at the IDP, from that browser session
+        Session::save();
+        Session::setId($browser_session_id);
+        Session::start();
+        $this->be($this->user);
+        $this->assertNotEmpty(Session::getHandler()->read($browser_session_id), 'precondition: browser session has data');
+
+        // (through the service: an action() request carries no session cookie, so
+        // StartSession would run the controller on a brand-new session instead)
+        app(IAuthService::class)->logout();
+
+        $this->assertNotEquals($browser_session_id, Session::getId(), 'logout must rotate the session id');
+        $this->assertEmpty(
+            Session::getHandler()->read($browser_session_id),
+            'the old session id must not resolve any data after logout'
+        );
+
+        $this->startColdSession();
+
+        $params = $this->authorizeParams();
+        $params[OAuth2Protocol::OAuth2Protocol_IDTokenHint] = $id_token_hint;
+
+        $response = $this->action("POST", "OAuth2\OAuth2ProviderController@auth", $params);
+
+        $this->assertResponseStatus(302);
+        $this->assertTrue(str_contains($response->getTargetUrl(), '/auth/login'),
+            sprintf('an id_token_hint minted before logout must require login, got %s', $response->getTargetUrl()));
+        $this->assertFalse(Auth::check(), 'an id_token_hint minted before logout must not authenticate anyone');
     }
 }
