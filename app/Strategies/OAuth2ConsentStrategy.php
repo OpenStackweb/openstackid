@@ -14,8 +14,12 @@
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Response;
 use OAuth2\Factories\OAuth2AuthorizationRequestFactory;
 use OAuth2\OAuth2Message;
+use OAuth2\OAuth2Protocol;
+use OAuth2\Requests\OAuth2AuthenticationRequest;
+use OAuth2\Requests\OAuth2AuthorizationRequest;
 use OAuth2\Repositories\IApiScopeRepository;
 use OAuth2\Repositories\IClientRepository;
 use OAuth2\Services\IMementoOAuth2SerializerService;
@@ -99,6 +103,7 @@ class OAuth2ConsentStrategy implements IConsentStrategy
         $data['app_description'] = $client->getApplicationDescription();
         $data['dev_info_email'] = $client->getDeveloperEmail();
         $data['contact_emails'] = $client->getContacts();
+        $data['can_switch_account'] = !$this->isPinnedToUser($auth_request);
 
         $response_strategy = DisplayResponseStrategyFactory::build($auth_request->getDisplay());
 
@@ -109,5 +114,61 @@ class OAuth2ConsentStrategy implements IConsentStrategy
     {
         $this->auth_service->setUserAuthorizationResponse($trust_action);
         return Redirect::action('OAuth2\OAuth2ProviderController@auth');
+    }
+
+    /**
+     * The RP asked for a specific user (login_hint / id_token_hint), so the user can't be swapped.
+     * @param OAuth2AuthorizationRequest $auth_request
+     * @return bool
+     */
+    private function isPinnedToUser(OAuth2AuthorizationRequest $auth_request): bool
+    {
+        return $auth_request instanceof OAuth2AuthenticationRequest &&
+            (!empty($auth_request->getLoginHint()) || !empty($auth_request->getIdTokenHint()));
+    }
+
+    /**
+     * Ends the current IDP session and sends the user to login, keeping the pending authorization request.
+     * AuthService::logout() flushes the whole session, memento included, so it is re-serialized afterwards.
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
+     */
+    public function switchAccount()
+    {
+        $memento = $this->memento_service->load();
+        if (is_null($memento))
+            return $this->badRequest();
+
+        $auth_request = OAuth2AuthorizationRequestFactory::getInstance()->build
+        (
+            OAuth2Message::buildFromMemento($memento)
+        );
+
+        if ($this->isPinnedToUser($auth_request))
+            return $this->badRequest();
+
+        // the new user must actually see consent when the RP asked for prompt=consent;
+        // prompt=login stays processed, otherwise the user who just logged in is logged out again
+        if ($auth_request instanceof OAuth2AuthenticationRequest)
+            $auth_request->unmarkParamAsProcessed(OAuth2Protocol::OAuth2Protocol_Prompt_Consent);
+
+        $memento = $auth_request->getMessage()->createMemento();
+
+        $this->auth_service->logout();
+        $this->memento_service->serialize($memento);
+
+        return Redirect::action('UserController@getLogin');
+    }
+
+    private function badRequest()
+    {
+        return Response::view
+        (
+            'errors.400',
+            [
+                'error' => "Bad Request",
+                'error_description' => "Generic Error"
+            ],
+            400
+        );
     }
 }

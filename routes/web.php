@@ -128,6 +128,7 @@ Route::group(['namespace' => 'OAuth2', 'prefix' => 'oauth2', 'middleware' => ['s
 Route::group(array('middleware' => ['ssl', 'auth']), function () {
     Route::get('/accounts/user/consent', "UserController@getConsent");
     Route::post('/accounts/user/consent', ['middleware' => 'csrf', 'uses' => 'UserController@postConsent']);
+    Route::post('/accounts/user/consent/switch-account', ['middleware' => 'csrf', 'uses' => 'UserController@switchAccount']);
     Route::any("/accounts/user/logout", "UserController@logout");
     Route::get("/accounts/user/profile", "UserController@getProfile");
     Route::any("/accounts/user/profile/trusted_site/delete/{id}", "UserController@deleteTrustedSite");
